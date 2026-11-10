@@ -44,6 +44,7 @@ class MgbIme : InputMethodService() {
     private val prefs by lazy { JabraPrefs(this) }
     private val panels by lazy { JabraPanels(this, host) }
     private val morePanel by lazy { MorePanel(this, host) }   // v0.0.9 "More settings" page
+    private val emojiPanel by lazy { EmojiPanel(this, host) }   // v0.1.0 emoji panel
     private val fmtPanel by lazy { FormatterPanel(this, host, ImeFmtIo(this) { pwdField }) }   // v0.0.8 novel formatter
     private val host = object : JabraHost {
         override fun typeText(s: String) { this@MgbIme.typeText(s) }
@@ -79,6 +80,7 @@ class MgbIme : InputMethodService() {
         b.minWidth = 0
         b.minimumWidth = 0
         b.setPadding(0, 0, 0, 0)
+        try { JabraThemes.style(prefs, b) } catch (_: Throwable) { }   // v0.1.0: theme colours (Classic = no change)
         b.setOnClickListener {
             try { feedback(b) } catch (_: Throwable) { }   // v0.0.5: haptic/sound (own try, never blocks typing)
             try { onClick() } catch (_: Throwable) { }
@@ -281,7 +283,7 @@ class MgbIme : InputMethodService() {
     private fun shiftVisual() {
         val b = shiftBtn ?: return
         val tint: Int? = if (shiftSt.isCaps()) Color.parseColor("#2271B1") else if (shiftSt.isShift()) Color.parseColor("#9CC3E6") else null
-        b.backgroundTintList = if (tint == null) null else android.content.res.ColorStateList.valueOf(tint)
+        b.backgroundTintList = if (tint == null) (try { JabraThemes.keyTint(prefs) } catch (_: Throwable) { null }) else android.content.res.ColorStateList.valueOf(tint)   // v0.1.0: off = theme key colour (Classic = null as before)
     }
 
     private fun phoneticOn(): Boolean = bangla && !latinOnly && !probhat   // v0.0.4: Probhat is not phonetic
@@ -371,8 +373,9 @@ class MgbIme : InputMethodService() {
     private fun showPanel(name: String) {
         val c = container ?: return
         commitWord()
-        val v = try { if (name == "clipboard") clipPanel.build() else if (name == "format") fmtPanel.build() else if (name == "more") morePanel.build() else panels.build(name) } catch (_: Throwable) { null }   // v0.0.8: "format"
+        val v = try { if (name == "clipboard") clipPanel.build() else if (name == "format") fmtPanel.build() else if (name == "more") morePanel.build() else if (name == "emoji") emojiPanel.build() else panels.build(name) } catch (_: Throwable) { null }   // v0.0.8: "format"; v0.1.0: "emoji"
         if (v == null) { showLetters(); return }
+        try { JabraOneHand.apply(this, prefs, v) } catch (_: Throwable) { }   // v0.1.0
         c.removeAllViews()
         c.addView(v)
     }
@@ -432,6 +435,7 @@ class MgbIme : InputMethodService() {
         root.orientation = LinearLayout.VERTICAL
         root.setBackgroundColor(Color.parseColor("#DDDDDD"))
         root.setPadding(dp(2), dp(4), dp(2), dp(4))
+        try { root.setBackgroundColor(JabraThemes.bg(prefs)) } catch (_: Throwable) { }   // v0.1.0: theme background (Classic = same grey)
 
         // v0.0.6: edit bar (setting "edit_bar", default ON): clipboard / select all / cut / copy / paste / paste plain
         try {
@@ -441,7 +445,7 @@ class MgbIme : InputMethodService() {
                 val items = if (prefs.bool("fmt_on", true)) items0 + ("Aa" to "fmt") else items0   // v0.0.8: formatter button (setting "fmt_on")
                 for ((label, kind) in items) {
                     val k = key(label, 1f) { if (kind == "clip") openClipboard() else if (kind == "fmt") openFormatter() else editAction(kind) }
-                    JabraIcons.put(this, k, kind)   // v0.0.7: own icon (kind = clip/all/cut/copy/paste/plain); Icons OFF = old text
+                    JabraIcons.putThemed(this, k, kind)   // v0.0.7: own icon (kind = clip/all/cut/copy/paste/plain); Icons OFF = old text
                     (k.layoutParams as LinearLayout.LayoutParams).height = dp(36)
                     k.textSize = 12f
                     eb.addView(k)
@@ -470,11 +474,11 @@ class MgbIme : InputMethodService() {
         root.addView(r2)
 
         val r3 = row()
-        val shb = JabraIcons.put(this, key("⇧", 1.5f) { shiftSt.tap(android.os.SystemClock.uptimeMillis()); refreshLetters() }, "shift")   // v0.0.7 + v0.0.9 (double tap = caps lock)
+        val shb = JabraIcons.putThemed(this, key("⇧", 1.5f) { shiftSt.tap(android.os.SystemClock.uptimeMillis()); refreshLetters() }, "shift")   // v0.0.7 + v0.0.9 (double tap = caps lock)
         shiftBtn = shb
         r3.addView(shb)
         "zxcvbnm".forEach { r3.addView(letter(it)) }
-        val bkb = JabraIcons.put(this, key("⌫", 1.5f) { onBackspace() }, "back")   // v0.0.7
+        val bkb = JabraIcons.putThemed(this, key("⌫", 1.5f) { onBackspace() }, "back")   // v0.0.7
         try { if (prefs.bool("bs_repeat", true)) RepeatKeyHelper({ onBackspace() }, { v -> feedback(v) }).attach(bkb) } catch (_: Throwable) { }   // v0.0.9: hold = repeat
         r3.addView(bkb)
         root.addView(r3)
@@ -487,7 +491,9 @@ class MgbIme : InputMethodService() {
         try { lb.setOnLongClickListener { try { switchBnLayout() } catch (_: Throwable) { }; true } } catch (_: Throwable) { }   // v0.0.4: long-press = Avro <-> Probhat
         langBtn = lb
         r4.addView(lb)
-        r4.addView(key(",", 1f) { commitWord(); typeText(",") })
+        val commaKey = key(",", 1f) { commitWord(); typeText(",") }
+        try { commaKey.setOnLongClickListener { try { emojiPanel.reset(); showPanel("emoji") } catch (_: Throwable) { }; true } } catch (_: Throwable) { }   // v0.1.0: long-press "," = emoji panel
+        r4.addView(commaKey)
         val spaceAction = { commitWord(); typeText(" ") }
         val sb = key("space", 4f) { spaceAction() }
         // v0.0.5: drag on space = move cursor. If attaching fails, the normal click above still types a space.
@@ -497,10 +503,11 @@ class MgbIme : InputMethodService() {
         dandaBtn = db
         r4.addView(db)
         r4.addView(key(".", 1f) { commitWord(); typeText(".") })
-        r4.addView(JabraIcons.put(this, key("⏎", 1.4f) { commitWord(); doEnter() }, "enter"))   // v0.0.7 + v0.0.9
+        r4.addView(JabraIcons.putThemed(this, key("⏎", 1.4f) { commitWord(); doEnter() }, "enter"))   // v0.0.7 + v0.0.9
         root.addView(r4)
 
         try { refreshLetters() } catch (_: Throwable) { }   // v0.0.4: right labels from the start (Probhat after rebuild / rotate)
+        try { JabraOneHand.apply(this, prefs, root) } catch (_: Throwable) { }   // v0.1.0: one-handed mode (setting "onehand")
         return root
     }
 }

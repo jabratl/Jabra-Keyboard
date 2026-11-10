@@ -28,11 +28,11 @@ object JabraIcons {
      * Put icon [name] on [b] (icon replaces the text). Returns true if the icon was applied.
      * [on] = prefs icons_on. When false or on error nothing changes.
      */
-    fun apply(b: Button, name: String, on: Boolean): Boolean {
+    fun apply(b: Button, name: String, on: Boolean, color: Int = Color.parseColor("#222222")): Boolean {   // v0.1.0: optional colour (default = old #222222)
         if (!on) return false
         return try {
             if (name !in NAMES) return false
-            val d = IconDrawable(name, Color.parseColor("#222222"))
+            val d = IconDrawable(name, color)
             b.contentDescription = b.text   // keep the old label for accessibility
             b.text = ""
             b.foreground = d                // API 23+ (minSdk is 24)
@@ -45,6 +45,16 @@ object JabraIcons {
     /** Same as apply(), but reads the "icons_on" pref itself. Never throws; returns the same button. */
     fun put(ctx: Context, b: Button, name: String): Button {
         try { apply(b, name, JabraPrefs(ctx).bool("icons_on", true)) } catch (_: Throwable) { }
+        return b
+    }
+
+    /** v0.1.0: same as put(), but the icon colour follows the theme (Classic = same #222222 as before; Dark = light icon). Used on themed panels only. */
+    fun putThemed(ctx: Context, b: Button, name: String): Button {
+        try {
+            val p = JabraPrefs(ctx)
+            val c = try { JabraThemes.iconColor(p) } catch (_: Throwable) { Color.parseColor("#222222") }
+            apply(b, name, p.bool("icons_on", true), c)
+        } catch (_: Throwable) { }
         return b
     }
 

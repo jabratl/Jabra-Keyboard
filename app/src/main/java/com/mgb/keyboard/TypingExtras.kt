@@ -90,6 +90,7 @@ class MorePanel(private val ctx: Context, private val host: JabraHost) {
         b.minimumWidth = 0
         b.setPadding(0, 0, 0, 0)
         b.textSize = 12f
+        try { JabraThemes.style(prefs, b) } catch (_: Throwable) { }   // v0.1.0
         b.setOnClickListener {
             try { host.feedback(b) } catch (_: Throwable) { }
             try { onClick(b) } catch (_: Throwable) { }
@@ -122,7 +123,7 @@ class MorePanel(private val ctx: Context, private val host: JabraHost) {
         val t = TextView(ctx)
         t.text = text
         t.textSize = 11f
-        t.setTextColor(Color.parseColor("#555555"))
+        t.setTextColor(try { JabraThemes.noteColor(prefs) } catch (_: Throwable) { Color.parseColor("#555555") })   // v0.1.0: readable on Dark
         t.setPadding(dp(6), dp(2), dp(6), dp(2))
         return t
     }
@@ -134,6 +135,7 @@ class MorePanel(private val ctx: Context, private val host: JabraHost) {
         val root = LinearLayout(ctx)
         root.orientation = LinearLayout.VERTICAL
         root.setBackgroundColor(Color.parseColor("#DDDDDD"))
+        try { root.setBackgroundColor(JabraThemes.bg(prefs)) } catch (_: Throwable) { }   // v0.1.0
         root.setPadding(dp(2), dp(4), dp(2), dp(4))
 
         val r1 = row()
@@ -146,7 +148,31 @@ class MorePanel(private val ctx: Context, private val host: JabraHost) {
         r2.addView(pk("Switch keyboard", 1f) { host.pickKeyboard() })
         root.addView(r2)
 
-        root.addView(note("Enter action: Enter does Send / Search / Go when the app asks for it. Long-press ?123 also opens the keyboard picker."))
+        // v0.1.0: theme, one-handed mode, emoji panel
+        try {
+            val r3 = row()
+            val themeBtn = pk("", 1f) { btn ->
+                val nv = (JabraThemes.index(prefs) + 1) % JabraThemes.ALL.size
+                prefs.setInt("theme", nv)
+                btn.text = "Theme: " + JabraThemes.ALL[nv].name
+            }
+            themeBtn.text = "Theme: " + JabraThemes.cur(prefs).name
+            r3.addView(themeBtn)
+            val ohNames = arrayOf("Off", "Left", "Right")
+            val ohBtn = pk("", 1f) { btn ->
+                val nv = (JabraOneHand.mode(prefs) + 1) % 3
+                prefs.setInt("onehand", nv)
+                btn.text = "One-hand: " + ohNames[nv]
+            }
+            ohBtn.text = "One-hand: " + ohNames[JabraOneHand.mode(prefs)]
+            r3.addView(ohBtn)
+            root.addView(r3)
+            val r35 = row()
+            r35.addView(pk("Emoji panel", 1f) { host.showPanel("emoji") })
+            root.addView(r35)
+        } catch (_: Throwable) { }
+
+        root.addView(note("Enter action: Enter does Send / Search / Go when the app asks for it. Long-press ?123 also opens the keyboard picker. Theme / One-hand: tap, then ABC (apply). Emoji: long-press the , key."))
 
         val rb = row()
         rb.addView(pk("< Settings", 1f) { host.showPanel("settings") })
