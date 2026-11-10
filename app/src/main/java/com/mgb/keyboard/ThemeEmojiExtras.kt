@@ -32,7 +32,20 @@ object JabraThemes {
         T("Blue", 0xFFD6E6F5.toInt(), 0xFFFFFFFF.toInt(), 0xFF1B3A57.toInt()),
         T("Mint", 0xFFD8EFE3.toInt(), 0xFFFFFFFF.toInt(), 0xFF1E4D3A.toInt()),
         T("Sand", 0xFFEFE6D6.toInt(), 0xFFFFFAF0.toInt(), 0xFF4A3B22.toInt()),
-        T("Dark", 0xFF1E1F22.toInt(), 0xFF3A3C42.toInt(), 0xFFF2F2F2.toInt())
+        T("Dark", 0xFF1E1F22.toInt(), 0xFF3A3C42.toInt(), 0xFFF2F2F2.toInt()),
+        T("Sandstone", 0xFFE8DFCB.toInt(), 0xFFF7F1E3.toInt(), 0xFF2B2620.toInt()),   // v0.2.4: indexes 5..17 appended, NEVER reorder
+        T("Seaweed Grey", 0xFF5F7369.toInt(), 0xFF2F3E38.toInt(), 0xFFEAF2EE.toInt()),
+        T("Ivory", 0xFFF3F0E8.toInt(), 0xFFFFFFFF.toInt(), 0xFF2A2A2A.toInt()),
+        T("Gloss Black", 0xFF0B0B0D.toInt(), 0xFF222226.toInt(), 0xFFFFFFFF.toInt()),
+        T("Charcoal", 0xFF1A1A1A.toInt(), 0xFF2E2E2E.toInt(), 0xFFE6E6E6.toInt()),
+        T("Midnight Navy", 0xFF0F1626.toInt(), 0xFF1E2A44.toInt(), 0xFFE8EEFF.toInt()),
+        T("Moon Blue", 0xFFC9D6EE.toInt(), 0xFFF4F7FF.toInt(), 0xFF1F2F55.toInt()),
+        T("Ocean", 0xFF1C6BC0.toInt(), 0xFF3F89D6.toInt(), 0xFFFFFFFF.toInt()),
+        T("Deep Green", 0xFF0E2A24.toInt(), 0xFF1B4036.toInt(), 0xFFDDF3EA.toInt()),
+        T("Aqua", 0xFFBFEEE3.toInt(), 0xFFEAFBF7.toInt(), 0xFF0F4A40.toInt()),
+        T("Rose", 0xFFF6D3DE.toInt(), 0xFFFFF1F5.toInt(), 0xFF5A1F35.toInt()),
+        T("Silver Grey", 0xFFB9BDC4.toInt(), 0xFFE6E8EC.toInt(), 0xFF23262B.toInt()),
+        T("Dusk", 0xFF2A2340.toInt(), 0xFF3C3460.toInt(), 0xFFEDE8FF.toInt())
     )
 
     fun index(p: JabraPrefs): Int = p.int("theme", 0).coerceIn(0, ALL.size - 1)

@@ -178,6 +178,7 @@ class MorePanel(private val ctx: Context, private val host: JabraHost) {
         try { val rz = row(); rz.addView(pk("Size (height / one-hand width) >", 1f) { host.showPanel("size") }); root.addView(rz) } catch (_: Throwable) { }   // v0.1.4
         try { val rtb = row(); rtb.addView(pk("Edit toolbar >", 1f) { host.showPanel("toolbar") }); root.addView(rtb) } catch (_: Throwable) { }   // v0.2.1
         try { val rpd = row(); rpd.addView(pk("Cursor / select pad >", 1f) { host.showPanel("pad") }); root.addView(rpd) } catch (_: Throwable) { }   // v0.2.3
+        try { val rth = row(); rth.addView(pk("Theme picker >", 1f) { host.showPanel("themes") }); root.addView(rth) } catch (_: Throwable) { }   // v0.2.4
         try {   // v0.1.5: Look Classic / Jabra
             val rl = row()
             val lookBtn = pk("", 1f) { btn ->

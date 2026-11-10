@@ -1,3 +1,17 @@
+v0.2.4 - Theme pack + theme picker
+- NEW: 13 more themes (total 18). Order is fixed, old ones keep their numbers: 0 Classic, 1 Blue, 2 Mint, 3 Sand, 4 Dark, then 5 Sandstone, 6 Seaweed Grey, 7 Ivory, 8 Gloss Black, 9 Charcoal, 10 Midnight Navy, 11 Moon Blue, 12 Ocean, 13 Deep Green, 14 Aqua, 15 Rose, 16 Silver Grey, 17 Dusk. Own names and colours (ideas from your screenshots, not copied).
+- NEW page: More settings -> Theme picker >. Grid of small preview tiles (background + 2 keys + 1 function key + name), blue frame + check = current. Tap a tile = theme chosen, page redraws in that theme. ABC (apply) shows it on the keyboard. It opens scrolled to the current theme.
+- Old "Theme: tap to cycle" button, the Theme toolbar item and the app-screen Theme row stay and now cycle through all 18.
+- Each new theme has its own function-key colour (Look: Jabra); Look: Classic still ignores it as before.
+- Code: ThemePanel.kt (new), typing/LookColors.java (cases 5..17), ThemeEmojiExtras.kt (13 entries appended to ALL), tools/LookTest.java (29 checks, the 13 old ones kept); hooks marked "v0.2.4": MgbIme.kt (1 lazy field, 1 route), TypingExtras.kt (1 row in More settings), app/build.gradle.kts (0.2.4).
+- Prefs NEW: none (same pref "theme", an index).
+
+WHY: roadmap v0.2.4.
+BROKE: nothing intended. Deviation from plan 3c: no launcher-screen "Look" button for the picker (the launcher screen cannot open keyboard panels, same reason as Edit toolbar); picker is in More settings only. Names Gloss Black / Charcoal / Midnight Navy etc. are my own.
+NOT tested: Kotlin compile (first check = GitHub Actions), everything on a phone: tiles look right at 360 px and 1280 px (3 per row, names not cut), dark + light themes (text / notes readable on Seaweed Grey, Ocean, Dusk), tap redraws without jumping, ABC (apply) applies, function-key colours with Look: Jabra, all 18 themes in the symbols / emoji / pad / toolbar panels.
+TESTED here: LookTest 29/29; the 11 other Java tests pass (Pad 9, Toolbar 44, Avro 43, Extras 133, Clip 18, Emoji 1585, Typing 27, DoubleSpace 37, Pc 19, SizePct 28, Hint 175); bracket balance of ThemePanel / ThemeEmojiExtras / MgbIme / TypingExtras; code-only diff of MgbIme / TypingExtras = only the marked hooks.
+Files: ThemePanel.kt (new); ThemeEmojiExtras.kt, MgbIme.kt, TypingExtras.kt, typing/LookColors.java, tools/LookTest.java, app/build.gradle.kts, CHANGELOG.txt, CHECKLIST.txt, HANDOFF_Jabra-Keyboard_v0.2.4.txt (new name, replaces HANDOFF.txt).
+
 v0.2.3 - Cursor / select pad
 - NEW panel: Select | Up | All | Backspace, Left | Down | Right | Copy, Home | End | Cut | Paste, ABC. Select ON (blue) + arrows / Home / End = extends the selection. Arrows, Home, End and Backspace repeat while held. Select starts OFF every time the pad opens.
 - Open it: More settings -> Cursor / select pad >, or the new toolbar item "Pad" (Edit toolbar -> scroll down -> Show -> ABC). New own icon (4 arrows). The toolbar item is OFF by default.

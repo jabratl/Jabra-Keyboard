@@ -59,3 +59,11 @@ G. TOOLBAR (v0.2.1)
  [ ] Select (turns blue) + arrows / Home / End = selection grows. Select OFF = plain movement. Which apps do NOT react (note the names).
  [ ] Toolbar item "Pad": Edit toolbar -> Show -> ABC (apply) opens the same pad. All 4 rows + ABC visible at 360 px, dark + light.
 
+H. THEMES (v0.2.4)
+ [ ] More settings -> Theme picker >: grid of tiles opens, scrolled to your current theme; 3 tiles per row at 360 px, names not cut.
+ [ ] Tap a tile: blue frame + check moves to it, the page itself changes colour, list does not jump to the top.
+ [ ] ABC (apply): the keyboard uses that theme (letters, function keys, space, Shift). Check all 13 new ones once (dark ones: icons, hints, popup, notes readable; Ocean / Seaweed Grey / Dusk especially).
+ [ ] Look: Jabra shows the function-key colour of the theme; Look: Classic = old look.
+ [ ] Old Theme: tap to cycle (More settings) and the Theme toolbar item go through all 18 and wrap to Classic.
+ [ ] Symbols, number pad, emoji, pad, toolbar page, clipboard: still readable in the new themes.
+

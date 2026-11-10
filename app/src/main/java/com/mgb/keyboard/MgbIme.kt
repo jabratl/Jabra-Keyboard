@@ -48,6 +48,7 @@ class MgbIme : InputMethodService() {
     private val sizePanel by lazy { SizePanel(this, host) }   // v0.1.4 "Size" page
     private val toolbarPanel by lazy { ToolbarPanel(this, host) }   // v0.2.1 "Edit toolbar" page
     private val padPanel by lazy { PadPanel(this, host, padIo) }   // v0.2.3 cursor / select pad
+    private val themePanel by lazy { ThemePanel(this, host) }   // v0.2.4 theme picker
     private val padIo = object : PadIo {   // v0.2.3
         override fun sendKey(code: Int, meta: Int) { this@MgbIme.padSend(code, meta) }
         override fun edit(kind: String) { this@MgbIme.editAction(kind) }
@@ -489,7 +490,7 @@ class MgbIme : InputMethodService() {
     private fun showPanel(name: String) {
         val c = container ?: return
         commitWord()
-        val v = try { if (name == "clipboard") clipPanel.build() else if (name == "format") fmtPanel.build() else if (name == "more") morePanel.build() else if (name == "emoji") emojiPanel.build() else if (name == "typing") typingPanel.build() else if (name == "size") sizePanel.build() else if (name == "toolbar") toolbarPanel.build() else if (name == "pad") padPanel.build() else panels.build(name) } catch (_: Throwable) { null }   // v0.0.8: "format"; v0.1.0: "emoji"; v0.1.1: "typing"
+        val v = try { if (name == "clipboard") clipPanel.build() else if (name == "format") fmtPanel.build() else if (name == "more") morePanel.build() else if (name == "emoji") emojiPanel.build() else if (name == "typing") typingPanel.build() else if (name == "size") sizePanel.build() else if (name == "toolbar") toolbarPanel.build() else if (name == "pad") padPanel.build() else if (name == "themes") themePanel.build() else panels.build(name) } catch (_: Throwable) { null }   // v0.0.8: "format"; v0.1.0: "emoji"; v0.1.1: "typing"
         if (v == null) { showLetters(); return }
         try { JabraOneHand.apply(this, prefs, v) } catch (_: Throwable) { }   // v0.1.0
         c.removeAllViews()

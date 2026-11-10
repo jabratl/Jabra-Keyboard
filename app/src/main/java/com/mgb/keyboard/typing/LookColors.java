@@ -4,13 +4,26 @@ package com.mgb.keyboard.typing;
 public final class LookColors {
     private LookColors() { }
 
-    /** Function-key fill per theme index (0 Classic, 1 Blue, 2 Mint, 3 Sand, 4 Dark). Unknown index -> Classic value. */
+    /** Function-key fill per theme index (0 Classic, 1 Blue, 2 Mint, 3 Sand, 4 Dark; v0.2.4: 5..17). Unknown index -> Classic value. */
     public static int funcFill(int themeIndex) {
         switch (themeIndex) {
             case 1: return 0xFFB5CFE8;
             case 2: return 0xFFB4DCC8;
             case 3: return 0xFFE0D2B8;
             case 4: return 0xFF2B2D31;
+            case 5: return 0xFFD2C6AB;   // v0.2.4 new themes 5..17 (same order as JabraThemes.ALL)
+            case 6: return 0xFF24302B;
+            case 7: return 0xFFE2DDD0;
+            case 8: return 0xFF16161A;
+            case 9: return 0xFF242424;
+            case 10: return 0xFF16213A;
+            case 11: return 0xFFAEBFE0;
+            case 12: return 0xFF1556A0;
+            case 13: return 0xFF14352C;
+            case 14: return 0xFF9FDCCD;
+            case 15: return 0xFFE9B3C5;
+            case 16: return 0xFFA0A5AE;
+            case 17: return 0xFF332B52;
             default: return 0xFFC3C9D0;
         }
     }
