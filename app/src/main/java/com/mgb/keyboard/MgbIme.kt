@@ -256,7 +256,6 @@ class MgbIme : InputMethodService() {
 
     override fun onStartInputView(info: EditorInfo?, restarting: Boolean) {
         super.onStartInputView(info, restarting)
-        try { if (prefs.bool("bk_auto", true) && prefs.int("bk_day", 0) != BackupStore.today()) BackupStore.autoIfDue(this) } catch (_: Throwable) { }   // v0.4.0: auto backup once per day (background Thread)
         try { if (!prefs.bool("pc_remember", true) && prefs.bool("pc_mode", false)) { prefs.setBool("pc_mode", false); pcState.setPc(false); showLetters() } } catch (_: Throwable) { }   // v0.1.2: Remember mode OFF = always start in Phone mode
         try {
             buf.setLength(0)

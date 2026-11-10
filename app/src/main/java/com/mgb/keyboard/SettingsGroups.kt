@@ -139,8 +139,6 @@ object SettingsGroups {
             level(g, "Clipboard view", "clip_view", 0, arrayOf("List", "Cards"))   // v0.2.5.2
         }
 
-        try { group("Data & Backup") { g -> g.addView(DataPage.build(ctx)) } } catch (_: Throwable) { }   // v0.4.1
-
         return root
     }
 }
