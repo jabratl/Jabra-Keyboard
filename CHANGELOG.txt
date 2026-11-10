@@ -1,3 +1,25 @@
+v0.4.1 - NEW: Data & Backup page (S1b)
+- WHY: v0.4.0 made backups but you could not see or use them. Now the app screen has a 6th group "Data & Backup".
+- What you get: counts (clips / pinned, formatter presets, settings keys, storage used, last backup); [Backup now]; [Export to file] and [Import from file] (system file picker, no storage permission); Auto backup ON/OFF; Keep newest 3 / 5 / 10; Backups list, each with [Restore] and [Delete]; a Privacy text.
+- Restore = tap Restore (shows date + counts) -> tap again "Sure?" -> a safety copy "before_restore_..." is saved -> data restored -> "Close and reopen the keyboard". Delete also needs a second tap. A damaged file or wrong version = message, nothing changed. Import is checked first, then added to the Backups list (you still press Restore).
+- Code: NEW DataPage.kt; BackupStore.kt (importText); SettingsActivity.kt (export / import picker + onActivityResult, 3 fields / functions); SettingsGroups.kt (1 line marked "v0.4.1"); app/build.gradle.kts (0.4.1). No manifest change, no permission, no new pref.
+BROKE: nothing intended. Keyboard itself is untouched.
+NOT tested: Kotlin compile (GitHub Actions), file picker on different Android versions, restore of a large file on phone.
+TESTED here: all 16 Java tests (unchanged), bracket balance of the 4 changed Kotlin files.
+Rollback: remove the line marked "v0.4.1" in SettingsGroups.kt (page disappears). Code: delete DataPage.kt + the picker block in SettingsActivity.kt + importText.
+
+v0.4.0 - NEW: Backup core (S1a of the v0.4.0 - v0.5.4 plan)
+- WHY: all your data (clips, pinned items, formatter presets, settings) lived only inside the app. Now ONE safe JSON backup file is made automatically.
+- What changed: once per day (when a keyboard opens or the app screen opens) a backup of ALL "jabra" settings (clips_v1, fmt_*, theme, toolbar ...) is saved on a background thread to the app's own folder backups/jabra_YYYYMMDD_HHmm.json. Newest 5 copies are kept. File = JSON {"ver":1, sha256, prefs, files}; a damaged / edited file is detected by the hash. Over 5 MB = refused. A failed save shows a short message (not silent). Restore code exists (safety copy "before_restore_..." first, validate first) but has NO screen yet: the Data & Backup page with preview + two-tap confirm comes in v0.4.1.
+- Code: NEW typing/BackupCodec.java (pure, tested), NEW tools/BackupTest.java (32 checks), NEW BackupStore.kt; 2 hooks marked "v0.4.0" (MgbIme.onStartInputView = one int read per keyboard open, SettingsActivity.onCreate); app/build.gradle.kts (0.4.0).
+- Prefs NEW: bk_auto(bool,true) bk_keep(int,5) bk_day(int,0) bk_last(str,"") schema_v(int,1). bk_* and update keys are NOT inside the backup. No new permission, no manifest change, no network.
+- Speed: nothing on the key-press path; no timer / service; the write runs on a Thread.
+BROKE: nothing intended.
+NOT tested: Kotlin compile (GitHub Actions), real phone file write, Thread timing, AtomicFile on old Android 7.
+TESTED here: BackupTest 32/32, all 16 Java tests green, bracket balance of the 3 Kotlin files.
+Rollback: pref bk_auto = false (no screen yet: remove the 2 hooks to stop it). Code: delete BackupStore.kt, BackupCodec.java, BackupTest.java + the 2 lines marked "v0.4.0".
+Files: BackupCodec.java, BackupStore.kt, BackupTest.java (new), MgbIme.kt, SettingsActivity.kt, app/build.gradle.kts, CHANGELOG.txt, CHECKLIST.txt, HANDOFF_Jabra-Keyboard_v0.4.0.txt.
+
 v0.3.8 - NEW: Clipboard Merge + Paste in 1 line
 - Clipboard > Manage: a second row under the action row. "Merge -> 1 clip" saves all ticked clips (tick order, blank line between) as ONE new clip in Recent and leaves select mode (2 or more needed). "Paste in 1 line" types the ticked clips joined by a single space with all line breaks removed.
 - Code: ClipboardFeature.kt only (selectBar(): second row, returns a vertical wrapper). No new setting / key / permission.

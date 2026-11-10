@@ -16,6 +16,8 @@ class SettingsActivity : Activity() {
     private lateinit var status: TextView
     private lateinit var updBtn: Button
     private var pending: Updater.Info? = null
+    var refreshData: (() -> Unit)? = null   // v0.4.1 Data & Backup page hooks
+    var dataMsg: ((String) -> Unit)? = null
 
     private fun dp(v: Int): Int = (v * resources.displayMetrics.density).toInt()
 
@@ -54,6 +56,7 @@ class SettingsActivity : Activity() {
         col.addView(test)
 
         try { col.addView(SettingsGroups.build(this)) } catch (_: Throwable) { }   // v0.1.7: settings in 5 groups
+        try { BackupStore.autoIfDue(this) } catch (_: Throwable) { }   // v0.4.0: auto backup once per day (background Thread)
 
         col.addView(btn("Check for updates") { checkUpdate() })
 
@@ -67,6 +70,53 @@ class SettingsActivity : Activity() {
         val sv = ScrollView(this)
         sv.addView(col)
         setContentView(sv)
+    }
+
+    // ---- v0.4.1: Data & Backup file picker (system picker, no storage permission) ----
+    fun exportBackup() {
+        try {
+            val i = Intent(Intent.ACTION_CREATE_DOCUMENT)
+            i.addCategory(Intent.CATEGORY_OPENABLE); i.type = "application/json"
+            i.putExtra(Intent.EXTRA_TITLE, "jabra_backup_" + java.text.SimpleDateFormat("yyyyMMdd_HHmm", java.util.Locale.US).format(java.util.Date()) + ".json")
+            startActivityForResult(i, 4101)
+        } catch (_: Throwable) { dataMsg?.invoke("Could not open the file picker") }
+    }
+
+    fun importBackup() {
+        try {
+            val i = Intent(Intent.ACTION_OPEN_DOCUMENT)
+            i.addCategory(Intent.CATEGORY_OPENABLE); i.type = "*/*"
+            startActivityForResult(i, 4102)
+        } catch (_: Throwable) { dataMsg?.invoke("Could not open the file picker") }
+    }
+
+    @Deprecated("Deprecated in Java")
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        try {
+            if ((requestCode != 4101 && requestCode != 4102) || resultCode != RESULT_OK) return
+            val uri = data?.data ?: return
+            val app = applicationContext
+            Thread {
+                var m = "Failed"
+                try {
+                    if (requestCode == 4101) {
+                        val text = BackupStore.collect(app)
+                        if (text == null) m = "Export failed (could not read data)"
+                        else if (text.toByteArray(Charsets.UTF_8).size > com.mgb.keyboard.typing.BackupCodec.MAX_BYTES) m = "Export refused: data is bigger than 5 MB"
+                        else {
+                            contentResolver.openOutputStream(uri, "wt")!!.use { it.write(text.toByteArray(Charsets.UTF_8)) }
+                            m = "Exported."
+                        }
+                    } else {
+                        val bytes = contentResolver.openInputStream(uri)!!.use { it.readBytes() }
+                        m = if (bytes.size > com.mgb.keyboard.typing.BackupCodec.MAX_BYTES) "Import stopped: file is bigger than 5 MB. Nothing changed."
+                            else BackupStore.importText(app, String(bytes, Charsets.UTF_8))
+                    }
+                } catch (_: Throwable) { m = if (requestCode == 4101) "Export failed" else "Import failed. Nothing changed." }
+                runOnUiThread { try { dataMsg?.invoke(m); refreshData?.invoke() } catch (_: Throwable) { } }
+            }.start()
+        } catch (_: Throwable) { }
     }
 
     private fun checkUpdate() {

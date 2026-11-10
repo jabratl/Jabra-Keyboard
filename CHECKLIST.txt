@@ -121,3 +121,15 @@ O) v0.3.2 word delete
  [ ] Select some text, hold Backspace: selection goes first, then words.
  [ ] Gear > More settings: "Word delete" toggle OFF -> hold = old speed-up only, no word jump. Same toggle in app screen > Typing.
  [ ] Bangla (Avro / Probhat) text and emoji: words delete cleanly, no half emoji left.
+
+P) v0.4.0 backup core (nothing looks different)
+ [ ] Install, open any app and type: keyboard opens and types as fast as before (no delay on first open of the day).
+ [ ] After one keyboard open (or opening the Jabra app screen) a backup file is made once per day. No screen yet: Android Studio / device file explorer: Android/data is hidden, so just check nothing crashes and no error message (toast "Backup failed") appears.
+ [ ] Clipboard, formatter presets, theme, toolbar all still the same after the update.
+
+Q) v0.4.1 Data & Backup (app screen)
+ [ ] App screen: new group "Data & Backup" opens. Counts look right (clips, pinned, presets).
+ [ ] Backup now: message "Backup saved", a new file shows in the Backups list.
+ [ ] Export to file: picker opens, save to Downloads, "Exported." Import from file: pick that file, "Imported", it shows in the list.
+ [ ] Restore: tap once = date + counts, tap again = "Restored. Close and reopen the keyboard". Change a setting before, check it is back after.
+ [ ] Delete needs two taps. Import a random text file = "not a valid Jabra backup", nothing changed.
