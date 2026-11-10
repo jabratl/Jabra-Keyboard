@@ -47,6 +47,7 @@ class JabraPrefs(private val ctx: Context) {
 
     /** Key height in dp. Level 1 (default) = 48dp = exactly the old size. */
     fun keyHeightDp(land: Boolean): Int {
+        try { val pct = int(SizeKeys.heightKey(land), -1); if (com.mgb.keyboard.typing.SizePct.heightValid(pct)) return com.mgb.keyboard.typing.SizePct.heightDp(pct) } catch (_: Throwable) { }   // v0.1.4: height % (unset = old levels below)
         val lv = int(heightKey(land), 1)
         val i = if (lv < 0) 0 else if (lv > 3) 3 else lv
         return intArrayOf(40, 48, 56, 64)[i]
@@ -248,6 +249,7 @@ class JabraPanels(private val ctx: Context, private val host: JabraHost) {
         val b = pk("", 1f) { btn ->
             val nv = (prefs.int(k, 1).coerceIn(0, 3) + 1) % 4
             prefs.setInt(k, nv)
+            try { prefs.setInt(SizeKeys.heightKey(land), -1) } catch (_: Throwable) { }   // v0.1.4: old Height button works again (clears the height %)
             btn.text = "Height: " + names[nv] + tail
         }
         b.text = "Height: " + names[cur] + tail

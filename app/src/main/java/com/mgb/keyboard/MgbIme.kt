@@ -45,6 +45,7 @@ class MgbIme : InputMethodService() {
     private val panels by lazy { JabraPanels(this, host) }
     private val morePanel by lazy { MorePanel(this, host) }   // v0.0.9 "More settings" page
     private val emojiPanel by lazy { EmojiPanel(this, host) }   // v0.1.0 emoji panel
+    private val sizePanel by lazy { SizePanel(this, host) }   // v0.1.4 "Size" page
     private val typingPanel by lazy { TypingPanel(this, host) }   // v0.1.1 "Typing options" page
     private val spaceHelper by lazy { SpaceHelper(prefs) }   // v0.1.1 double space
     private val switcher by lazy { ImeSwitcher(this) }   // v0.1.1 Globe / Voice key
@@ -422,7 +423,7 @@ class MgbIme : InputMethodService() {
     private fun showPanel(name: String) {
         val c = container ?: return
         commitWord()
-        val v = try { if (name == "clipboard") clipPanel.build() else if (name == "format") fmtPanel.build() else if (name == "more") morePanel.build() else if (name == "emoji") emojiPanel.build() else if (name == "typing") typingPanel.build() else panels.build(name) } catch (_: Throwable) { null }   // v0.0.8: "format"; v0.1.0: "emoji"; v0.1.1: "typing"
+        val v = try { if (name == "clipboard") clipPanel.build() else if (name == "format") fmtPanel.build() else if (name == "more") morePanel.build() else if (name == "emoji") emojiPanel.build() else if (name == "typing") typingPanel.build() else if (name == "size") sizePanel.build() else panels.build(name) } catch (_: Throwable) { null }   // v0.0.8: "format"; v0.1.0: "emoji"; v0.1.1: "typing"
         if (v == null) { showLetters(); return }
         try { JabraOneHand.apply(this, prefs, v) } catch (_: Throwable) { }   // v0.1.0
         c.removeAllViews()

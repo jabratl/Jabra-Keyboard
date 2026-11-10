@@ -175,6 +175,7 @@ class MorePanel(private val ctx: Context, private val host: JabraHost) {
         root.addView(note("Enter action: Enter does Send / Search / Go when the app asks for it. Long-press ?123 also opens the keyboard picker. Theme / One-hand: tap, then ABC (apply). Emoji: long-press the , key."))
 
         try { val rt = row(); rt.addView(pk("Typing options >", 1f) { host.showPanel("typing") }); root.addView(rt) } catch (_: Throwable) { }   // v0.1.1
+        try { val rz = row(); rz.addView(pk("Size (height / one-hand width) >", 1f) { host.showPanel("size") }); root.addView(rz) } catch (_: Throwable) { }   // v0.1.4
         // v0.1.2: PC mode rows (mode key = first key of the edit bar)
         try {
             val rm = row()

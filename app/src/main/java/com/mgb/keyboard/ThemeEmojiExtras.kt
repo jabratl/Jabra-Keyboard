@@ -64,7 +64,7 @@ object JabraOneHand {
     fun apply(ctx: Context, p: JabraPrefs, v: View) {
         val m = mode(p)
         if (m == 0) return
-        val frac = if (JabraPrefs.isLand(ctx)) 0.6f else 0.82f
+        val frac = try { com.mgb.keyboard.typing.SizePct.widthFrac(p.int(SizeKeys.widthKey(JabraPrefs.isLand(ctx)), -1), JabraPrefs.isLand(ctx)) } catch (_: Throwable) { if (JabraPrefs.isLand(ctx)) 0.6f else 0.82f }   // v0.1.4: width % (unset = 0.82 / 0.6 as before)
         val w = (ctx.resources.displayMetrics.widthPixels * frac).toInt()
         v.layoutParams = FrameLayout.LayoutParams(w, FrameLayout.LayoutParams.WRAP_CONTENT, if (m == 1) Gravity.START else Gravity.END)
     }

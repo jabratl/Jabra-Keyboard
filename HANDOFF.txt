@@ -1,4 +1,4 @@
-JABRA KEYBOARD - HANDOFF v0.1.3  (newest on top; paste this file at the start of the next chat)
+JABRA KEYBOARD - HANDOFF v0.1.4  (newest on top; paste this file at the start of the next chat)
 READ ONLY the part above the first "PREVIOUS HANDOFF" line (sections 0-9). Everything below is history.
 =======================================================================================
 
@@ -72,13 +72,13 @@ READ ONLY the part above the first "PREVIOUS HANDOFF" line (sections 0-9). Every
   v0.1.1 typing prefs: double-space = period, double-space = tab, key long-press delay, space-swipe cursor speed, Globe key (keyboard switch) show/hide, Voice key show/hide (opens the PHONE's system voice typing, NOT own recording), Emoji key show/hide   DONE in code (NOT tested on phone)   <- this zip (jabra_v0_1_1.zip)
   v0.1.2 DONE in code (NOT tested on phone) <- jabra_v0_1_2.zip. PC Mode (see 2b) + MODE ICON KEY: one tap = extra rows: Esc Tab Ctrl Alt (sticky), F1-F12, arrows, Home/End/PgUp/PgDn/Del/Ins, Ctrl+C/V/X/A/Z. Mode key shows an own-drawn ANDROID-style icon in Phone mode and an own-drawn PC icon in PC mode
   v0.1.3 DONE in code (NOT tested on phone) <- jabra_v0_1_3.zip: popup on keypress (key_popup) + Large number row (numrow_large), both in Typing options. "Hide long-press hints" SKIPPED: no hints exist, user decision needed.
-  v0.1.4 keyboard height % + one-hand width % (portrait AND landscape each). OLD keys kh_p / kh_l and "onehand" must keep working (new keys only, old ones read as fallback)
+  v0.1.4 DONE in code (NOT tested on phone) <- jabra_v0_1_4.zip. keyboard height % + one-hand width % (portrait AND landscape each). OLD keys kh_p / kh_l and "onehand" must keep working (new keys only, old ones read as fallback)
   v0.1.5 Jabra look (round-corner keys, own colour for function keys, pill space key, own popup) + logo (adaptive vector in code) + key style, "Classic" = old look as fallback
   v0.1.6 settings page in 5 groups like Ridmik (Languages & layouts / Typing / Look / Keys & gestures / Clipboard & tools)
   v0.2.0 final test round: all unit tests, bracket + compile check (GitHub build), ONE full checklist, HANDOFF cleaned (old PREVIOUS parts removed)
   Each version: ON/OFF setting, rollback step, CHANGELOG entry, tests that can run here.
 
-4) STATUS (v0.1.3 added on top of v0.1.2 on the full v0.1.1 repo zip (Jabra-Keyboard-main__1_.zip): all 7 Java tests pass, bracket balance ok; NOT tested: Kotlin compile, phone.) (v0.1.2 added on top of v0.1.1: tested here PcTest 19/19 + DoubleSpaceTest 37/37, bracket balance of 9 changed/new files, code-only diff vs v0.1.1 (nothing removed); NOT tested: Kotlin compile, phone, 360/1280 px render. NOTE: Jabra-Keyboard-main.zip received in the v0.1.2 session is still the v0.0.9 repo; v0.1.0 + v0.1.1 + v0.1.2 files come from the jabra_v0_1_x zips.) (v0.1.1 added on top of v0.1.0: tested here DoubleSpaceTest 37/37 + all older Java tests, bracket balance of 21 files, line-by-line diff vs v0.1.0; NOT tested: Kotlin compile, phone). (v0.1.0 added on top of v0.0.9; v0.1.0 tested here: all 6 Java tests pass (EmojiTest 1585/1585 ...), bracket balance of all 18 source files, every hook read against the real v0.0.9 repo; Dark theme icon/note colour bug FOUND + FIXED (JabraIcons.putThemed). NOT tested: Kotlin compile, phone. Full repo zip (Jabra-Keyboard-main.zip, v0.0.9) was received in the v0.1.0 session: now ALL files are known). (v0.0.9 added on top of v0.0.8; v0.0.4 + v0.0.5 were delivered earlier in jabra_v0_0_5.zip, v0.0.6 in jabra_v0_0_6.zip; USER HAS NOT YET CONFIRMED ANY OF THEM BUILD/RUN)
+4) STATUS (v0.1.4 added on top of v0.1.3: all 8 Java tests pass (SizePct 28/28 new), bracket balance ok; NOT tested: Kotlin compile, phone.) (v0.1.3 added on top of v0.1.2 on the full v0.1.1 repo zip (Jabra-Keyboard-main__1_.zip): all 7 Java tests pass, bracket balance ok; NOT tested: Kotlin compile, phone.) (v0.1.2 added on top of v0.1.1: tested here PcTest 19/19 + DoubleSpaceTest 37/37, bracket balance of 9 changed/new files, code-only diff vs v0.1.1 (nothing removed); NOT tested: Kotlin compile, phone, 360/1280 px render. NOTE: Jabra-Keyboard-main.zip received in the v0.1.2 session is still the v0.0.9 repo; v0.1.0 + v0.1.1 + v0.1.2 files come from the jabra_v0_1_x zips.) (v0.1.1 added on top of v0.1.0: tested here DoubleSpaceTest 37/37 + all older Java tests, bracket balance of 21 files, line-by-line diff vs v0.1.0; NOT tested: Kotlin compile, phone). (v0.1.0 added on top of v0.0.9; v0.1.0 tested here: all 6 Java tests pass (EmojiTest 1585/1585 ...), bracket balance of all 18 source files, every hook read against the real v0.0.9 repo; Dark theme icon/note colour bug FOUND + FIXED (JabraIcons.putThemed). NOT tested: Kotlin compile, phone. Full repo zip (Jabra-Keyboard-main.zip, v0.0.9) was received in the v0.1.0 session: now ALL files are known). (v0.0.9 added on top of v0.0.8; v0.0.4 + v0.0.5 were delivered earlier in jabra_v0_0_5.zip, v0.0.6 in jabra_v0_0_6.zip; USER HAS NOT YET CONFIRMED ANY OF THEM BUILD/RUN)
   PROVED BY USER earlier: GitHub build + signed APK + install + typing works (v0.0.3 build).
   v0.0.9 tested here: tools/TypingTest.java 27/27 (ShiftState + EnterAction), bracket balance of all Kotlin. NOT tested: Kotlin compile, everything on phone.
   v0.0.8 tested here: formatter engine vs ORIGINAL JS (node) 1500/1500 random cases identical (tools/FormatterTest.java + tools/FormatterDiffGen.js), HTML reader, ClipList 18/18, bracket balance of Kotlin. NOT tested: Kotlin compile, org.json, everything on phone.
@@ -94,6 +94,11 @@ READ ONLY the part above the first "PREVIOUS HANDOFF" line (sections 0-9). Every
   SettingsActivity.kt / Updater.kt were NOT in the v0.0.3 zip I received and are NOT touched. New settings live INSIDE the keyboard (? 123 -> gear).
 
 5) HOW IT WORKS (v0.1.1 first, then v0.1.0, then v0.0.9 typing basics, then v0.0.8 formatter, then v0.0.7 icons, then v0.0.6; then v0.0.4 / v0.0.5; v0.0.3 part is below under PREVIOUS)
+  v0.1.4 size %:
+    typing/SizePct.java  pure Java: heightDp(pct) (48 dp base), pctFromDp, widthFrac(pct, land) (unset -> 0.82 / 0.60), step(cur, dir, min, max, 5) snaps + clamps. UNSET = -1.
+    SizePrefs.kt         SizeKeys (kh_pct_p / kh_pct_l height %, 70..150; oh_w_p / oh_w_l one-hand width %, 50..95) + SizePanel (route showPanel("size"), 4 rows [-][label][+], Reset sizes, < More settings, ABC (apply)).
+    Hooks "v0.1.4": JabraExtras.kt (JabraPrefs.keyHeightDp: % first, else old kh_p / kh_l levels; old Height button clears the % key), ThemeEmojiExtras.kt (JabraOneHand.apply width, old values as catch fallback), MgbIme.kt (sizePanel lazy + route "size"), TypingExtras.kt (button "Size (height / one-hand width) >" in More settings).
+    Re-run test: java -m jdk.compiler/com.sun.tools.javac.Main -encoding UTF-8 -d out app/src/main/java/com/mgb/keyboard/typing/*.java tools/SizePctTest.java ; java -cp out SizePctTest
   v0.1.3 key popup + large number row:
     KeyPopup.kt  object KeyPopup.attach(button, prefs): OnTouchListener (always returns false) -> on DOWN shows a PopupWindow bubble (white, 26sp label, not touchable/focusable) above the key if pref key_popup; dismiss on UP/CANCEL/detach.
     Hooks "v0.1.3": MgbIme.letter() (attach), buildKeyboard number row (pref numrow_large: height keyDp()+12, textSize 18), TypingPrefs.kt TypingPanel (row with 2 toggles + note).
@@ -202,7 +207,8 @@ READ ONLY the part above the first "PREVIOUS HANDOFF" line (sections 0-9). Every
   Build env here has NO Gradle/Android SDK/network: Kotlin cannot be compiled here. Java engine can (see above).
   Permissions in app: INTERNET (only on "Check for updates"), REQUEST_INSTALL_PACKAGES. Nothing else.
 
-8) TEST CHECKLIST for user (v0.1.3 first, then v0.1.2, then v0.1.1, then v0.1.0, then v0.0.9, then v0.0.8, then v0.0.7, v0.0.6, v0.0.4 + v0.0.5)
+8) TEST CHECKLIST for user (v0.1.4 first, then v0.1.3, then v0.1.2, then v0.1.1, then v0.1.0, then v0.0.9, then v0.0.8, then v0.0.7, v0.0.6, v0.0.4 + v0.0.5)
+  v0.1.4: More settings -> Size > : Height portrait + (a few taps) -> ABC (apply): keys taller; rotate phone: landscape has its own Height. One-hand Left (More settings) + One-hand width - : keyboard narrower on that side. Reset sizes -> back to old look. Old gear -> Height button still cycles Small..XL (and wins again after you tap it). Check 70% and 150% (is anything cut off? PC rows + number row at 150%).
   v0.1.3: Typing options -> Key popup ON -> hold a letter key: a bubble with the letter shows above it (check top letter row, Dark theme). Large number row ON -> ABC (apply) -> number row taller. Both OFF = same as v0.1.2.
   v0.1.2: Edit bar: first key = robot-head icon (Phone mode). Tap -> keyboard shows 4 PC rows above the letters and the key becomes a monitor icon; tap again -> back to Phone.
           In Termux / Chrome / a code editor: Esc, Tab, F-keys, arrows, Home/End, PgUp/PgDn, Del work. Tap Ctrl (light blue) then letter "c" -> Ctrl+C key event; double-tap Ctrl (dark blue) = lock until tapped again. ^A ^C ^V ^X = select all / copy / paste / cut, ^Z = undo.
@@ -240,6 +246,7 @@ READ ONLY the part above the first "PREVIOUS HANDOFF" line (sections 0-9). Every
           Vibrate/Sound toggles; Number row OFF -> row disappears.
 
 8b) ROLLBACK
+  Only v0.1.4 off: More settings -> Size > -> Reset sizes (no code change; old Height levels + 82% / 60% width come back). Code level: delete SizePrefs.kt, typing/SizePct.java, tools/SizePctTest.java and the lines marked "v0.1.4" (JabraExtras.kt 2, ThemeEmojiExtras.kt 1 -> restore: val frac = if (JabraPrefs.isLand(ctx)) 0.6f else 0.82f, MgbIme.kt 2 (lazy + route), TypingExtras.kt 1). Easiest: re-apply jabra_v0_1_3.zip files.
   Only v0.1.3 off: Typing options -> Key popup OFF + Large number row OFF (no code change). Code level: delete KeyPopup.kt and the 3 lines marked "v0.1.3" (MgbIme.kt 2, TypingPrefs.kt 1 + note text). Easiest: re-apply jabra_v0_1_2.zip files.
   Only v0.1.2 off: More settings -> Mode key OFF + Mode: Phone (no code change). Code level: delete PcMode.kt, typing/PcState.java, tools/PcTest.java, the 2 icon branches + 2 names in JabraIcons.kt and the lines marked "v0.1.2" (MgbIme.kt: 2 fields, pcIo/pcSend/toggleMode/modeKey block, onLetter line, 3 buildKeyboard lines, onStartInputView line; TypingExtras.kt: the v0.1.2 try-block). Easiest: re-apply jabra_v0_1_1.zip files.
   Only v0.1.1 off: More settings -> Typing options: Double-space period OFF, tab OFF, Long-press System, Cursor speed Normal, Globe/Voice/Emoji key OFF (no code change). Code level: delete TypingPrefs.kt, typing/DoubleSpace.java, typing/TypingLevels.java, tools/DoubleSpaceTest.java and the lines marked "v0.1.1"
@@ -260,6 +267,8 @@ READ ONLY the part above the first "PREVIOUS HANDOFF" line (sections 0-9). Every
   Only Probhat off: do not long-press language key (default stays Avro); code level: delete probhat/ProbhatLayout.java + hooks marked "v0.0.4".
 
 9) NEXT
+  00000. v0.1.4 DONE. FIRST: upload jabra_v0_1_4.zip (+ v0.1.2 / v0.1.3 if not yet), check build (v0.0.9 - v0.1.4 never built: send the FIRST error only), test v0.1.4 (see 8).
+      NEXT TOPIC = v0.1.5 Jabra look (round-corner keys, own colour for function keys, pill space key, own popup) + logo (adaptive vector in code, manifest android:icon, res/drawable + res/mipmap-anydpi-v26) + "Classic" = old look fallback. NOTE: the manifest is not yet seen in a zip; it is in the full repo zip (Jabra-Keyboard-main__1_.zip) - read it first.
   0000. v0.1.3 DONE. FIRST: upload jabra_v0_1_3.zip (+ v0.1.2 if not yet), check build (v0.0.9 - v0.1.3 never built: send the FIRST error only), test v0.1.3 (see 8).
       QUESTION for user: "Hide long-press hints" has nothing to hide. Choose: (a) drop it, (b) add small hint letters / long-press alternate characters on keys (bigger version, own topic, then the hide setting makes sense). Default if no answer: (a).
       NEXT TOPIC = v0.1.4 keyboard height % + one-hand width % (portrait AND landscape; old kh_p / kh_l / onehand keys must keep working as fallback).

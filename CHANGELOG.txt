@@ -1,3 +1,15 @@
+v0.1.4 - keyboard height % + one-hand width % (portrait AND landscape)
+- NEW page: gear -> More settings -> "Size (height / one-hand width) >". Four lines with - / + (steps of 5%): Height portrait, Height landscape (70..150%, 100% = 48 dp = the old Medium), One-hand width portrait, One-hand width landscape (50..95%). "Reset sizes" = back to old behaviour. Then ABC (apply).
+- Old settings keep working: if a new % is not set, the old Height levels (kh_p / kh_l: Small 40 / Medium 48 / Large 56 / XL 64 dp) and the old one-hand widths (82% portrait, 60% landscape) are used exactly as before. The page shows the matching % for the old levels (83 / 100 / 117 / 133). The old Height button in the gear panel still works: tapping it clears the height % of that orientation. One-hand Off / Left / Right (pref onehand) is unchanged; the width % only sets how wide it is.
+- Code: typing/SizePct.java (new, pure Java, tested), SizePrefs.kt (new: SizeKeys + SizePanel), tools/SizePctTest.java (new); hooks marked "v0.1.4": JabraExtras.kt (keyHeightDp reads the % first; old Height button clears it), ThemeEmojiExtras.kt (JabraOneHand width), MgbIme.kt (lazy sizePanel + showPanel route "size"), TypingExtras.kt (1 button), app/build.gradle.kts (0.1.4).
+- Prefs NEW: kh_pct_p(int,-1) kh_pct_l(int,-1) oh_w_p(int,-1) oh_w_l(int,-1); -1 = not set. Old keys untouched.
+
+WHY: roadmap v0.1.4 (Ridmik-like keyboard height % + one-hand width % for portrait and landscape each).
+BROKE: nothing intended. Nothing set = exactly v0.1.3. Only visible change: More settings has one more button.
+NOT tested: Gradle/Kotlin compile (v0.0.9 - v0.1.4 unbuilt = biggest risk), everything on a phone: real key heights at 70% / 150% (letters at 150% + PC rows + number row may be very tall on small screens; the emoji panel grid is 4 key-heights high), one-hand width 50% (keys very narrow), rotation while the Size page is open, Dark theme look of the page, 360 / 1280 px.
+TESTED here: tools/SizePctTest.java 28/28 (percent to dp, old-level round trip, width fallback 82 / 60, step snapping and clamping); all older Java tests pass (Pc 19, DoubleSpace 37, Typing 27, Emoji 1585, Extras 133, Clip 18, Avro 43); bracket balance of all files; code-only diff vs the v0.1.1 repo removes only the 2 lines that were replaced (one-hand width line is kept as the catch fallback, showPanel route chain extended).
+Files: typing/SizePct.java, SizePrefs.kt, tools/SizePctTest.java (new), JabraExtras.kt, ThemeEmojiExtras.kt, MgbIme.kt, TypingExtras.kt, app/build.gradle.kts, CHANGELOG.txt, HANDOFF.txt.
+
 v0.1.3 - Key popup + Large number row
 - NEW "Key popup" (key_popup, default OFF): while you hold a LETTER key, a small white bubble with the letter shows above it (follows shift / Probhat labels). Works at once, no ABC (apply) needed. The key itself (click, haptic, typing) is not touched: the touch listener always returns false.
 - NEW "Large number row" (numrow_large, default OFF): number row keys are 12 dp taller with bigger digits. Needs ABC (apply).
