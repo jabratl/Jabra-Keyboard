@@ -633,7 +633,9 @@ class MgbIme : InputMethodService() {
             if (prefs.bool("numrow", true)) {
                 val nr = row()
                 "1234567890".forEach { d -> nr.addView(key(d.toString(), 1f) { commitWord(); typeText(d.toString()) }) }
-                try { if (prefs.bool("numrow_large", false)) for (i in 0 until nr.childCount) { (nr.getChildAt(i).layoutParams as LinearLayout.LayoutParams).height = dp(keyDp() + 12); (nr.getChildAt(i) as Button).textSize = 18f } } catch (_: Throwable) { }   // v0.1.3: Large number row (setting numrow_large)
+                try { val lp = prefs.int("letter_pct", -1); if (com.mgb.keyboard.typing.SizePct.letterValid(lp)) for (i in 0 until nr.childCount) (nr.getChildAt(i) as Button).textSize = com.mgb.keyboard.typing.SizePct.letterSp(lp) } catch (_: Throwable) { }   // v0.3.4: number row follows Letter size %
+                try { if (prefs.bool("letter_bold", false)) for (i in 0 until nr.childCount) { val nb = nr.getChildAt(i) as Button; nb.setTypeface(nb.typeface, android.graphics.Typeface.BOLD) } } catch (_: Throwable) { }   // v0.3.4: and Bold letters
+                try { if (prefs.bool("numrow_large", false)) for (i in 0 until nr.childCount) { (nr.getChildAt(i).layoutParams as LinearLayout.LayoutParams).height = dp(keyDp() + 12); (nr.getChildAt(i) as Button).textSize = 18f * (try { val lq = prefs.int("letter_pct", -1); if (com.mgb.keyboard.typing.SizePct.letterValid(lq)) lq / 100f else 1f } catch (_: Throwable) { 1f }) } } catch (_: Throwable) { }   // v0.1.3: Large number row (setting numrow_large)
                 root.addView(nr)
             }
         } catch (_: Throwable) { }

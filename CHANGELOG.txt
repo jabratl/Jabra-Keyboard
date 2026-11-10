@@ -1,3 +1,12 @@
+v0.3.4 - FIX: number row / symbols / number pad follow Letter size and Bold letters
+- FIX: gear > More settings > Size > "Letter size" (and "Bold letters") changed only the alphabet keys. The number row (1-0), the symbols page and the number pad stayed at the old small size, so digits looked small next to big letters. ROOT CAUSE: letter_pct / letter_bold were read only in MgbIme.letter(); number row and the symbols / numpad keys (JabraPanels.pk) never read them.
+- Now: number row, symbols keys and number pad keys use the same Letter size % (14 sp x %) and Bold. "Large number row" stays larger (18 sp x %). Letter size unset / Bold OFF = exactly the old look. Function keys (ABC, gear, Enter, backspace icon) and the edit bar are NOT scaled.
+- Code: MgbIme.kt (number row, 2 try lines + 1 changed line), JabraExtras.kt (new cs() helper + 6 call sites), app/build.gradle.kts (0.3.4). No new setting / key / permission.
+BROKE: nothing intended. Remove lines marked "v0.3.4" to go back.
+NOT tested: Kotlin compile (GitHub Actions), phone: Letter size 150-220 % (do digits fit the key width / height?), Bold, Large number row + Letter size, Dark + Light.
+TESTED here: bracket balance of the 2 Kotlin files (no Kotlin compiler in this session).
+Files: MgbIme.kt, JabraExtras.kt, app/build.gradle.kts, CHANGELOG.txt, HANDOFF_Jabra-Keyboard_v0.3.4.txt (new, replaces ..._v0.3.3.txt).
+
 v0.3.3 - FIX: keyboard jumps / cut off when More settings (tall panels) opens
 - FIX: in a browser text bar (claude.ai on Chrome, Android 16) tapping gear > More settings made the page jump up and the bottom rows (Edit toolbar, Size ...) went below the screen. ROOT CAUSE: More settings has ~13 rows, taller than the letters keyboard, so the keyboard window grew past the free screen part and the app was squeezed.
 - Now: panels settings / more / typing / size / themes are capped to the letters-keyboard height and SCROLL inside (swipe up/down). A panel that already fits is not wrapped = looks the same as before.

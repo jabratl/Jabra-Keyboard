@@ -179,6 +179,13 @@ class JabraPanels(private val ctx: Context, private val host: JabraHost) {
         return r
     }
 
+    /** v0.3.4: character / digit keys of symbols + number pad follow Letter size % and Bold letters (unset = old look). */
+    private fun cs(b: Button): Button {
+        try { val lp = prefs.int("letter_pct", -1); if (com.mgb.keyboard.typing.SizePct.letterValid(lp)) b.textSize = com.mgb.keyboard.typing.SizePct.letterSp(lp) } catch (_: Throwable) { }
+        try { if (prefs.bool("letter_bold", false)) b.setTypeface(b.typeface, android.graphics.Typeface.BOLD) } catch (_: Throwable) { }
+        return b
+    }
+
     private fun symbols(): View {
         val root = rootView()
         val pages = if (symPage == 0)
@@ -188,7 +195,7 @@ class JabraPanels(private val ctx: Context, private val host: JabraHost) {
 
         for (i in 0..1) {
             val r = row()
-            pages[i].forEach { ch -> r.addView(pk(ch.toString(), 1f) { sym(ch.toString()) }) }
+            pages[i].forEach { ch -> r.addView(cs(pk(ch.toString(), 1f) { sym(ch.toString()) })) }
             root.addView(r)
         }
         val r3 = row()
@@ -196,7 +203,7 @@ class JabraPanels(private val ctx: Context, private val host: JabraHost) {
             symPage = 1 - symPage
             host.showPanel("symbols")
         })
-        pages[2].forEach { ch -> r3.addView(pk(ch.toString(), 1f) { sym(ch.toString()) }) }
+        pages[2].forEach { ch -> r3.addView(cs(pk(ch.toString(), 1f) { sym(ch.toString()) })) }
         r3.addView(repeatable(JabraIcons.putThemed(ctx, pk("⌫", 1.5f) { host.backspace() }, "back")))   // v0.0.7 + v0.0.9 hold-repeat
         root.addView(r3)
         root.addView(bottomRow(true))
@@ -213,15 +220,15 @@ class JabraPanels(private val ctx: Context, private val host: JabraHost) {
         val side = arrayOf("⌫", "-", ".")
         for (i in 0..2) {
             val r = row()
-            grid[i].forEach { s -> r.addView(pk(s, 1f) { sym(s) }) }
+            grid[i].forEach { s -> r.addView(cs(pk(s, 1f) { sym(s) })) }
             if (i == 0) r.addView(repeatable(JabraIcons.putThemed(ctx, pk(side[i], 1f) { host.backspace() }, "back")))   // v0.0.7 + v0.0.9 hold-repeat
-            else r.addView(pk(side[i], 1f) { sym(side[i]) })
+            else r.addView(cs(pk(side[i], 1f) { sym(side[i]) }))
             root.addView(r)
         }
         val r4 = row()
         r4.addView(pk("ABC", 1f) { host.showLetters() })
-        r4.addView(pk("+", 1f) { sym("+") })
-        r4.addView(pk("0", 1f) { sym("0") })
+        r4.addView(cs(pk("+", 1f) { sym("+") }))
+        r4.addView(cs(pk("0", 1f) { sym("0") }))
         r4.addView(JabraIcons.putThemed(ctx, pk("⏎", 1f) { host.commitWord(); host.enter() }, "enter"))   // v0.0.7
         root.addView(r4)
         return root
