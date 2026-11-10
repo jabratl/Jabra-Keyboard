@@ -150,7 +150,7 @@ jobs:
           echo "$MSG" >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@v4
         with:
-          name: MGB-apk
+          name: Jabra-Keyboard-apk
           path: app/build/outputs/apk/**/*.apk
       - name: Publish release
         env:
@@ -159,7 +159,7 @@ jobs:
           VER=$(grep -oP 'appVersionName = "\K[^"]+' app/build.gradle.kts)
           TAG="v${VER}-b${GITHUB_RUN_NUMBER}"
           APK=$(ls app/build/outputs/apk/*/*.apk | head -n1)
-          cp "$APK" "MGB-${TAG}.apk"
+          cp "$APK" "Jabra-Keyboard-${TAG}.apk"
           EXT=""
           if [ -d app/src/main/assets/ext ]; then
             EXT="MGB-ext-b${GITHUB_RUN_NUMBER}-n${MGB_NATIVE_HASH}.zip"
@@ -170,13 +170,13 @@ jobs:
           fi
           awk 'NR==1{next} /^[[:space:]]*$/{exit} {print}' CHANGELOG.txt > notes.txt || true
           [ -s notes.txt ] || echo "Build ${GITHUB_RUN_NUMBER}" > notes.txt
-          TITLE="MGB ${VER} (build ${GITHUB_RUN_NUMBER})"
+          TITLE="Jabra Keyboard ${VER} (build ${GITHUB_RUN_NUMBER})"
           if [ -n "${MGB_REVERTED_FROM:-}" ]; then
             # same code as the old release, but a NEW higher build number so Android / the in-app updater accept it as an update
             { echo "REVERT: this build has the source of ${MGB_REVERTED_FROM}"; cat notes.txt; } > notes2.txt && mv notes2.txt notes.txt
             TITLE="${TITLE} - revert to ${MGB_REVERTED_FROM}"
           fi
-          gh release create "$TAG" "MGB-${TAG}.apk" $EXT \
+          gh release create "$TAG" "Jabra-Keyboard-${TAG}.apk" $EXT \
             --title "$TITLE" \
             --notes-file notes.txt \
             --target "$(git rev-parse HEAD)"
