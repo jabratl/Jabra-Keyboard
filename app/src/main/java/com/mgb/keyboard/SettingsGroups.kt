@@ -2,9 +2,14 @@ package com.mgb.keyboard
 
 import android.content.Context
 import android.view.View
+import android.text.Editable
+import android.text.TextWatcher
 import android.widget.Button
+import android.widget.EditText
+import android.widget.HorizontalScrollView
 import android.widget.LinearLayout
 import android.widget.TextView
+import com.mgb.keyboard.typing.SettingsIndex
 import com.mgb.keyboard.typing.TypingLevels
 
 /**
@@ -39,60 +44,220 @@ object SettingsGroups {
             return b
         }
 
+        // ---- v0.4.2: row registry = search, recently changed, help line, reset group, undo last (all inside this file) ----
+        class Row(val key: String, val title: String, val group: String, val wrap: View,
+                  val refresh: () -> Unit, val setIdx: (Int) -> Unit, val cur: () -> Int, val def: Int)
+        class Grp(val name: String, val head: Button, val body: LinearLayout) {
+            var isOpen = false
+            val rows = ArrayList<Row>()
+            var resetBtn: Button? = null
+        }
+        val rows = ArrayList<Row>()
+        val groups = ArrayList<Grp>()
+        var curGrp: Grp? = null
+
+        val search = EditText(ctx)
+        search.hint = "Search settings (vibrate, theme, clipboard...)"
+        search.isSingleLine = true
+        val undoBtn = Button(ctx)
+        undoBtn.isAllCaps = false
+        undoBtn.visibility = View.GONE
+        val recentLabel = TextView(ctx)
+        recentLabel.text = "Recently changed (tap to find):"
+        recentLabel.setPadding(0, dp(6), 0, 0)
+        recentLabel.visibility = View.GONE
+        val recentScroll = HorizontalScrollView(ctx)
+        val recentRow = LinearLayout(ctx)
+        recentRow.orientation = LinearLayout.HORIZONTAL
+        recentScroll.addView(recentRow)
+        recentScroll.visibility = View.GONE
+        root.addView(search)
+        root.addView(undoBtn)
+        root.addView(recentLabel)
+        root.addView(recentScroll)
+
+        fun rowByKey(k: String): Row? = rows.firstOrNull { it.key == k }
+
+        fun refreshTop() {
+            try {
+                val last = SettingsIndex.parseLast(prefs.str("set_last", ""))
+                val lr = if (last != null) rowByKey(last[0]) else null
+                if (lr != null) { undoBtn.text = "Undo last change: " + lr.title; undoBtn.visibility = View.VISIBLE } else undoBtn.visibility = View.GONE
+                recentRow.removeAllViews()
+                var n = 0
+                for (k in SettingsIndex.parseRecent(prefs.str("set_recent", ""))) {
+                    val r = rowByKey(k) ?: continue
+                    val b = btn(r.title) { _ -> search.setText(r.title) }
+                    b.textSize = 12f
+                    recentRow.addView(b)
+                    n++
+                }
+                val show = if (n > 0) View.VISIBLE else View.GONE
+                recentLabel.visibility = show
+                recentScroll.visibility = show
+            } catch (_: Throwable) { }
+        }
+
+        fun noteChange(key: String, old: Int) {
+            try {
+                prefs.setStr("set_last", SettingsIndex.encodeLast(key, old))
+                prefs.setStr("set_recent", SettingsIndex.pushRecent(prefs.str("set_recent", ""), key))
+                refreshTop()
+            } catch (_: Throwable) { }
+        }
+
+        fun undoLast() {
+            val last = SettingsIndex.parseLast(prefs.str("set_last", "")) ?: return
+            val r = rowByKey(last[0]) ?: return
+            r.setIdx(last[1].toInt())
+            r.refresh()
+            prefs.setStr("set_last", "")
+            refreshTop()
+        }
+        undoBtn.setOnClickListener { try { undoLast() } catch (_: Throwable) { } }
+
+        fun addRow(box: LinearLayout, key: String, title: String, b: Button, refresh: () -> Unit, setIdx: (Int) -> Unit, cur: () -> Int, def: Int) {
+            val wrap = LinearLayout(ctx)
+            wrap.orientation = LinearLayout.VERTICAL
+            wrap.addView(b)
+            val h = SettingsIndex.help(key)
+            if (h.isNotEmpty()) {
+                val t = TextView(ctx)
+                t.text = h
+                t.textSize = 12f
+                t.setTextColor(0xFF888888.toInt())
+                t.setPadding(dp(8), 0, dp(8), dp(4))
+                wrap.addView(t)
+            }
+            box.addView(wrap)
+            val r = Row(key, title, curGrp?.name ?: "", wrap, refresh, setIdx, cur, def)
+            rows.add(r)
+            curGrp?.rows?.add(r)
+        }
+
+        fun applySearch(q: String) {
+            val query = q.trim()
+            val on = query.isNotEmpty()
+            val entries = ArrayList<SettingsIndex.Entry>()
+            for (r in rows) entries.add(SettingsIndex.Entry(r.key, r.title, SettingsIndex.help(r.key), r.group))
+            val hit = HashSet<String>()
+            for (e in SettingsIndex.search(entries, query)) hit.add(e.key)
+            for (r in rows) r.wrap.visibility = if (!on || hit.contains(r.key)) View.VISIBLE else View.GONE
+            for (g in groups) {
+                val any = g.rows.any { hit.contains(it.key) }
+                if (!on) {
+                    g.head.visibility = View.VISIBLE
+                    g.body.visibility = if (g.isOpen) View.VISIBLE else View.GONE
+                    g.head.text = (if (g.isOpen) "\u25BC  " else "\u25B6  ") + g.name
+                    g.resetBtn?.visibility = View.VISIBLE
+                } else {
+                    g.head.visibility = if (any) View.VISIBLE else View.GONE
+                    g.body.visibility = if (any) View.VISIBLE else View.GONE
+                    if (any) g.head.text = "\u25BC  " + g.name
+                    g.resetBtn?.visibility = View.GONE
+                }
+            }
+        }
+        search.addTextChangedListener(object : TextWatcher {
+            override fun afterTextChanged(s: Editable?) { try { applySearch(s?.toString() ?: "") } catch (_: Throwable) { } }
+            override fun beforeTextChanged(s: CharSequence?, st: Int, c: Int, a: Int) { }
+            override fun onTextChanged(s: CharSequence?, st: Int, b: Int, c: Int) { }
+        })
+        // ---- end v0.4.2 registry ----
+
         fun toggle(box: LinearLayout, title: String, key: String, def: Boolean) {
             val b = btn("") { v ->
+                val old = if (prefs.bool(key, def)) 1 else 0   // v0.4.2
                 val nv = !prefs.bool(key, def)
                 prefs.setBool(key, nv)
                 (v as Button).text = title + ": " + onOff(nv)
+                noteChange(key, old)   // v0.4.2
             }
             b.text = title + ": " + onOff(prefs.bool(key, def))
-            box.addView(b)
+            addRow(box, key, title, b, { b.text = title + ": " + onOff(prefs.bool(key, def)) }, { prefs.setBool(key, it == 1) }, { if (prefs.bool(key, def)) 1 else 0 }, if (def) 1 else 0)   // v0.4.2 (was box.addView(b))
         }
 
         fun level(box: LinearLayout, title: String, key: String, def: Int, names: Array<String>) {
             fun cur() = prefs.int(key, def).coerceIn(0, names.size - 1)
             val b = btn("") { v ->
+                val old = cur()   // v0.4.2
                 val nv = (cur() + 1) % names.size
                 prefs.setInt(key, nv)
                 (v as Button).text = title + ": " + names[nv]
+                noteChange(key, old)   // v0.4.2
             }
             b.text = title + ": " + names[cur()]
-            box.addView(b)
+            addRow(box, key, title, b, { b.text = title + ": " + names[cur()] }, { prefs.setInt(key, it.coerceIn(0, names.size - 1)) }, { cur() }, def.coerceIn(0, names.size - 1))   // v0.4.2 (was box.addView(b))
         }
 
-        fun cycle(box: LinearLayout, title: String, names: () -> Array<String>, get: () -> Int, set: (Int) -> Unit) {
+        fun cycle(box: LinearLayout, title: String, key: String, names: () -> Array<String>, get: () -> Int, set: (Int) -> Unit, def: Int = 0) {   // v0.4.2: key + def added
             val b = btn("") { v ->
                 val n = names()
+                val old = get().coerceIn(0, n.size - 1)   // v0.4.2
                 val nv = (get() + 1) % n.size
                 set(nv)
                 (v as Button).text = title + ": " + n[nv.coerceIn(0, n.size - 1)]
+                noteChange(key, old)   // v0.4.2
             }
             val n0 = names()
             b.text = title + ": " + n0[get().coerceIn(0, n0.size - 1)]
-            box.addView(b)
+            addRow(box, key, title, b, { val n = names(); b.text = title + ": " + n[get().coerceIn(0, n.size - 1)] }, { set(it) }, { get().coerceIn(0, names().size - 1) }, def)   // v0.4.2 (was box.addView(b))
         }
 
         fun group(title: String, fill: (LinearLayout) -> Unit) {
             val body = LinearLayout(ctx)
             body.orientation = LinearLayout.VERTICAL
             body.visibility = View.GONE
+            val head = Button(ctx)   // v0.4.2: head built first (Grp needs it); click listener set below
+            head.text = "\u25B6  " + title
+            head.isAllCaps = false
+            val g = Grp(title, head, body)   // v0.4.2
+            groups.add(g)
+            curGrp = g
             try { fill(body) } catch (_: Throwable) { }
-            val head = btn("\u25B6  " + title) { v ->
-                val open = body.visibility != View.VISIBLE
-                body.visibility = if (open) View.VISIBLE else View.GONE
-                (v as Button).text = (if (open) "\u25BC  " else "\u25B6  ") + title
+            curGrp = null
+            if (g.rows.isNotEmpty()) {   // v0.4.2: Reset this group (two taps)
+                var armed = false
+                val rb = Button(ctx)
+                rb.isAllCaps = false
+                rb.text = "Reset this group to default"
+                rb.setOnClickListener {
+                    try {
+                        if (!armed) {
+                            armed = true
+                            rb.text = "Tap again: reset all settings in this group"
+                            rb.postDelayed({ armed = false; rb.text = "Reset this group to default" }, 3000)
+                        } else {
+                            armed = false
+                            rb.text = "Reset this group to default"
+                            for (r in g.rows) { r.setIdx(r.def); r.refresh() }
+                            prefs.setStr("set_last", "")
+                            refreshTop()
+                        }
+                    } catch (_: Throwable) { }
+                }
+                body.addView(rb)
+                g.resetBtn = rb
+            }
+            head.setOnClickListener {
+                try {
+                    val open = body.visibility != View.VISIBLE
+                    g.isOpen = open
+                    body.visibility = if (open) View.VISIBLE else View.GONE
+                    head.text = (if (open) "\u25BC  " else "\u25B6  ") + title
+                } catch (_: Throwable) { }
             }
             root.addView(head)
             root.addView(body)
         }
 
         group("Languages & layouts") { g ->
-            cycle(g, "Bangla layout", { arrayOf("Avro (phonetic)", "Probhat") },
+            cycle(g, "Bangla layout", "bn_layout", { arrayOf("Avro (phonetic)", "Probhat") },
                 { if (prefs.str("bn_layout", "avro") == "probhat") 1 else 0 },
                 { prefs.setStr("bn_layout", if (it == 1) "probhat" else "avro") })
             toggle(g, "Number row", "numrow", true)
             toggle(g, "Auto numpad (number / phone fields)", "numpad_auto", true)
-            cycle(g, "Mode", { arrayOf("Phone", "PC") }, { if (prefs.bool("pc_mode", false)) 1 else 0 }, { prefs.setBool("pc_mode", it == 1) })
+            cycle(g, "Mode", "pc_mode", { arrayOf("Phone", "PC") }, { if (prefs.bool("pc_mode", false)) 1 else 0 }, { prefs.setBool("pc_mode", it == 1) })
             toggle(g, "Mode key", "mode_key", true)
             toggle(g, "Remember mode", "pc_remember", true)
         }
@@ -108,10 +273,10 @@ object SettingsGroups {
         }
 
         group("Look") { g ->
-            cycle(g, "Theme", { Array(JabraThemes.ALL.size) { i -> JabraThemes.ALL[i].name } }, { JabraThemes.index(prefs) }, { prefs.setInt("theme", it) })
-            cycle(g, "Look", { arrayOf("Classic", "Jabra") }, { if (prefs.int("look", 0) == 1) 1 else 0 }, { prefs.setInt("look", it) })
-            cycle(g, "Key border", { arrayOf("Border", "Borderless") }, { if (prefs.int("key_border", 0) == 1) 1 else 0 }, { prefs.setInt("key_border", it) })   // v0.2.6
-            cycle(g, "One-hand", { arrayOf("Off", "Left", "Right") }, { JabraOneHand.mode(prefs) }, { prefs.setInt("onehand", it) })
+            cycle(g, "Theme", "theme", { Array(JabraThemes.ALL.size) { i -> JabraThemes.ALL[i].name } }, { JabraThemes.index(prefs) }, { prefs.setInt("theme", it) })
+            cycle(g, "Look", "look", { arrayOf("Classic", "Jabra") }, { if (prefs.int("look", 0) == 1) 1 else 0 }, { prefs.setInt("look", it) })
+            cycle(g, "Key border", "key_border", { arrayOf("Border", "Borderless") }, { if (prefs.int("key_border", 0) == 1) 1 else 0 }, { prefs.setInt("key_border", it) })   // v0.2.6
+            cycle(g, "One-hand", "onehand", { arrayOf("Off", "Left", "Right") }, { JabraOneHand.mode(prefs) }, { prefs.setInt("onehand", it) })
             toggle(g, "Icons", "icons_on", true)
             toggle(g, "Large number row", "numrow_large", false)
             toggle(g, "Hide long-press hints", "hint_hide", false)
@@ -140,6 +305,8 @@ object SettingsGroups {
         }
 
         try { group("Data & Backup") { g -> g.addView(DataPage.build(ctx)) } } catch (_: Throwable) { }   // v0.4.1
+
+        refreshTop()   // v0.4.2
 
         return root
     }

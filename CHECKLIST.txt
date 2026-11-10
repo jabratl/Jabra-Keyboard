@@ -133,3 +133,14 @@ Q) v0.4.1 Data & Backup (app screen)
  [ ] Export to file: picker opens, save to Downloads, "Exported." Import from file: pick that file, "Imported", it shows in the list.
  [ ] Restore: tap once = date + counts, tap again = "Restored. Close and reopen the keyboard". Change a setting before, check it is back after.
  [ ] Delete needs two taps. Import a random text file = "not a valid Jabra backup", nothing changed.
+
+R) v0.4.2 settings search + undo (app screen)
+ [ ] Open the Jabra app screen: a search box, then the 5 groups + Data & Backup. Groups open / close as before.
+ [ ] Type "vibr" in the search box: only Vibrate shows (inside Keys & gestures, opened). Clear the box: groups go back to closed.
+ [ ] Type "theme" or "clipboard": matching rows only. Type "zzzz": nothing shows, no crash.
+ [ ] Open any group: every row has a short grey line under it (readable in dark and light phone mode).
+ [ ] Change 2-3 settings: "Recently changed" strip shows them (newest first). Tap one: the search box fills and that row shows.
+ [ ] Change Sound ON, then tap "Undo last change: Sound": it goes back to OFF and the Undo button disappears.
+ [ ] Group > "Reset this group to default": first tap changes the text, second tap resets. Check the labels change (e.g. Typing: Double-space period OFF, Hold backspace ON).
+ [ ] Open the keyboard: settings you changed on the app screen are there; after reset they are default.
+ [ ] 360 px phone: nothing cut off, recent strip scrolls sideways.

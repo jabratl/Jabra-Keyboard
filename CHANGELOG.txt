@@ -1,3 +1,19 @@
+v0.4.2 - NEW: Settings search, recently changed, help lines, reset group, undo (S2, safe half)
+- WHY: the app screen has ~33 settings in 5 groups; finding one meant opening every group. Plan S2 (HANDOFF 3e): find settings fast WITHOUT moving them.
+- What you get (app screen, same settings as before, nothing moved or renamed):
+  1) Search box at the top: type a word (vibrate, theme, clipboard, double...) -> only matching rows show, their groups open by themselves. Clear the box = back to normal.
+  2) "Recently changed (tap to find)": the last 8 settings you changed; tap one = the search box fills and shows that row.
+  3) One short grey help line under every row.
+  4) "Reset this group to default" at the bottom of each group (two taps, the first tap asks). It writes the same defaults the keyboard already uses.
+  5) "Undo last change: <name>" button at the top (one level). Hidden when there is nothing to undo; also cleared after a group reset.
+- Code: NEW typing/SettingsIndex.java (pure: search, recent list max 8, last-change text, help lines) + tools/SettingsIndexTest.java (34 checks). SettingsGroups.kt: row registry inside toggle / level / cycle (marked "v0.4.2"), cycle() got a key + default parameter (6 callers), group() builds its head first and adds the reset button. app/build.gradle.kts (0.4.2). No manifest change, no permission, no keyboard (IME) code touched.
+- Prefs NEW: set_recent(str,""), set_last(str,"").
+BROKE: nothing intended. The keyboard itself is untouched. If the search / help code throws, the old rows still show (every new part is in try / catch).
+NOT tested: Kotlin compile (GitHub Actions is the first check), the layout on a 360 px phone (search box, recent strip, help lines), dark / light look of the grey help text (fixed grey #888888), soft keyboard covering the search box.
+Known small things: Data & Backup group is hidden while a search is active (it has no searchable rows). Tapping a recent item whose name is also a group name (Look, Theme, Mode) can show a few extra rows. set_recent / set_last are included in the v0.4.0 backup (harmless).
+TESTED here: SettingsIndexTest 34/34 + the 15 older Java tests re-run, all green (unchanged); bracket balance of SettingsGroups.kt OK; code-only diff of SettingsGroups.kt = only the marked hooks.
+Rollback: delete typing/SettingsIndex.java, tools/SettingsIndexTest.java and re-apply SettingsGroups.kt of v0.4.1 (the Data & Backup line stays). Saved set_* keys are harmless.
+
 v0.4.1 - NEW: Data & Backup page (S1b)
 - WHY: v0.4.0 made backups but you could not see or use them. Now the app screen has a 6th group "Data & Backup".
 - What you get: counts (clips / pinned, formatter presets, settings keys, storage used, last backup); [Backup now]; [Export to file] and [Import from file] (system file picker, no storage permission); Auto backup ON/OFF; Keep newest 3 / 5 / 10; Backups list, each with [Restore] and [Delete]; a Privacy text.
