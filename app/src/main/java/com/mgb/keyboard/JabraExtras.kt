@@ -271,6 +271,10 @@ class JabraPanels(private val ctx: Context, private val host: JabraHost) {
         r3.addView(heightKey())
         r3.addView(layoutKey())
         root.addView(r3)
+        val r35 = row()   // v0.0.6
+        r35.addView(toggleKey("Edit bar", "edit_bar", true))
+        r35.addView(toggleKey("Clip history", "clip_on", true))
+        root.addView(r35)
         val r4 = row()
         r4.addView(pk("ABC  (apply)", 1f) { host.showLetters() })
         root.addView(r4)

@@ -1,3 +1,22 @@
+v0.0.6 - clipboard history + pinned + search + edit bar
+- NEW: Edit bar (top row of the keyboard, setting "Edit bar", default ON): 📋 | All | Cut | Copy | Paste | Plain.
+  All/Cut/Copy/Paste use the editor's own action; if the app refuses we do it ourselves. "Plain" always pastes text only.
+- NEW: 📋 opens Clipboard history: everything you copy (text) is remembered. Tap an item = paste it (and back to letters).
+  ☆/★ = pin (pinned stay on top and are never auto-removed), ✕ = delete one item, "Clear" = delete all NOT pinned (asks twice: "Sure?").
+  🔍 Search = small built-in letter keys, filters the list (Latin letters only, case-insensitive).
+- Limits: 40 unpinned + 30 pinned items, each up to 2000 characters, text only (no images).
+- PRIVACY: data stays only on the phone (prefs key "clips_v1"), no network, no new permission. Nothing is recorded in password fields,
+  and text that the app marks "sensitive" is skipped. Turn recording OFF: gear panel -> "Clip history".
+- NEW settings (gear panel, ?123 -> gear): "Edit bar", "Clip history".
+- Code: clip/ClipList.java (pure logic, tested), ClipboardFeature.kt (store + panel), MgbIme.kt hooks marked "v0.0.6", JabraExtras.kt (2 toggles).
+
+WHY: roadmap v0.0.6.
+BROKE: nothing intended. Visible change: a thin edit bar above the number row (keyboard is 36dp taller; turn OFF in gear panel).
+NOT tested: Kotlin compile, everything on phone (clip capture, paste, pin/delete/search, edit bar in different apps, Android 10+ clipboard access, landscape).
+TESTED here: tools/ClipTest.java 18/18 (add, duplicate, pin order, limits, search, save/load, garbage input).
+Known limits: search is Latin-only (no Bangla search yet); images/HTML not saved; pasting a multi-line item keeps the line breaks; items are stored as plain text in app-private storage (not encrypted).
+Files: clip/ClipList.java (new), ClipboardFeature.kt (new), tools/ClipTest.java (new), MgbIme.kt, JabraExtras.kt, app/build.gradle.kts (0.0.6), CHANGELOG.txt, HANDOFF.txt.
+
 v0.0.5 - number row, symbols, number pad, space-drag cursor, key height, haptic/sound  (delivered in the same zip as v0.0.4)
 - NEW: number row on top (setting "Number row", default ON).
 - NEW: "?123" key (bottom-left) -> symbols panel (2 pages, includes ৳ and ₹), gear -> quick settings, "123" -> number pad, "ABC" back.

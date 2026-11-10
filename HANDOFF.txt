@@ -40,16 +40,16 @@ JABRA KEYBOARD - HANDOFF  (newest on top; paste this file at the start of the ne
   v0.0.3 Avro phonetic + language switch      DONE (user uses it)
   v0.0.4 Probhat fixed Bangla layout          DONE in code (NOT tested on phone)   <- delivered together with v0.0.5 in ONE zip
   v0.0.5 number row, symbols, number pad, space-drag cursor, key height, haptic/sound   DONE in code (NOT tested on phone)
-  v0.0.6 clipboard history + pinned + edit toolbar (select all/cut/copy/paste/paste plain)
+  v0.0.6 clipboard history + pinned + search + edit bar   DONE in code (NOT tested on phone)   <- this zip
   v0.0.7 novel formatter panel (see 6)
   v0.0.8 suggestions: local learning, next word, emoji in suggestions, typed-word preview
   v0.0.9 emoji panel, local themes, one-handed mode
   v0.1.0 system voice button, settings polish
 
-4) STATUS (v0.0.5 = v0.0.4 + v0.0.5, one zip: jabra_v0_0_5.zip)
+4) STATUS (v0.0.6; v0.0.4 + v0.0.5 were delivered earlier in jabra_v0_0_5.zip; USER HAS NOT YET CONFIRMED ANY OF THEM BUILD/RUN)
   PROVED BY USER earlier: GitHub build + signed APK + install + typing works (v0.0.3 build).
-  Tested here (computer): AvroPhonetic 43/43; ProbhatLayout table + SpaceDrag logic 133/133 (tools/ExtrasTest.java).
-  NOT tested: Gradle/Kotlin compile of v0.0.4 + v0.0.5 (no Kotlin compiler here; code was only read carefully + bracket check),
+  Tested here (computer): AvroPhonetic 43/43; ProbhatLayout table + SpaceDrag logic 133/133 (tools/ExtrasTest.java); ClipList logic 18/18 (tools/ClipTest.java).
+  NOT tested: Gradle/Kotlin compile of v0.0.4 + v0.0.5 + v0.0.6 (no Kotlin compiler here; code was only read carefully + bracket check),
   everything on a real phone: Probhat typing, extra row, number row, symbols/numpad/settings panels, auto numpad,
   space-drag, height change, haptic/sound, rotation (landscape), long-press on language key.
   PROBHAT TABLE NOT VERIFIED: official chart (ekushey.org) could not be opened from here. Table is from memory of standard Probhat.
@@ -57,7 +57,16 @@ JABRA KEYBOARD - HANDOFF  (newest on top; paste this file at the start of the ne
   If a key is wrong: edit ONLY the table T in probhat/ProbhatLayout.java (key, normal, shift), run tools/ExtrasTest.java.
   SettingsActivity.kt / Updater.kt were NOT in the v0.0.3 zip I received and are NOT touched. New settings live INSIDE the keyboard (? 123 -> gear).
 
-5) HOW IT WORKS (new in v0.0.4 / v0.0.5; v0.0.3 part is below under PREVIOUS)
+5) HOW IT WORKS (v0.0.6 part first; then v0.0.4 / v0.0.5; v0.0.3 part is below under PREVIOUS)
+  v0.0.6 clipboard:
+    clip/ClipList.java        pure Java list: add (dedupe, newest first), pin, remove, clearUnpinned, view(query), serialize/parse
+                              (lines "0|1,<urlencoded text>"). Limits 40 unpinned / 30 pinned / 2000 chars.
+    ClipboardFeature.kt       ClipStore (loads/saves prefs key "clips_v1") + ClipPanel (list, star, x, search with mini keys, Clear asks twice).
+    MgbIme.kt hooks "v0.0.6": ClipboardManager listener registered in onCreate / removed in onDestroy -> captureClip();
+                              also captureClip() in onStartInputView. Skipped when: password field (pwdField), prefs clip_on=false,
+                              clip marked android.content.extra.IS_SENSITIVE. Edit bar row in buildKeyboard (prefs edit_bar, default true);
+                              editAction(): performContextMenuAction(selectAll/copy/cut/paste), fallback own code; "plain" = clip text -> commitText.
+                              showPanel("clipboard") routes to ClipPanel. New prefs keys: clip_on(true), edit_bar(true), clips_v1(string).
   app/src/main/java/com/mgb/keyboard/
     probhat/ProbhatLayout.java  pure Java. map(char) -> Bangla for a pressed key (UPPER-case letter = shift), label(), EXTRAS row.
     extras/SpaceDrag.java       pure Java. Drag distance -> cursor steps (16dp per step).
@@ -75,7 +84,7 @@ JABRA KEYBOARD - HANDOFF  (newest on top; paste this file at the start of the ne
   Probhat: each key types ONE Bangla letter directly (no composing underline, no buffer). Shift = second letter. Backspace = normal delete.
     Password/email/URL/number fields: always English (same rule as Avro).
   Space-drag: stage 1 = DPAD_LEFT/RIGHT key events. Stage 2 (ExtractedText + setSelection) NOT added - add only if some app ignores DPAD.
-  Test on computer:
+  Test on computer (clip: javac -encoding UTF-8 -d out app/src/main/java/com/mgb/keyboard/clip/ClipList.java tools/ClipTest.java && java -cp out ClipTest):
     javac -encoding UTF-8 -d out app/src/main/java/com/mgb/keyboard/probhat/ProbhatLayout.java app/src/main/java/com/mgb/keyboard/extras/SpaceDrag.java tools/ExtrasTest.java && java -cp out ExtrasTest
     (Avro: see PREVIOUS section, tools/AvroTest.java)
 
@@ -94,7 +103,11 @@ JABRA KEYBOARD - HANDOFF  (newest on top; paste this file at the start of the ne
   Build env here has NO Gradle/Android SDK/network: Kotlin cannot be compiled here. Java engine can (see above).
   Permissions in app: INTERNET (only on "Check for updates"), REQUEST_INSTALL_PACKAGES. Nothing else.
 
-8) TEST CHECKLIST for user (v0.0.4 + v0.0.5)  -> same list is at the end of the last reply
+8) TEST CHECKLIST for user (v0.0.6 first, then v0.0.4 + v0.0.5)
+  v0.0.6: top row "📋 All Cut Copy Paste Plain". Type text, All -> selected; Cut -> gone; Paste -> back. Copy text in another app ->
+          open 📋 -> it is in the list; tap it -> pasted. ☆ pin -> goes top with ★; ✕ deletes one; Clear -> "Sure?" -> second tap clears unpinned only.
+          🔍 Search -> type letters -> list filters. Password field: copy something there -> must NOT appear in list. Gear -> Edit bar OFF -> bar disappears.
+  v0.0.4 + v0.0.5 (if not yet checked)  -> same list is at the end of the last reply
   Build: Actions green, release has Jabra-Keyboard-v0.0.5-bN.apk, in-app "Check for updates" installs it (v0.0.3 -> v0.0.5).
   Old things still OK: English typing, বাং Avro ("ami valo achi" -> আমি ভালো আছি), password field = English.
   v0.0.4: long-press language key -> caption "প্রভা", extra vowel row appears, f=া j=ক g=্ (hasanta) etc.
@@ -103,15 +116,17 @@ JABRA KEYBOARD - HANDOFF  (newest on top; paste this file at the start of the ne
           Vibrate/Sound toggles; Number row OFF -> row disappears.
 
 8b) ROLLBACK
+  Only v0.0.6 off: gear panel -> Edit bar OFF + Clip history OFF (no code change). Code level: delete clip/ClipList.java + ClipboardFeature.kt
+    and the hooks marked "v0.0.6" in MgbIme.kt and the r35 row in JabraExtras.kt. Saved history key "clips_v1" can stay (harmless).
   Easy: Actions > Run workflow > revert_to = previous (= v0.0.3 build) (see REVERT.txt).
   Only v0.0.5 off (keep Probhat): in settings panel switch Number row/Auto numpad OFF (no code change). Code level: delete JabraExtras.kt + extras/SpaceDrag.java
     and the v0.0.5 hooks in MgbIme.kt (marked "v0.0.5").
   Only Probhat off: do not long-press language key (default stays Avro); code level: delete probhat/ProbhatLayout.java + hooks marked "v0.0.4".
 
 9) NEXT
-  1. Confirm build is green (Kotlin has never been compiled by me). Send me the error text if red.
+  1. Confirm build is green (Kotlin has never been compiled by me). Send me the error text if red. THIS IS THE BIGGEST RISK: 3 versions of Kotlin are unbuilt.
   2. Compare Probhat keys with your Ridmik Probhat (send photo) -> I fix table T in one file.
-  3. v0.0.6 clipboard history + pinned + edit toolbar.
+  3. v0.0.7 novel formatter panel (see 6).
   Optional later: conjunct-aware backspace for Probhat, Bangla digits option, space-drag stage 2, one-handed mode (v0.0.9), settings screen link in SettingsActivity.
 
 =====================================================================================

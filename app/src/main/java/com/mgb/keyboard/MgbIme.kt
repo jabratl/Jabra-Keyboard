@@ -1,5 +1,7 @@
 package com.mgb.keyboard
 
+import android.content.ClipData
+import android.content.ClipboardManager
 import android.graphics.Color
 import android.inputmethodservice.InputMethodService
 import android.view.KeyEvent
@@ -30,6 +32,11 @@ class MgbIme : InputMethodService() {
     private var container: FrameLayout? = null // holds the letters view OR a panel (symbols / numpad / settings)
     private var autoNumpad = false             // numpad was opened automatically for a number/phone field
     private var extrasRow: LinearLayout? = null // Probhat extra row (vowels, ঁ ঃ ৎ)
+    // v0.0.6: clipboard history + edit bar
+    private var pwdField = false               // true in password fields: nothing is recorded there
+    private var clipListener: ClipboardManager.OnPrimaryClipChangedListener? = null
+    private val clipStore by lazy { ClipStore(JabraPrefs(this)) }
+    private val clipPanel by lazy { ClipPanel(this, host, clipStore) }
     private val prefs by lazy { JabraPrefs(this) }
     private val panels by lazy { JabraPanels(this, host) }
     private val host = object : JabraHost {
@@ -106,6 +113,75 @@ class MgbIme : InputMethodService() {
         super.onCreate()
         try { bangla = getSharedPreferences("jabra", MODE_PRIVATE).getBoolean("bangla", false) } catch (_: Throwable) { }
         try { probhat = prefs.str("bn_layout", "avro") == "probhat" } catch (_: Throwable) { probhat = false }
+        // v0.0.6: listen to copy events (only text, only while this keyboard service lives)
+        try {
+            val cm = getSystemService(CLIPBOARD_SERVICE) as ClipboardManager
+            val l = ClipboardManager.OnPrimaryClipChangedListener { captureClip() }
+            cm.addPrimaryClipChangedListener(l)
+            clipListener = l
+        } catch (_: Throwable) { }
+    }
+
+    override fun onDestroy() {
+        try {
+            val l = clipListener
+            if (l != null) (getSystemService(CLIPBOARD_SERVICE) as ClipboardManager).removePrimaryClipChangedListener(l)
+        } catch (_: Throwable) { }
+        super.onDestroy()
+    }
+
+    /** v0.0.6: save the current clipboard text into the history (not in password fields, not if marked sensitive, not if turned OFF). */
+    private fun captureClip() {
+        try {
+            if (pwdField || !prefs.bool("clip_on", true)) return
+            val d = (getSystemService(CLIPBOARD_SERVICE) as ClipboardManager).primaryClip ?: return
+            if (d.itemCount == 0) return
+            val sensitive = try { d.description?.extras?.getBoolean("android.content.extra.IS_SENSITIVE", false) ?: false } catch (_: Throwable) { false }
+            if (sensitive) return
+            val t = d.getItemAt(0).coerceToText(this)?.toString() ?: return
+            clipStore.add(t)
+        } catch (_: Throwable) { }
+    }
+
+    private fun clipText(): String? = try {
+        val d = (getSystemService(CLIPBOARD_SERVICE) as ClipboardManager).primaryClip
+        if (d == null || d.itemCount == 0) null else d.getItemAt(0).coerceToText(this)?.toString()
+    } catch (_: Throwable) { null }
+
+    private fun setClipText(s: String) {
+        try { (getSystemService(CLIPBOARD_SERVICE) as ClipboardManager).setPrimaryClip(ClipData.newPlainText("jabra", s)) } catch (_: Throwable) { }
+    }
+
+    /** v0.0.6 edit bar: stage 1 = the editor's own action; stage 2 = we do it ourselves; paste-plain is always text only. */
+    private fun editAction(kind: String) {
+        commitWord()
+        val ic = currentInputConnection ?: return
+        when (kind) {
+            "all" -> if (!ic.performContextMenuAction(android.R.id.selectAll)) {
+                ic.sendKeyEvent(KeyEvent(0, 0, KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_A, 0, KeyEvent.META_CTRL_ON))
+                ic.sendKeyEvent(KeyEvent(0, 0, KeyEvent.ACTION_UP, KeyEvent.KEYCODE_A, 0, KeyEvent.META_CTRL_ON))
+            }
+            "copy" -> if (!ic.performContextMenuAction(android.R.id.copy)) {
+                val s = ic.getSelectedText(0)
+                if (!s.isNullOrEmpty()) setClipText(s.toString())
+            }
+            "cut" -> if (!ic.performContextMenuAction(android.R.id.cut)) {
+                val s = ic.getSelectedText(0)
+                if (!s.isNullOrEmpty()) { setClipText(s.toString()); ic.commitText("", 1) }
+            }
+            "paste" -> if (!ic.performContextMenuAction(android.R.id.paste)) pastePlain()
+            "plain" -> pastePlain()
+        }
+    }
+
+    private fun pastePlain() {
+        val t = clipText() ?: return
+        currentInputConnection?.commitText(t, 1)
+    }
+
+    private fun openClipboard() {
+        clipPanel.reset()
+        showPanel("clipboard")
     }
 
     override fun onStartInputView(info: EditorInfo?, restarting: Boolean) {
@@ -122,6 +198,10 @@ class MgbIme : InputMethodService() {
                 v == InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS ||
                 v == InputType.TYPE_TEXT_VARIATION_WEB_EMAIL_ADDRESS ||
                 v == InputType.TYPE_TEXT_VARIATION_URI
+            pwdField = v == InputType.TYPE_TEXT_VARIATION_PASSWORD || v == InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD ||
+                v == InputType.TYPE_TEXT_VARIATION_WEB_PASSWORD ||
+                (cls == InputType.TYPE_CLASS_NUMBER && v == InputType.TYPE_NUMBER_VARIATION_PASSWORD)   // v0.0.6
+            captureClip()   // v0.0.6: catch text copied while we were not listening
             // v0.0.5: number / phone field -> number pad automatically (setting "numpad_auto"); other field -> back to letters
             try {
                 val isNum = cls == InputType.TYPE_CLASS_NUMBER || cls == InputType.TYPE_CLASS_PHONE
@@ -237,7 +317,7 @@ class MgbIme : InputMethodService() {
     private fun showPanel(name: String) {
         val c = container ?: return
         commitWord()
-        val v = try { panels.build(name) } catch (_: Throwable) { null }
+        val v = try { if (name == "clipboard") clipPanel.build() else panels.build(name) } catch (_: Throwable) { null }
         if (v == null) { showLetters(); return }
         c.removeAllViews()
         c.addView(v)
@@ -298,6 +378,21 @@ class MgbIme : InputMethodService() {
         root.orientation = LinearLayout.VERTICAL
         root.setBackgroundColor(Color.parseColor("#DDDDDD"))
         root.setPadding(dp(2), dp(4), dp(2), dp(4))
+
+        // v0.0.6: edit bar (setting "edit_bar", default ON): clipboard / select all / cut / copy / paste / paste plain
+        try {
+            if (prefs.bool("edit_bar", true)) {
+                val eb = row()
+                val items = arrayOf("📋" to "clip", "All" to "all", "Cut" to "cut", "Copy" to "copy", "Paste" to "paste", "Plain" to "plain")
+                for ((label, kind) in items) {
+                    val k = key(label, 1f) { if (kind == "clip") openClipboard() else editAction(kind) }
+                    (k.layoutParams as LinearLayout.LayoutParams).height = dp(36)
+                    k.textSize = 12f
+                    eb.addView(k)
+                }
+                root.addView(eb)
+            }
+        } catch (_: Throwable) { }
 
         // v0.0.5: number row (setting "numrow", default ON). If it fails the keyboard just has no number row.
         try {
