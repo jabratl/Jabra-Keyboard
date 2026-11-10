@@ -28,6 +28,13 @@ class ClipStore(private val prefs: JabraPrefs) {
     // v0.4.3: side table (made / used / count) in NEW pref clip_meta_v1; clips_v1 is untouched. Loaded lazily.
     private val meta: ClipMeta by lazy { try { ClipMeta.parse(prefs.str("clip_meta_v1", "")) } catch (_: Throwable) { ClipMeta() } }
     private fun saveMeta() { try { prefs.setStr("clip_meta_v1", meta.serialize()) } catch (_: Throwable) { } }
+    /** v0.4.3.1: edit one clip. Returns ClipList.replace(): 0 ok, 1 empty, 2 too long, 3 duplicate, 4 not found. */
+    fun replace(i: ClipList.Item, t: String): Int = try {
+        val old = i.text
+        val rc = list.replace(i, t)
+        if (rc == 0 && old != t) { save(); meta.rename(old, t); saveMeta() }
+        rc
+    } catch (_: Throwable) { 4 }
     fun has(t: String): Boolean = try { list.view("").any { it.text == t } } catch (_: Throwable) { false }
     fun countOf(t: String): Int = try { meta.count(t) } catch (_: Throwable) { 0 }
     fun noteUse(i: ClipList.Item) { try { meta.used(i.text, System.currentTimeMillis()); saveMeta() } catch (_: Throwable) { } }
@@ -71,6 +78,10 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
     private var msg = ""   // v0.2.5.1: one short message for the header line (shown once, then cleared)
     private val sel = ClipSelect()        // v0.2.5.3: select mode state lives HERE (not in the view), so it survives refresh()
     private var confirmDel = false        // v0.2.5.3: "Sure? delete N" two-tap safety
+    private var editing: ClipList.Item? = null   // v0.4.3.1: clip being edited (null = normal panel)
+    private var editText = ""
+    private var editCaps = false
+    private var confirmSave = false
 
     /** Call when the panel is opened from outside (fresh start). */
     // v0.3.7: Undo for deleted clips (x, Delete, Clear). Kept until you leave the clipboard or delete something else.
@@ -91,7 +102,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
         refresh()
     }
 
-    fun reset() { undoBuf = emptyList(); searching = false; query = ""; confirmClear = false; msg = ""; sel.leave(); confirmDel = false }
+    fun reset() { editing = null; confirmSave = false; undoBuf = emptyList(); searching = false; query = ""; confirmClear = false; msg = ""; sel.leave(); confirmDel = false }
 
     private fun dp(v: Int): Int = (v * ctx.resources.displayMetrics.density).toInt()
 
@@ -124,6 +135,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
     fun build(): View? = try { make() } catch (_: Throwable) { null }
 
     private fun make(): View {
+        if (editing != null) { try { return makeEdit() } catch (_: Throwable) { editing = null } }   // v0.4.3.1
         val root = LinearLayout(ctx)
         root.orientation = LinearLayout.VERTICAL
         root.setBackgroundColor(Color.parseColor("#DDDDDD"))
@@ -260,6 +272,74 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
         return root
     }
 
+    /** v0.4.3.1: edit screen for ONE clip: Cancel | Use field text | Save (two taps), text box, mini keys (Latin). Bangla = type it in the field, then "Use field text". */
+    private fun makeEdit(): View {
+        val item = editing ?: return make()
+        val root = LinearLayout(ctx)
+        root.orientation = LinearLayout.VERTICAL
+        root.setBackgroundColor(Color.parseColor("#DDDDDD"))
+        root.setPadding(dp(2), dp(4), dp(2), dp(4))
+        fun touched(a: () -> Unit) { a(); confirmSave = false; refresh() }
+
+        val top = row()
+        top.addView(btn("Cancel", 1f, 40) { editing = null; confirmSave = false; refresh() })
+        top.addView(btn("Use field text", 1.6f, 40) {
+            val t = try { fieldText() } catch (_: Throwable) { "" }
+            if (t.isBlank()) msg = "Field is empty" else editText = t
+            confirmSave = false
+            refresh()
+        })
+        val saveBtn = btn(if (confirmSave) "Sure? Save" else "Save", 1.2f, 40) {
+            if (!confirmSave) { confirmSave = true; refresh() }
+            else {
+                when (store.replace(item, editText)) {
+                    0 -> { msg = "Clip saved"; editing = null; sel.leave() }
+                    1 -> msg = "Text is empty"
+                    2 -> msg = "Too long (max " + ClipList.MAX_LEN + ")"
+                    3 -> msg = "Another clip has this text"
+                    else -> { msg = "Clip not found"; editing = null }
+                }
+                confirmSave = false
+                refresh()
+            }
+        }
+        top.addView(saveBtn)
+        root.addView(top)
+
+        val info = TextView(ctx)
+        info.text = (if (msg.isEmpty()) "Edit clip" else msg) + "   " + editText.length + "/" + ClipList.MAX_LEN
+        msg = ""
+        info.textSize = 12f
+        info.setTextColor(Color.DKGRAY)
+        info.setPadding(dp(8), dp(2), dp(8), dp(2))
+        root.addView(info)
+
+        val sv = ScrollView(ctx)
+        sv.layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(64))
+        val tv = TextView(ctx)
+        tv.text = editText.replace("\n", " \u23CE ") + "\u258F"
+        tv.textSize = 14f
+        tv.setTextColor(Color.BLACK)
+        tv.setPadding(dp(8), dp(2), dp(8), dp(2))
+        sv.addView(tv)
+        root.addView(sv)
+
+        fun ch(c: Char): String = if (editCaps) c.uppercaseChar().toString() else c.toString()
+        for (letters in arrayOf("1234567890", "qwertyuiop", "asdfghjkl", "zxcvbnm")) {
+            val r = row()
+            if (letters == "zxcvbnm") r.addView(btn(if (editCaps) "\u21E7 ON" else "\u21E7", 1.5f, 34) { touched { editCaps = !editCaps } })
+            letters.forEach { c -> r.addView(btn(ch(c), 1f, 34) { touched { editText += ch(c); editCaps = false } }) }
+            if (letters == "zxcvbnm") r.addView(btn("\u232B", 1.5f, 34) { touched { if (editText.isNotEmpty()) editText = editText.dropLast(1) } })
+            root.addView(r)
+        }
+        val last = row()
+        for (p in arrayOf(".", ",", "?", "!", "-", "'")) last.addView(btn(p, 1f, 34) { touched { editText += p } })
+        last.addView(btn("space", 2.5f, 34) { touched { editText += " " } })
+        last.addView(btn("\u23CE", 1.2f, 34) { touched { editText += "\n" } })
+        root.addView(last)
+        return root
+    }
+
     /** v0.2.5.1: tap on Add = save selected text (or the whole field) as a new clip. */
     private fun addFromField() {
         val t = try { fieldText() } catch (_: Throwable) { "" }
@@ -335,6 +415,13 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
                 2 -> msg = "Too long (max " + ClipList.MAX_LEN + ")"
                 else -> msg = "Nothing to merge"
             }
+            confirmDel = false
+            refresh()
+        })
+        r2.addView(btn("Edit", 0.6f, 34) {   // v0.4.3.1: edit ONE ticked clip
+            val chosen = sel.selection()
+            if (chosen.size != 1) msg = "Select ONE clip to edit"
+            else { editing = chosen[0]; editText = chosen[0].text; editCaps = false; confirmSave = false }
             confirmDel = false
             refresh()
         })

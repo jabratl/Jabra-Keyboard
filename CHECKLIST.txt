@@ -153,3 +153,11 @@ S) v0.4.3 clipboard history upgrade
  [ ] Add (with text in a field), then Add again with the same text: "Already saved (moved to top)".
  [ ] App screen > Clipboard & tools > "Clip auto-delete" = 1 hour. Copy a text, wait over 1 hour, open the clipboard: it is gone. A PINNED clip stays. Old clips from before do not vanish at once.
  [ ] Clip auto-delete = Never: nothing deleted (like before).
+
+T) v0.4.3.1 clipboard Edit
+ [ ] Clipboard > Manage > tick ONE clip > "Edit": edit screen opens with the clip text and "n/2000".
+ [ ] Type with the mini keys (letters, shift, digits, space, new line, backspace). Cancel = back, clip unchanged.
+ [ ] Save: first tap "Sure? Save", second tap "Clip saved". The clip keeps its place and its star (if pinned).
+ [ ] Type Bangla text in the real field, open Clipboard > Edit > "Use field text": the box shows the field text. Save works.
+ [ ] Tick 2 clips and press Edit: message "Select ONE clip to edit". Edit to a text another clip already has: "Another clip has this text".
+ [ ] Edit screen fits at 360 px (all key rows visible) and in landscape.

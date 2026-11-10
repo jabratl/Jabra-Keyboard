@@ -125,6 +125,21 @@ public final class ClipList {
         return n;
     }
 
+    /**
+     * v0.4.3.1: replaces the text of ONE clip, same position, same pinned flag.
+     * 0 = ok (also when the text is unchanged), 1 = empty, 2 = too long, 3 = another clip already has this text, 4 = clip not found.
+     */
+    public int replace(Item it, String text) {
+        int idx = items.indexOf(it);
+        if (idx < 0) return 4;
+        int c = check(text);
+        if (c != 0) return c;
+        for (int i = 0; i < items.size(); i++) if (i != idx && items.get(i).text.equals(text)) return 3;
+        if (items.get(idx).text.equals(text)) return 0;
+        items.set(idx, new Item(text, it.pinned));
+        return 0;
+    }
+
     /** Can this text be saved as a clip? 0 = ok, 1 = empty, 2 = longer than MAX_LEN. */
     public static int check(String t) {
         if (t == null || t.trim().length() == 0) return 1;

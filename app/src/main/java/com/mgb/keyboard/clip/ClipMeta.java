@@ -49,6 +49,14 @@ public final class ClipMeta {
         m.count++;
     }
 
+    /** v0.4.3.1: an edited clip keeps its made / used / count under the new text. */
+    public void rename(String oldText, String newText) {
+        String ko = key(oldText), kn = key(newText);
+        if (ko.equals(kn)) return;
+        M m = map.remove(ko);
+        if (m != null) map.put(kn, m);
+    }
+
     public int count(String text) { M m = map.get(key(text)); return m == null ? 0 : m.count; }
     public long madeAt(String text) { M m = map.get(key(text)); return m == null ? 0L : m.made; }
     public long usedAt(String text) { M m = map.get(key(text)); return m == null ? 0L : m.used; }

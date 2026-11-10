@@ -1,3 +1,12 @@
+v0.4.3.1 - NEW: Clipboard "Edit" (left over from S3a)
+- WHY: S3a (HANDOFF 3e) also planned editing a saved clip; it was split out of v0.4.3 to keep that step small.
+- What you get: Clipboard > Manage > tick exactly ONE clip > second row "Edit". An edit screen opens: Cancel | Use field text | Save (two taps: "Sure? Save"), a text box with a character counter (n/2000) and mini keys (digits, Latin letters, shift, backspace, . , ? ! - ' space, new line). Bangla text: type it in the real text field first (or select it), then tap "Use field text" (replaces the edit box with the selection / whole field). Save keeps the clip's position, its Pinned star and its paste count. Refused with a message: empty text, longer than 2000, same text as another clip, clip no longer exists.
+- Code: ClipList.replace(item, text) (pure, tested), ClipMeta.rename(old, new), ClipStore.replace, ClipPanel (state fields, makeEdit(), 1 hook line at the start of make(), Edit button in the select bar second row, reset() clears edit state). tools/ClipEditTest.java (16 checks, NEW). app/build.gradle.kts (0.4.3.1). Hooks marked "v0.4.3.1". No manifest change, no permission, no new pref.
+BROKE: nothing intended. Edit only exists inside select mode; normal tap / paste / pin / delete are unchanged. If the edit screen throws, the normal clipboard panel is shown.
+NOT tested: Kotlin compile (GitHub Actions first), the edit screen height / look on 360 px and 1280 px, dark / light (clipboard panel is light grey on purpose, as before), real typing with the mini keys. Mini keys have no Bangla and no cursor movement (append / backspace at the end only).
+TESTED here: ClipEditTest 16/16, ClipMetaTest 22/22, SettingsIndexTest 34/34, 15 older Java tests green; bracket balance of ClipboardFeature.kt OK; code-only diff = only the marked hooks (1 old line changed: reset()).
+Rollback: do not press Edit (no code change). Code: re-apply ClipboardFeature.kt of v0.4.3, remove replace() from ClipList.java and rename() from ClipMeta.java, delete tools/ClipEditTest.java.
+
 v0.4.3 - NEW: Clipboard upgrade, history side (S3a): sort, character count, paste count, auto-delete, "Already saved"
 - WHY: plan S3a (HANDOFF 3e). More useful history without touching the saved clips (clips_v1 format is unchanged).
 - What you get (keyboard Clipboard panel + app screen > Clipboard & tools):
