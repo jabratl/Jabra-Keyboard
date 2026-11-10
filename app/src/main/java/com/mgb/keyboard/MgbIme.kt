@@ -11,6 +11,7 @@ import android.view.inputmethod.EditorInfo
 import android.widget.Button
 import android.widget.FrameLayout
 import android.widget.LinearLayout
+import android.widget.ScrollView   // v0.3.3
 import com.mgb.keyboard.phonetic.AvroPhonetic
 import com.mgb.keyboard.probhat.ProbhatLayout
 
@@ -500,6 +501,7 @@ class MgbIme : InputMethodService() {
     private fun showLetters() {
         val c = container ?: return
         autoNumpad = false
+        inPanel = false   // v0.3.3
         c.removeAllViews()
         try {
             letterKeys.clear()
@@ -515,8 +517,29 @@ class MgbIme : InputMethodService() {
         val v = try { if (name == "clipboard") clipPanel.build() else if (name == "format") fmtPanel.build() else if (name == "more") morePanel.build() else if (name == "emoji") emojiPanel.build() else if (name == "typing") typingPanel.build() else if (name == "size") sizePanel.build() else if (name == "toolbar") toolbarPanel.build() else if (name == "tbquick") toolbarQuick.build() else if (name == "pad") padPanel.build() else if (name == "themes") themePanel.build() else panels.build(name) } catch (_: Throwable) { null }   // v0.0.8: "format"; v0.1.0: "emoji"; v0.1.1: "typing"
         if (v == null) { showLetters(); return }
         try { JabraOneHand.apply(this, prefs, v) } catch (_: Throwable) { }   // v0.1.0
+        try { if (!inPanel && c.height > 0) lettersH = c.height } catch (_: Throwable) { }   // v0.3.3: remember the letters-keyboard height
+        inPanel = true
+        val shown = try { capTall(name, v, c) } catch (_: Throwable) { v }   // v0.3.3: tall panel = scrolls, window never grows
         c.removeAllViews()
-        c.addView(v)
+        c.addView(shown)
+    }
+
+    // v0.3.3 FIX: a tall panel (More settings has ~13 rows) made the keyboard window taller than the screen part the app
+    // leaves free -> the app / browser text bar jumped up and the bottom rows were cut off. Now such a panel is capped to
+    // the letters-keyboard height and scrolls inside. Panels that already fit are NOT wrapped (no change).
+    private var inPanel = false
+    private var lettersH = 0
+    private fun capTall(name: String, v: View, c: FrameLayout): View {
+        if (name != "settings" && name != "more" && name != "typing" && name != "size" && name != "themes") return v
+        val cap = if (lettersH > 0) maxOf(lettersH, dp(keyDp() * 4 + 16)) else dp(38 + 5 * (keyDp() + 4))
+        val w = if (c.width > 0) c.width else resources.displayMetrics.widthPixels
+        v.measure(View.MeasureSpec.makeMeasureSpec(w, View.MeasureSpec.EXACTLY), View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED))
+        if (v.measuredHeight <= cap) return v
+        val sv = ScrollView(this)
+        sv.isFillViewport = true
+        sv.layoutParams = FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, cap)
+        sv.addView(v)
+        return sv
     }
 
     /** Space-drag: move the cursor n steps (negative = left). Stage 1 = DPAD key events; if the app ignores them nothing happens. */

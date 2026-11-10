@@ -1,3 +1,14 @@
+v0.3.3 - FIX: keyboard jumps / cut off when More settings (tall panels) opens
+- FIX: in a browser text bar (claude.ai on Chrome, Android 16) tapping gear > More settings made the page jump up and the bottom rows (Edit toolbar, Size ...) went below the screen. ROOT CAUSE: More settings has ~13 rows, taller than the letters keyboard, so the keyboard window grew past the free screen part and the app was squeezed.
+- Now: panels settings / more / typing / size / themes are capped to the letters-keyboard height and SCROLL inside (swipe up/down). A panel that already fits is not wrapped = looks the same as before.
+- Code: MgbIme.kt only (showPanel + new capTall(), 2 fields, 1 import, 1 line in showLetters); app/build.gradle.kts (0.3.3). No new setting, key or permission.
+WHY: user screen recording (claude.ai typing bar, gear > More settings).
+BROKE: nothing intended. If the old behaviour is wanted back, remove lines marked "v0.3.3" (capTall returns v unchanged).
+NOT tested: Kotlin compile (GitHub Actions), phone: More settings scrolls and the page no longer jumps; one-hand Left/Right; Dark + Light theme; landscape; other apps.
+TESTED here: bracket balance of MgbIme.kt (no Kotlin compiler in this session).
+Not fixed (NEXT): small jump when ?123 symbols opens (symbols panel is shorter than letters) - see HANDOFF NEXT.
+Files: MgbIme.kt, app/build.gradle.kts, CHANGELOG.txt, HANDOFF_Jabra-Keyboard_v0.3.3.txt (new, replaces ..._v0.3.2.txt).
+
 v0.3.2 - Long hold on Backspace deletes whole words
 - NEW: hold Backspace: first letter by letter (as before), after about 1.5 sec it deletes one WORD per tick, so long text goes away fast. Selected text = deleted at once. Avro word being typed = cleared at once. Setting "Long hold deletes words" (gear > More settings > "Word delete", also in the app screen > Typing), default ON. OFF = exactly the old hold-repeat.
 - Code: NEW typing/WordDelete.java (rule, tested by NEW tools/WordDeleteTest.java 17/17), InputSafe.kt deleteWord(), MgbIme.kt onBackspaceWord() + 1 changed line (main Backspace key only; emoji / pad / extras Backspace unchanged), TypingExtras.kt (RepeatKeyHelper optional 3rd param, default null = old; toggle), SettingsGroups.kt (toggle), app/build.gradle.kts (0.3.2). New pref bs_word. No permission.
