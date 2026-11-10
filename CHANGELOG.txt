@@ -1,3 +1,14 @@
+v0.2.0 - Final test round (no new feature)
+- NEW CHECKLIST.txt in the repo root: ONE full phone checklist (A install / B English / C Bangla / D panels / E PC mode / F look + size) that replaces the per-version lists of v0.0.4 - v0.1.7 in HANDOFF.
+- HANDOFF.txt cleaned: the old "PREVIOUS HANDOFF" parts (v0.0.2 - v0.0.7 copies) are removed, the still-useful v0.0.3 Avro notes moved into section 5, status / next rewritten, per-version checklists replaced by a pointer to CHECKLIST.txt, finished v0.1.6 plan (3b) removed (documented in section 5).
+- No app code changed, no setting changed. Only version number 0.2.0 (app/build.gradle.kts).
+
+WHY: roadmap v0.2.0 (final test round). The user reported that all GitHub builds are GREEN ("sob gula green", after v0.1.7), so Gradle + Kotlin compile of v0.0.9 - v0.1.7 is now proven.
+BROKE: nothing (no code change).
+NOT tested: everything on a phone (that is what CHECKLIST.txt is for). "Green" was reported by the user in one short message: which versions / which run was not asked.
+TESTED here: all 10 Java tests pass again (Avro 43, Extras 133, Clip 18, Emoji 1585, Typing 27, DoubleSpace 37, Pc 19, SizePct 28, Look 13, Hint 175).
+Files: CHECKLIST.txt (new); HANDOFF.txt, CHANGELOG.txt, app/build.gradle.kts.
+
 v0.1.7 - Settings page in 5 groups (launcher screen)
 - NEW: the Jabra Keyboard app screen (the icon on the home screen) now has 5 collapsible groups (tap a title to open / close; all start closed): Languages & layouts (Bangla layout Avro / Probhat, Number row, Auto numpad, Mode Phone / PC, Mode key, Remember mode) / Typing (Hold backspace, Auto caps, Enter action, Double-space period, Double-space tab, Long-press characters) / Look (Theme, Look Classic / Jabra, One-hand, Icons, Large number row, Hide long-press hints) / Keys & gestures (Vibrate, Sound, Key popup, Globe / Voice / Emoji key, Long-press time, Cursor speed) / Clipboard & tools (Edit bar, Clip history, Formatter).
 - Every row reads and writes the SAME pref keys and defaults as the in-keyboard panels (gear, More settings, Typing options); nothing renamed, no new keys. The in-keyboard panels are unchanged and stay the main place for Size (height % / one-hand width %), Clipboard, Formatter presets.

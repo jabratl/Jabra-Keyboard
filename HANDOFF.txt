@@ -1,5 +1,5 @@
-JABRA KEYBOARD - HANDOFF v0.1.7  (newest on top; paste this file at the start of the next chat)
-READ ONLY the part above the first "PREVIOUS HANDOFF" line (sections 0-9). Everything below is history.
+JABRA KEYBOARD - HANDOFF v0.2.0  (newest on top; paste this file at the start of the next chat)
+Sections 0-9 are the whole file (old PREVIOUS parts were removed in v0.2.0; v0.0.3 Avro notes moved into section 5).
 =======================================================================================
 
 0) HOW TO WORK WITH THIS USER (follow these)
@@ -60,15 +60,6 @@ READ ONLY the part above the first "PREVIOUS HANDOFF" line (sections 0-9). Every
   Settings page (v0.1.6): Ridmik-like 5 groups. Current settings live in the gear panel + More settings (inside the keyboard); SettingsActivity.kt is the launcher screen.
   DECIDED (user, v0.1.5 session): build hint letters + long-press alternate characters in v0.1.6, THEN the setting "Hide long-press hints" (hides only the small labels, long-press still types the character). See 3b.
 
-3b) v0.1.6 PLAN: LONG-PRESS HINT LETTERS (decided with user; design below is a PROPOSAL, ask the user at most ONE question: "use this table or send your Ridmik photo?")
-  GOAL: small grey hint character in the top-right corner of each LETTER key; long-press the key = types that hint character (instead of the letter). Setting "Hide long-press hints" (pref hint_hide, default false) hides ONLY the label; long-press still works. Setting "Long-press characters" ON/OFF (pref hint_on, default true? decide: default ON because the user wants it).
-  PROPOSED English table (Latin letters; Gboard-like): q 1  w 2  e 3  r 4  t 5  y 6  u 7  i 8  o 9  p 0  |  a @  s #  d $  f %  g &  h -  j +  k (  l )  |  z *  x "  c '  v :  b ;  n !  m ?  . If the number row is ON the digits on q..p are duplicates: then use symbols there instead (user's choice: ask once or add a setting).
-  Bangla modes: Avro (phonetic) = no hints (the typed Latin letters are composed into a word; a hint symbol would first call commitWord()); Probhat = hint table for Bangla keys can be added later (ask user), v0.1.6 = English only + Avro/Probhat show NO hints and keep normal behaviour.
-  CODE PLAN: new typing/LongPressHints.java (pure Java: hintFor(char, numRowOn) -> String or null; tested in tools/HintTest.java), new file HintKeys.kt (draw hint label: ideally a small drawable / foreground like JabraIcons, NOT a second TextView; must follow theme text colour + Jabra look; attach long-press), tiny hooks in MgbIme.letter() / relabelLetters() (hints must be hidden/shown when mode changes: relabelLetters runs on language switch + shift), More settings or Typing options rows (2 toggles).
-  !! KNOWN CONFLICT TO HANDLE FIRST: letter keys already have an OnTouchListener from KeyPopup.attach (v0.1.3). JabraLongPress.attach (TypingPrefs.kt) with Fast/Slow levels ALSO uses setOnTouchListener (level 0 = setOnLongClickListener, no conflict). Two OnTouchListeners on one view REPLACE each other. Solution: one combined touch listener on letter keys (KeyPopup popup + long-press timer in the same listener), or let HintKeys call KeyPopup from its own listener. Test: popup still shows, short tap still types the letter, long-press types the hint ONCE (no extra letter), long-press timing follows lp_delay.
-  Also check: shift/caps (hint is NOT uppercased), Probhat/Avro mode (no hints, no change), password / number fields (latinOnly: hints fine in English), key repeat none, haptic on long-press, Key popup should show the HINT char while long-press fires (nice to have).
-  Rollback plan: setting off + code-level delete HintKeys.kt + LongPressHints.java + lines marked "v0.1.6".
-
 3) ROADMAP (one topic per version)
   v0.0.3 Avro phonetic + language switch      DONE (user uses it)
   v0.0.4 Probhat fixed Bangla layout          DONE in code (NOT tested on phone)   <- delivered together with v0.0.5 in ONE zip
@@ -85,23 +76,15 @@ READ ONLY the part above the first "PREVIOUS HANDOFF" line (sections 0-9). Every
   v0.1.5 DONE in code (NOT tested on phone) <- jabra_v0_1_5.zip. Jabra look (round-corner keys, own colour for function keys, pill space key, own popup) + logo (adaptive vector in code) + key style, "Classic" = old look as fallback
   v0.1.6 DONE in code (NOT tested on phone) <- jabra_v0_1_6.zip. LONG-PRESS HINT LETTERS + "Hide long-press hints" (design in 3b; table in LongPressHints.java, NOT confirmed by user). Session note: the user sent only "next update dao" + the template prompt with empty [placeholders]; step taken from this HANDOFF (NEXT SESSION START HERE = v0.1.6).
   v0.1.7 DONE in code (NOT tested on phone) <- jabra_v0_1_7.zip. settings page in 5 groups like Ridmik (Languages & layouts / Typing / Look / Keys & gestures / Clipboard & tools) on the launcher screen (SettingsGroups.kt)
-  v0.2.0 final test round (was after v0.1.6; now after v0.1.7): all unit tests, bracket + compile check (GitHub build), ONE full checklist, HANDOFF cleaned (old PREVIOUS parts removed)
+  v0.2.0 DONE <- jabra_v0_2_0.zip. final test round: all unit tests, ONE full checklist (CHECKLIST.txt), HANDOFF cleaned (old PREVIOUS parts removed). User reported GitHub build GREEN (2026-11-10, "sob gula green").
   Each version: ON/OFF setting, rollback step, CHANGELOG entry, tests that can run here.
 
-4) STATUS (v0.1.7 added on top of v0.1.6: all 10 Java tests pass, bracket balance of the 2 changed / new Kotlin files, pref keys cross-checked; NOT tested: Gradle / Kotlin compile, phone.) (v0.1.6 added on top of v0.1.5 (full repo zip Jabra-Keyboard-main.zip = v0.1.5, read in this session): all 10 Java tests pass (Hint 175/175 new), NovelFormatter.java byte-identical, code-only diff vs v0.1.5 removes only the moved KeyPopup listener block + the old note text; NOT tested: Gradle / Kotlin compile, phone.) (v0.1.5 added on top of v0.1.4 (full repo zip Jabra-Keyboard-main_120982.zip = v0.1.4, read in this session): all 9 Java tests pass (Look 13/13 new), brackets ok, res + manifest XML parse; NOT tested: Gradle / aapt build, Kotlin compile, phone.) (v0.1.4 added on top of v0.1.3: all 8 Java tests pass (SizePct 28/28 new), bracket balance ok; NOT tested: Kotlin compile, phone.) (v0.1.3 added on top of v0.1.2 on the full v0.1.1 repo zip (Jabra-Keyboard-main__1_.zip): all 7 Java tests pass, bracket balance ok; NOT tested: Kotlin compile, phone.) (v0.1.2 added on top of v0.1.1: tested here PcTest 19/19 + DoubleSpaceTest 37/37, bracket balance of 9 changed/new files, code-only diff vs v0.1.1 (nothing removed); NOT tested: Kotlin compile, phone, 360/1280 px render. NOTE: Jabra-Keyboard-main.zip received in the v0.1.2 session is still the v0.0.9 repo; v0.1.0 + v0.1.1 + v0.1.2 files come from the jabra_v0_1_x zips.) (v0.1.1 added on top of v0.1.0: tested here DoubleSpaceTest 37/37 + all older Java tests, bracket balance of 21 files, line-by-line diff vs v0.1.0; NOT tested: Kotlin compile, phone). (v0.1.0 added on top of v0.0.9; v0.1.0 tested here: all 6 Java tests pass (EmojiTest 1585/1585 ...), bracket balance of all 18 source files, every hook read against the real v0.0.9 repo; Dark theme icon/note colour bug FOUND + FIXED (JabraIcons.putThemed). NOT tested: Kotlin compile, phone. Full repo zip (Jabra-Keyboard-main.zip, v0.0.9) was received in the v0.1.0 session: now ALL files are known). (v0.0.9 added on top of v0.0.8; v0.0.4 + v0.0.5 were delivered earlier in jabra_v0_0_5.zip, v0.0.6 in jabra_v0_0_6.zip; USER HAS NOT YET CONFIRMED ANY OF THEM BUILD/RUN)
-  PROVED BY USER earlier: GitHub build + signed APK + install + typing works (v0.0.3 build).
-  v0.0.9 tested here: tools/TypingTest.java 27/27 (ShiftState + EnterAction), bracket balance of all Kotlin. NOT tested: Kotlin compile, everything on phone.
-  v0.0.8 tested here: formatter engine vs ORIGINAL JS (node) 1500/1500 random cases identical (tools/FormatterTest.java + tools/FormatterDiffGen.js), HTML reader, ClipList 18/18, bracket balance of Kotlin. NOT tested: Kotlin compile, org.json, everything on phone.
-  v0.0.7 tested here: bracket balance of 4 Kotlin files, ClipList 18/18, diff vs v0.0.6 zip. NOT tested: Kotlin compile, icon look on phone.
-  NOTE: the zips I receive are PARTIAL (only changed files). Files NOT in the v0.0.6 zip and NOT touched by me: probhat/, extras/, phonetic/, SettingsActivity.kt, Updater.kt, AndroidManifest, .github.
-  Tested here (computer): AvroPhonetic 43/43; ProbhatLayout table + SpaceDrag logic 133/133 (tools/ExtrasTest.java); ClipList logic 18/18 (tools/ClipTest.java).
-  NOT tested: Gradle/Kotlin compile of v0.0.4 + v0.0.5 + v0.0.6 (no Kotlin compiler here; code was only read carefully + bracket check),
-  everything on a real phone: Probhat typing, extra row, number row, symbols/numpad/settings panels, auto numpad,
-  space-drag, height change, haptic/sound, rotation (landscape), long-press on language key.
-  PROBHAT TABLE NOT VERIFIED: official chart (ekushey.org) could not be opened from here. Table is from memory of standard Probhat.
-  Independent vowels (আ ই ঈ উ ঊ এ ঐ) + ঁ ঃ ৎ + ZWNJ are in an EXTRA ROW (shown only in Probhat mode), not on letter keys.
-  If a key is wrong: edit ONLY the table T in probhat/ProbhatLayout.java (key, normal, shift), run tools/ExtrasTest.java.
-  SettingsActivity.kt / Updater.kt were NOT in the v0.0.3 zip I received and are NOT touched. New settings live INSIDE the keyboard (? 123 -> gear).
+4) STATUS (v0.2.0)
+  GITHUB BUILD: user says all builds are GREEN (message "sob gula green", 2026-11-10, after v0.1.7): so Gradle + Kotlin compile of v0.0.9 - v0.1.7 is now PROVEN. Phone behaviour of v0.0.4 - v0.1.7 is still NOT confirmed by the user (CHECKLIST.txt).
+  Tested here (computer, v0.2.0): all 10 Java tests (Avro 43, Extras 133, Clip 18, Emoji 1585, Typing 27, DoubleSpace 37, Pc 19, SizePct 28, Look 13, Hint 175) + Formatter engine test was last run in v0.0.8 (1500/1500 vs the original JS).
+  PROBHAT TABLE NOT VERIFIED against the official chart (table from memory); fix only table T in probhat/ProbhatLayout.java, run tools/ExtrasTest.java.
+  HINT TABLE (v0.1.6) NOT confirmed by the user; edit LongPressHints.java only.
+  Older per-version status lines were removed in v0.2.0 (see CHANGELOG.txt for each version's TESTED / NOT tested).
 
 5) HOW IT WORKS (v0.1.7 first, then v0.1.6, then v0.1.5, then v0.1.1, then v0.1.0, then v0.0.9 typing basics, then v0.0.8 formatter, then v0.0.7 icons, then v0.0.6; then v0.0.4 / v0.0.5; v0.0.3 part is below under PREVIOUS)
   v0.1.7 settings groups:
@@ -220,6 +203,23 @@ READ ONLY the part above the first "PREVIOUS HANDOFF" line (sections 0-9). Every
     javac -encoding UTF-8 -d out app/src/main/java/com/mgb/keyboard/probhat/ProbhatLayout.java app/src/main/java/com/mgb/keyboard/extras/SpaceDrag.java tools/ExtrasTest.java && java -cp out ExtrasTest
     (Avro: see PREVIOUS section, tools/AvroTest.java)
 
+  v0.0.3 Avro phonetic (kept from the old history):
+  app/src/main/java/com/mgb/keyboard/
+    MgbIme.kt              keyboard UI built in code (no XML). Hooks added in v0.0.3: onLetter, commitWord, onBackspace,
+                           toggleLang, onStartInputView (latinOnly detection), onUpdateSelection (reset on cursor move).
+    phonetic/AvroPhonetic.java   pure Java engine. convert(romanWord) -> Bangla. Tables VOW/CON/AUTO.
+                           Rules: consonant+consonant = hasanta conjunct; vowel after consonant = kar; "o" = inherent (no sign);
+                           y/w after consonant = ya/ba-phala; "ng" before vowel = ঙ else ং; tiny AUTO list (valo, tomar, kono...).
+                           NOT yet: ৎ, ঁ, ঃ, Bangla digits, dictionary autocorrect.
+    SettingsActivity.kt    enable/choose keyboard, test box, Check for updates. Updater.kt = GitHub Releases updater
+                           (stage 1: download apk + system installer; stage 2: open release page in browser).
+  Prefs file "jabra": key "bangla" (boolean). Do not rename.
+  Typing flow in Bangla mode: letters collect in buf -> setComposingText(Bangla) -> commit on space/punct/enter/switch.
+  If engine throws: Latin letters are shown (fallback). Password/email/URL/number fields: always English.
+  Test engine on a computer:
+    java -m jdk.compiler/com.sun.tools.javac.Main -encoding UTF-8 -d out app/src/main/java/com/mgb/keyboard/phonetic/AvroPhonetic.java tools/AvroTest.java
+    java -cp out AvroTest        (or plain javac if available)
+
 6) FORMATTER (v0.0.8, DONE in code) - decisions
   Why not WebView with the HTML: you cannot type inside the keyboard's own WebView, and a new Activity needs AndroidManifest.xml (I do not have it). So: panel inside the keyboard + engine ported to Java.
   Working procedure: select text in any app (or none = whole field) -> open "Aa" -> pick Source -> tap Replace/Copy. See CHANGELOG v0.0.8 for SAME / DIFFERENT list vs the HTML tool.
@@ -235,49 +235,9 @@ READ ONLY the part above the first "PREVIOUS HANDOFF" line (sections 0-9). Every
   Build env here has NO Gradle/Android SDK/network: Kotlin cannot be compiled here. Java engine can (see above).
   Permissions in app: INTERNET (only on "Check for updates"), REQUEST_INSTALL_PACKAGES. Nothing else.
 
-8) TEST CHECKLIST for user (v0.1.7 first, then v0.1.6, then v0.1.5, then v0.1.4, then v0.1.3, then v0.1.2, then v0.1.1, then v0.1.0, then v0.0.9, then v0.0.8, then v0.0.7, v0.0.6, v0.0.4 + v0.0.5)
-  v0.1.7: open the Jabra Keyboard app (home screen icon): under the test box there are 5 buttons (Languages & layouts, Typing, Look, Keys & gestures, Clipboard & tools). Tap one: it opens (arrow turns down) with ON/OFF / choice buttons; tap again: closes. Tap a button: text changes (ON <-> OFF, or next choice).
-          Then open any app, open the keyboard: the change is there (e.g. Look: Jabra, Theme: Dark, Number row OFF). In the keyboard: gear -> More settings: the same value is shown. Change it there, reopen the app: same value here. Check 360 px (button text not cut) and dark + light phone theme.
-  v0.1.6: English letters keyboard: each letter key has a small grey character in the top-right corner (q = ~ with number row ON). Hold "a" -> "@" is typed, NO "a". Quick tap still types "a". Hold a key with Shift ON: hint is typed as is (not uppercased).
-          Gear -> More settings -> Typing options > -> "Hide long-press hints": ON -> ABC (apply) -> labels gone, hold "a" still types "@". "Long-press characters": OFF -> ABC (apply) -> labels gone, hold does nothing special. Number row OFF -> ABC: q..p show 1..0.
-          Switch to Avro and Probhat: NO small characters, typing exactly as before. Key popup ON: bubble still shows on press. Typing options Long-press Fast / Slow: hint appears sooner / later. Check Dark theme + Look Jabra: label colour readable? 360 px: label not covering the letter?
-  v0.1.5: More settings -> Look: Jabra -> ABC (apply): keys rounded, shift / backspace / ?123 / language / Enter in own colour, space key pill-shaped; press a key: it gets darker. Try all 5 themes (Dark!). Look: Classic -> exactly the old look. Key popup ON + Look Jabra: bubble in theme colour. Home screen / app list: Jabra icon (keycap + letter + orange cursor). Shift ON and PC Ctrl: blue tint still visible?
-  v0.1.4: More settings -> Size > : Height portrait + (a few taps) -> ABC (apply): keys taller; rotate phone: landscape has its own Height. One-hand Left (More settings) + One-hand width - : keyboard narrower on that side. Reset sizes -> back to old look. Old gear -> Height button still cycles Small..XL (and wins again after you tap it). Check 70% and 150% (is anything cut off? PC rows + number row at 150%).
-  v0.1.3: Typing options -> Key popup ON -> hold a letter key: a bubble with the letter shows above it (check top letter row, Dark theme). Large number row ON -> ABC (apply) -> number row taller. Both OFF = same as v0.1.2.
-  v0.1.2: Edit bar: first key = robot-head icon (Phone mode). Tap -> keyboard shows 4 PC rows above the letters and the key becomes a monitor icon; tap again -> back to Phone.
-          In Termux / Chrome / a code editor: Esc, Tab, F-keys, arrows, Home/End, PgUp/PgDn, Del work. Tap Ctrl (light blue) then letter "c" -> Ctrl+C key event; double-tap Ctrl (dark blue) = lock until tapped again. ^A ^C ^V ^X = select all / copy / paste / cut, ^Z = undo.
-          More settings -> Mode key OFF -> ABC (apply): mode key gone (edit bar OFF = it moves to the bottom row). Remember mode OFF -> close and reopen keyboard in PC mode -> opens in Phone mode. Check 360 px width: F1-F12 row readable? Dark theme: Ctrl/Alt colours ok?
-  v0.1.1: Gear -> More settings -> "Typing options >". Defaults: everything OFF / System / Normal -> keyboard must behave exactly like v0.1.0 (check once).
-          Double-space period ON -> ABC (apply) -> type "hello" + space + space -> "hello. " ; Bangla mode -> danda; 3rd tap = normal space; in a password / email field nothing special. Double-space tab ON (period OFF) -> a tab appears (needs an app that shows tabs).
-          Long-press: Fast / Slow -> ABC -> long-press "," (emoji) and ?123 (picker) and the language key (Avro <-> Probhat): timing follows the setting; a quick tap still types "," / opens symbols / switches language.
-          Cursor speed: Fast / Slow -> drag on space: the cursor moves more / less per finger distance.
-          Globe key ON -> bottom row shows a globe icon -> tap = next keyboard (or picker). Voice key ON -> mic icon -> tap = phone's voice typing (if none: picker). Emoji key ON -> emoji face icon -> opens the emoji panel. Check space key width with all 3 ON, and Dark theme icons.
-  v0.1.0: Letters keyboard: LONG-PRESS the "," key -> emoji panel opens (a quick tap still types ","). Tap an emoji -> it is typed; open again -> "Recent" tab shows it first.
-          Tabs scroll sideways; grid scrolls up/down; hold backspace in the panel deletes; ABC goes back to letters. Check: do emoji show as pictures (not boxes)?
-          Gear -> More settings -> Theme: tap to cycle (Classic/Blue/Mint/Sand/Dark) -> ABC (apply): background + keys + text colour change; Classic = looks like before. Check Dark: are the icons (shift, backspace, edit bar) still visible?
-          More settings -> One-hand: Left -> ABC (apply): keyboard narrower, stuck to the left; Right = right side; Off = full width. Also check landscape and the symbols / number pad panels.
-  v0.0.9: Backspace: type a long line, HOLD backspace -> deletes by itself, faster after a moment; also in ?123 symbols and number pad. Shift: tap = one capital letter; double-tap quickly = CAPS LOCK (key blue), tap = off.
-          Auto caps: new empty note -> first letter is capital (shift light blue); after ". " capital again; Gear -> More settings -> Auto caps OFF -> stops. Avro/Probhat: no auto capital.
-          Enter: in a chat/search box Enter = Send/Search; in a notes app Enter = new line; More settings -> Enter action OFF -> old behaviour. Long-press ?123 (or More settings -> Switch keyboard) -> phone's keyboard picker.
-  v0.0.8: type 3-4 paragraphs in a notes app (one with "quotes", ... , **bold**, a line ***). Edit bar -> "Aa" (7th button). Run tab: Source Text -> Preview -> stats + peek appear.
-          Select ALL text -> "Replace with HTML code" -> text becomes <p style=...> lines; "Undo last replace" -> old text is back.
-          No selection -> Replace -> first tap shows "Tap again..." (nothing changed yet), second tap replaces. Para tab: Indent OFF -> Preview again -> no text-indent. Clean tab: Quotes Curly, dots ON.
-          Rules tab: write "colour => color" + "del: Read the latest" in a notes app, copy, Rules from clipboard -> counts show 1 replace, 1 delete; Preview shows effect.
-          Copy formatted -> paste in Google Docs / WordPress Visual editor (should keep italic/bold). Copy WordPress block -> paste in the Code editor. Presets tab: tap a preset, Save current, Export, Import.
-          Password field: Aa button does nothing. Gear -> Formatter OFF -> ABC (apply): "Aa" button gone.
-  v0.0.7: top edit bar shows 6 icons (clipboard, dashed box, scissors, two sheets, board+arrow, T-slash). Tap each: same job as v0.0.6 (All/Cut/Copy/Paste/Plain).
-          Letters: shift = up arrow, backspace = tag-with-x, enter = return arrow. ?123 -> gear icon. Clipboard panel: magnifier, pin / filled pin, x.
-          Gear -> Icons OFF -> ABC (apply) -> old words/emoji are back. Check: are icons clear and not too small/big? (also landscape, Height Small/XL)
-  v0.0.6: top row "📋 All Cut Copy Paste Plain". Type text, All -> selected; Cut -> gone; Paste -> back. Copy text in another app ->
-          open 📋 -> it is in the list; tap it -> pasted. ☆ pin -> goes top with ★; ✕ deletes one; Clear -> "Sure?" -> second tap clears unpinned only.
-          🔍 Search -> type letters -> list filters. Password field: copy something there -> must NOT appear in list. Gear -> Edit bar OFF -> bar disappears.
-  v0.0.4 + v0.0.5 (if not yet checked)  -> same list is at the end of the last reply
-  Build: Actions green, release has Jabra-Keyboard-v0.0.5-bN.apk, in-app "Check for updates" installs it (v0.0.3 -> v0.0.5).
-  Old things still OK: English typing, বাং Avro ("ami valo achi" -> আমি ভালো আছি), password field = English.
-  v0.0.4: long-press language key -> caption "প্রভা", extra vowel row appears, f=া j=ক g=্ (hasanta) etc.
-  v0.0.5: number row on top; "?123" -> symbols (2 pages), gear -> settings; "123" -> number pad; open a number/phone field -> number pad auto;
-          drag finger left/right on space -> cursor moves, plain tap -> space; Height button -> back with ABC -> keys taller;
-          Vibrate/Sound toggles; Number row OFF -> row disappears.
+8) TEST CHECKLIST for user
+  ONE full list = CHECKLIST.txt in the repo root (every feature, which screen / what to do / what to see). Per-version lists of v0.0.4 - v0.1.7 were merged into it in v0.2.0.
+  Build: GitHub Actions green (user confirmed for all versions up to v0.1.7); release has Jabra-Keyboard-v<version>-b<run>.apk; in-app "Check for updates" installs it.
 
 8b) ROLLBACK
   Only v0.1.7 off: nothing to switch (the screen only edits the same settings). Code level: delete SettingsGroups.kt and the line marked "v0.1.7" in SettingsActivity.kt. Easiest: re-apply jabra_v0_1_6.zip files (and delete SettingsGroups.kt).
@@ -304,390 +264,6 @@ READ ONLY the part above the first "PREVIOUS HANDOFF" line (sections 0-9). Every
   Only Probhat off: do not long-press language key (default stays Avro); code level: delete probhat/ProbhatLayout.java + hooks marked "v0.0.4".
 
 9) NEXT
-  >>> NEXT SESSION START HERE: v0.2.0 = final test round: all unit tests, bracket + compile check (GitHub build), ONE full checklist for the user, HANDOFF cleaned (old PREVIOUS parts removed). If the user reports a build error or a phone bug first: FIX mode, send the FIRST error only.
-  FIRST (user): upload jabra_v0_1_7.zip (+ v0.0.9 - v0.1.6 if not yet), check GitHub build (v0.0.9 - v0.1.7 never built), test v0.1.7 + v0.1.6 (see 8). Open point for user: is the hint table OK (LongPressHints.java) or send a Ridmik photo?
-  Optional later: hint table for Probhat keys (ask user), end one-shot shift after a hint, theme the Clipboard / Formatter panels, make the launcher groups follow a custom dark / light colour.
-  (older notes below)
-  >>> v0.1.6 was: LONG-PRESS HINT LETTERS (see 3b) - DONE.
-  000000. v0.1.5 DONE. FIRST: upload jabra_v0_1_5.zip (+ older v0.1.2 - v0.1.4 if not yet), check build (v0.0.9 - v0.1.5 never built; NEW risk: resource files, send the FIRST error only), test v0.1.5 (see 8).
-      (old plan, now v0.1.7) settings page in 5 groups like Ridmik (Languages & layouts / Typing / Look / Keys & gestures / Clipboard & tools). SettingsActivity.kt is the launcher screen (read it first with grep); current settings live in the gear panel + More settings + Typing options + Size inside the keyboard. Then v0.2.0 final test round.
-      Answered: user wants "Hide long-press hints" -> v0.1.6 builds the hint letters first. Optional: logo closer to the real letter; theme the Clipboard / Formatter panels.
-  00000. v0.1.4 DONE. FIRST: upload jabra_v0_1_4.zip (+ v0.1.2 / v0.1.3 if not yet), check build (v0.0.9 - v0.1.4 never built: send the FIRST error only), test v0.1.4 (see 8).
-      NEXT TOPIC = v0.1.5 Jabra look (round-corner keys, own colour for function keys, pill space key, own popup) + logo (adaptive vector in code, manifest android:icon, res/drawable + res/mipmap-anydpi-v26) + "Classic" = old look fallback. NOTE: the manifest is not yet seen in a zip; it is in the full repo zip (Jabra-Keyboard-main__1_.zip) - read it first.
-  0000. v0.1.3 DONE. FIRST: upload jabra_v0_1_3.zip (+ v0.1.2 if not yet), check build (v0.0.9 - v0.1.3 never built: send the FIRST error only), test v0.1.3 (see 8).
-      QUESTION for user: "Hide long-press hints" has nothing to hide. Choose: (a) drop it, (b) add small hint letters / long-press alternate characters on keys (bigger version, own topic, then the hide setting makes sense). Default if no answer: (a).
-      NEXT TOPIC = v0.1.4 keyboard height % + one-hand width % (portrait AND landscape; old kh_p / kh_l / onehand keys must keep working as fallback).
-  000. v0.1.2 DONE. FIRST: upload jabra_v0_1_2.zip, check GitHub build (v0.0.9 - v0.1.2 never built: if red send the FIRST error only), test v0.1.2 (see 8).
-      NEXT TOPIC = v0.1.3: hide long-press hints, popup on keypress, Large number row. Open point (see 2b): "Hide long-press hints" needs hint labels to exist - decide first (small hint letter on keys = new setting). Then v0.1.4 height % / one-hand width %.
-      Optional for PC mode later: icons on the More settings Mode row, Ctrl+Shift combos, sticky Shift, Bluetooth/USB keyboard (ASK first, permissions).
-  00. FIRST: upload jabra_v0_1_0.zip (if not yet) and jabra_v0_1_1.zip to the repo; check the GitHub build is green (v0.0.9, v0.1.0, v0.1.1 were NEVER built: if red, send the FIRST error text only). Test v0.1.1 on the phone (see 8).
-      NEXT TOPIC = v0.1.2 PC Mode + MODE ICON KEY (full decisions in 2b). Starting notes: add route showPanel("pc") in MgbIme.showPanel (same pattern as "typing"); new file PcMode.kt + typing/PcState.java (+ tools/PcTest.java);
-      key events: currentInputConnection.sendKeyEvent(KeyEvent(downTime, eventTime, KeyEvent.ACTION_DOWN, keyCode, 0, metaState)) + ACTION_UP (META_CTRL_ON / META_ALT_ON), sendDownUpKeyEvents(code) for plain keys; Ctrl+C/V/X/A reuse MgbIme.editAction(kind) (check its name/signature in the file first).
-      mode key = first key of the edit bar (MgbIme.buildKeyboard edit-bar loop) + first key of the PC rows; icons "mode_phone" / "mode_pc" drawn in JabraIcons (own drawing, not Google's logo); More settings rows: Mode, Mode key show/hide, Remember mode (pref pc_mode).
-  0. v0.0.9 typing basics: test on phone (see 8). Then v0.1.0 (emoji panel, local themes, one-handed mode), v0.1.1 (system voice button, settings polish).
-  1. Confirm build is green (Kotlin has never been compiled by me). Send me the error text if red. THIS IS THE BIGGEST RISK: 4 versions of Kotlin are unbuilt.
-  2. Look at the icons on the phone: if any looks unclear tell me which (name) -> I fix only that 'when' branch in JabraIcons.kt.
-  3. Compare Probhat keys with your Ridmik Probhat (send photo) -> I fix table T in one file.
-  4. v0.0.8 formatter: test on phone (see 8). Tell me what feels slow/unclear (tabs, chips, text size) -> I change only FormatterFeature.kt UI part.
-  5. Next roadmap topic: v0.1.0 (emoji panel, local themes, one-handed mode). Suggestions are DROPPED (user decision).
-  Optional later: conjunct-aware backspace for Probhat, Bangla digits option, space-drag stage 2, settings screen link in SettingsActivity.
-
-=====================================================================================
-PREVIOUS HANDOFF (v0.0.7 file, kept as it was)
-=====================================================================================
-
-0) HOW TO WORK WITH THIS USER (follow these)
-  - Reply in BANGLISH (Bangla written in English letters). User is NOT a coder: simple words, step-by-step.
-  - Before coding: read HANDOFF/CHANGELOG, say in ~5 lines what you understood, state the task in 2-3 lines,
-    ask at most ONE question, otherwise write assumptions. Plan max 5 lines, then build.
-  - RULE 0: never break/rename/slow any existing feature, setting, storage key, build flow. No "clean up/refactor"
-    unless asked. If a new change breaks something old, it is a bug: fix it yourself.
-  - PATCH, do not rewrite files. One version = one topic. Find ROOT CAUSE before fixing; grep for the same bug elsewhere.
-  - New code in separate file/module, only a tiny hook in old code; wrap in try/catch; old behaviour = automatic fallback;
-    ON/OFF switch where possible; never change meaning of old keys/settings.
-  - Risky things (site/API/platform dependent): max 3 stages (best, one alternative, old feature). Stage 2 only if
-    session < 85%. If unsure and cannot test -> write "NOT tested".
-  - New permission/network/tracking: ASK first. No secrets in code. Confirm before deleting/overwriting user data.
-  - Run what can be run here (syntax, tests) and show result. Never say "works" for what was not run on a phone.
-  - Output: version bump, CHANGELOG entry (WHY, what changed, what BROKE, NOT tested, files), HANDOFF update,
-    zip with ONLY changed/new files at exact paths (check nothing was lost vs previous version).
-    Final reply <= 10 lines + Banglish checklist ("which screen, do what, see what").
-  - Session limit: after ~85% no new sub-task; at ~90% stop, give files + HANDOFF + 1 line "what I did / what is left".
-
-1) PROJECT
-  Jabra Keyboard: personal Android keyboard (Ridmik-inspired, own code, NOT copied) + novel-formatter features.
-  GitHub repo: jabra-keyboard (user's repo, PUBLIC needed for in-app update). Android native: Kotlin + one Java engine file.
-  Package id com.mgb.keyboard (kept on purpose: changing it breaks updates/signing). Display name "Jabra Keyboard".
-  Reference for later formatter: novel-formatter_v2_updated.html (user's HTML tool; keep same rule syntax:
-  "find => replace", "re:", "del:", "del-re:", "# comment"; presets JSON keys nvPresets/nvCurrent/nvDraft untouched).
-
-2) SCOPE (decided with user)
-  KEEP: Avro phonetic, Probhat (user wrote "pravati"), English; ALL copy/paste related things (clipboard history, PINNED
-  items, delete/search, select all/cut/copy/paste toolbar, paste plain text); novel formatter panel; number row, number pad,
-  symbols, space-drag cursor, keyboard height (portrait/landscape), one-handed mode, haptic/sound; next-word suggestion,
-  emoji in suggestions, typed-word preview; emoji panel; local themes.
-  DROP: Store (also theme store), key maps, tutorial, tips, survey, more apps.
-  OFF by default unless user asks: Jatiyo layout, GIF (needs internet), contacts suggestions (needs permission),
-  Arabic/Chakma add-ons.
-  Voice: NOT own recording (needs RECORD_AUDIO+INTERNET). Plan = button that switches to the phone's system voice typing.
-
-3) ROADMAP (one topic per version)
-  v0.0.3 Avro phonetic + language switch      DONE (user uses it)
-  v0.0.4 Probhat fixed Bangla layout          DONE in code (NOT tested on phone)   <- delivered together with v0.0.5 in ONE zip
-  v0.0.5 number row, symbols, number pad, space-drag cursor, key height, haptic/sound   DONE in code (NOT tested on phone)
-  v0.0.6 clipboard history + pinned + search + edit bar   DONE in code (NOT tested on phone)
-  v0.0.7 own unique icons for function keys (user request, no emoji)   DONE in code (NOT tested on phone)   <- this zip
-  v0.0.8 novel formatter panel (see 6)  [was v0.0.7; moved because user asked icons first; NEEDS novel-formatter_v2_updated.html from user]
-  v0.0.9 suggestions: local learning, next word, emoji in suggestions, typed-word preview
-  v0.1.0 emoji panel, local themes, one-handed mode
-  v0.1.1 system voice button, settings polish
-
-4) STATUS (v0.0.7; v0.0.4 + v0.0.5 were delivered earlier in jabra_v0_0_5.zip, v0.0.6 in jabra_v0_0_6.zip; USER HAS NOT YET CONFIRMED ANY OF THEM BUILD/RUN)
-  PROVED BY USER earlier: GitHub build + signed APK + install + typing works (v0.0.3 build).
-  v0.0.7 tested here: bracket balance of 4 Kotlin files, ClipList 18/18, diff vs v0.0.6 zip. NOT tested: Kotlin compile, icon look on phone.
-  NOTE: the zips I receive are PARTIAL (only changed files). Files NOT in the v0.0.6 zip and NOT touched by me: probhat/, extras/, phonetic/, SettingsActivity.kt, Updater.kt, AndroidManifest, .github.
-  Tested here (computer): AvroPhonetic 43/43; ProbhatLayout table + SpaceDrag logic 133/133 (tools/ExtrasTest.java); ClipList logic 18/18 (tools/ClipTest.java).
-  NOT tested: Gradle/Kotlin compile of v0.0.4 + v0.0.5 + v0.0.6 (no Kotlin compiler here; code was only read carefully + bracket check),
-  everything on a real phone: Probhat typing, extra row, number row, symbols/numpad/settings panels, auto numpad,
-  space-drag, height change, haptic/sound, rotation (landscape), long-press on language key.
-  PROBHAT TABLE NOT VERIFIED: official chart (ekushey.org) could not be opened from here. Table is from memory of standard Probhat.
-  Independent vowels (আ ই ঈ উ ঊ এ ঐ) + ঁ ঃ ৎ + ZWNJ are in an EXTRA ROW (shown only in Probhat mode), not on letter keys.
-  If a key is wrong: edit ONLY the table T in probhat/ProbhatLayout.java (key, normal, shift), run tools/ExtrasTest.java.
-  SettingsActivity.kt / Updater.kt were NOT in the v0.0.3 zip I received and are NOT touched. New settings live INSIDE the keyboard (? 123 -> gear).
-
-5) HOW IT WORKS (v0.0.7 icons first, then v0.0.6; then v0.0.4 / v0.0.5; v0.0.3 part is below under PREVIOUS)
-  v0.0.7 icons:
-    JabraIcons.kt   object JabraIcons: put(ctx, button, name) / apply(button, name, on). Draws icon with Canvas lines as button.foreground
-                    (drawable IconDrawable, scales to key size), clears button text, keeps old text as contentDescription.
-                    Names: clip all cut copy paste plain search close pin pinned gear shift back enter space. Add new icon = add name to NAMES + one 'when' branch.
-                    Pref "icons_on" (bool, default true). Never throws; on any problem the button keeps its old label (= automatic fallback).
-    Hooks "v0.0.7": MgbIme.kt (edit bar loop, shift, backspace, enter), JabraExtras.kt (bottomRow gear + enter, symbols backspace, numpad backspace + enter,
-                    settings row r4 gets "Icons" toggle), ClipboardFeature.kt (search/close button, pin/pinned, close, search-box backspace + space,
-                    "star"/magnifier text hidden when icons ON).
-  v0.0.6 clipboard:
-    clip/ClipList.java        pure Java list: add (dedupe, newest first), pin, remove, clearUnpinned, view(query), serialize/parse
-                              (lines "0|1,<urlencoded text>"). Limits 40 unpinned / 30 pinned / 2000 chars.
-    ClipboardFeature.kt       ClipStore (loads/saves prefs key "clips_v1") + ClipPanel (list, star, x, search with mini keys, Clear asks twice).
-    MgbIme.kt hooks "v0.0.6": ClipboardManager listener registered in onCreate / removed in onDestroy -> captureClip();
-                              also captureClip() in onStartInputView. Skipped when: password field (pwdField), prefs clip_on=false,
-                              clip marked android.content.extra.IS_SENSITIVE. Edit bar row in buildKeyboard (prefs edit_bar, default true);
-                              editAction(): performContextMenuAction(selectAll/copy/cut/paste), fallback own code; "plain" = clip text -> commitText.
-                              showPanel("clipboard") routes to ClipPanel. New prefs keys: clip_on(true), edit_bar(true), clips_v1(string).
-  app/src/main/java/com/mgb/keyboard/
-    probhat/ProbhatLayout.java  pure Java. map(char) -> Bangla for a pressed key (UPPER-case letter = shift), label(), EXTRAS row.
-    extras/SpaceDrag.java       pure Java. Drag distance -> cursor steps (16dp per step).
-    JabraExtras.kt              JabraHost (interface MgbIme implements), JabraPrefs (safe pref reader), SpaceDragHelper (touch),
-                                JabraPanels (symbols 2 pages, number pad, quick settings). Panels built in code. build() returns null on error
-                                -> MgbIme shows normal letters.
-    MgbIme.kt                   tiny hooks: container(FrameLayout) holds letters OR a panel; showLetters()/showPanel(); probhatOn()/phoneticOn();
-                                relabelLetters() (Latin or Probhat labels via button.tag); number row + Probhat extra row in buildKeyboard();
-                                "?123" key (bottom-left); language key long-press = Avro<->Probhat; space key touch = drag cursor;
-                                key() now reads height + gives haptic/sound; onStartInputView opens number pad for number/phone fields.
-  Prefs file "jabra" (old key "bangla" unchanged). NEW keys: bn_layout("avro"|"probhat", default avro), numrow(true), haptic(true),
-    sound(false), numpad_auto(true), kh_p / kh_l (0..3 = 40/48/56/64dp, default 1 = 48dp = old size).
-  Bangla modes: tap language key = EN <-> Bangla (same as before). Key caption: EN / বাং (Avro) / প্রভা (Probhat).
-    Long-press language key, OR settings panel "Bangla:" button = switch Avro <-> Probhat.
-  Probhat: each key types ONE Bangla letter directly (no composing underline, no buffer). Shift = second letter. Backspace = normal delete.
-    Password/email/URL/number fields: always English (same rule as Avro).
-  Space-drag: stage 1 = DPAD_LEFT/RIGHT key events. Stage 2 (ExtractedText + setSelection) NOT added - add only if some app ignores DPAD.
-  Test on computer (clip: javac -encoding UTF-8 -d out app/src/main/java/com/mgb/keyboard/clip/ClipList.java tools/ClipTest.java && java -cp out ClipTest):
-    javac -encoding UTF-8 -d out app/src/main/java/com/mgb/keyboard/probhat/ProbhatLayout.java app/src/main/java/com/mgb/keyboard/extras/SpaceDrag.java tools/ExtrasTest.java && java -cp out ExtrasTest
-    (Avro: see PREVIOUS section, tools/AvroTest.java)
-
-6) FORMATTER PLAN (now v0.0.8)
-  Own package formatter/, port fixText/applyRules/SCENE from the HTML file. Panel button "Aa" in toolbar. Actions:
-  format selection / format all (with confirm + Undo), find/replace rules (same syntax as HTML), copy as HTML (ClipData html),
-  presets JSON import/export, optional auto mode (default OFF). Stage 1 = InputConnection read/replace;
-  stage 2 = put formatted text in clipboard and tell user to paste; final fallback = normal typing. Never in password fields.
-
-7) BUILD / RELEASE (user's own workflow, do not change unless asked)
-  .github/workflows/build.yml (zip uploads never change .github; user edits it by hand on GitHub).
-  Push to main -> applies *_vX_Y_Z.zip in repo root (zip name must match _v<digits_digits>.zip) -> builds -> release
-  tag v<appVersionName>-b<run number>, apk name Jabra-Keyboard-<tag>.apk. Version = ONE line in app/build.gradle.kts.
-  Secrets (user set, 4): KEYSTORE_B64, KEYSTORE_PASSWORD, KEY_ALIAS, KEY_PASSWORD. Without them debug apk -> update fails.
-  Revert: Actions > Run workflow > revert_to = previous | latest | tag | commit. See REVERT.txt.
-  Build env here has NO Gradle/Android SDK/network: Kotlin cannot be compiled here. Java engine can (see above).
-  Permissions in app: INTERNET (only on "Check for updates"), REQUEST_INSTALL_PACKAGES. Nothing else.
-
-8) TEST CHECKLIST for user (v0.0.7 first, then v0.0.6, then v0.0.4 + v0.0.5)
-  v0.0.7: top edit bar shows 6 icons (clipboard, dashed box, scissors, two sheets, board+arrow, T-slash). Tap each: same job as v0.0.6 (All/Cut/Copy/Paste/Plain).
-          Letters: shift = up arrow, backspace = tag-with-x, enter = return arrow. ?123 -> gear icon. Clipboard panel: magnifier, pin / filled pin, x.
-          Gear -> Icons OFF -> ABC (apply) -> old words/emoji are back. Check: are icons clear and not too small/big? (also landscape, Height Small/XL)
-  v0.0.6: top row "📋 All Cut Copy Paste Plain". Type text, All -> selected; Cut -> gone; Paste -> back. Copy text in another app ->
-          open 📋 -> it is in the list; tap it -> pasted. ☆ pin -> goes top with ★; ✕ deletes one; Clear -> "Sure?" -> second tap clears unpinned only.
-          🔍 Search -> type letters -> list filters. Password field: copy something there -> must NOT appear in list. Gear -> Edit bar OFF -> bar disappears.
-  v0.0.4 + v0.0.5 (if not yet checked)  -> same list is at the end of the last reply
-  Build: Actions green, release has Jabra-Keyboard-v0.0.5-bN.apk, in-app "Check for updates" installs it (v0.0.3 -> v0.0.5).
-  Old things still OK: English typing, বাং Avro ("ami valo achi" -> আমি ভালো আছি), password field = English.
-  v0.0.4: long-press language key -> caption "প্রভা", extra vowel row appears, f=া j=ক g=্ (hasanta) etc.
-  v0.0.5: number row on top; "?123" -> symbols (2 pages), gear -> settings; "123" -> number pad; open a number/phone field -> number pad auto;
-          drag finger left/right on space -> cursor moves, plain tap -> space; Height button -> back with ABC -> keys taller;
-          Vibrate/Sound toggles; Number row OFF -> row disappears.
-
-8b) ROLLBACK
-  Only v0.0.7 off: gear panel -> Icons OFF -> ABC (apply) (no code change). Code level: delete JabraIcons.kt and every line marked "v0.0.7"
-    (MgbIme.kt 4 spots, JabraExtras.kt 6 spots, ClipboardFeature.kt 6 spots; unwrap JabraIcons.put(...) so the plain pk()/key()/btn() call stays;
-    in ClipboardFeature restore: top.addView(btn(...)) for Search, q.text = "🔍 " + query + "▏", "★ " prefix without the icons check). Easiest: re-apply jabra_v0_0_6.zip files.
-  Only v0.0.6 off: gear panel -> Edit bar OFF + Clip history OFF (no code change). Code level: delete clip/ClipList.java + ClipboardFeature.kt
-    and the hooks marked "v0.0.6" in MgbIme.kt and the r35 row in JabraExtras.kt. Saved history key "clips_v1" can stay (harmless).
-  Easy: Actions > Run workflow > revert_to = previous (= v0.0.3 build) (see REVERT.txt).
-  Only v0.0.5 off (keep Probhat): in settings panel switch Number row/Auto numpad OFF (no code change). Code level: delete JabraExtras.kt + extras/SpaceDrag.java
-    and the v0.0.5 hooks in MgbIme.kt (marked "v0.0.5").
-  Only Probhat off: do not long-press language key (default stays Avro); code level: delete probhat/ProbhatLayout.java + hooks marked "v0.0.4".
-
-9) NEXT
-  1. Confirm build is green (Kotlin has never been compiled by me). Send me the error text if red. THIS IS THE BIGGEST RISK: 4 versions of Kotlin are unbuilt.
-  2. Look at the icons on the phone: if any looks unclear tell me which (name) -> I fix only that 'when' branch in JabraIcons.kt.
-  3. Compare Probhat keys with your Ridmik Probhat (send photo) -> I fix table T in one file.
-  4. v0.0.8 novel formatter panel (see 6). USER MUST SEND novel-formatter_v2_updated.html (I do not have it). Do NOT write the formatter rules from guess.
-  Optional later: conjunct-aware backspace for Probhat, Bangla digits option, space-drag stage 2, one-handed mode (v0.0.9), settings screen link in SettingsActivity.
-
-
-
-=====================================================================================
-PREVIOUS HANDOFF (v0.0.6 file, kept as it was)
-=====================================================================================
-JABRA KEYBOARD - HANDOFF  (newest on top; paste this file at the start of the next chat)
-=======================================================================================
-
-0) HOW TO WORK WITH THIS USER (follow these)
-  - Reply in BANGLISH (Bangla written in English letters). User is NOT a coder: simple words, step-by-step.
-  - Before coding: read HANDOFF/CHANGELOG, say in ~5 lines what you understood, state the task in 2-3 lines,
-    ask at most ONE question, otherwise write assumptions. Plan max 5 lines, then build.
-  - RULE 0: never break/rename/slow any existing feature, setting, storage key, build flow. No "clean up/refactor"
-    unless asked. If a new change breaks something old, it is a bug: fix it yourself.
-  - PATCH, do not rewrite files. One version = one topic. Find ROOT CAUSE before fixing; grep for the same bug elsewhere.
-  - New code in separate file/module, only a tiny hook in old code; wrap in try/catch; old behaviour = automatic fallback;
-    ON/OFF switch where possible; never change meaning of old keys/settings.
-  - Risky things (site/API/platform dependent): max 3 stages (best, one alternative, old feature). Stage 2 only if
-    session < 85%. If unsure and cannot test -> write "NOT tested".
-  - New permission/network/tracking: ASK first. No secrets in code. Confirm before deleting/overwriting user data.
-  - Run what can be run here (syntax, tests) and show result. Never say "works" for what was not run on a phone.
-  - Output: version bump, CHANGELOG entry (WHY, what changed, what BROKE, NOT tested, files), HANDOFF update,
-    zip with ONLY changed/new files at exact paths (check nothing was lost vs previous version).
-    Final reply <= 10 lines + Banglish checklist ("which screen, do what, see what").
-  - Session limit: after ~85% no new sub-task; at ~90% stop, give files + HANDOFF + 1 line "what I did / what is left".
-
-1) PROJECT
-  Jabra Keyboard: personal Android keyboard (Ridmik-inspired, own code, NOT copied) + novel-formatter features.
-  GitHub repo: jabra-keyboard (user's repo, PUBLIC needed for in-app update). Android native: Kotlin + one Java engine file.
-  Package id com.mgb.keyboard (kept on purpose: changing it breaks updates/signing). Display name "Jabra Keyboard".
-  Reference for later formatter: novel-formatter_v2_updated.html (user's HTML tool; keep same rule syntax:
-  "find => replace", "re:", "del:", "del-re:", "# comment"; presets JSON keys nvPresets/nvCurrent/nvDraft untouched).
-
-2) SCOPE (decided with user)
-  KEEP: Avro phonetic, Probhat (user wrote "pravati"), English; ALL copy/paste related things (clipboard history, PINNED
-  items, delete/search, select all/cut/copy/paste toolbar, paste plain text); novel formatter panel; number row, number pad,
-  symbols, space-drag cursor, keyboard height (portrait/landscape), one-handed mode, haptic/sound; next-word suggestion,
-  emoji in suggestions, typed-word preview; emoji panel; local themes.
-  DROP: Store (also theme store), key maps, tutorial, tips, survey, more apps.
-  OFF by default unless user asks: Jatiyo layout, GIF (needs internet), contacts suggestions (needs permission),
-  Arabic/Chakma add-ons.
-  Voice: NOT own recording (needs RECORD_AUDIO+INTERNET). Plan = button that switches to the phone's system voice typing.
-
-3) ROADMAP (one topic per version)
-  v0.0.3 Avro phonetic + language switch      DONE (user uses it)
-  v0.0.4 Probhat fixed Bangla layout          DONE in code (NOT tested on phone)   <- delivered together with v0.0.5 in ONE zip
-  v0.0.5 number row, symbols, number pad, space-drag cursor, key height, haptic/sound   DONE in code (NOT tested on phone)
-  v0.0.6 clipboard history + pinned + search + edit bar   DONE in code (NOT tested on phone)   <- this zip
-  v0.0.7 novel formatter panel (see 6)
-  v0.0.8 suggestions: local learning, next word, emoji in suggestions, typed-word preview
-  v0.0.9 emoji panel, local themes, one-handed mode
-  v0.1.0 system voice button, settings polish
-
-4) STATUS (v0.0.6; v0.0.4 + v0.0.5 were delivered earlier in jabra_v0_0_5.zip; USER HAS NOT YET CONFIRMED ANY OF THEM BUILD/RUN)
-  PROVED BY USER earlier: GitHub build + signed APK + install + typing works (v0.0.3 build).
-  Tested here (computer): AvroPhonetic 43/43; ProbhatLayout table + SpaceDrag logic 133/133 (tools/ExtrasTest.java); ClipList logic 18/18 (tools/ClipTest.java).
-  NOT tested: Gradle/Kotlin compile of v0.0.4 + v0.0.5 + v0.0.6 (no Kotlin compiler here; code was only read carefully + bracket check),
-  everything on a real phone: Probhat typing, extra row, number row, symbols/numpad/settings panels, auto numpad,
-  space-drag, height change, haptic/sound, rotation (landscape), long-press on language key.
-  PROBHAT TABLE NOT VERIFIED: official chart (ekushey.org) could not be opened from here. Table is from memory of standard Probhat.
-  Independent vowels (আ ই ঈ উ ঊ এ ঐ) + ঁ ঃ ৎ + ZWNJ are in an EXTRA ROW (shown only in Probhat mode), not on letter keys.
-  If a key is wrong: edit ONLY the table T in probhat/ProbhatLayout.java (key, normal, shift), run tools/ExtrasTest.java.
-  SettingsActivity.kt / Updater.kt were NOT in the v0.0.3 zip I received and are NOT touched. New settings live INSIDE the keyboard (? 123 -> gear).
-
-5) HOW IT WORKS (v0.0.6 part first; then v0.0.4 / v0.0.5; v0.0.3 part is below under PREVIOUS)
-  v0.0.6 clipboard:
-    clip/ClipList.java        pure Java list: add (dedupe, newest first), pin, remove, clearUnpinned, view(query), serialize/parse
-                              (lines "0|1,<urlencoded text>"). Limits 40 unpinned / 30 pinned / 2000 chars.
-    ClipboardFeature.kt       ClipStore (loads/saves prefs key "clips_v1") + ClipPanel (list, star, x, search with mini keys, Clear asks twice).
-    MgbIme.kt hooks "v0.0.6": ClipboardManager listener registered in onCreate / removed in onDestroy -> captureClip();
-                              also captureClip() in onStartInputView. Skipped when: password field (pwdField), prefs clip_on=false,
-                              clip marked android.content.extra.IS_SENSITIVE. Edit bar row in buildKeyboard (prefs edit_bar, default true);
-                              editAction(): performContextMenuAction(selectAll/copy/cut/paste), fallback own code; "plain" = clip text -> commitText.
-                              showPanel("clipboard") routes to ClipPanel. New prefs keys: clip_on(true), edit_bar(true), clips_v1(string).
-  app/src/main/java/com/mgb/keyboard/
-    probhat/ProbhatLayout.java  pure Java. map(char) -> Bangla for a pressed key (UPPER-case letter = shift), label(), EXTRAS row.
-    extras/SpaceDrag.java       pure Java. Drag distance -> cursor steps (16dp per step).
-    JabraExtras.kt              JabraHost (interface MgbIme implements), JabraPrefs (safe pref reader), SpaceDragHelper (touch),
-                                JabraPanels (symbols 2 pages, number pad, quick settings). Panels built in code. build() returns null on error
-                                -> MgbIme shows normal letters.
-    MgbIme.kt                   tiny hooks: container(FrameLayout) holds letters OR a panel; showLetters()/showPanel(); probhatOn()/phoneticOn();
-                                relabelLetters() (Latin or Probhat labels via button.tag); number row + Probhat extra row in buildKeyboard();
-                                "?123" key (bottom-left); language key long-press = Avro<->Probhat; space key touch = drag cursor;
-                                key() now reads height + gives haptic/sound; onStartInputView opens number pad for number/phone fields.
-  Prefs file "jabra" (old key "bangla" unchanged). NEW keys: bn_layout("avro"|"probhat", default avro), numrow(true), haptic(true),
-    sound(false), numpad_auto(true), kh_p / kh_l (0..3 = 40/48/56/64dp, default 1 = 48dp = old size).
-  Bangla modes: tap language key = EN <-> Bangla (same as before). Key caption: EN / বাং (Avro) / প্রভা (Probhat).
-    Long-press language key, OR settings panel "Bangla:" button = switch Avro <-> Probhat.
-  Probhat: each key types ONE Bangla letter directly (no composing underline, no buffer). Shift = second letter. Backspace = normal delete.
-    Password/email/URL/number fields: always English (same rule as Avro).
-  Space-drag: stage 1 = DPAD_LEFT/RIGHT key events. Stage 2 (ExtractedText + setSelection) NOT added - add only if some app ignores DPAD.
-  Test on computer (clip: javac -encoding UTF-8 -d out app/src/main/java/com/mgb/keyboard/clip/ClipList.java tools/ClipTest.java && java -cp out ClipTest):
-    javac -encoding UTF-8 -d out app/src/main/java/com/mgb/keyboard/probhat/ProbhatLayout.java app/src/main/java/com/mgb/keyboard/extras/SpaceDrag.java tools/ExtrasTest.java && java -cp out ExtrasTest
-    (Avro: see PREVIOUS section, tools/AvroTest.java)
-
-6) FORMATTER PLAN (v0.0.7)
-  Own package formatter/, port fixText/applyRules/SCENE from the HTML file. Panel button "Aa" in toolbar. Actions:
-  format selection / format all (with confirm + Undo), find/replace rules (same syntax as HTML), copy as HTML (ClipData html),
-  presets JSON import/export, optional auto mode (default OFF). Stage 1 = InputConnection read/replace;
-  stage 2 = put formatted text in clipboard and tell user to paste; final fallback = normal typing. Never in password fields.
-
-7) BUILD / RELEASE (user's own workflow, do not change unless asked)
-  .github/workflows/build.yml (zip uploads never change .github; user edits it by hand on GitHub).
-  Push to main -> applies *_vX_Y_Z.zip in repo root (zip name must match _v<digits_digits>.zip) -> builds -> release
-  tag v<appVersionName>-b<run number>, apk name Jabra-Keyboard-<tag>.apk. Version = ONE line in app/build.gradle.kts.
-  Secrets (user set, 4): KEYSTORE_B64, KEYSTORE_PASSWORD, KEY_ALIAS, KEY_PASSWORD. Without them debug apk -> update fails.
-  Revert: Actions > Run workflow > revert_to = previous | latest | tag | commit. See REVERT.txt.
-  Build env here has NO Gradle/Android SDK/network: Kotlin cannot be compiled here. Java engine can (see above).
-  Permissions in app: INTERNET (only on "Check for updates"), REQUEST_INSTALL_PACKAGES. Nothing else.
-
-8) TEST CHECKLIST for user (v0.0.6 first, then v0.0.4 + v0.0.5)
-  v0.0.6: top row "📋 All Cut Copy Paste Plain". Type text, All -> selected; Cut -> gone; Paste -> back. Copy text in another app ->
-          open 📋 -> it is in the list; tap it -> pasted. ☆ pin -> goes top with ★; ✕ deletes one; Clear -> "Sure?" -> second tap clears unpinned only.
-          🔍 Search -> type letters -> list filters. Password field: copy something there -> must NOT appear in list. Gear -> Edit bar OFF -> bar disappears.
-  v0.0.4 + v0.0.5 (if not yet checked)  -> same list is at the end of the last reply
-  Build: Actions green, release has Jabra-Keyboard-v0.0.5-bN.apk, in-app "Check for updates" installs it (v0.0.3 -> v0.0.5).
-  Old things still OK: English typing, বাং Avro ("ami valo achi" -> আমি ভালো আছি), password field = English.
-  v0.0.4: long-press language key -> caption "প্রভা", extra vowel row appears, f=া j=ক g=্ (hasanta) etc.
-  v0.0.5: number row on top; "?123" -> symbols (2 pages), gear -> settings; "123" -> number pad; open a number/phone field -> number pad auto;
-          drag finger left/right on space -> cursor moves, plain tap -> space; Height button -> back with ABC -> keys taller;
-          Vibrate/Sound toggles; Number row OFF -> row disappears.
-
-8b) ROLLBACK
-  Only v0.0.6 off: gear panel -> Edit bar OFF + Clip history OFF (no code change). Code level: delete clip/ClipList.java + ClipboardFeature.kt
-    and the hooks marked "v0.0.6" in MgbIme.kt and the r35 row in JabraExtras.kt. Saved history key "clips_v1" can stay (harmless).
-  Easy: Actions > Run workflow > revert_to = previous (= v0.0.3 build) (see REVERT.txt).
-  Only v0.0.5 off (keep Probhat): in settings panel switch Number row/Auto numpad OFF (no code change). Code level: delete JabraExtras.kt + extras/SpaceDrag.java
-    and the v0.0.5 hooks in MgbIme.kt (marked "v0.0.5").
-  Only Probhat off: do not long-press language key (default stays Avro); code level: delete probhat/ProbhatLayout.java + hooks marked "v0.0.4".
-
-9) NEXT
-  1. Confirm build is green (Kotlin has never been compiled by me). Send me the error text if red. THIS IS THE BIGGEST RISK: 3 versions of Kotlin are unbuilt.
-  2. Compare Probhat keys with your Ridmik Probhat (send photo) -> I fix table T in one file.
-  3. v0.0.7 novel formatter panel (see 6).
-  Optional later: conjunct-aware backspace for Probhat, Bangla digits option, space-drag stage 2, one-handed mode (v0.0.9), settings screen link in SettingsActivity.
-
-
-=====================================================================================
-PREVIOUS HANDOFF (v0.0.3)  - kept for history (parts that are still true and not repeated above)
-=====================================================================================
-4) STATUS (v0.0.3)
-  PROVED BY USER: GitHub build + signed APK + install + keyboard typing works (user ran build 3 and uses it).
-  NOT yet confirmed by user: in-app update, revert, v0.0.3 Bangla typing.
-  Tested here: AvroPhonetic.java compiled for real and 43/43 tests pass (tools/AvroTest.java).
-  NOT tested: Kotlin/Java Gradle compile of v0.0.3, Bangla typing on phone, composing underline, cursor-move reset,
-  password-field auto English.
-
-5) HOW IT WORKS
-  app/src/main/java/com/mgb/keyboard/
-    MgbIme.kt              keyboard UI built in code (no XML). Hooks added in v0.0.3: onLetter, commitWord, onBackspace,
-                           toggleLang, onStartInputView (latinOnly detection), onUpdateSelection (reset on cursor move).
-    phonetic/AvroPhonetic.java   pure Java engine. convert(romanWord) -> Bangla. Tables VOW/CON/AUTO.
-                           Rules: consonant+consonant = hasanta conjunct; vowel after consonant = kar; "o" = inherent (no sign);
-                           y/w after consonant = ya/ba-phala; "ng" before vowel = ঙ else ং; tiny AUTO list (valo, tomar, kono...).
-                           NOT yet: ৎ, ঁ, ঃ, Bangla digits, dictionary autocorrect.
-    SettingsActivity.kt    enable/choose keyboard, test box, Check for updates. Updater.kt = GitHub Releases updater
-                           (stage 1: download apk + system installer; stage 2: open release page in browser).
-  Prefs file "jabra": key "bangla" (boolean). Do not rename.
-  Typing flow in Bangla mode: letters collect in buf -> setComposingText(Bangla) -> commit on space/punct/enter/switch.
-  If engine throws: Latin letters are shown (fallback). Password/email/URL/number fields: always English.
-  Test engine on a computer:
-    java -m jdk.compiler/com.sun.tools.javac.Main -encoding UTF-8 -d out app/src/main/java/com/mgb/keyboard/phonetic/AvroPhonetic.java tools/AvroTest.java
-    java -cp out AvroTest        (or plain javac if available)
-
-8) TEST CHECKLIST for user (v0.0.3)  -> see bottom of CHANGELOG / last reply
-  Bangla: switch to "বাং", type "ami valo achi" -> আমি ভালো আছি; "bangla" -> বাংলা; backspace removes roman letter by letter;
-  tap elsewhere while typing -> word is kept, no crash; password field -> English letters.
-
-9) NEXT
-  v0.0.4 Probhat. Ask user for Probhat layout details only if needed (use standard Probhat; own table).
-  Optional later: ৎ (khanda-ta) key rule, Bangla digits option, bigger AUTO list, dictionary autocorrect (v0.0.8).
-
-=====================================================================================
-PREVIOUS HANDOFF (v0.0.2)  - kept for history
-=====================================================================================
-JABRA KEYBOARD - HANDOFF (newest on top)
-=====================================
-STATUS (v0.0.2, was v0.0.1 + rename to Jabra Keyboard)
-  Android native keyboard (Kotlin, InputMethodService). Package com.mgb.keyboard.
-  Done: build pipeline, signing via 4 secrets, in-app updater, minimal English keyboard.
-  NOT tested: everything on a real phone and the first Gradle compile.
-
-HOW IT WORKS
-  - app/.../MgbIme.kt          keyboard (keys built in code, no XML layout)
-  - app/.../SettingsActivity.kt  enable/choose keyboard, test box, Check for updates
-  - app/.../Updater.kt         GitHub Releases API -> download .apk -> installer; fallback = open release page
-  - Updater needs a PUBLIC repo (no token stored in the app on purpose).
-  - versionCode = GitHub run number. Version name = ONE line in app/build.gradle.kts (appVersionName).
-  - Signing: secrets KEYSTORE_B64, KEYSTORE_PASSWORD, KEY_ALIAS, KEY_PASSWORD. Without them the
-    workflow builds DEBUG apk whose signature changes every run, so in-app update FAILS to install.
-  - Workflow (.github/workflows/build.yml) is the user's own proven one, copied unchanged.
-
-PERMISSIONS ADDED (flagged to user): INTERNET (only on "Check for updates"), REQUEST_INSTALL_PACKAGES.
-
-TEST FIRST (next session)
-  1. Actions run is green, Release has MGB-v0.0.1-bN.apk.
-  2. Install, enable, type in any app.
-  3. Make v0.0.2 (change appVersionName), upload zip, then Check for updates on the phone.
-
-ROLLBACK
-  See REVERT.txt (Actions > Run workflow > revert_to).
-
-NOTE: package id stays com.mgb.keyboard on purpose (changing it breaks updates). Old releases are named MGB-*.apk, new ones Jabra-Keyboard-*.apk (updater takes any .apk).
-
-NEXT / OPEN
-  - v0.0.3: Bangla phonetic layout + language switch
-  - then symbols/emoji/theme -> formatter panel (port fixText/applyRules/SCENE from novel-formatter_v2_updated.html)
-  - formatter must live in its own package (formatter/), try/catch, ON/OFF switch, fallback = plain typing
-
+  >>> NEXT SESSION START HERE: roadmap v0.0.3 - v0.2.0 is finished. Wait for the user's PHONE test results (CHECKLIST.txt) and work in FIX mode: ONE bug per version, root cause first, send the FIRST error / what is seen + where.
+  Open points for the user: hint table OK or send Ridmik photo (LongPressHints.java); Probhat keys vs Ridmik photo (table T); icons unclear? (name -> only that branch in JabraIcons.kt).
+  Optional later (ask user first): hint table for Probhat keys, end one-shot shift after a hint, theme the Clipboard / Formatter panels, launcher groups with custom dark / light colour, conjunct-aware backspace for Probhat, Bangla digits option, space-drag stage 2, PC mode Ctrl+Shift combos / sticky Shift, Bluetooth / USB keyboard (needs permissions: ASK).

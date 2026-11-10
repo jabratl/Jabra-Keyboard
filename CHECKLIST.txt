@@ -1,0 +1,47 @@
+JABRA KEYBOARD v0.2.0 - ONE FULL CHECKLIST (phone test)
+Tick each line. If something is wrong, send: which line + what you see (+ screenshot). One bug = one fix version.
+Settings place: keyboard gear (on ?123) -> More settings; or the app icon screen (5 groups, same settings). "ABC (apply)" = go back to letters and apply.
+
+A. INSTALL / UPDATE
+ [ ] App icon on home screen = keycap with letter + orange cursor.
+ [ ] App screen: Enable keyboard, Choose keyboard, test box work. Check for updates says up to date / new version.
+ [ ] App screen: 5 group buttons open / close; tap a row = ON/OFF or next choice changes.
+
+B. ENGLISH TYPING
+ [ ] Letters type; Shift = one capital, double-tap Shift = CAPS (blue), tap = off.
+ [ ] Auto caps: new empty note -> first letter capital; after ". " capital again (More settings -> Auto caps OFF stops it).
+ [ ] Hold Backspace = deletes by itself (also in ?123 symbols and number pad).
+ [ ] Enter: Send / Search in chat / search boxes, new line in notes.
+ [ ] Number row on top (OFF in settings = gone). Large number row = taller.
+ [ ] Small grey hint on each letter (q = ~ with number row ON, 1..0 with it OFF). Hold "a" -> "@" only (no "a"). Quick tap -> "a". Hide long-press hints = labels gone, hold still works. Long-press characters OFF = no hold effect.
+ [ ] Key popup ON: bubble above the pressed letter (check top row + Dark theme).
+ [ ] Double-space period ON: "hello" space space -> "hello. ". Not in password / email fields.
+ [ ] Space key: drag left / right = cursor moves; plain tap = space. Cursor speed Fast / Slow changes it.
+ [ ] Long-press time (System / Fast / Slow): hold "," (emoji), ?123 (keyboard picker), language key (Avro <-> Probhat).
+
+C. BANGLA
+ [ ] Language key: EN <-> Bangla. Avro: "ami valo achi" -> আমি ভালো আছি, "bangla" -> বাংলা; backspace removes one roman letter at a time.
+ [ ] Long-press language key -> Probhat (caption প্রভা), extra vowel row appears. Compare keys with your Ridmik Probhat (send photo if different).
+ [ ] Avro / Probhat show NO small hint characters.
+ [ ] Password / number field: English letters only.
+
+D. PANELS
+ [ ] ?123 symbols (2 pages), 123 number pad; number / phone field opens number pad by itself (Auto numpad).
+ [ ] Emoji panel (hold "," or Emoji key): emoji are pictures (no boxes), Recent tab, tabs scroll, backspace holds.
+ [ ] Edit bar: first key = mode key; clipboard, All, Cut, Copy, Paste, Plain, Aa work. Edit bar OFF = gone.
+ [ ] Clipboard: copied text appears; tap = paste; pin / delete / search / Clear (asks twice, keeps pinned). Password field copy NOT saved.
+ [ ] Formatter (Aa): pick source, Preview, Replace (second tap confirms), Undo, Copy formatted into Google Docs, Rules from clipboard, Presets. Password field: Aa does nothing. Formatter OFF = Aa gone.
+
+E. PC MODE
+ [ ] Mode key (robot icon = Phone, monitor icon = PC): tap switches; PC rows appear (Esc Tab Ctrl Alt, F1-F12, arrows, Home / End / PgUp / PgDn / Del / Ins, ^A ^C ^V ^X ^Z).
+ [ ] In Termux / Chrome / code editor: Esc, Tab, F-keys, arrows work. Ctrl (light blue = once, double tap = lock) + letter works. At 360 px the F1-F12 row is readable.
+ [ ] Mode key OFF / Remember mode OFF behave as written in More settings.
+
+F. LOOK / SIZE
+ [ ] Theme: Classic / Blue / Mint / Sand / Dark. Dark: icons, notes, hints, popup all readable.
+ [ ] Look: Jabra = rounded keys, function keys in own colour, pill space key, pressed key darker. Classic = old look exactly.
+ [ ] One-hand Left / Right / Off (also landscape and in symbols / number pad / emoji).
+ [ ] Size: height % portrait and landscape separately (70% and 150%: nothing cut off, PC rows + number row ok); one-hand width %; Reset sizes.
+ [ ] Globe key ON = next keyboard; Voice key ON = phone voice typing; Emoji key ON = emoji panel. Space key still wide enough with all 3.
+ [ ] Vibrate / Sound toggles work.
+ [ ] Rotate phone: layout fine in landscape.
