@@ -53,6 +53,8 @@ class SettingsActivity : Activity() {
         test.hint = "Type here to test the keyboard"
         col.addView(test)
 
+        try { col.addView(SettingsGroups.build(this)) } catch (_: Throwable) { }   // v0.1.7: settings in 5 groups
+
         col.addView(btn("Check for updates") { checkUpdate() })
 
         updBtn = btn("Download & install") { doUpdate() }

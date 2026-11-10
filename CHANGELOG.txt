@@ -1,3 +1,15 @@
+v0.1.7 - Settings page in 5 groups (launcher screen)
+- NEW: the Jabra Keyboard app screen (the icon on the home screen) now has 5 collapsible groups (tap a title to open / close; all start closed): Languages & layouts (Bangla layout Avro / Probhat, Number row, Auto numpad, Mode Phone / PC, Mode key, Remember mode) / Typing (Hold backspace, Auto caps, Enter action, Double-space period, Double-space tab, Long-press characters) / Look (Theme, Look Classic / Jabra, One-hand, Icons, Large number row, Hide long-press hints) / Keys & gestures (Vibrate, Sound, Key popup, Globe / Voice / Emoji key, Long-press time, Cursor speed) / Clipboard & tools (Edit bar, Clip history, Formatter).
+- Every row reads and writes the SAME pref keys and defaults as the in-keyboard panels (gear, More settings, Typing options); nothing renamed, no new keys. The in-keyboard panels are unchanged and stay the main place for Size (height % / one-hand width %), Clipboard, Formatter presets.
+- Changes made here are read by the keyboard when it opens next time (or after "ABC (apply)" inside the keyboard). Enable / Choose keyboard / Test box / Check for updates are unchanged (the groups sit between the test box and Check for updates).
+- Code: SettingsGroups.kt (new); hook marked "v0.1.7": SettingsActivity.kt (1 line, inside try/catch: on any error the screen looks like v0.1.6); app/build.gradle.kts (0.1.7).
+
+WHY: roadmap v0.1.7 (Ridmik-like settings page in 5 groups).
+BROKE: nothing intended. Visible change: the launcher screen is longer (5 group buttons).
+NOT tested: Gradle / Kotlin compile (v0.0.9 - v0.1.7 unbuilt = biggest risk), everything on a phone: layout at 360 / 1280 px, dark + light (the screen uses the plain Android theme, no custom colours), that a change made here reaches an already open keyboard (assumed: next open).
+TESTED here: all 10 Java tests still pass (Hint 175, Look 13, SizePct 28, Pc 19, DoubleSpace 37, Typing 27, Emoji 1585, Extras 133, Clip 18, Avro 43); bracket balance of the 2 changed / new Kotlin files; every pref key used in SettingsGroups.kt also exists in other keyboard files (so the keys match); the only line changed in old code is 1 added line in SettingsActivity.kt. No .js, JSON or res files changed.
+Files: SettingsGroups.kt (new); SettingsActivity.kt, app/build.gradle.kts, CHANGELOG.txt, HANDOFF.txt.
+
 v0.1.6 - Long-press hint letters + "Hide long-press hints"
 - NEW: every English LETTER key shows a small grey hint character in its top-right corner; hold the key = types that character (the letter is NOT typed). Table: q..p = ~ ` ^ = { } [ ] < > while the Number row is ON (digits would repeat the number row) or 1 2 3 4 5 6 7 8 9 0 when the Number row is OFF; a @  s #  d $  f %  g &  h -  j +  k (  l )  z *  x "  c '  v :  b ;  n !  m ?  . Shift never changes a hint.
 - NEW settings (gear -> More settings -> Typing options >): "Long-press characters" (hint_on, default ON) and "Hide long-press hints" (hint_hide, default OFF = hides ONLY the small label, long-press still types). Needs ABC (apply) to redraw the labels.
