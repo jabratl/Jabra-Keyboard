@@ -1,0 +1,464 @@
+JABRA KEYBOARD - HANDOFF v0.3.2 (code = v0.3.2 = hold-backspace word delete DONE in code, on top of v0.3.1 reliability + v0.3.0 key gap; file name = HANDOFF_Jabra-Keyboard_v0.3.2.txt; next chat renames it; repo root: delete HANDOFF_..._v0.3.1.txt, _v0.3.0, _v0.2.9, _v0.2.8, _v0.2.6, _v0.2.5.3, _v0.2.4 and the OLD HANDOFF.txt (v0.2.3, stale))
+Sections 0-9 are the whole file (old PREVIOUS parts were removed in v0.2.0; v0.0.3 Avro notes moved into section 5).
+=======================================================================================
+
+0) HOW TO WORK WITH THIS USER (follow these)
+  - Reply in BANGLISH (Bangla written in English letters). User is NOT a coder: simple words, step-by-step.
+    (The user sometimes writes full English; then answer in the language of the user's LATEST message. In the v0.1.1 session the user wrote English.)
+  - Before coding: read HANDOFF/CHANGELOG, say in ~5 lines what you understood, state the task in 2-3 lines,
+    ask at most ONE question, otherwise write assumptions. Plan max 5 lines, then build.
+  - RULE 0: never break/rename/slow any existing feature, setting, storage key, build flow. No "clean up/refactor"
+    unless asked. If a new change breaks something old, it is a bug: fix it yourself.
+  - PATCH, do not rewrite files. One version = one topic. Find ROOT CAUSE before fixing; grep for the same bug elsewhere.
+  - New code in separate file/module, only a tiny hook in old code; wrap in try/catch; old behaviour = automatic fallback;
+    ON/OFF switch where possible; never change meaning of old keys/settings.
+  - Risky things (site/API/platform dependent): max 3 stages (best, one alternative, old feature). Stage 2 only if
+    session < 85%. If unsure and cannot test -> write "NOT tested".
+  - New permission/network/tracking: ASK first. No secrets in code. Confirm before deleting/overwriting user data.
+  - Run what can be run here (syntax, tests) and show result. Never say "works" for what was not run on a phone.
+  - Output: version bump, CHANGELOG entry (WHY, what changed, what BROKE, NOT tested, files), HANDOFF update,
+    zip with ONLY changed/new files at exact paths (check nothing was lost vs previous version).
+    Final reply <= 10 lines + Banglish checklist ("which screen, do what, see what").
+  - Session limit: after ~85% no new sub-task; at ~90% stop, give files + HANDOFF + 1 line "what I did / what is left".
+
+1) PROJECT
+  Jabra Keyboard: personal Android keyboard (Ridmik-inspired, own code, NOT copied) + novel-formatter features.
+  GitHub repo: jabra-keyboard (user's repo, PUBLIC needed for in-app update). Android native: Kotlin + one Java engine file.
+  Package id com.mgb.keyboard (kept on purpose: changing it breaks updates/signing). Display name "Jabra Keyboard".
+  Formatter reference: novel-formatter_v2_updated.html (user's HTML tool, received in the v0.0.8 session, engine verified against it; keep same rule syntax:
+  "find => replace", "re:", "del:", "del-re:", "# comment"; presets JSON keys nvPresets/nvCurrent/nvDraft untouched).
+
+2) SCOPE (decided with user)
+  KEEP: Avro phonetic, Probhat (user wrote "pravati"), English; ALL copy/paste related things (clipboard history, PINNED
+  items, delete/search, select all/cut/copy/paste toolbar, paste plain text); novel formatter panel; number row, number pad,
+  symbols, space-drag cursor, keyboard height (portrait/landscape), one-handed mode, haptic/sound; next-word suggestion,
+  emoji in suggestions, typed-word preview; emoji panel; local themes.
+  DROP: Store (also theme store), key maps, tutorial, tips, survey, more apps.
+  DROPPED BY USER (v0.0.9 session): Bangla suggestions, next-word, local learning, emoji in suggestions, typed-word preview, suggestion bar. Do NOT build them unless the user asks again.
+  OFF by default unless user asks: Jatiyo layout, GIF (needs internet), contacts suggestions (needs permission),
+  Arabic/Chakma add-ons.
+  Voice: NOT own recording (needs RECORD_AUDIO+INTERNET). Plan = button that switches to the phone's system voice typing.
+
+2b) DECISIONS for v0.1.1 - v0.2.0 (user, 2026-11-10; from the Ridmik settings list)
+  KEEP / BUILD: double-space period, double-space tab, Vibrate, Sound, Popup on keypress, Emoji key show/hide, Globe key, Voice key (system voice typing),
+    space-swipe cursor (exists) + cursor speed, key long-press delay, Number row (exists) + Large number row, Hide long-press hints,
+    keyboard height % and one-hand width % (portrait/landscape), Auto-capitalization (exists), Clipboard recent items (exists).
+  DO NOT BUILD (user decision / permission): ALL text correction (offensive block, auto-correct, suggestions, personalized, next-word, typed word) - user dropped these in v0.0.9, only if user asks again;
+    clipboard IMAGES (needs storage/content access -> ask first); volume key = cursor (needs Accessibility service + new permission);
+    split keyboard (cannot be tested without a foldable); physical Alt = emoji, vibration duration/volume, popup dismiss delay (little value).
+  PC MODE (user's own idea, not in Ridmik): "PC keyboard" = PC-style key commands INSIDE the phone keyboard. NOT a Bluetooth/USB keyboard for another PC (would need new permissions; ask first if wanted).
+    Plan: new file PcMode.kt (+ pure Java logic class for the sticky state, tested), one toggle key, rows built in code. Esc Tab Ctrl Alt: sticky (1 tap = once, double tap = lock). F1-F12, arrows, Home/End/PgUp/PgDn/Del/Ins = key events (sendDownUpKeyEvents / KeyEvent with metaState).
+    Ctrl+C/V/X/A = the existing edit-bar actions (editAction, safest); other Ctrl+letter (Z etc.) = KeyEvent with META_CTRL_ON. LIMIT: the app must handle key events; Termux, browsers, code editors do, many plain text fields do not -> say this in the setting text.
+  MODE KEY (user request, 2026-11-10): the keyboard has 2 modes: PHONE mode (normal keyboard) and PC mode. A mode key shows the icon of the CURRENT mode: Android-style icon in Phone mode, PC icon in PC mode. Tap = switch mode. Icons must be UNIQUE (own drawing).
+    WHERE (best fit, decided): (1) the mode key is the FIRST key of the edit bar (the row above the letters); in PC mode the same key is the first key of the PC rows, so one tap always goes back.
+      (2) More settings gets 3 rows: "Mode: Phone / PC" (same icons, same switch), "Mode key: show / hide" (default show), "Remember mode" (default ON; pref pc_mode(bool,false); OFF = keyboard always opens in Phone mode).
+      Why not only settings: switching must be 1 tap while typing; settings rows are the backup if the edit bar is turned OFF (edit_bar pref): then the mode key is added to the bottom row instead.
+    ICONS: add 2 names to JabraIcons.kt NAMES + 2 branches in drawIcon (Canvas lines, no image file): "mode_phone" = simple robot head (round top, 2 antennas, 2 dots) in OUR OWN drawing (do NOT copy Google's Android logo/assets); "mode_pc" = monitor + stand + small keyboard line. Use putThemed() so they follow the theme. Icons OFF (icons_on) = text fallback "PH" / "PC".
+    Code: PcMode.kt (new) holds the rows + sticky state; pure Java class typing/PcState.java (mode, Ctrl/Alt once/lock) + tools/PcTest.java; tiny hooks marked "v0.1.2" in MgbIme.kt (edit bar first key, showPanel route "pc"), TypingExtras.kt (3 More settings rows). Old behaviour = Phone mode = exactly v0.1.1.
+    Rollback: More settings -> Mode key hide + Mode: Phone (no code change). Code level: delete PcMode.kt, typing/PcState.java, tools/PcTest.java, the 2 icon branches and the lines marked "v0.1.2".
+  JABRA LOOK (v0.1.5): round-corner keys, own colour for function keys, pill space key, own popup; setting "Classic" keeps the old look. Logo: Bangla letter "জ" on a keycap + cursor bar, adaptive icon drawn as VECTOR XML in code (no image file). Manifest has NO android:icon yet; res/ only has xml/ -> v0.1.5 adds res/drawable + res/mipmap-anydpi-v26 + android:icon.
+  Settings page (v0.1.6): Ridmik-like 5 groups. Current settings live in the gear panel + More settings (inside the keyboard); SettingsActivity.kt is the launcher screen.
+  DECIDED (user, v0.1.5 session): build hint letters + long-press alternate characters in v0.1.6, THEN the setting "Hide long-press hints" (hides only the small labels, long-press still types the character). See 3b.
+
+3c) PLAN v0.2.1 - v0.2.6 (user request 2026-11-10, after v0.2.0; v0.2.1 - v0.2.4 are built (see 3 / 5), v0.2.5 - v0.2.6 are PLAN ONLY; references = Ridmik screenshots + screen video, own code, NOT copied)
+  USER'S POINT: Formatter (Aa) is the user's main TOOL, so it must be 1 tap and first. Wants a Ridmik-like TOP TOOLBAR with many shortcuts, and the user can edit it and move the most important ones to the very first place. Also wants Ridmik-like theme gallery and Ridmik-like clipboard page.
+  WHAT WAS SEEN: (1) toolbar screenshot: one row of icons: translate-like, emoji, store, clipboard, code "</>", "123", app icon, "...", mic (Store/translate/app = not for us). (2) video (first ~15 s were black, only the Clipboard page is visible): Ridmik Clipboard = list of long clips with a "Pinned" tag, "Add" button (own text), long-press = multi-select with Pin / Delete buttons at the top; the user keeps long prompt templates pinned. (3) two theme screenshots: Dark Fossil, Aventurine Light, Seaweed Green (user's current one), Ivory White, Shiny Black, Moonstruck Blue, Midnight Black, Midnight Green, 2 gradient themes (purple, coral), Aquamarine, Ridmik Blue, Only Pink, Matte Black, Radiant Gray, Bleached White, Nightfall, Basic (Border), Basic (Borderless).
+  SECOND VIDEO (user, 2026-11-10 18:41, Ridmik in use; the video does NOT show which tap opens which panel, icon -> panel links below are my guess): (a) toolbar row on top: first icon + emoji + store + clipboard + "</I>" + "123" + app icon + "..." and a mic fixed at the far right; when COLLAPSED only the first icon and the mic are visible (first icon expands it). (b) clipboard panel inside the keyboard: header "Recent ... Manage", 2-column CARDS with a small pin icon, later a "Pinned" section. "Manage" opens the full-screen Clipboard page seen in video 1 (Add, select -> Pin / Unpin / Delete). (c) a CURSOR / SELECT PAD panel: 4 arrow keys, Select, Select All, Copy, Paste, Home (|<), End (>|), Backspace. (d) number pad: Bangla digits row on top, + - * / column, 1-9, ":" "%", backspace, ABC. (e) emoji panel with a category icon strip incl. flags + ABC + backspace. (f) letter keys with small hint characters (= our v0.1.6).
+  DECIDED (assumptions, user can change): own palettes with similar colour IDEAS (no Ridmik artwork / names copied 1:1); drag-and-drop NOT used (cannot be tested without a phone) -> reorder with buttons.
+  DECIDED (user, 2026-11-10): clipboard "Manage" stays INSIDE the keyboard (select mode), no full-screen page, no manifest change (see v0.2.5).
+  v0.2.1 TOOLBAR ENGINE + EDITOR (one topic) - DONE in code, see section 5: replace the fixed edit-bar row by an optional SCROLLABLE row (HorizontalScrollView, fixed key width ~44 dp, height 36 dp as now) built from a registry of item ids. Like Ridmik: first key = fold / unfold button (pref tb_fold, folded = only that key + the items marked PINNED-TO-BAR stay visible; default unfolded), and the voice (mic) key can sit fixed at the far right outside the scroll area (added in v0.2.2 when the voice item exists). Existing items only: mode, fmt (Aa), clip, all, cut, copy, paste, plain. Default CUSTOM order puts fmt FIRST, then clip, then mode, then all / cut / copy / paste / plain.
+     New pure Java typing/ToolbarOrder.java (tested by tools/ToolbarTest.java): parse(csv) / serialize, unknown ids dropped, ids missing from the list appended at the end (so items added in later versions appear by themselves), moveFirst / up / down / hide / show, empty or broken text -> default order.
+     New ToolbarPanel.kt (route showPanel("toolbar"), opened from More settings "Edit toolbar >" and from the launcher screen): one row per item = icon + name + [FIRST] [up] [down] [show / hide]. "Reset toolbar" button. Same panel look as Size panel.
+     New Toolbar.kt: registry (id -> label, icon name, action) + build(): LinearLayout or null. Hook in MgbIme.kt edit-bar block: ONE branch: if pref tb_custom is ON and Toolbar.build() is not null use it, else the old code (= automatic fallback, old bar untouched). Mode key rule of v0.1.2 stays: with edit bar OFF the mode key goes to the bottom row.
+     Prefs NEW: tb_custom(bool,false = Classic bar exactly as v0.2.0), tb_order(str,""), tb_hidden(str,""). Old edit_bar / fmt_on / mode_key keep working: edit_bar OFF = no toolbar at all; fmt_on OFF or mode_key OFF = item hidden.
+     Risks to tell the user: a scroll container may delay the "pressed" look of a key by a moment; scroll vs tap on a 36 dp strip; NOT testable here.
+     Rollback: setting Toolbar: Classic. Code level: delete Toolbar.kt, ToolbarPanel.kt, typing/ToolbarOrder.java, tools/ToolbarTest.java and the lines marked "v0.2.1".
+  v0.2.2 TOOLBAR EXTRA SHORTCUTS - DONE in code (see section 5; undo / redo / home / end NOT built, optional later): add more items to the registry (ids never renamed) that open things which ALREADY exist: emoji (panel), numpad ("123"), sym (symbols page), gear (settings), voice (system voice typing), globe (next keyboard), theme (cycle theme), onehand (cycle Off / Left / Right), size (Size panel). Optional later and only if the user wants (key-event based, not reliable in every app): undo, redo, home, end. New own icons in JabraIcons.kt (names added, plus text fallback). Hidden by default except the ones the user turns on in Edit toolbar; so nothing appears unasked.
+  v0.2.3 CURSOR / SELECT PAD - DONE in code (see section 5; Bangla digits row NOT built, only if the user asks) (NEW panel, from video 2; own topic): route showPanel("pad"): 4 arrow keys (DPAD key events like space-drag), Select (toggle: while ON arrows extend the selection = KeyEvent with META_SHIFT_ON; fallback = plain arrows), Select All / Copy / Cut / Paste (existing editAction), Home / End (KEYCODE_MOVE_HOME / END), Backspace (repeat), ABC. New toolbar item id "pad" + More settings row. Needs typing/PadState.java (select on/off, tested). Risk: apps that ignore key events (same limit as PC mode) -> note in the setting text. Optional in the same version: Bangla digits row on the number pad (pref numpad_bn, default OFF) - only if the user asks.
+  v0.2.4 THEME PACK + PICKER - DONE in code, see section 5 (picker only in More settings, no launcher button): append NEW themes after index 4 (NEVER reorder: pref "theme" is an index). About 12 new solid themes with own names/colours inspired by the screenshots (dark-on-beige, seaweed grey-green with dark keys, ivory white, shiny / matte / midnight black, moonstruck + ridmik-like blue, midnight green, aquamarine, pink, radiant gray, nightfall). Each needs bg / key / text colours + a function-key colour in typing/LookColors.java (extend the table + tools/LookTest.java, keep 13 old checks). New theme PICKER page (route showPanel("themes") + launcher group Look): grid of small preview tiles drawn in code (background + 3 mini keys + name, check mark on the chosen one). Old "Theme: tap to cycle" button stays.
+  v0.2.5 CLIPBOARD LIKE RIDMIK = SPLIT IN 3 PARTS (user request 2026-11-10): v0.2.5.1 + v0.2.5.2 + v0.2.5.3, one chat each. FULL PLAN = section 3d. The original design text below is still the reference for WHAT the whole feature is:
+  v0.2.5 CLIPBOARD LIKE RIDMIK (from both videos): inside the keyboard: optional 2-column CARD view with Recent and Pinned sections (setting Clipboard view: List / Cards, default List = old panel); "Add" = save the text of the current field (selection or whole field) as a new clip (safe, no extra typing UI); long-press a clip = select mode, multi-select, then Pin / Unpin / Delete for all selected; "Pinned" tag; show more lines of long clips. MANAGE = INSIDE THE KEYBOARD (user DECISION 2026-11-10, v0.2.1 session: no full-screen Ridmik-style Manage page; reason = a second Activity needs AndroidManifest.xml changes). The in-keyboard select mode (long-press a clip, multi-select, Pin / Unpin / Delete) IS the Manage feature; a small "Manage" label / button in the clipboard header may enter the same select mode. Do NOT ask the user about a full-screen page again. Old star / x / search / Clear stay. Pinned limit stays 30 (long prompts up to 2000 chars): ask the user if more is needed.
+  v0.2.6 DONE in code (see section 5): 2 gradient themes (Purple Haze 18, Coral Sunset 19) + setting "Key border: Border / Borderless" (pref key_border). (Built on request, before the phone tests of v0.2.1 - v0.2.5.3.)
+  IDEA (not planned, ask first): Formatter quick run (one tap on a toolbar button = format selection / whole field with the current preset, with the existing two-tap safety + Undo).
+  ORDER: v0.2.1 toolbar -> v0.2.2 toolbar shortcuts -> v0.2.3 cursor / select pad -> v0.2.4 themes -> v0.2.5.1 clip engine + Add -> v0.2.5.2 clip Cards view -> v0.2.5.3 clip select mode / Manage (-> v0.2.6 optional). One version = one zip, each with rollback + CHANGELOG + NOT tested list.
+
+3d) PLAN v0.2.5.1 (DONE in code) + v0.2.5.2 (DONE in code) + v0.2.5.3 (DONE in code) = CLIPBOARD LIKE RIDMIK, IN 3 CHATS (user request 2026-11-10; this section was written in the planning chat)
+  WHY SPLIT: v0.2.5 was too big for one session (data engine + new Cards screen + select mode). Each part is a FULL release: version bump, CHANGELOG entry, CHECKLIST lines, rollback, own zip, usable alone. Part N+1 starts from the zip of part N.
+  FIXED RULES FOR ALL 3 PARTS:
+   - Same saved data: prefs key "clips_v1" and the line format "<0|1>,<url-encoded text>" NEVER change (old history must load in every part). Pinned limit stays 30, unpinned 40, max length 2000. No new permission, no manifest change, no network, no full-screen Manage page (user decision).
+   - Default look after the update = the OLD panel (List). Nothing new shows unasked except the small additions named per part.
+   - New code in NEW files where possible; only tiny hooks marked "v0.2.5.1" / "v0.2.5.2" / "v0.2.5.3" in old files; try/catch; old behaviour = fallback. Old buttons (ABC, Search, Clear, star, x, tap = paste) keep working in every part.
+   - Old Java tests stay green (Clip 18 checks stay; add new checks, do not delete). Run all Java tests here and show the result. Kotlin is NOT compiled here (first check = GitHub Actions), phone = NOT tested: say so.
+   - Version: change ONLY appVersionName in app/build.gradle.kts: "0.2.5.1", then "0.2.5.2", then "0.2.5.3" (4-part name is safe: workflow reads the string, tag = v0.2.5.1-b<run>, update check uses the build number). Zip name: jabra_v0_2_5_1.zip / jabra_v0_2_5_2.zip / jabra_v0_2_5_3.zip (the build workflow sorts zips by the number after "_v": use exactly this pattern).
+   - Panel header layout (final, reached in .3): row 1 = ABC | Search | Add | Clear. Row 2 ("header line") = left text (Pinned / Recent / "N selected" / short messages like "Pinned is full (30)") + right buttons [List|Cards] (.2) and [Manage] (.3). Each part adds only its own pieces. Must fit 360 px width.
+   - Each chat: say what you understood in ~5 lines, ask at most ONE question, then build (section 0).
+
+  ---------------------------------------------------------------
+  PART 1 = v0.2.5.1  "CLIP ENGINE + ADD"  (logic + small visible upgrades in the OLD list panel)
+  Builds:
+   (a) clip/ClipList.java: ADD new methods only (old ones untouched): viewPinned(q), viewRecent(q) (same search rule, newest first), pinnedCount(), setPinned(List<Item>, boolean) -> returns how many changed (when pinning, stops at MAX_PINNED), removeAll(List<Item>) -> count, static check(String) -> 0 ok / 1 empty / 2 longer than MAX_LEN. Item objects stay the identity (no id field, no format change). These multi methods are what part 3 needs, so build + test them NOW.
+   (b) ClipStore (in ClipboardFeature.kt): matching wrappers (pinnedView / recentView / setPinned / removeAll / pinnedCount), all try/catch.
+   (c) "Add" button in the top bar (ABC | Search | Add | Clear). Tap = save the text of the CURRENT FIELD as a new clip: the selected text if something is selected, else the whole field text (getSelectedText, else text before + after cursor, same way FormatterFeature.kt reads). Result goes on top of Recent (normal clip, user can pin it with the star). Empty / too long (>2000) / password field -> nothing saved and the header line shows a short message ("Field is empty", "Too long (max 2000)"). No typing UI.
+       Hook in MgbIme.kt: ONE function fieldText() (returns selection or whole text, "" on any problem) and pass it to ClipPanel as a lambda parameter with default { "" } (do NOT change the JabraHost interface). Add button label "Add" + own icon only if JabraIcons already has a fitting name, otherwise text only (new icons are a part-3 job).
+   (d) List panel gets small section header lines "Pinned" and "Recent" (shown only when both groups have items; while searching: no headers) + the star icon stays.
+   (e) Setting "Clip lines" = how many lines a long clip shows in the List: 2 (default = old look) / 4 / 6. Pref NEW: clip_lines (int, 0 / 1 / 2). Row in SettingsGroups.kt group "Clipboard & tools": level(g, "Clip lines", "clip_lines", 0, arrayOf("2 lines", "4 lines", "6 lines")). Row height grows with the lines (44 dp -> up to ~88 dp), list area stays scrollable.
+  Files to EDIT: app/src/main/java/com/mgb/keyboard/clip/ClipList.java, ClipboardFeature.kt, MgbIme.kt (2 small hooks), SettingsGroups.kt (1 row), tools/ClipTest.java (add checks, keep the 18), app/build.gradle.kts, CHANGELOG.txt, CHECKLIST.txt (new section I = clipboard), this HANDOFF (rename to v0.2.5.1, update 3d status + section 4 + NEXT).
+  Files to ADD: none.
+  Tests here: ClipTest (old 18 + new: viewPinned / viewRecent, setPinned stops at 30, removeAll, check()), all other Java tests.
+  NOT tested (say it): Add in many apps (some fields give no text), long text speed, 2 / 4 / 6 lines at 360 px, headers look.
+  Rollback: setting Clip lines = 2 and simply do not press Add (no code change). Code level: delete the Add button + header lines in ClipboardFeature.kt, the fieldText() hook in MgbIme.kt, the SettingsGroups row; new ClipList methods are harmless. Easiest: re-apply jabra_v0_2_4 files.
+
+  ---------------------------------------------------------------
+  PART 2 = v0.2.5.2  "CARDS VIEW"  (new look, same data; needs part 1 zip)
+  Builds:
+   (a) NEW file ClipCards.kt: builds the 2-column CARD view: section "Pinned" (cards) then section "Recent" (cards), uses ClipStore.pinnedView / recentView (search works the same). Card = rounded light box with the clip text (max lines = Clip lines setting 2 / 4 / 6, use the same Clip lines number as the List view), a small pin icon (tap = pin / unpin) and a small x (tap = delete) so nothing of the List view is lost. Tap card body = paste text + back to letters (same 3 lines as List: commitWord, typeText, showLetters). Odd number of cards: last row has an empty spacer. Same scroll height as List (176 dp, 88 dp while searching). Same light colours as the old panel (theming the clipboard stays "optional later").
+   (b) View switch: pref NEW clip_view (int, 0 = List default, 1 = Cards). Button [List|Cards] on the header line (right side) flips it and refreshes; row in SettingsGroups.kt "Clipboard & tools": level(g, "Clipboard view", "clip_view", 0, arrayOf("List", "Cards")).
+   (c) Hook in ClipPanel.make(): ONE branch: if clip_view == 1 and ClipCards.fill(...) succeeds use it, else the old List code (automatic fallback; any exception = List view).
+   (d) Keep everything of part 1 (Add, header line messages, Clip lines).
+  Files to EDIT: ClipboardFeature.kt (1 branch + header-line toggle), SettingsGroups.kt (1 row), app/build.gradle.kts, CHANGELOG.txt, CHECKLIST.txt (section I more lines), HANDOFF (rename to v0.2.5.2).
+  Files to ADD: app/src/main/java/com/mgb/keyboard/ClipCards.kt.
+  Tests here: no new pure logic -> all Java tests still pass; bracket / syntax check of ClipCards.kt + ClipboardFeature.kt; code-only diff shows only the marked hooks.
+  Risks (tell the user): card height with long Bangla text, 2 columns at 360 px (card text size ~12-13 sp), scroll vs tap on cards, one-hand mode width. NOT compiled, NOT tested on phone.
+  Rollback: Clipboard view = List (no code change). Code level: delete ClipCards.kt + the marked branch + toggle button + settings row. Easiest: re-apply jabra_v0_2_5_1 files and delete ClipCards.kt.
+
+  ---------------------------------------------------------------
+  PART 3 = v0.2.5.3  "SELECT MODE / MANAGE"  (finishes v0.2.5; needs part 1 + 2 zips)
+  Builds:
+   (a) NEW pure Java typing/ClipSelect.java (like PadState, tested): selected set of ClipList.Item, toggle(item), selectAll(list), clear(), count(), isSelected(item), mode on / off. Tested by NEW tools/ClipSelectTest.java.
+   (b) Select mode works in BOTH views (List and Cards): long-press a clip = enter select mode with that clip selected; tap = toggle check (NO paste while selecting); each row / card shows a check box; header line shows "N selected". Header buttons in select mode: [All] [Pin] [Unpin] [Delete] [Done]. Pin / Unpin use ClipList.setPinned (limit 30: show "Pinned 3 of 5 (limit 30)"), Delete uses removeAll with the same two-tap safety as Clear ("Sure? delete N" then second tap). Done / ABC / closing the panel = leave select mode (select state resets when the panel is opened, like reset()).
+   (c) [Manage] button on the header line (right of List|Cards) = enter select mode with 0 selected. (This IS the Manage feature; no full-screen page. Do NOT ask the user about it again.)
+   (d) A "Pinned" tag on pinned rows / cards is already there from the pin icon / headers; in select mode keep it visible.
+   (e) New own icons only if needed and cheap (names added to JabraIcons.NAMES + one 'when' branch each, e.g. check); otherwise text labels. Old icons never renamed.
+   (f) Old star / x / search / Clear stay as in part 1 / 2 (outside select mode).
+  Files to EDIT: ClipboardFeature.kt (select state + header buttons), ClipCards.kt (check box + long-press), JabraIcons.kt (only if new icon names), app/build.gradle.kts, CHANGELOG.txt, CHECKLIST.txt (section I finished), HANDOFF (rename to v0.2.5.3; mark v0.2.5 DONE in code; NEXT = phone-test results / v0.2.6 optional).
+  Files to ADD: app/src/main/java/com/mgb/keyboard/typing/ClipSelect.java, tools/ClipSelectTest.java.
+  Tests here: ClipSelectTest + ClipTest + all other Java tests.
+  Risks: long-press vs scroll on cards, delete safety, select state surviving a refresh (state lives in ClipPanel, not in the view). NOT compiled, NOT tested on phone.
+  Rollback: do not long-press / do not press Manage (no code change). Code level: delete ClipSelect.java + ClipSelectTest.java and the marked lines in ClipboardFeature.kt / ClipCards.kt. Easiest: re-apply jabra_v0_2_5_2 files and delete the 2 new files.
+
+  ---------------------------------------------------------------
+  HOW TO RUN THE 3 CHATS (user steps)
+   Chat 1: upload the PREP ZIP (jabra_clipboard_plan_files.zip) and write: "Do v0.2.5.1 from HANDOFF_Jabra-Keyboard_v0.2.5-plan.txt, section 3d." Chat 1 returns jabra_v0_2_5_1.zip (changed / new files only, exact paths).
+   Chat 2: upload the PREP ZIP again + jabra_v0_2_5_1.zip (the files from chat 1 REPLACE the prep zip files with the same path; newer wins) and write: "Do v0.2.5.2 ...". Returns jabra_v0_2_5_2.zip.
+   Chat 3: upload the PREP ZIP + jabra_v0_2_5_1.zip + jabra_v0_2_5_2.zip (apply in this order, newer wins) and write: "Do v0.2.5.3 ...". Returns jabra_v0_2_5_3.zip.
+   Upload each finished zip to GitHub in order .1 -> .2 -> .3 (workflow applies zips by number). One bug found on the phone = one fix version, send "which line + what you see".
+   If a chat stops early (session ~90%): it gives what is done + HANDOFF with "what is left"; the left part moves to the next chat, order stays.
+   FILES THE 3 CHATS NEED (all are in the prep zip): HANDOFF plan, CHANGELOG.txt, CHECKLIST.txt, app/build.gradle.kts, ClipboardFeature.kt, clip/ClipList.java, tools/ClipTest.java, MgbIme.kt, SettingsGroups.kt, JabraIcons.kt, JabraExtras.kt (read only: JabraHost, JabraPrefs). Anything else a chat needs it must ask for by file name (do not guess APIs).
+
+3) ROADMAP (one topic per version)
+  v0.0.3 Avro phonetic + language switch      DONE (user uses it)
+  v0.0.4 Probhat fixed Bangla layout          DONE in code (NOT tested on phone)   <- delivered together with v0.0.5 in ONE zip
+  v0.0.5 number row, symbols, number pad, space-drag cursor, key height, haptic/sound   DONE in code (NOT tested on phone)
+  v0.0.6 clipboard history + pinned + search + edit bar   DONE in code (NOT tested on phone)
+  v0.0.7 own unique icons for function keys (user request, no emoji)   DONE in code (NOT tested on phone)
+  v0.0.8 novel formatter panel (see 6)   DONE in code (NOT tested on phone)
+  v0.0.9 typing basics: hold-backspace, caps lock, auto capital, Enter action, keyboard picker, More settings page   DONE in code (NOT tested on phone)   <- this zip (suggestions were dropped by user)
+  v0.1.0 emoji panel, local themes, one-handed mode   DONE in code (NOT tested on phone)   (jabra_v0_1_0.zip)
+  v0.1.1 typing prefs: double-space = period, double-space = tab, key long-press delay, space-swipe cursor speed, Globe key (keyboard switch) show/hide, Voice key show/hide (opens the PHONE's system voice typing, NOT own recording), Emoji key show/hide   DONE in code (NOT tested on phone)   <- this zip (jabra_v0_1_1.zip)
+  v0.1.2 DONE in code (NOT tested on phone) <- jabra_v0_1_2.zip. PC Mode (see 2b) + MODE ICON KEY: one tap = extra rows: Esc Tab Ctrl Alt (sticky), F1-F12, arrows, Home/End/PgUp/PgDn/Del/Ins, Ctrl+C/V/X/A/Z. Mode key shows an own-drawn ANDROID-style icon in Phone mode and an own-drawn PC icon in PC mode
+  v0.1.3 DONE in code (NOT tested on phone) <- jabra_v0_1_3.zip: popup on keypress (key_popup) + Large number row (numrow_large), both in Typing options. "Hide long-press hints" SKIPPED: no hints exist, user decision needed.
+  v0.1.4 DONE in code (NOT tested on phone) <- jabra_v0_1_4.zip. keyboard height % + one-hand width % (portrait AND landscape each). OLD keys kh_p / kh_l and "onehand" must keep working (new keys only, old ones read as fallback)
+  v0.1.5 DONE in code (NOT tested on phone) <- jabra_v0_1_5.zip. Jabra look (round-corner keys, own colour for function keys, pill space key, own popup) + logo (adaptive vector in code) + key style, "Classic" = old look as fallback
+  v0.1.6 DONE in code (NOT tested on phone) <- jabra_v0_1_6.zip. LONG-PRESS HINT LETTERS + "Hide long-press hints" (design in 3b; table in LongPressHints.java, NOT confirmed by user). Session note: the user sent only "next update dao" + the template prompt with empty [placeholders]; step taken from this HANDOFF (NEXT SESSION START HERE = v0.1.6).
+  v0.1.7 DONE in code (NOT tested on phone) <- jabra_v0_1_7.zip. settings page in 5 groups like Ridmik (Languages & layouts / Typing / Look / Keys & gestures / Clipboard & tools) on the launcher screen (SettingsGroups.kt)
+  v0.2.1 DONE in code (NOT tested on phone) <- jabra_v0_2_1.zip. Toolbar engine + editor (see 3c + section 5).
+  v0.2.2 DONE in code (NOT tested on phone) <- jabra_v0_2_2.zip. Toolbar extra shortcuts (see 3c + section 5).
+  v0.2.3 DONE in code (NOT tested on phone) <- jabra_v0_2_3.zip. Cursor / select pad (see 3c + section 5).
+  v0.2.4 DONE in code (NOT tested on phone) <- jabra_v0_2_4.zip. Theme pack (13 new, 18 total) + theme picker page (see 3c + section 5).
+  v0.2.5.1 DONE in code (NOT tested on phone) <- jabra_v0_2_5_1.zip. Clipboard part 1: Add button, Pinned / Recent headers, Clip lines, multi-item engine in ClipList (see 3d + section 5).
+  v0.2.5.2 DONE in code (NOT tested on phone) <- jabra_v0_2_5_2.zip. Clipboard part 2: Cards view (ClipCards.kt), pref clip_view, [View: List|Cards] button on the new header line.
+  v0.2.5.3 DONE in code (NOT tested on phone) <- jabra_v0_2_5_3.zip. Clipboard part 3: select mode / Manage (ClipSelect.java). v0.2.5 COMPLETE in code.
+  v0.2.6 DONE in code (NOT tested on phone) <- jabra_v0_2_6.zip. Gradient themes + Key border (section 5).
+  v0.2.0 DONE <- jabra_v0_2_0.zip. final test round: all unit tests, ONE full checklist (CHECKLIST.txt), HANDOFF cleaned (old PREVIOUS parts removed). User reported GitHub build GREEN (2026-11-10, "sob gula green").
+  Each version: ON/OFF setting, rollback step, CHANGELOG entry, tests that can run here.
+
+4) STATUS (v0.2.6)
+  v0.2.6 (NEW): gradient themes + Key border in code. Tested here: LookTest 31/31 (13 old + 16 + 2 new func colours + 20 distinct + index 20 fallback), ClipSelect 20, Clip 39, Toolbar 44, Pad 9, Typing 27, DoubleSpace 37, Pc 19, SizePct 28, Hint 175 all pass; bracket balance of the 6 changed Kotlin files OK; code-only diff = only the marked hooks. NOT compiled (no Gradle here), NOT tested on a phone (see CHANGELOG v0.2.6).
+  v0.2.5.3 (NEW): select mode / Manage in code. Tested here: ClipSelectTest 20/20, ClipTest 39/39; bracket balance of ClipCards.kt / ClipboardFeature.kt OK. NOT compiled, NOT tested on a phone (long-press vs scroll, 5-button action row at 360 px, delete, pin limit message).
+  v0.2.5.2 (NEW): Cards view in code. Tested here: ClipTest 39/39 (no new pure logic); bracket balance of ClipCards.kt / ClipboardFeature.kt / SettingsGroups.kt OK; code-only diff = only marked hooks. NOT compiled, NOT tested on a phone (2 columns at 360 px, Bangla long text, scroll vs tap, header line height, one-hand width).
+  v0.2.5.1 (NEW): clipboard part 1 in code (Add, Pinned / Recent headers, Clip lines, ClipList multi methods). Tested here: ClipTest 39/39 (18 old + 21 new). The other Java tests were not re-run in that chat (sources not in the prep zip; files not touched). Bracket balance of ClipboardFeature.kt / MgbIme.kt / SettingsGroups.kt OK; code-only diff of MgbIme.kt / SettingsGroups.kt = only the marked hooks. NOT compiled, NOT tested on a phone (Add in many apps, 2 / 4 / 6 lines at 360 px, 4-button top bar).
+  v0.2.4 (NEW): 13 new themes + picker page in code. Tested here: LookTest 29/29 (13 old + 16 new), the 11 other Java tests pass (Pad 9, Toolbar 44, Avro 43, Extras 133, Clip 18, Emoji 1585, Typing 27, DoubleSpace 37, Pc 19, SizePct 28, Hint 175); bracket balance of ThemePanel / ThemeEmojiExtras / MgbIme / TypingExtras OK; code-only diff of MgbIme / TypingExtras = only the marked hooks. NOT compiled, NOT tested on a phone (tile layout at 360 / 1280 px, readability on Seaweed Grey / Ocean / Dusk).
+  v0.2.3 (NEW): cursor / select pad in code. Tested here: PadTest 9/9, ToolbarTest 44/44 + 10 older Java tests pass; bracket balance of the 5 changed / new Kotlin files OK. NOT compiled, NOT tested on a phone (Select + arrows depends on the app reading Shift + arrow key events).
+  v0.2.2 (NEW): 9 extra toolbar items in code. Tested here: ToolbarTest 43/43 + 10 older Java tests pass; bracket balance of MgbIme.kt / Toolbar.kt / ToolbarPanel.kt / JabraIcons.kt OK. NOT compiled, NOT tested on a phone. Extras are OFF until the user presses Show in Edit toolbar.
+  v0.2.1 (NEW): Toolbar engine + editor in code. Tested here: ToolbarTest 30/30 + the 10 older Java tests still pass; bracket balance of the 4 changed / new Kotlin files OK; code-only diff of MgbIme.kt / TypingExtras.kt = only the marked hooks. NOT compiled (no Gradle here), NOT tested on a phone. Default = Classic bar = exactly v0.2.0.
+  GITHUB BUILD: user says all builds are GREEN (message "sob gula green", 2026-11-10, after v0.1.7): so Gradle + Kotlin compile of v0.0.9 - v0.1.7 is now PROVEN. Phone behaviour of v0.0.4 - v0.1.7 is still NOT confirmed by the user (CHECKLIST.txt).
+  Tested here (computer, v0.2.0): all 10 Java tests (Avro 43, Extras 133, Clip 18, Emoji 1585, Typing 27, DoubleSpace 37, Pc 19, SizePct 28, Look 13, Hint 175) + Formatter engine test was last run in v0.0.8 (1500/1500 vs the original JS).
+  PROBHAT TABLE NOT VERIFIED against the official chart (table from memory); fix only table T in probhat/ProbhatLayout.java, run tools/ExtrasTest.java.
+  HINT TABLE (v0.1.6) NOT confirmed by the user; edit LongPressHints.java only.
+  Older per-version status lines were removed in v0.2.0 (see CHANGELOG.txt for each version's TESTED / NOT tested).
+
+5-NEW) v0.3.0 + v0.2.9 + v0.2.8 + v0.2.7 (read first)
+  v0.3.0 key gap: pref key_gap (int dp, unset = 2, valid 0..6). typing/SizePct.java G_MIN/G_MAX/G_DEF, gapValid(), gapDp(). SizePrefs.kt: SizeKeys.GAP, sizeRow got optional unit param (default "%"), new row "Key gap: N dp" in the Size page, reset clears it. MgbIme.kt key(): margin = gap instead of fixed 2 dp (hook "v0.3.0"; affects keys made by key() = letters, number row, toolbar, bottom row; panels with their own pk() unchanged). Applies after ABC (apply). Rollback: Size > Reset sizes. NOT tested on phone / not compiled.
+  v0.2.9 bold letters: pref letter_bold (bool, default false). SizePrefs.kt: SizeKeys.BOLD + toggle button "Bold letters: ON/OFF" in the Size page (reset clears it). MgbIme.kt letter(): 1 line setTypeface BOLD (hook "v0.2.9"). Applies after ABC (apply). Letters only. Rollback: Size > Bold letters OFF / Reset sizes. NOT tested on phone / not compiled.
+  v0.2.8 letter size %: pref letter_pct (int, unset -1 = old 14 sp, valid 80..220, step 10). typing/SizePct.java: L_MIN/L_MAX/L_STEP/L_BASE_SP, letterValid(), letterSp(). SizePrefs.kt: SizeKeys.LETTER + one sizeRow "Letter size" in SizePanel (More settings -> Size >, or toolbar item Size); Reset sizes clears it. MgbIme.kt letter(): 1 line sets b.textSize from the pref (hook "v0.2.8"). TypingExtras.kt: button text only. Applies after ABC (apply). One value for portrait + landscape. Number row / Probhat extra row / toolbar NOT changed.
+    Rollback: Size > Reset sizes (no code change). Code level: remove the lines marked "v0.2.8" (MgbIme.kt 1, SizePrefs.kt 3, SizePct.java block, SizePctTest 6 checks).
+  v0.2.7 (see CHANGELOG): swipe toolbar + hold 1.5 s Edit shortcut (ToolbarQuick.kt), Undo / Redo items. No separate HANDOFF existed for v0.2.7; section 5 below does not describe it, CHANGELOG does.
+  NOT tested: Kotlin compile (GitHub Actions is the first check), big letters at 360 px / 1280 px, dark + light, Probhat letters at 220%, hint label overlap at big sizes.
+
+5) HOW IT WORKS (v0.2.6 first, then v0.2.5.3, then v0.2.5.2, then v0.2.5.1, then v0.2.4, then v0.2.3, then v0.2.2, then v0.2.1, then v0.1.7, then v0.1.6, then v0.1.5, then v0.1.1, then v0.1.0, then v0.0.9 typing basics, then v0.0.8 formatter, then v0.0.7 icons, then v0.0.6; then v0.0.4 / v0.0.5; v0.0.3 part is below under PREVIOUS)
+
+  v0.3.2 WORD DELETE ON LONG HOLD (user: one light-medium effective feature):
+    typing/WordDelete.java pure: count(textBefore) = UTF-16 chars of one word (skips spaces/tabs first, stops at line break, keeps half surrogate safe); FAST_AFTER = 22 repeats, WINDOW = 64. tools/WordDeleteTest.java 17/17.
+    RepeatKeyHelper (TypingExtras.kt) got optional 3rd param onFast (default null = old); from repeat 22 on it calls onFast every 120 ms instead of onFire. Only the MAIN keyboard Backspace passes it (MgbIme.kt: onBackspaceWord: Avro buf -> cleared; else InputSafe.deleteWord = selection -> commitText(""), else deleteSurroundingText(count), else normal backspace).
+    Pref bs_word (bool, default true). Toggles: More settings page (TypingExtras.kt row r35) + app screen Typing group (SettingsGroups.kt). "Hold backspace" (bs_repeat) OFF = no repeat at all, so no word delete either.
+
+  v0.3.1 INPUT SAFETY LAYER (MODIFY, user: "stronger, more platforms, more reliable, change nothing"):
+    InputSafe.kt (object): key(ic, code, meta) = down+up KeyEvent with FLAG_SOFT_KEYBOARD|FLAG_KEEP_TOUCH_MODE, VIRTUAL_KEYBOARD (identical to the platform's sendDownUpKeyEvents) -> returns true only if the app accepted both.
+    backspace(ic): key DEL; if refused -> selected text? commitText("") else deleteSurroundingTextInCodePoints(1,0). enter(ic): key ENTER; if refused -> commitText("\n"). moveCursor(ic, n): DPAD steps (max 20); if refused -> setSelection from getExtractedText.
+    Hooks in MgbIme.kt (grep "v0.3.1"): onBackspace, doEnter (last line), moveCursor, editAction "all", pcSend, padSend. Normal letters / composing / commitText NOT touched.
+    onEvaluateFullscreenMode() = false (landscape extract editor off). Hidden pref fs_extract (bool, default false, NO UI) = old system behaviour.
+    Root cause notes: pcSend / padSend / Ctrl+A built KeyEvents without flags (and Ctrl+A with time 0): some apps leave touch mode or ignore them.
+    Limit: an app that ACCEPTS a key event but ignores it cannot be detected -> no fallback there.
+  v0.2.6 gradient themes + Key border:
+    ThemeEmojiExtras.kt  JabraThemes.T got an optional 5th field bg2 (Int?, default null = solid theme, old themes unchanged). 2 themes APPENDED: index 18 "Purple Haze" (bg 3B1F6B -> 9C45C2, key 5B3A9A, text F3EBFF), 19 "Coral Sunset" (bg FF9A7B -> E8587A, key FFF1EC, text 4A1A22). NEVER reorder. New JabraThemes.paint(prefs, view): gradient (TL -> BR GradientDrawable) if bg2 != null else setBackgroundColor(bg) as before. New JabraThemes.borderless(prefs) = pref key_border == 1.
+    JabraLook.kt         shape(): first line now `if (JabraThemes.borderless(p)) { flat(p, b); return }` (works with Look Classic AND Jabra, all kinds NORMAL / FUNC / PILL). flat(): fill = theme bg colour (solid themes) or key colour at ~16% alpha (gradient themes); pressed = theme text colour at 20% alpha; corner 8 dp; tint + stateListAnimator cleared.
+    typing/LookColors.java funcFill 18 = 4A2C80, 19 = FFC9BA. tools/LookTest.java updated (old "index 18 -> classic" check moved to index 20).
+    ThemePanel.kt        tile draws the gradient (LinearGradient shader) for gradient themes.
+    Hooks "v0.2.6": 9 lines `X.setBackgroundColor(JabraThemes.bg(prefs))` -> `JabraThemes.paint(prefs, X)` in JabraExtras / MgbIme / PadPanel / SizePrefs / ThemeEmojiExtras / ThemePanel / ToolbarPanel / TypingExtras / TypingPrefs; SettingsGroups.kt (row "Key border" in group Look); TypingExtras.kt (More settings button "Key border: Border / Borderless"); app/build.gradle.kts (0.2.6).
+    Prefs NEW: key_border(int, 0 = Border = old look). Default = exactly v0.2.5.3.
+    KNOWN LIMITS (not tested): Shift / Caps highlight uses backgroundTintList (MgbIme.shiftVisual): on Borderless + gradient themes the highlight is faint (key fill is mostly transparent). Clipboard / Formatter panels + toolbar keys are not themed (unchanged). noteColor() uses the FIRST gradient colour (bg) to choose light / dark note text.
+    Re-run test: java -m jdk.compiler/com.sun.tools.javac.Main -encoding UTF-8 -d out app/src/main/java/com/mgb/keyboard/typing/*.java tools/LookTest.java ; java -cp out LookTest
+  v0.2.5.3 clipboard part 3 (select mode / Manage):
+    typing/ClipSelect.java (NEW, pure, tested)  isOn / enter / leave / enterWith(item) / toggle(item) (only when on) / selectAll(list) / clear (stays on) / count / isSelected / selection() (copy) / prune(existing) / pinnedCount. Items compared by identity (==).
+    ClipboardFeature.kt  ClipPanel owns `sel` (ClipSelect) and `confirmDel`; reset() and ABC and Done call sel.leave(). make(): prune(sel) with all items first; header line: left text "N selected" in select mode (or msg), View + Manage buttons only when NOT selecting; selectBar() = row All | Pin | Unpin | Delete | Done under the header line (Pin message "Pinned n of m (limit 30)", Delete two-tap "Sure? delete N", then removeAll + sel.clear + "Deleted n"). itemRow(): in select mode prefix check box + "★ " if pinned, tap toggles (no paste), no star / x; long-press outside select mode = enterWith(item).
+    ClipCards.kt  new class SelectMode(on, isSel, onToggle, onLong) with defaults = off; build(..., sm = SelectMode()); card(): tap toggles in select mode (no paste), long-press = onLong, bottom bar shows check box + "★ Pinned" tag instead of pin / x, selected card = blue frame + light blue fill.
+    No new prefs, no new icons, no manifest change. Hooks "v0.2.5.3".
+    DEVIATIONS from 3d: (1) Manage button next to View on the header line; in select mode they are replaced by the action row (separate row, 5 buttons). (2) Select mode while searching: All selects only the visible (matching) clips. (3) Delete also deletes selected PINNED clips (user chose them; two-tap safety).
+  v0.2.5.2 clipboard part 2 (Cards view):
+    ClipCards.kt (NEW, object ClipCards)  build(ctx, host, pinned, recent, showHeaders, lines, onPin, onDel): View? = LinearLayout with "Pinned" / "Recent" labels (only if showHeaders) and rows of 2 cards. Returns null on ANY exception. Card = GradientDrawable rounded box (#F7F7F7, frame #C8C8C8, pinned frame #7A9CC6), TextView body (12.5 sp, maxLines 2 + 2 * lines, minLines 2, tap = host.commitWord / typeText / showLetters), bottom bar with pin and x buttons (40 x 30 dp, own icons "pin" / "pinned" / "close" via JabraIcons.put). Odd count = empty spacer view. Nothing is saved here; pin / delete go through the onPin / onDel lambdas.
+    ClipboardFeature.kt  make(): header line is now ALWAYS built (row: left TextView = msg (weight 1), right Button "View: List" / "View: Cards", 30 dp, flips pref clip_view and refresh()). Branch: cardsOn = clip_view == 1; if cardsOn and items not empty -> ClipCards.build(..., !searching, clip_lines, togglePin+refresh, remove+refresh); result null -> old List code (sectionHeader + itemRow) = fallback.
+    SettingsGroups.kt    row level(g, "Clipboard view", "clip_view", 0, arrayOf("List", "Cards")) after Clip lines.
+    Prefs NEW: clip_view(int,0). Hooks "v0.2.5.2": ClipCards.kt, ClipboardFeature.kt, SettingsGroups.kt, app/build.gradle.kts (0.2.5.2).
+    DEVIATIONS from 3d: (1) header line is always visible (about 30 dp more panel height) - the message line of part 1 moved into it. (2) Cards view shows section labels also when only one group has items (List view needs both). (3) Dark themes: cards use fixed light colours, like the old panel.
+    For part 3: card = box in ClipCards.card(); add the check box + long-press there (pass a "selected" set + callbacks as new parameters with defaults). Header line left text = "N selected" (use msg slot or a separate field), [Manage] button goes next to the View button.
+  v0.2.5.1 clipboard part 1:
+    clip/ClipList.java   NEW methods (old untouched): viewPinned(q), viewRecent(q) (same search rule, newest first), pinnedCount(), setPinned(List<Item>, boolean) -> changed count (pinning stops at MAX_PINNED, unpin always works, items not in the list / duplicates skipped), removeAll(List<Item>) -> count, static check(String) -> 0 ok / 1 empty (null, blank) / 2 longer than MAX_LEN. Item objects (identity) are the keys; saved format "clips_v1" unchanged.
+    ClipboardFeature.kt  ClipStore wrappers: pinnedView / recentView / pinnedCount / setPinned / removeAll / addChecked(t) (= check + add, returns the code). ClipPanel(ctx, host, store, fieldText: () -> String = { "" }) - 4th parameter is a lambda with default, JabraHost interface NOT changed.
+                         Top bar: ABC 1.0 | Search 1.6 | Add 1.0 | Clear 1.8 (weights). Add = addFromField(): fieldText() -> store.addChecked -> msg ("Added to Recent" / "Too long (max 2000)" / "Field is empty") -> refresh(). msg is shown ONCE as a small TextView under the top bar (make() reads it, then clears it; reset() clears it too). Headers "Pinned" / "Recent" = sectionHeader() rows, only if both groups non-empty and not searching. Clip lines: pref clip_lines 0/1/2 -> maxLines 2/4/6, row height 44 + 22 * level dp (star and x buttons get the same height).
+    MgbIme.kt            fieldText(): "" in password fields or on any error; commitWord() first; getSelectedText(0), else getTextBeforeCursor(2001) + getTextAfterCursor(2001) (so a text over 2000 shows as "too long"). Passed to ClipPanel as a lambda: ClipPanel(this, host, clipStore) { fieldText() }.
+    SettingsGroups.kt    row level(g, "Clip lines", "clip_lines", 0, ...) in group "Clipboard & tools".
+    Hooks "v0.2.5.1": the 4 files above + tools/ClipTest.java + app/build.gradle.kts (0.2.5.1).
+    Prefs NEW: clip_lines(int,0).
+    DEVIATIONS from 3d: (1) the header line of the plan is a message line only (it appears when there is a message); Pinned / Recent labels are rows INSIDE the list, so the later buttons [List|Cards] / [Manage] still need their own header line in .2 / .3. (2) Add has text only (no icon name fits). (3) Password field gives "Field is empty" on purpose (no hint that it is a password field).
+    Re-run test: java -m jdk.compiler/com.sun.tools.javac.Main -encoding UTF-8 -d out app/src/main/java/com/mgb/keyboard/clip/ClipList.java tools/ClipTest.java ; java -Dfile.encoding=UTF-8 -cp out ClipTest
+  v0.2.4 theme pack + picker:
+    ThemeEmojiExtras.kt  JabraThemes.ALL now has 18 entries (T(name, bg, key, text)); indexes 0-4 unchanged, 5..17 appended: Sandstone, Seaweed Grey, Ivory, Gloss Black, Charcoal, Midnight Navy, Moon Blue, Ocean, Deep Green, Aqua, Rose, Silver Grey, Dusk. NEVER reorder / insert (pref "theme" is an index; index() clamps to ALL.size - 1). noteColor: bg luminance < 0.4 = light grey notes, else #555555.
+    typing/LookColors.java  funcFill(i) cases 5..17 = function-key colour per new theme (same order as ALL; keep both tables in step). tools/LookTest.java: 29 checks.
+    ThemePanel.kt        class ThemePanel(ctx, host), route showPanel("themes"). ScrollView 3 rows (70 dp each) of 3 Tile views (inner class, onDraw: rounded bg + 2 key rects + 1 function-key rect + name; blue 3 dp frame + check circle on the current one). Tap = prefs.setInt("theme", idx) + showPanel("themes") (page redraws in the new theme, scroll kept via scrollY / keep flag; first open scrolls to the current row). Footer: < More settings, ABC (apply). build() = null on error.
+    Hooks "v0.2.4": MgbIme.kt (lazy themePanel + 1 route branch), TypingExtras.kt (More settings row "Theme picker >"), app/build.gradle.kts (0.2.4).
+    Old cycle button (More settings), toolbar item "theme", app-screen Theme row all use JabraThemes.ALL.size, so they cycle through 18 by themselves.
+    DEVIATION from plan: no launcher-screen button (launcher cannot open keyboard panels).
+    Re-run test: java -m jdk.compiler/com.sun.tools.javac.Main -encoding UTF-8 -d out app/src/main/java/com/mgb/keyboard/typing/*.java tools/LookTest.java ; java -cp out LookTest
+  v0.2.3 cursor / select pad:
+    typing/PadState.java  pure Java: select flag, toggle(), setSelect(), meta() = META_SHIFT (0x1) when Select is ON else 0.
+    PadPanel.kt           interface PadIo { sendKey(code, meta), edit(kind) } + class PadPanel(ctx, host, io), route showPanel("pad"). Layout: row1 Select | Up | All | Backspace, row2 Left | Down | Right | Copy, row3 Home | End | Cut | Paste, then note, then ABC. Arrows / Home / End / Backspace repeat while held (RepeatKeyHelper from TypingExtras.kt). Select = blue "Select ON" tint; it always starts OFF when the pad opens. All / Copy / Cut / Paste = existing editAction.
+    MgbIme.kt             lazy padPanel + padIo object, padSend(code, meta) (KeyEvent down + up with meta, like pcSend but only the given meta), route "pad", toolbarAction branch "pad".
+    Toolbar: new extra id "pad" (appended to ToolbarOrder.DEFAULT and EXTRAS, OFF until Show), label "Pad", title "Cursor / select pad", new own icon "pad" (4 arrows) in JabraIcons.kt. More settings: button "Cursor / select pad >" (TypingExtras.kt).
+    Hooks "v0.2.3": MgbIme.kt (fields, padSend, route, 1 toolbarAction line), TypingExtras.kt (1 line), JabraIcons.kt (name + branch), Toolbar.kt (2 strings), ToolbarOrder.java (2 arrays), app/build.gradle.kts (0.2.3).
+    LIMIT: arrows / Home / End are key events (same as space-drag and PC mode); Select needs an app that handles Shift + arrow. No fallback for apps that ignore them (stage 2 with setSelection NOT built; add only if a phone test shows it is needed).
+    Re-run test: java -m jdk.compiler/com.sun.tools.javac.Main -encoding UTF-8 -d out app/src/main/java/com/mgb/keyboard/typing/*.java tools/PadTest.java ; java -cp out PadTest
+  v0.2.2 toolbar extra shortcuts:
+    ToolbarOrder.java   DEFAULT now has 17 ids: the 8 of v0.2.1 + EXTRAS emoji, numpad, sym, gear, voice, globe, theme, onehand, size (ids NEVER renamed). Extras are shown ONLY if listed in pref tb_on (csv); normal items stay shown unless listed in tb_hidden. New: isExtra, parseOn, setOn, off(hiddenCsv, onCsv, id), visible(order, hidden, on) (3 args now). Old saved tb_order / tb_hidden of v0.2.1 keep working (extras are appended, OFF).
+    Toolbar.kt          label / title / icon for the 9 new ids (voice uses icon "mic"). Panel: Show / Hide on an extra writes tb_on, on a normal item tb_hidden; Reset clears tb_order, tb_hidden, tb_on, tb_fold.
+    MgbIme.kt           toolbarAction(id) (when): clip, fmt, emoji (emojiPanel.reset + route), numpad, sym (route "symbols"), gear (route "settings"), size, voice (switcher.voice()), globe (switcher.globe()), theme (cycles pref theme, showLetters), onehand (cycles pref onehand 0-2, showLetters), else editAction. Only existing features are opened.
+    JabraIcons.kt       5 NEW own Canvas icons: numpad (3x3 dots), sym (hash), theme (circle + half), onehand (phone + block), size (vertical double arrow). emoji / globe / gear / mic already existed. Icons OFF = text labels (Th, 1H, Sz, 123, #+=).
+    Hooks "v0.2.2": MgbIme.kt (toolbarAction fun + 1 line in toolbarKey), JabraIcons.kt (NAMES + 5 branches), Toolbar.kt / ToolbarPanel.kt / ToolbarOrder.java (own files), app/build.gradle.kts (0.2.2).
+    Prefs NEW: tb_on(str,""). Voice item: same system voice typing as the Voice key (v0.1.1), does not need the key_voice setting.
+    NOT built: undo / redo / home / end (key-event based, unreliable) - the cursor / select pad (v0.2.3) covers home / end.
+  v0.2.1 toolbar engine + editor:
+    typing/ToolbarOrder.java  pure Java: DEFAULT ids = fmt, clip, mode, all, cut, copy, paste, plain (ids NEVER renamed; new ids are appended to DEFAULT in later versions and appear by themselves). parse(csv) (unknown + duplicate dropped, missing appended, empty / broken = default), serialize, parseHidden / isHidden / setHidden, visible(order, hidden), moveFirst / up / down (work on the FULL list, return a new list).
+    Toolbar.kt          interface ToolbarHost { makeKey(id): Button? } + object Toolbar: label(id), title(id), icon(id), build(ctx, prefs, host): View? (null on any error). Row = fixed fold key (id "fold", left) + HorizontalScrollView strip, keys fixed 44 dp wide x 36 dp high. Folded (pref tb_fold) = fold key + the FIRST visible item only. fmt_on OFF hides fmt, mode_key OFF hides mode (old settings keep working).
+    ToolbarPanel.kt     route showPanel("toolbar"): top button Toolbar: Classic / Custom (tb_custom), scrolling list (about 5 rows high) with icon + name + [First] [up] [down] [Hide / Show], note, Reset toolbar (clears tb_order, tb_hidden, tb_fold), < More settings, ABC (apply). Page is rebuilt after each tap; list position kept in a field.
+    Hooks "v0.2.1": MgbIme.kt (lazy toolbarPanel + tbHost field, toolbarKey(id) fun before modeKey, showPanel route "toolbar", ONE branch in buildKeyboard edit-bar block: tb_custom ON and Toolbar.build() != null -> use it, else the old code unchanged), TypingExtras.kt (More settings button "Edit toolbar >"), app/build.gradle.kts (0.2.1).
+    Prefs NEW: tb_custom(bool,false) tb_order(str,"") tb_hidden(str,"") tb_fold(bool,false). edit_bar OFF = no toolbar at all (also Custom). Mode key with edit bar OFF = bottom row (v0.1.2 rule unchanged).
+    DEVIATIONS from plan 3c: (1) folded = fold key + FIRST item (no separate "pinned-to-bar" pref; put the most important item First). (2) "Edit toolbar" is only in More settings (launcher screen cannot open keyboard panels). (3) fold key has text « / », no new icon.
+    Re-run test: java -m jdk.compiler/com.sun.tools.javac.Main -encoding UTF-8 -d out app/src/main/java/com/mgb/keyboard/typing/*.java tools/ToolbarTest.java ; java -cp out ToolbarTest
+  v0.1.7 settings groups:
+    SettingsGroups.kt   object SettingsGroups.build(ctx): View. 5 collapsible groups (header Button toggles a body LinearLayout, all closed at start). Local helpers toggle(key, default) / level(key, default, names) / cycle(get, set). Uses ONLY existing pref keys + defaults (numrow, numpad_auto, bn_layout, pc_mode, mode_key, pc_remember, bs_repeat, autocap, enter_action, ds_period, ds_tab, hint_on, hint_hide, theme, look, onehand, icons_on, numrow_large, haptic, sound, key_popup, key_globe, key_voice, key_emoji, lp_delay, cursor_speed, edit_bar, clip_on, fmt_on). To add a row: one line in the right group { } with the key + default used in the keyboard code.
+    Hook "v0.1.7": SettingsActivity.kt onCreate, 1 line before the "Check for updates" button (try/catch). Plain Android views, default Activity theme (no custom dark / light colours).
+    NOT in the groups on purpose: Size % (SizePanel), Clipboard panel, Formatter presets, Emoji panel, Probhat extra row: they need the keyboard itself.
+  v0.1.6 long-press hints:
+    typing/LongPressHints.java  pure Java: hintFor(char, numRowOn) (q..p = symbols ~ ` ^ = { } [ ] < > when number row ON, digits 1..0 when OFF; a @ s # d $ f % g & h - j + k ( l ) z * x " c ' v : b ; n ! m ?), active(settingOn, banglaMode, pcMetaHeld), labelVisible(active, hide). Edit the strings TOP_DIGITS / TOP_SYMBOLS and the switch to change the table.
+    HintKeys.kt         HintHost (interface, implemented by MgbIme.hintHost), HintKeys.attach(button, prefs, host) = ONE touch listener per letter key: calls KeyPopup.touch (popup) + Handler long-press timer (lp_delay level, System = ViewConfiguration.getLongPressTimeout); on fire: typeHint + feedback, fired=true, UP returns true (no letter click). HintKeys.refresh(button, prefs, host) sets / clears button.foreground = HintDrawable (small text top-right, theme icon colour, alpha 170). Only letter keys use foreground this way (JabraIcons uses it on other keys).
+    KeyPopup.kt         touch(v, e, prefs) extracted from attach() (same behaviour); attach() still used by nobody else.
+    Hooks "v0.1.6": MgbIme.kt (letter(): HintKeys.attach + refresh right after KeyPopup.attach; hintHost + refreshHints() after letter(); relabelLetters() ends with refreshHints()), TypingPrefs.kt (TypingPanel row r36: 2 toggles + note text).
+    Prefs NEW: hint_on(true) hint_hide(false). Hints: English only (not Avro / Probhat; latinOnly fields count as English). One-shot shift is NOT ended by a hint (decision, not tested).
+    Re-run test: java -m jdk.compiler/com.sun.tools.javac.Main -encoding UTF-8 -d out app/src/main/java/com/mgb/keyboard/typing/*.java tools/HintTest.java ; java -cp out HintTest
+  v0.1.5 Jabra look + logo:
+    JabraLook.kt         object JabraLook: on(prefs) (pref look 1), fill(prefs) (theme key colour, white on Classic), shape(prefs, button, NORMAL / FUNC / PILL) = rounded GradientDrawable in a StateListDrawable (pressed = darker), tint cleared, stateListAnimator null. Look 0 = does nothing.
+    typing/LookColors.java  pure Java: funcFill(themeIndex) (function key colour per theme), darken(argb, f).
+    Hooks "v0.1.5": ThemeEmojiExtras.kt JabraThemes.style (calls shape NORMAL = ALL themed keys), MgbIme.kt (fn(button) = shape FUNC on shift, backspace, ?123, language key, Enter; shape PILL on space), KeyPopup.kt (bubble colours / radius), TypingExtras.kt (More settings button "Look: Classic / Jabra").
+    Logo: res/drawable/ic_launcher_background.xml + ic_launcher_foreground.xml (vectors), res/mipmap-anydpi-v26/ic_launcher.xml (adaptive), res/mipmap/ic_launcher.xml (layer-list, Android 7.x). Manifest: android:icon + roundIcon. The letter is a stylised own drawing (strokes), not a font glyph.
+    Re-run test: java -m jdk.compiler/com.sun.tools.javac.Main -encoding UTF-8 -d out app/src/main/java/com/mgb/keyboard/typing/*.java tools/LookTest.java ; java -cp out LookTest
+    Not themed / not rounded: ClipboardFeature.kt, FormatterFeature.kt panels (own light buttons), edit-bar uses normal colour.
+  v0.1.4 size %:
+    typing/SizePct.java  pure Java: heightDp(pct) (48 dp base), pctFromDp, widthFrac(pct, land) (unset -> 0.82 / 0.60), step(cur, dir, min, max, 5) snaps + clamps. UNSET = -1.
+    SizePrefs.kt         SizeKeys (kh_pct_p / kh_pct_l height %, 70..150; oh_w_p / oh_w_l one-hand width %, 50..95) + SizePanel (route showPanel("size"), 4 rows [-][label][+], Reset sizes, < More settings, ABC (apply)).
+    Hooks "v0.1.4": JabraExtras.kt (JabraPrefs.keyHeightDp: % first, else old kh_p / kh_l levels; old Height button clears the % key), ThemeEmojiExtras.kt (JabraOneHand.apply width, old values as catch fallback), MgbIme.kt (sizePanel lazy + route "size"), TypingExtras.kt (button "Size (height / one-hand width) >" in More settings).
+    Re-run test: java -m jdk.compiler/com.sun.tools.javac.Main -encoding UTF-8 -d out app/src/main/java/com/mgb/keyboard/typing/*.java tools/SizePctTest.java ; java -cp out SizePctTest
+  v0.1.3 key popup + large number row:
+    KeyPopup.kt  object KeyPopup.attach(button, prefs): OnTouchListener (always returns false) -> on DOWN shows a PopupWindow bubble (white, 26sp label, not touchable/focusable) above the key if pref key_popup; dismiss on UP/CANCEL/detach.
+    Hooks "v0.1.3": MgbIme.letter() (attach), buildKeyboard number row (pref numrow_large: height keyDp()+12, textSize 18), TypingPrefs.kt TypingPanel (row with 2 toggles + note).
+  v0.1.2 PC mode + mode key:
+    typing/PcState.java  pure Java: mode flag, sticky Ctrl / Alt (OFF / ONCE / LOCK, 400 ms double tap), keySent() ends ONCE, meta() = Android meta bits (CTRL 0x1000, ALT 0x02).
+    PcMode.kt            PcIo (sendKey / edit / feedback / keyDp, implemented by MgbIme.pcIo) + PcRows (4 rows, 36dp, built in code, view() null on error; refresh() tints Ctrl/Alt: light blue once, dark blue lock).
+    MgbIme.kt hooks "v0.1.2": pcState field + pcRows, pcIo, pcSend(code, extraMeta) (KeyEvent down+up with pcState.meta()), toggleMode() (flips pref pc_mode, showLetters()), modeKey(h) (icon mode_pc / mode_phone, fallback text PC / PH),
+                    buildKeyboard: pcState.setPc(pref pc_mode) = pref is the ONE truth; mode key first in edit bar (pref mode_key, default true) or in bottom row when edit_bar is OFF; PcRows inserted before number row only in PC mode;
+                    onLetter: in PC mode with Ctrl/Alt active a-z -> pcSend(KEYCODE_A + n); onStartInputView: pc_remember OFF -> pc_mode false + showLetters().
+    TypingExtras.kt: MorePanel row Mode / Mode key / Remember mode + note. JabraIcons.kt: "mode_phone" (robot head) + "mode_pc" (monitor + stand + keyboard line).
+    Re-run test: java -m jdk.compiler/com.sun.tools.javac.Main -encoding UTF-8 -d out app/src/main/java/com/mgb/keyboard/typing/*.java tools/PcTest.java ; java -cp out PcTest
+    Deviations from plan: no showPanel route "pc" (rows live in the letters view so letters work with sticky Ctrl/Alt); mode key not repeated in PC rows; settings rows have no icons.
+  v0.1.1 typing prefs:
+    typing/DoubleSpace.java  pure Java: decide(periodOn, tabOn, lastSpaceAt, now, windowMs, before2) -> NONE / PERIOD / TAB. Window 800 ms. Period needs letter/digit/Bangla letter or vowel sign/closing bracket or quote before the space; never after . , ; : ! ? danda. Both ON: period wins, tab when period does not fit.
+    typing/TypingLevels.java pure Java: long-press levels (System=0 ms means "use setOnLongClickListener as before", 250, 350, 650, 900) and cursor step dp (28, 22, 16 = old, 11, 7). Names arrays for the buttons.
+    TypingPrefs.kt           SpaceHelper (needs InputConnection: getTextBeforeCursor(2), deleteSurroundingText(1,0), commitText; sets lastAt on every normal space), JabraLongPress.attach(view, prefs) { action }
+                             (level 0 = old setOnLongClickListener; else OnTouchListener + Handler timer, returns false on DOWN so the click still works, returns true on the UP after a fired long-press so no click),
+                             ImeSwitcher (picker(), globe() = switchToNextInputMethod (API 28+, old IMM method below 28) else picker, voice() = first ENABLED other keyboard with a "voice" subtype -> switchInputMethod (API 28+) / setInputMethodAndSubtype, else picker),
+                             TypingPanel (route showPanel("typing"); rows: Double-space period/tab, Long-press/Cursor speed levels, Globe/Voice/Emoji toggles, note, "< More settings" + "ABC (apply)").
+    Hooks "v0.1.1": MgbIme.kt (3 lazy fields, spaceKey() = double-space then normal space, space-key action uses spaceKey, 3 long-press sites use JabraLongPress, optional Globe/Voice/Emoji keys after the language key, showPanel route "typing", SpaceDragHelper gets stepDp),
+                    JabraExtras.kt (SpaceDragHelper optional param stepDp = 16f), TypingExtras.kt (MorePanel button "Typing options >"), JabraIcons.kt (names + 3 branches: globe, mic, emoji).
+    Re-run test: java -m jdk.compiler/com.sun.tools.javac.Main -encoding UTF-8 -d out app/src/main/java/com/mgb/keyboard/typing/*.java tools/DoubleSpaceTest.java ; java -Dfile.encoding=UTF-8 -cp out DoubleSpaceTest
+    LESSON (this session): never put a "// comment" in the MIDDLE of a line when patching with a script: it swallowed the rest of the line (.attach(sb) } catch ...). The bracket check caught it. Always run the bracket check + the code-only diff (sed 's#//.*##') after patching.
+  v0.1.0 emoji / themes / one-hand:
+    Dark fix: JabraThemes.iconColor(p) / noteColor(p); JabraIcons.putThemed(ctx, b, name) = put() with theme icon colour (used in MgbIme, JabraExtras, EmojiPanel). ClipboardFeature.kt still uses put() (light panel, icon #222222).
+    emoji/EmojiData.java    pure Java: ICONS, NAMES, list(i) (one text per category, emoji separated by ONE space; edit there to add/remove).
+    emoji/RecentEmoji.java  pure Java: parse/add (newest first, no duplicates, max 32). Pref "emoji_recent".
+    ThemeEmojiExtras.kt     JabraThemes (5 fixed themes in ALL: Classic/Blue/Mint/Sand/Dark; pref "theme"; style(prefs, button), bg(), keyTint(); Classic = null = old look),
+                            JabraOneHand (pref "onehand" 0/1/2; apply(ctx, prefs, view) sets FrameLayout params width 82% / 60% landscape + gravity, called BEFORE addView),
+                            EmojiPanel (route showPanel("emoji"); tabs Recent + categories, 8 per row, ScrollView 4 key-heights high, bottom row ABC/space/backspace(repeat)/enter).
+    Hooks "v0.1.0": JabraIcons.kt (putThemed), MgbIme.kt (emojiPanel lazy, key() theme style, buildKeyboard root bg + one-hand, shiftVisual off-state = theme tint, showPanel route "emoji" + one-hand, long-press "," = emoji),
+                    JabraExtras.kt (JabraPanels.pk theme + rootView bg), TypingExtras.kt (MorePanel.pk theme + bg + rows: Theme, One-hand, Emoji panel).
+    NOT themed: ClipboardFeature.kt and FormatterFeature.kt (left light on purpose; now they ARE in the repo, theme them in a later version). To theme them: in their button helper add try { JabraThemes.style(JabraPrefs(ctx), b) } and in their root view setBackgroundColor(JabraThemes.bg(...)).
+    Re-run test: java -m jdk.compiler/com.sun.tools.javac.Main -encoding UTF-8 -d out app/src/main/java/com/mgb/keyboard/emoji/*.java tools/EmojiTest.java ; java -Dfile.encoding=UTF-8 -cp out EmojiTest
+  v0.0.9 typing basics:
+    typing/ShiftState.java   pure Java: tap(now) off->shift->(2nd tap within 350 ms)->caps->off; typed() ends one-shot shift (caps stays); autoCap(want) only touches shift it set itself; reset() on new field.
+    typing/EnterAction.java  pure Java: decide(imeOptions) -> action id (Go/Search/Send/Next/Done) or -1 = normal Enter (NO_ENTER_ACTION flag, NONE, UNSPECIFIED -> -1).
+    TypingExtras.kt          RepeatKeyHelper (touch listener: fire at once, again after 400 ms, then every 70 ms / 35 ms after 12 ticks; stops on UP/CANCEL/detach) + MorePanel ("More settings" page, route showPanel("more")).
+    MgbIme.kt hooks "v0.0.9": `shift` is now a property backed by shiftSt (old code unchanged); shift key calls shiftSt.tap; onLetter calls shiftSt.typed; shiftVisual() (blue = caps, light blue = shift, via backgroundTintList);
+                    autoCapUpdate() (getCursorCapsMode(inputType); called in onStartInputView and onUpdateSelection; skipped for Avro/Probhat); doEnter() (host.enter + enter key); pickKeyboard() (InputMethodManager.showInputMethodPicker, long-press ?123);
+                    backspace key gets RepeatKeyHelper; showPanel route "more".
+    JabraExtras.kt hooks "v0.0.9": JabraHost.pickKeyboard() (default empty), JabraPanels.repeatable() on symbols + numpad backspace, settings row r5 "More settings >".
+    Prefs NEW: bs_repeat(true) autocap(true) enter_action(true).
+  v0.0.8 formatter:
+    formatter/NovelFormatter.java  pure Java engine = port of novel-formatter_v2_updated.html (same option keys: indent indentVal indentUnit skipFirst spacing spacingUnit lh fs align
+                    keepB keepI keepU headings hcenter scene sceneText collapse quotes dots dash md zw autoH rules mode sep; booleans are "true"/"false" strings).
+                    parsePlain(text) / parseHtml(html) -> blocks; gen(opts, blocks) -> out/paras/words/bad; plainText, inlineHtml, wpBlock, parseRules, defaults().
+    FormatterFeature.kt   FmtIo (interface) + ImeFmtIo (reads selection / whole field / clipboard html+text, replaces text, undo, sets clipboard; stage lists are data),
+                    FmtStore (current options = prefs "fmt_cur", user presets = "fmt_presets", same JSON as nvCurrent / nvPresets, org.json), FormatterPanel (6 pages: Run, Para, Keep, Clean, Rules, Presets).
+                    UI look: same grey keyboard background, blue = selected tab / main action, green = ON toggle, monospace peek box. Panel refresh = host.showPanel("format") (scroll position kept).
+    Hooks "v0.0.8": MgbIme.kt (fmtPanel lazy, openFormatter(), showPanel route "format", edit-bar item "Aa"), JabraExtras.kt (settings toggle "Formatter"), JabraIcons.kt (icon "fmt").
+    Prefs NEW: fmt_on(true) fmt_cur fmt_presets fmt_src("text"|"clip"|"html") fmt_prev("result"|"original").
+    Two-tap safety: replacing the whole field, clear rules, replace rules, delete preset, reset all. Undo = text before cursor must still equal what we inserted.
+    Re-run engine test: node tools/FormatterDiffGen.js novel-formatter_v2_updated.html cases.txt ; javac -encoding UTF-8 -d out app/src/main/java/com/mgb/keyboard/formatter/NovelFormatter.java tools/FormatterTest.java ; java -cp out FormatterTest cases.txt
+    (if javac is missing: java -m jdk.compiler/com.sun.tools.javac.Main ...). If the HTML tool changes, regenerate cases and fix the Java port line by line.
+  v0.0.7 icons:
+    JabraIcons.kt   object JabraIcons: put(ctx, button, name) / apply(button, name, on). Draws icon with Canvas lines as button.foreground
+                    (drawable IconDrawable, scales to key size), clears button text, keeps old text as contentDescription.
+                    Names: clip all cut copy paste plain search close pin pinned gear shift back enter space. Add new icon = add name to NAMES + one 'when' branch.
+                    Pref "icons_on" (bool, default true). Never throws; on any problem the button keeps its old label (= automatic fallback).
+    Hooks "v0.0.7": MgbIme.kt (edit bar loop, shift, backspace, enter), JabraExtras.kt (bottomRow gear + enter, symbols backspace, numpad backspace + enter,
+                    settings row r4 gets "Icons" toggle), ClipboardFeature.kt (search/close button, pin/pinned, close, search-box backspace + space,
+                    "star"/magnifier text hidden when icons ON).
+  v0.0.6 clipboard:
+    clip/ClipList.java        pure Java list: add (dedupe, newest first), pin, remove, clearUnpinned, view(query), serialize/parse
+                              (lines "0|1,<urlencoded text>"). Limits 40 unpinned / 30 pinned / 2000 chars.
+    ClipboardFeature.kt       ClipStore (loads/saves prefs key "clips_v1") + ClipPanel (list, star, x, search with mini keys, Clear asks twice).
+    MgbIme.kt hooks "v0.0.6": ClipboardManager listener registered in onCreate / removed in onDestroy -> captureClip();
+                              also captureClip() in onStartInputView. Skipped when: password field (pwdField), prefs clip_on=false,
+                              clip marked android.content.extra.IS_SENSITIVE. Edit bar row in buildKeyboard (prefs edit_bar, default true);
+                              editAction(): performContextMenuAction(selectAll/copy/cut/paste), fallback own code; "plain" = clip text -> commitText.
+                              showPanel("clipboard") routes to ClipPanel. New prefs keys: clip_on(true), edit_bar(true), clips_v1(string).
+  app/src/main/java/com/mgb/keyboard/
+    probhat/ProbhatLayout.java  pure Java. map(char) -> Bangla for a pressed key (UPPER-case letter = shift), label(), EXTRAS row.
+    extras/SpaceDrag.java       pure Java. Drag distance -> cursor steps (16dp per step).
+    JabraExtras.kt              JabraHost (interface MgbIme implements), JabraPrefs (safe pref reader), SpaceDragHelper (touch),
+                                JabraPanels (symbols 2 pages, number pad, quick settings). Panels built in code. build() returns null on error
+                                -> MgbIme shows normal letters.
+    MgbIme.kt                   tiny hooks: container(FrameLayout) holds letters OR a panel; showLetters()/showPanel(); probhatOn()/phoneticOn();
+                                relabelLetters() (Latin or Probhat labels via button.tag); number row + Probhat extra row in buildKeyboard();
+                                "?123" key (bottom-left); language key long-press = Avro<->Probhat; space key touch = drag cursor;
+                                key() now reads height + gives haptic/sound; onStartInputView opens number pad for number/phone fields.
+  Prefs file "jabra" (old key "bangla" unchanged). NEW keys: bn_layout("avro"|"probhat", default avro), numrow(true), haptic(true),
+    sound(false), numpad_auto(true), kh_p / kh_l (0..3 = 40/48/56/64dp, default 1 = 48dp = old size).
+  Bangla modes: tap language key = EN <-> Bangla (same as before). Key caption: EN / বাং (Avro) / প্রভা (Probhat).
+    Long-press language key, OR settings panel "Bangla:" button = switch Avro <-> Probhat.
+  Probhat: each key types ONE Bangla letter directly (no composing underline, no buffer). Shift = second letter. Backspace = normal delete.
+    Password/email/URL/number fields: always English (same rule as Avro).
+  Space-drag: stage 1 = DPAD_LEFT/RIGHT key events. Stage 2 (ExtractedText + setSelection) NOT added - add only if some app ignores DPAD.
+  Test on computer (clip: javac -encoding UTF-8 -d out app/src/main/java/com/mgb/keyboard/clip/ClipList.java tools/ClipTest.java && java -cp out ClipTest):
+    javac -encoding UTF-8 -d out app/src/main/java/com/mgb/keyboard/probhat/ProbhatLayout.java app/src/main/java/com/mgb/keyboard/extras/SpaceDrag.java tools/ExtrasTest.java && java -cp out ExtrasTest
+    (Avro: see PREVIOUS section, tools/AvroTest.java)
+
+  v0.0.3 Avro phonetic (kept from the old history):
+  app/src/main/java/com/mgb/keyboard/
+    MgbIme.kt              keyboard UI built in code (no XML). Hooks added in v0.0.3: onLetter, commitWord, onBackspace,
+                           toggleLang, onStartInputView (latinOnly detection), onUpdateSelection (reset on cursor move).
+    phonetic/AvroPhonetic.java   pure Java engine. convert(romanWord) -> Bangla. Tables VOW/CON/AUTO.
+                           Rules: consonant+consonant = hasanta conjunct; vowel after consonant = kar; "o" = inherent (no sign);
+                           y/w after consonant = ya/ba-phala; "ng" before vowel = ঙ else ং; tiny AUTO list (valo, tomar, kono...).
+                           NOT yet: ৎ, ঁ, ঃ, Bangla digits, dictionary autocorrect.
+    SettingsActivity.kt    enable/choose keyboard, test box, Check for updates. Updater.kt = GitHub Releases updater
+                           (stage 1: download apk + system installer; stage 2: open release page in browser).
+  Prefs file "jabra": key "bangla" (boolean). Do not rename.
+  Typing flow in Bangla mode: letters collect in buf -> setComposingText(Bangla) -> commit on space/punct/enter/switch.
+  If engine throws: Latin letters are shown (fallback). Password/email/URL/number fields: always English.
+  Test engine on a computer:
+    java -m jdk.compiler/com.sun.tools.javac.Main -encoding UTF-8 -d out app/src/main/java/com/mgb/keyboard/phonetic/AvroPhonetic.java tools/AvroTest.java
+    java -cp out AvroTest        (or plain javac if available)
+
+6) FORMATTER (v0.0.8, DONE in code) - decisions
+  Why not WebView with the HTML: you cannot type inside the keyboard's own WebView, and a new Activity needs AndroidManifest.xml (I do not have it). So: panel inside the keyboard + engine ported to Java.
+  Working procedure: select text in any app (or none = whole field) -> open "Aa" -> pick Source -> tap Replace/Copy. See CHANGELOG v0.0.8 for SAME / DIFFERENT list vs the HTML tool.
+  Not built (ask user first if wanted): Download .html/.txt (storage permission), auto-format-while-typing mode, rendered preview (WebView in panel), Bangla-specific rules.
+  Ideas for later: rules/preset-name entry with mini keys (like clipboard search), more value steps, per-app preset.
+
+7) BUILD / RELEASE (user's own workflow, do not change unless asked)
+  .github/workflows/build.yml (zip uploads never change .github; user edits it by hand on GitHub).
+  Push to main -> applies *_vX_Y_Z.zip in repo root (zip name must match _v<digits_digits>.zip) -> builds -> release
+  tag v<appVersionName>-b<run number>, apk name Jabra-Keyboard-<tag>.apk. Version = ONE line in app/build.gradle.kts.
+  Secrets (user set, 4): KEYSTORE_B64, KEYSTORE_PASSWORD, KEY_ALIAS, KEY_PASSWORD. Without them debug apk -> update fails.
+  Revert: Actions > Run workflow > revert_to = previous | latest | tag | commit. See REVERT.txt.
+  Build env here has NO Gradle/Android SDK/network: Kotlin cannot be compiled here. Java engine can (see above).
+  Permissions in app: INTERNET (only on "Check for updates"), REQUEST_INSTALL_PACKAGES. Nothing else.
+
+8) TEST CHECKLIST for user
+  ONE full list = CHECKLIST.txt in the repo root (every feature, which screen / what to do / what to see). Per-version lists of v0.0.4 - v0.1.7 were merged into it in v0.2.0.
+  Build: GitHub Actions green (user confirmed for all versions up to v0.1.7); release has Jabra-Keyboard-v<version>-b<run>.apk; in-app "Check for updates" installs it.
+
+8b) ROLLBACK
+  Only v0.2.6 off: Key border: Border (no code change; gradient themes: choose another theme, a saved index 18 / 19 would fall back to the last theme only if the 2 entries are removed, so set Classic first). Code level: remove the 2 T(...) entries after "Dusk" (and the comma after Dusk) + the bg2 field + paint() + borderless() in ThemeEmojiExtras.kt, the flat() fun + 1 line in JabraLook.kt, the 9 paint lines back to X.setBackgroundColor(JabraThemes.bg(prefs)), cases 18..19 in LookColors.java, SettingsGroups 1 row, TypingExtras 1 block, ThemePanel 3 lines, restore tools/LookTest.java. Easiest: re-apply jabra_v0_2_5_3.zip files.
+  Only v0.2.5.3 off: do not long-press / do not press Manage (no code change). Code level: delete ClipSelect.java + ClipSelectTest.java and the "v0.2.5.3" lines in ClipboardFeature.kt / ClipCards.kt. Easiest: re-apply jabra_v0_2_5_2 files and delete the 2 new files.
+  Only v0.2.5.2 off: app screen -> Clipboard view = List (or press the View button), no code change. Code level: delete ClipCards.kt + the "v0.2.5.2" branch / header-line button in ClipboardFeature.kt + the settings row. Easiest: re-apply jabra_v0_2_5_1 files and delete ClipCards.kt.
+  Only v0.2.5.1 off: app screen -> Clip lines = 2 lines, do not press Add (no code change; Pinned / Recent headers are harmless). Code level: ClipboardFeature.kt: remove the Add button + message line + headers + Clip lines code (lines marked "v0.2.5.1"), MgbIme.kt: fieldText() + the lambda on the clipPanel line, SettingsGroups.kt: 1 row. New ClipList methods + ClipStore wrappers can stay. Easiest: re-apply jabra_v0_2_4.zip files.
+  Only v0.2.4 off: nothing to do (choose theme Classic / Blue / Mint / Sand / Dark in the picker or with the cycle button; the picker opens only from More settings). Code level: delete ThemePanel.kt and the lines marked "v0.2.4" (MgbIme.kt: themePanel field + route branch; TypingExtras.kt: 1 row), remove the 13 T(...) entries after "Dark" in ThemeEmojiExtras.kt (and the comma after Dark), remove cases 5..17 in LookColors.java, restore tools/LookTest.java. A saved theme index above 4 is clamped by index() only if ALL is shorter: it falls back to the last theme, so set Classic first. Easiest: re-apply jabra_v0_2_3.zip files (and delete ThemePanel.kt).
+  Only v0.2.3 off: nothing to do (the pad opens only from the toolbar item Pad, which is OFF by default, or the More settings button). Code level: delete PadPanel.kt, typing/PadState.java, tools/PadTest.java and the lines marked "v0.2.3" (MgbIme.kt: padPanel + padIo, padSend, route, toolbarAction line; TypingExtras.kt 1 line; JabraIcons.kt name + branch; Toolbar.kt 2 strings; ToolbarOrder.java: remove "pad" from both arrays). Easiest: re-apply jabra_v0_2_2.zip files (and delete the 3 new files).
+  Only v0.2.2 off: nothing to do (extras are OFF by default; Edit toolbar -> Reset toolbar hides them again). Code level: remove the 9 extra ids from ToolbarOrder.DEFAULT / EXTRAS, the extras branches in Toolbar.kt, toolbarAction() + the 1 line in toolbarKey (MgbIme.kt), the 5 icon names + branches in JabraIcons.kt. Easiest: re-apply jabra_v0_2_1.zip files.
+  Only v0.2.1 off: Edit toolbar > Toolbar: Classic (no code change; saved tb_* keys stay, harmless). Code level: delete Toolbar.kt, ToolbarPanel.kt, typing/ToolbarOrder.java, tools/ToolbarTest.java and the lines marked "v0.2.1" (MgbIme.kt: lazy toolbarPanel + tbHost, toolbarKey() fun, showPanel route, the tb / if-else wrapper in buildKeyboard incl. its closing brace; TypingExtras.kt: 1 line). Easiest: re-apply jabra_v0_2_0.zip files (and delete the 4 new files).
+  Only v0.1.7 off: nothing to switch (the screen only edits the same settings). Code level: delete SettingsGroups.kt and the line marked "v0.1.7" in SettingsActivity.kt. Easiest: re-apply jabra_v0_1_6.zip files (and delete SettingsGroups.kt).
+  Only v0.1.6 off: Typing options -> Long-press characters OFF + Hide long-press hints ON (no code change). Code level: delete HintKeys.kt, typing/LongPressHints.java, tools/HintTest.java and the lines marked "v0.1.6" (MgbIme.kt: letter() 1 line, hintHost + refreshHints() block, relabelLetters() 1 line; TypingPrefs.kt: r36 row + the extra note text; KeyPopup.kt: attach() can stay as is, touch() is harmless). Easiest: re-apply jabra_v0_1_5.zip files (and delete HintKeys.kt + LongPressHints.java).
+  Only v0.1.5 off: More settings -> Look: Classic (no code change; the icon stays). Code level: delete JabraLook.kt, typing/LookColors.java, tools/LookTest.java, the 4 res files and the lines marked "v0.1.5" (MgbIme.kt: fn() + 7 spots, ThemeEmojiExtras.kt 1, KeyPopup.kt 5 spots, TypingExtras.kt 1 block, AndroidManifest.xml 2 lines). Easiest: re-apply jabra_v0_1_4.zip files (and delete the 4 res files).
+  Only v0.1.4 off: More settings -> Size > -> Reset sizes (no code change; old Height levels + 82% / 60% width come back). Code level: delete SizePrefs.kt, typing/SizePct.java, tools/SizePctTest.java and the lines marked "v0.1.4" (JabraExtras.kt 2, ThemeEmojiExtras.kt 1 -> restore: val frac = if (JabraPrefs.isLand(ctx)) 0.6f else 0.82f, MgbIme.kt 2 (lazy + route), TypingExtras.kt 1). Easiest: re-apply jabra_v0_1_3.zip files.
+  Only v0.1.3 off: Typing options -> Key popup OFF + Large number row OFF (no code change). Code level: delete KeyPopup.kt and the 3 lines marked "v0.1.3" (MgbIme.kt 2, TypingPrefs.kt 1 + note text). Easiest: re-apply jabra_v0_1_2.zip files.
+  Only v0.1.2 off: More settings -> Mode key OFF + Mode: Phone (no code change). Code level: delete PcMode.kt, typing/PcState.java, tools/PcTest.java, the 2 icon branches + 2 names in JabraIcons.kt and the lines marked "v0.1.2" (MgbIme.kt: 2 fields, pcIo/pcSend/toggleMode/modeKey block, onLetter line, 3 buildKeyboard lines, onStartInputView line; TypingExtras.kt: the v0.1.2 try-block). Easiest: re-apply jabra_v0_1_1.zip files.
+  Only v0.1.1 off: More settings -> Typing options: Double-space period OFF, tab OFF, Long-press System, Cursor speed Normal, Globe/Voice/Emoji key OFF (no code change). Code level: delete TypingPrefs.kt, typing/DoubleSpace.java, typing/TypingLevels.java, tools/DoubleSpaceTest.java and the lines marked "v0.1.1"
+    (MgbIme.kt: 3 lazy fields, spaceKey(), spaceAction back to { commitWord(); typeText(" ") }, 3 long-press lines back to setOnLongClickListener, the try-block with Globe/Voice/Emoji keys, showPanel "typing" branch, SpaceDragHelper 5th argument; JabraExtras.kt: stepDp param; TypingExtras.kt: 1 line; JabraIcons.kt: 3 names + 3 branches). Easiest: re-apply jabra_v0_1_0.zip files.
+  Only v0.1.0 off: More settings -> Theme: Classic, One-hand: Off (no code change; the "," long-press emoji stays, harmless). Code level: delete ThemeEmojiExtras.kt, emoji/*.java, tools/EmojiTest.java and the lines marked "v0.1.0"
+    (JabraIcons.kt: putThemed + the colour parameter of apply; MgbIme.kt 7 spots + putThemed -> put, JabraExtras.kt 2 + putThemed -> put, TypingExtras.kt 3 incl. the try-block with Theme/One-hand/Emoji rows; the "," key back to r4.addView(key(",", 1f) { commitWord(); typeText(",") })). Easiest: re-apply jabra_v0_0_9.zip files.
+  Only v0.0.9 off: gear -> More settings -> Hold backspace / Auto caps / Enter action OFF (no code change; caps lock + keyboard picker stay, harmless). Code level: delete TypingExtras.kt, typing/*.java, tools/TypingTest.java and the lines marked "v0.0.9" (MgbIme.kt: `shift` back to `private var shift = false`, shift key back to `shift = !shift; refreshLetters()`, onLetter back to `shift = false`). Easiest: re-apply jabra_v0_0_8.zip files.
+  Only v0.0.8 off: gear panel -> Formatter OFF -> ABC (apply) (no code change; saved settings keys fmt_* stay, harmless). Code level: delete FormatterFeature.kt, formatter/NovelFormatter.java, tools/FormatterTest.java, tools/FormatterDiffGen.js
+    and the lines marked "v0.0.8" (MgbIme.kt: fmtPanel line, openFormatter fun, showPanel route (restore the 2-way if/else), edit bar: items0/items back to one "items" array + the click line without the kind == "fmt" branch; JabraExtras.kt 1 line; JabraIcons.kt "fmt" name + branch). Easiest: re-apply jabra_v0_0_7.zip files.
+  Only v0.0.7 off: gear panel -> Icons OFF -> ABC (apply) (no code change). Code level: delete JabraIcons.kt and every line marked "v0.0.7"
+    (MgbIme.kt 4 spots, JabraExtras.kt 6 spots, ClipboardFeature.kt 6 spots; unwrap JabraIcons.put(...) so the plain pk()/key()/btn() call stays;
+    in ClipboardFeature restore: top.addView(btn(...)) for Search, q.text = "🔍 " + query + "▏", "★ " prefix without the icons check). Easiest: re-apply jabra_v0_0_6.zip files.
+  Only v0.0.6 off: gear panel -> Edit bar OFF + Clip history OFF (no code change). Code level: delete clip/ClipList.java + ClipboardFeature.kt
+    and the hooks marked "v0.0.6" in MgbIme.kt and the r35 row in JabraExtras.kt. Saved history key "clips_v1" can stay (harmless).
+  Easy: Actions > Run workflow > revert_to = previous (= v0.0.3 build) (see REVERT.txt).
+  Only v0.0.5 off (keep Probhat): in settings panel switch Number row/Auto numpad OFF (no code change). Code level: delete JabraExtras.kt + extras/SpaceDrag.java
+    and the v0.0.5 hooks in MgbIme.kt (marked "v0.0.5").
+  Only Probhat off: do not long-press language key (default stays Avro); code level: delete probhat/ProbhatLayout.java + hooks marked "v0.0.4".
+
+9) NEXT
+  >>> v0.2.8 done (letter size). Waiting for user phone-test results (CHECKLIST K). Possible follow-ups, ask first: size for number row / hint labels, separate portrait/landscape letter size.
+  >>> NEXT SESSION START HERE: v0.3.2 DONE in code. FIRST: GitHub build errors / phone results of CHECKLIST N + O (and G-M) -> FIX mode. Candidates later: word delete on the emoji / pad / extras Backspace (pass onFast there too, only if the user wants); Avro buffer vs onUpdateSelection with no composing region (needs phone repro); Android 15+ bottom insets (needs device); settings switch for fs_extract.
+  Open points for the user: hint table OK or send Ridmik photo (LongPressHints.java); Probhat keys vs Ridmik photo (table T); icons unclear? (name -> only that branch in JabraIcons.kt).
+  Optional later (ask user first): hint table for Probhat keys, end one-shot shift after a hint, theme the Clipboard / Formatter panels, launcher groups with custom dark / light colour, conjunct-aware backspace for Probhat, Bangla digits option, space-drag stage 2, PC mode Ctrl+Shift combos / sticky Shift, Bluetooth / USB keyboard (needs permissions: ASK).

@@ -115,3 +115,9 @@ N) v0.3.1 reliability (nothing should look different)
  [ ] Cursor pad (Select + arrows, Home / End) and PC mode Ctrl+A / arrows / Del still work in a browser or notes app.
  [ ] Rotate to landscape in any app: the keyboard shows, NO full-screen text box covers the app. Type a few letters, field is still visible/usable (tell me the app name if the field is hidden behind the keyboard).
  [ ] Avro / Probhat typing, emoji, clipboard, formatter: same as before.
+
+O) v0.3.2 word delete
+ [ ] Type a long sentence, hold Backspace: letters go one by one, after about 1.5 sec whole words go. Release stops it at once.
+ [ ] Select some text, hold Backspace: selection goes first, then words.
+ [ ] Gear > More settings: "Word delete" toggle OFF -> hold = old speed-up only, no word jump. Same toggle in app screen > Typing.
+ [ ] Bangla (Avro / Probhat) text and emoji: words delete cleanly, no half emoji left.

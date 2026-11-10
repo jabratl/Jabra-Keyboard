@@ -21,7 +21,8 @@ import android.widget.TextView
 /** Hold a key: fires once at once, then after a short delay again and again (faster after a while). Releasing stops it. */
 class RepeatKeyHelper(
     private val onFire: () -> Unit,
-    private val onFeedback: (View) -> Unit
+    private val onFeedback: (View) -> Unit,
+    private val onFast: (() -> Unit)? = null   // v0.3.2: after a long hold this replaces onFire (word delete); null = old behaviour
 ) {
     private val handler = Handler(Looper.getMainLooper())
     private var running = false
@@ -30,6 +31,13 @@ class RepeatKeyHelper(
     private val tick = object : Runnable {
         override fun run() {
             if (!running) return
+            val fast = onFast
+            if (fast != null && count >= com.mgb.keyboard.typing.WordDelete.FAST_AFTER) {   // v0.3.2: long hold = whole words
+                try { fast() } catch (_: Throwable) { }
+                count++
+                handler.postDelayed(this, 120L)
+                return
+            }
             try { onFire() } catch (_: Throwable) { }
             count++
             handler.postDelayed(this, if (count > 12) 35L else 70L)
@@ -169,6 +177,7 @@ class MorePanel(private val ctx: Context, private val host: JabraHost) {
             root.addView(r3)
             val r35 = row()
             r35.addView(pk("Emoji panel", 1f) { host.showPanel("emoji") })
+            r35.addView(toggleKey("Word delete", "bs_word", true))   // v0.3.2
             root.addView(r35)
         } catch (_: Throwable) { }
 

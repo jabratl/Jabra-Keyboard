@@ -35,6 +35,18 @@ object InputSafe {
         } catch (_: Throwable) { }
     }
 
+    /** v0.3.2: delete one word before the cursor (selection = delete the selection). Falls back to one backspace. */
+    fun deleteWord(ic: InputConnection?) {
+        if (ic == null) return
+        try {
+            val sel = ic.getSelectedText(0)
+            if (!sel.isNullOrEmpty()) { ic.commitText("", 1); return }
+            val n = com.mgb.keyboard.typing.WordDelete.count(ic.getTextBeforeCursor(com.mgb.keyboard.typing.WordDelete.WINDOW, 0))
+            if (n > 0 && ic.deleteSurroundingText(n, 0)) return
+        } catch (_: Throwable) { }
+        backspace(ic)
+    }
+
     /** Normal Enter (no editor action). Fallback: a new line character. */
     fun enter(ic: InputConnection?) {
         if (ic == null) return

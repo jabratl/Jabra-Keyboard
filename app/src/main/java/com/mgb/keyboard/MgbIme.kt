@@ -552,6 +552,12 @@ class MgbIme : InputMethodService() {
         ic?.commitText(word, 1)
     }
 
+    /** v0.3.2: long hold on Backspace = delete one whole word per tick (setting bs_word). Avro word being typed = cleared at once. */
+    private fun onBackspaceWord() {
+        if (buf.isNotEmpty()) { buf.setLength(0); currentInputConnection?.setComposingText("", 1) }
+        else InputSafe.deleteWord(currentInputConnection)
+    }
+
     private fun onBackspace() {
         if (buf.isNotEmpty()) {
             buf.setLength(buf.length - 1)
@@ -626,7 +632,7 @@ class MgbIme : InputMethodService() {
         r3.addView(shb)
         "zxcvbnm".forEach { r3.addView(letter(it)) }
         val bkb = JabraIcons.putThemed(this, key("⌫", 1.5f) { onBackspace() }, "back")   // v0.0.7
-        try { if (prefs.bool("bs_repeat", true)) RepeatKeyHelper({ onBackspace() }, { v -> feedback(v) }).attach(bkb) } catch (_: Throwable) { }   // v0.0.9: hold = repeat
+        try { if (prefs.bool("bs_repeat", true)) RepeatKeyHelper({ onBackspace() }, { v -> feedback(v) }, if (prefs.bool("bs_word", true)) ({ onBackspaceWord() }) else null).attach(bkb) } catch (_: Throwable) { }   // v0.0.9: hold = repeat
         r3.addView(fn(bkb))   // v0.1.5
         root.addView(r3)
 

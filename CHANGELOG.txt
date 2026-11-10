@@ -1,3 +1,13 @@
+v0.3.2 - Long hold on Backspace deletes whole words
+- NEW: hold Backspace: first letter by letter (as before), after about 1.5 sec it deletes one WORD per tick, so long text goes away fast. Selected text = deleted at once. Avro word being typed = cleared at once. Setting "Long hold deletes words" (gear > More settings > "Word delete", also in the app screen > Typing), default ON. OFF = exactly the old hold-repeat.
+- Code: NEW typing/WordDelete.java (rule, tested by NEW tools/WordDeleteTest.java 17/17), InputSafe.kt deleteWord(), MgbIme.kt onBackspaceWord() + 1 changed line (main Backspace key only; emoji / pad / extras Backspace unchanged), TypingExtras.kt (RepeatKeyHelper optional 3rd param, default null = old; toggle), SettingsGroups.kt (toggle), app/build.gradle.kts (0.3.2). New pref bs_word. No permission.
+WHY: user asked for one light-medium, effective improvement.
+BROKE: nothing intended. "Hold backspace" OFF still disables all repeat.
+NOT tested: Kotlin compile (GitHub Actions), phone: feel of the speed (starts after ~1.5 s, 120 ms per word), Bangla / emoji text, apps that return no text before the cursor (then it falls back to normal backspace).
+TESTED here: WordDeleteTest 17/17, bracket balance of the 4 Kotlin files.
+Rollback: switch "Word delete" OFF. Code: remove lines marked "v0.3.2".
+Files: typing/WordDelete.java, tools/WordDeleteTest.java (new), InputSafe.kt, MgbIme.kt, TypingExtras.kt, SettingsGroups.kt, app/build.gradle.kts, CHANGELOG.txt, CHECKLIST.txt, HANDOFF_Jabra-Keyboard_v0.3.2.txt (new, replaces ..._v0.3.1.txt).
+
 v0.3.1 - Reliability: input safety layer (no new look, no new setting)
 - IMPROVED: Backspace, Enter, space-drag cursor, Select All, PC-mode keys and the cursor pad now send the same key event as the Android system does (real time + soft-keyboard flags). If an app REFUSES the key event, a text-edit fallback runs: backspace = delete selection / one character, Enter = new line, cursor = setSelection. Apps that worked before behave the same.
 - IMPROVED: landscape no longer opens the full-screen "extract" editor (it hid the app and broke many apps). Hidden pref fs_extract = true brings the old system behaviour back (no screen for it yet).

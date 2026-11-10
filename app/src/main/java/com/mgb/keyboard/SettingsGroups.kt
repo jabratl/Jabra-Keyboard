@@ -99,6 +99,7 @@ object SettingsGroups {
 
         group("Typing") { g ->
             toggle(g, "Hold backspace", "bs_repeat", true)
+            toggle(g, "Long hold deletes words", "bs_word", true)   // v0.3.2
             toggle(g, "Auto caps", "autocap", true)
             toggle(g, "Enter action", "enter_action", true)
             toggle(g, "Double-space period", "ds_period", false)
