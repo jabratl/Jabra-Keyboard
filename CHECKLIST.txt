@@ -67,3 +67,26 @@ H. THEMES (v0.2.4)
  [ ] Old Theme: tap to cycle (More settings) and the Theme toolbar item go through all 18 and wrap to Classic.
  [ ] Symbols, number pad, emoji, pad, toolbar page, clipboard: still readable in the new themes.
 
+I. CLIPBOARD (v0.2.5.1)
+ [ ] Copy 2-3 texts in any app. Open the clipboard (Clip key on the edit bar): top bar shows ABC | Search | Add | Clear, all readable at 360 px.
+ [ ] Pin one clip with the star: small header lines "Pinned" and "Recent" appear. Unpin it (or only one group has items): headers go away. While Search is open: no headers.
+ [ ] Add: type a sentence in a note app, open the clipboard, tap Add: line "Added to Recent" shows and the sentence is on top of Recent.
+ [ ] Add with text SELECTED: only the selected part is saved.
+ [ ] Add in an empty field: "Field is empty", nothing saved. Add in a password field: nothing saved.
+ [ ] Add with a very long text (more than 2000 characters): "Too long (max 2000)", nothing saved.
+ [ ] Clear: first tap shows "Sure? (unpinned)" (text not cut), second tap clears; pinned clips stay.
+ [ ] Old things still work: tap a clip = paste + back to letters, star pins, x deletes, Search finds.
+ [ ] App screen -> Clipboard & tools -> Clip lines: 2 / 4 / 6 lines. Open the clipboard with a long clip (also Bangla): the clip shows more lines, rows get taller, list scrolls, star and x still tap.
+ [ ] v0.2.5.2: clipboard now has a header line: right side button "View: List". Default = old list. Short messages ("Added to Recent") show on its left.
+ [ ] Tap "View: List": it becomes "View: Cards"; 2 columns of cards, "Pinned" and "Recent" labels. Tap again = back to list.
+ [ ] Cards: tap card text = pastes + back to letters. Star = pin / unpin (card moves to Pinned). x = delete.
+ [ ] Odd number of clips: last card is not stretched full width. Long clip (also Bangla): lines follow Clip lines 2 / 4 / 6, card text not cut at the sides, 360 px ok.
+ [ ] Scroll the cards with a finger: scrolls, does not paste by accident. Search in Cards view finds clips, no section labels.
+ [ ] App screen -> Clipboard & tools -> Clipboard view: List / Cards matches the button. Add / Clear / ABC still work in both views.
+ [ ] v0.2.5.3: header line now has "View" and "Manage". Press Manage: "0 selected", row All | Pin | Unpin | Delete | Done appears, all fit at 360 px.
+ [ ] Tap clips: check box fills, "N selected" grows, NOTHING is pasted. Works in List and in Cards.
+ [ ] Long-press a clip (not in select mode): select mode starts with that clip checked. Scrolling the list does not trigger it.
+ [ ] All, then Unpin / Pin: pinned tags follow. Select more than 30 to pin: message "Pinned N of M (limit 30)".
+ [ ] Delete: first tap "Sure? delete N" (text not cut), second tap deletes; "Deleted N"; pinned ones you selected are deleted too. Tap Done instead = nothing deleted.
+ [ ] Done and ABC leave select mode; close and reopen the clipboard = normal mode, nothing checked.
+ [ ] Search in select mode: the selection stays; Add and Clear still work. Outside select mode: star, x, tap = paste work as before.

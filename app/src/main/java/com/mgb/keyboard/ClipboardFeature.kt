@@ -10,6 +10,7 @@ import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
 import com.mgb.keyboard.clip.ClipList
+import com.mgb.keyboard.typing.ClipSelect
 
 /*
  * v0.0.6: clipboard history (+ pinned, delete, search). All new code is here; MgbIme.kt has small hooks marked "v0.0.6".
@@ -28,17 +29,29 @@ class ClipStore(private val prefs: JabraPrefs) {
     fun togglePin(i: ClipList.Item): Boolean = try { val ok = list.togglePin(i); if (ok) save(); ok } catch (_: Throwable) { false }
     fun remove(i: ClipList.Item) { try { if (list.remove(i)) save() } catch (_: Throwable) { } }
     fun clearUnpinned() { try { list.clearUnpinned(); save() } catch (_: Throwable) { } }
+
+    // v0.2.5.1: engine wrappers (all safe)
+    fun pinnedView(q: String): List<ClipList.Item> = try { list.viewPinned(q) } catch (_: Throwable) { emptyList() }
+    fun recentView(q: String): List<ClipList.Item> = try { list.viewRecent(q) } catch (_: Throwable) { emptyList() }
+    fun pinnedCount(): Int = try { list.pinnedCount() } catch (_: Throwable) { 0 }
+    fun setPinned(sel: List<ClipList.Item>, pin: Boolean): Int = try { val n = list.setPinned(sel, pin); if (n > 0) save(); n } catch (_: Throwable) { 0 }
+    fun removeAll(sel: List<ClipList.Item>): Int = try { val n = list.removeAll(sel); if (n > 0) save(); n } catch (_: Throwable) { 0 }
+    /** Saves a text as a new clip. Returns ClipList.check(): 0 = saved, 1 = empty, 2 = too long. */
+    fun addChecked(t: String): Int = try { val c = ClipList.check(t); if (c == 0) add(t); c } catch (_: Throwable) { 1 }
 }
 
 /** The clipboard screen: list (pinned first), tap = paste, star = pin, x = delete, search, clear (asks twice). */
-class ClipPanel(private val ctx: Context, private val host: JabraHost, private val store: ClipStore) {
+class ClipPanel(private val ctx: Context, private val host: JabraHost, private val store: ClipStore, private val fieldText: () -> String = { "" }) {   // v0.2.5.1: fieldText = selection or whole field text
 
     private var searching = false
     private var query = ""
     private var confirmClear = false
+    private var msg = ""   // v0.2.5.1: one short message for the header line (shown once, then cleared)
+    private val sel = ClipSelect()        // v0.2.5.3: select mode state lives HERE (not in the view), so it survives refresh()
+    private var confirmDel = false        // v0.2.5.3: "Sure? delete N" two-tap safety
 
     /** Call when the panel is opened from outside (fresh start). */
-    fun reset() { searching = false; query = ""; confirmClear = false }
+    fun reset() { searching = false; query = ""; confirmClear = false; msg = ""; sel.leave(); confirmDel = false }
 
     private fun dp(v: Int): Int = (v * ctx.resources.displayMetrics.density).toInt()
 
@@ -76,9 +89,13 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
         root.setBackgroundColor(Color.parseColor("#DDDDDD"))
         root.setPadding(dp(2), dp(4), dp(2), dp(4))
 
+        // v0.2.5.3: forget selected clips that no longer exist (after delete / Clear)
+        try { sel.prune(store.pinnedView("") + store.recentView("")) } catch (_: Throwable) { sel.leave() }
+        val selOn = sel.isOn
+
         // top bar
         val top = row()
-        top.addView(btn("ABC", 1.2f, 40) { host.showLetters() })
+        top.addView(btn("ABC", 1.0f, 40) { sel.leave(); confirmDel = false; host.showLetters() })   // v0.2.5.3: ABC leaves select mode
         val searchBtn = btn(if (searching) "✕ Search" else "🔍 Search", 1.6f, 40) {
             searching = !searching
             query = ""
@@ -87,11 +104,45 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
         }
         JabraIcons.put(ctx, searchBtn, if (searching) "close" else "search")   // v0.0.7
         top.addView(searchBtn)
-        top.addView(btn(if (confirmClear) "Sure? (unpinned)" else "Clear", 1.6f, 40) {
+        top.addView(btn("Add", 1.0f, 40) { addFromField() })   // v0.2.5.1: save the current field text as a clip
+        val clearBtn = btn(if (confirmClear) "Sure? (unpinned)" else "Clear", 1.8f, 40) {
             if (confirmClear) { store.clearUnpinned(); confirmClear = false } else confirmClear = true
             refresh()
-        })
+        }
+        if (confirmClear) clearBtn.textSize = 12f   // v0.2.5.1: the button is a bit narrower now
+        top.addView(clearBtn)
         root.addView(top)
+
+        // v0.2.5.1: header line message (e.g. "Added", "Field is empty"); shown once
+        // v0.2.5.2: the header line is now always there: left = message, right = [List|Cards] switch
+        val shownMsg = msg
+        msg = ""
+        val cardsOn = try { JabraPrefs(ctx).int("clip_view", 0) == 1 } catch (_: Throwable) { false }
+        val head = row()
+        head.gravity = Gravity.CENTER_VERTICAL
+        val m = TextView(ctx)
+        m.text = if (selOn && shownMsg.isEmpty()) sel.count().toString() + " selected" else shownMsg   // v0.2.5.3
+        m.textSize = 12f
+        m.setTextColor(Color.DKGRAY)
+        m.setPadding(dp(8), 0, dp(4), 0)
+        m.layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+        head.addView(m)
+        val viewBtn = btn(if (cardsOn) "View: Cards" else "View: List", 0f, 30) {
+            try { JabraPrefs(ctx).setInt("clip_view", if (cardsOn) 0 else 1) } catch (_: Throwable) { }
+            confirmClear = false
+            refresh()
+        }
+        viewBtn.textSize = 12f
+        viewBtn.setPadding(dp(10), 0, dp(10), 0)
+        if (!selOn) {   // v0.2.5.3: in select mode the action row below replaces View / Manage
+            head.addView(viewBtn)
+            val manageBtn = btn("Manage", 0f, 30) { sel.enter(); confirmClear = false; confirmDel = false; refresh() }
+            manageBtn.textSize = 12f
+            manageBtn.setPadding(dp(10), 0, dp(10), 0)
+            head.addView(manageBtn)
+        }
+        root.addView(head)
+        if (selOn) root.addView(selectBar())
 
         if (searching) {
             val q = TextView(ctx)
@@ -116,7 +167,26 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
             t.setTextColor(Color.DKGRAY)
             col.addView(t)
         }
-        for (entry in items) col.addView(itemRow(entry))
+        // v0.2.5.1: "Pinned" / "Recent" header lines (only when both groups have items and not searching)
+        val pinnedItems = store.pinnedView(query)
+        val recentItems = store.recentView(query)
+        val showHeaders = !searching && pinnedItems.isNotEmpty() && recentItems.isNotEmpty()
+        // v0.2.5.2: Cards view (clip_view = 1); any problem -> null -> the old List code below
+        val lines = try { JabraPrefs(ctx).int("clip_lines", 0).coerceIn(0, 2) } catch (_: Throwable) { 0 }
+        val cards: View? = if (cardsOn && items.isNotEmpty()) {
+            ClipCards.build(ctx, host, pinnedItems, recentItems, !searching, lines,
+                { it2 -> store.togglePin(it2); refresh() },
+                { it2 -> store.remove(it2); refresh() },
+                SelectMode(selOn, { x -> sel.isSelected(x) }, { x -> sel.toggle(x); confirmDel = false; refresh() }, { x -> sel.enterWith(x); confirmDel = false; refresh() }))
+        } else null
+        if (cards != null) {
+            col.addView(cards)
+        } else {
+            if (showHeaders) col.addView(sectionHeader("Pinned"))
+            for (entry in pinnedItems) col.addView(itemRow(entry))
+            if (showHeaders) col.addView(sectionHeader("Recent"))
+            for (entry in recentItems) col.addView(itemRow(entry))
+        }
         sv.addView(col)
         root.addView(sv)
 
@@ -133,22 +203,100 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
         return root
     }
 
+    /** v0.2.5.1: tap on Add = save selected text (or the whole field) as a new clip. */
+    private fun addFromField() {
+        val t = try { fieldText() } catch (_: Throwable) { "" }
+        when (store.addChecked(t)) {
+            0 -> msg = "Added to Recent"
+            2 -> msg = "Too long (max " + ClipList.MAX_LEN + ")"
+            else -> msg = "Field is empty"
+        }
+        confirmClear = false
+        refresh()
+    }
+
+    /** v0.2.5.3: action row in select mode: All | Pin | Unpin | Delete | Done. */
+    private fun selectBar(): View {
+        val r = row()
+        r.addView(btn("All", 1f, 34) {
+            sel.selectAll(store.pinnedView(query) + store.recentView(query))
+            confirmDel = false
+            refresh()
+        })
+        r.addView(btn("Pin", 1f, 34) {
+            val chosen = sel.selection()
+            val want = chosen.count { !it.pinned }
+            if (chosen.isEmpty()) msg = "Nothing selected"
+            else {
+                val n = store.setPinned(chosen, true)
+                msg = if (n < want) "Pinned " + n + " of " + want + " (limit " + ClipList.MAX_PINNED + ")" else "Pinned " + n
+            }
+            confirmDel = false
+            refresh()
+        })
+        r.addView(btn("Unpin", 1f, 34) {
+            val chosen = sel.selection()
+            if (chosen.isEmpty()) msg = "Nothing selected" else msg = "Unpinned " + store.setPinned(chosen, false)
+            confirmDel = false
+            refresh()
+        })
+        val n = sel.count()
+        val del = btn(if (confirmDel) "Sure? delete " + n else "Delete", if (confirmDel) 2.2f else 1.2f, 34) {
+            if (n == 0) { msg = "Nothing selected"; confirmDel = false }
+            else if (confirmDel) {
+                val gone = store.removeAll(sel.selection())
+                sel.clear()
+                msg = "Deleted " + gone
+                confirmDel = false
+            } else confirmDel = true
+            refresh()
+        }
+        if (confirmDel) del.textSize = 12f
+        r.addView(del)
+        r.addView(btn("Done", 1f, 34) { sel.leave(); confirmDel = false; refresh() })
+        return r
+    }
+
+    private fun sectionHeader(label: String): View {
+        val h = TextView(ctx)
+        h.text = label
+        h.textSize = 12f
+        h.setTypeface(h.typeface, android.graphics.Typeface.BOLD)
+        h.setTextColor(Color.DKGRAY)
+        h.setPadding(dp(8), dp(4), dp(8), dp(2))
+        return h
+    }
+
     private fun itemRow(item: ClipList.Item): View {
+        val lv = try { JabraPrefs(ctx).int("clip_lines", 0).coerceIn(0, 2) } catch (_: Throwable) { 0 }   // v0.2.5.1: 0/1/2 = 2/4/6 lines
+        val rowH = 44 + 22 * lv
         val r = row()
         r.gravity = Gravity.CENTER_VERTICAL
-        val t = btn((if (item.pinned && !JabraPrefs(ctx).bool("icons_on", true)) "★ " else "") + item.text.replace("\n", " ⏎ "), 1f, 44) {
-            host.commitWord()
-            host.typeText(item.text)
-            host.showLetters()
+        val selOn = sel.isOn
+        val picked = selOn && sel.isSelected(item)
+        val prefix = if (selOn) (if (picked) "☑ " else "☐ ") + (if (item.pinned) "★ " else "") else (if (item.pinned && !JabraPrefs(ctx).bool("icons_on", true)) "★ " else "")   // v0.2.5.3: check box + pinned tag in select mode
+        val t = btn(prefix + item.text.replace("\n", " ⏎ "), 1f, rowH) {
+            if (sel.isOn) {   // v0.2.5.3: tap toggles, NO paste
+                sel.toggle(item); confirmDel = false; refresh()
+            } else {
+                host.commitWord()
+                host.typeText(item.text)
+                host.showLetters()
+            }
+        }
+        if (picked) t.setBackgroundColor(Color.parseColor("#CFE0F5"))
+        t.setOnLongClickListener {   // v0.2.5.3: long-press = select mode with this clip selected
+            if (sel.isOn) false else { sel.enterWith(item); confirmDel = false; refresh(); true }
         }
         t.textSize = 13f
         t.gravity = Gravity.START or Gravity.CENTER_VERTICAL
-        t.maxLines = 2
+        t.maxLines = 2 + 2 * lv
         t.ellipsize = TextUtils.TruncateAt.END
         t.setPadding(dp(8), 0, dp(8), 0)
         r.addView(t)
-        r.addView(JabraIcons.put(ctx, btn(if (item.pinned) "★" else "☆", 0f, 44) { store.togglePin(item); refresh() }.also { it.minimumWidth = dp(44); it.minWidth = dp(44) }, if (item.pinned) "pinned" else "pin"))   // v0.0.7
-        r.addView(JabraIcons.put(ctx, btn("✕", 0f, 44) { store.remove(item); refresh() }.also { it.minimumWidth = dp(44); it.minWidth = dp(44) }, "close"))   // v0.0.7
+        if (selOn) return r   // v0.2.5.3: no star / x while selecting
+        r.addView(JabraIcons.put(ctx, btn(if (item.pinned) "★" else "☆", 0f, rowH) { store.togglePin(item); refresh() }.also { it.minimumWidth = dp(44); it.minWidth = dp(44) }, if (item.pinned) "pinned" else "pin"))   // v0.0.7
+        r.addView(JabraIcons.put(ctx, btn("✕", 0f, rowH) { store.remove(item); refresh() }.also { it.minimumWidth = dp(44); it.minWidth = dp(44) }, "close"))   // v0.0.7
         return r
     }
 }

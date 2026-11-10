@@ -40,7 +40,7 @@ class MgbIme : InputMethodService() {
     private var pwdField = false               // true in password fields: nothing is recorded there
     private var clipListener: ClipboardManager.OnPrimaryClipChangedListener? = null
     private val clipStore by lazy { ClipStore(JabraPrefs(this)) }
-    private val clipPanel by lazy { ClipPanel(this, host, clipStore) }
+    private val clipPanel by lazy { ClipPanel(this, host, clipStore) { fieldText() } }   // v0.2.5.1: Add button reads the field
     private val prefs by lazy { JabraPrefs(this) }
     private val panels by lazy { JabraPanels(this, host) }
     private val morePanel by lazy { MorePanel(this, host) }   // v0.0.9 "More settings" page
@@ -223,6 +223,19 @@ class MgbIme : InputMethodService() {
         val t = clipText() ?: return
         currentInputConnection?.commitText(t, 1)
     }
+
+    /** v0.2.5.1: text for the clipboard "Add" button = selected text, else the whole field text. "" on any problem or in password fields. */
+    private fun fieldText(): String = try {
+        if (pwdField) "" else {
+            commitWord()
+            val ic = currentInputConnection
+            if (ic == null) "" else {
+                val sel = ic.getSelectedText(0)?.toString()
+                if (!sel.isNullOrEmpty()) sel
+                else (ic.getTextBeforeCursor(2001, 0)?.toString() ?: "") + (ic.getTextAfterCursor(2001, 0)?.toString() ?: "")
+            }
+        }
+    } catch (_: Throwable) { "" }
 
     private fun openClipboard() {
         clipPanel.reset()

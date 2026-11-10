@@ -76,6 +76,62 @@ public final class ClipList {
         return n;
     }
 
+    // ---- v0.2.5.1: new methods only (old ones above are untouched) ----
+
+    private List<Item> group(String query, boolean pinned) {
+        String q = query == null ? "" : query.toLowerCase();
+        ArrayList<Item> out = new ArrayList<Item>();
+        for (Item it : items) {
+            if (it.pinned != pinned) continue;
+            if (q.length() == 0 || it.text.toLowerCase().contains(q)) out.add(it);
+        }
+        return out;
+    }
+
+    /** Pinned items only, newest first, same search rule as view(). */
+    public List<Item> viewPinned(String query) { return group(query, true); }
+
+    /** Not-pinned items only, newest first, same search rule as view(). */
+    public List<Item> viewRecent(String query) { return group(query, false); }
+
+    public int pinnedCount() {
+        int n = 0;
+        for (Item x : items) if (x.pinned) n++;
+        return n;
+    }
+
+    /** Pins (or unpins) many items. Pinning stops at MAX_PINNED. Returns how many really changed. */
+    public int setPinned(List<Item> sel, boolean pin) {
+        if (sel == null) return 0;
+        int changed = 0;
+        int n = pinnedCount();
+        for (Item it : sel) {
+            if (it == null || it.pinned == pin || !items.contains(it)) continue;
+            if (pin) {
+                if (n >= MAX_PINNED) break;
+                it.pinned = true; n++; changed++;
+            } else {
+                it.pinned = false; n--; changed++;
+            }
+        }
+        return changed;
+    }
+
+    /** Removes many items. Returns how many were removed. */
+    public int removeAll(List<Item> sel) {
+        if (sel == null) return 0;
+        int n = 0;
+        for (Item it : sel) if (it != null && items.remove(it)) n++;
+        return n;
+    }
+
+    /** Can this text be saved as a clip? 0 = ok, 1 = empty, 2 = longer than MAX_LEN. */
+    public static int check(String t) {
+        if (t == null || t.trim().length() == 0) return 1;
+        if (t.length() > MAX_LEN) return 2;
+        return 0;
+    }
+
     public int size() { return items.size(); }
 
     public String serialize() {

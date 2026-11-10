@@ -133,6 +133,8 @@ object SettingsGroups {
             toggle(g, "Edit bar", "edit_bar", true)
             toggle(g, "Clip history", "clip_on", true)
             toggle(g, "Formatter (Aa button)", "fmt_on", true)
+            level(g, "Clip lines", "clip_lines", 0, arrayOf("2 lines", "4 lines", "6 lines"))   // v0.2.5.1
+            level(g, "Clipboard view", "clip_view", 0, arrayOf("List", "Cards"))   // v0.2.5.2
         }
 
         return root

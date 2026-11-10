@@ -1,3 +1,47 @@
+v0.2.5.3 - Clipboard part 3: Select mode / Manage (finishes v0.2.5 = clipboard like Ridmik, part 3 of 3)
+- NEW: select mode, in BOTH views (List and Cards). Long-press a clip = select mode with that clip selected. Or press the new "Manage" button on the header line (right of View) = select mode with 0 selected.
+- In select mode: tap = check / uncheck (NO paste), every row / card shows a check box, pinned clips keep a visible "★" / "★ Pinned" tag, header line says "N selected". Star and x are hidden while selecting.
+- Action row: All | Pin | Unpin | Delete | Done. Pin stops at the limit 30 and says e.g. "Pinned 3 of 5 (limit 30)". Delete asks twice: "Sure? delete N", then second tap deletes (pinned selected clips too, because you chose them). Done or ABC = leave select mode. Opening the clipboard again always starts normal.
+- Search and Add still work in select mode; Clear works as before.
+- Code: typing/ClipSelect.java (NEW, pure Java), tools/ClipSelectTest.java (NEW), ClipboardFeature.kt (select state in ClipPanel, Manage button, action row, tap / long-press in list rows), ClipCards.kt (check box, long-press, class SelectMode with defaults = off), app/build.gradle.kts (0.2.5.3). Hooks marked "v0.2.5.3". No new icons (text labels). No new prefs. Saved clips "clips_v1" UNCHANGED.
+
+WHY: roadmap v0.2.5.3 (section 3d, part 3). v0.2.5 is now DONE in code.
+BROKE: nothing intended. Header line has one more button (Manage) next to View: check it fits at 360 px.
+NOT tested: Kotlin compile (first check = GitHub Actions), everything on a phone: long-press on a card / row while the list scrolls, check boxes look, Manage button fits at 360 px, action row of 5 buttons at 360 px ("Sure? delete 12" not cut), delete of many clips, pin limit message, ABC / Done leave the mode, select state survives search typing, dark themes (fixed light colours).
+TESTED here: ClipSelectTest 20/20, ClipTest 39/39. The other Java tests were NOT re-run (their sources are not in the zips; not touched). Bracket balance of ClipCards.kt / ClipboardFeature.kt OK.
+Rollback: do not long-press and do not press Manage (no code change). Code level: delete ClipSelect.java + ClipSelectTest.java and the lines marked "v0.2.5.3" in ClipboardFeature.kt / ClipCards.kt. Easiest: re-apply jabra_v0_2_5_2 files and delete the 2 new files.
+Files: typing/ClipSelect.java, tools/ClipSelectTest.java (new); ClipboardFeature.kt, ClipCards.kt, app/build.gradle.kts, CHANGELOG.txt, CHECKLIST.txt, HANDOFF_Jabra-Keyboard_v0.2.5.3.txt (new name, replaces ..._v0.2.5.2.txt).
+
+v0.2.5.2 - Clipboard part 2: Cards view (clipboard like Ridmik, part 2 of 3)
+- NEW: Cards view. 2 columns of rounded light cards: "Pinned" section, then "Recent" section. Card = clip text (2 / 4 / 6 lines = the Clip lines setting), pin star (bottom left, tap = pin / unpin), x (bottom right, tap = delete). Tap the card text = paste + back to letters (same as List). Pinned cards have a blue-ish frame. Odd count = empty slot in the last row. Search works the same (no section labels while searching).
+- NEW: header line under the top bar (left = short message like "Added to Recent", right = button "View: List" / "View: Cards"). Tap the button = switch view at once. It is now always visible (about 30 dp taller panel).
+- NEW setting: Clipboard view = List (default = old look) / Cards. Place: app screen -> Clipboard & tools -> Clipboard view. Same pref as the button.
+- Safety: any problem while drawing the cards = the old List view is shown instead.
+- Code: ClipCards.kt (NEW), ClipboardFeature.kt (header line + 1 branch), SettingsGroups.kt (1 row), app/build.gradle.kts (0.2.5.2). Hooks marked "v0.2.5.2".
+- Prefs NEW: clip_view (int, 0 = List, 1 = Cards, default 0). Saved clips format "clips_v1" UNCHANGED.
+
+WHY: roadmap v0.2.5.2 (section 3d, part 2).
+BROKE: nothing intended. The message line used to appear only when there was a message; now a header line (about 30 dp) is always there because of the View button. If the panel looks too tall at your keyboard height, tell me.
+NOT tested: Kotlin compile (first check = GitHub Actions), everything on a phone: 2 columns at 360 px, card height with long Bangla text, text size 12.5 sp, scroll vs tap on cards, one-hand mode width, pin / delete from cards, header line height, dark themes (cards use fixed light colours like the old panel).
+TESTED here: ClipTest 39/39 (no new pure logic; the other Java tests were not re-run, their sources are not in the zips and this version did not touch them). Bracket balance of ClipCards.kt / ClipboardFeature.kt / SettingsGroups.kt OK; code-only diff = only the marked hooks.
+Rollback: Clipboard view = List (no code change). Code level: delete ClipCards.kt + the marked branch + header-line button + settings row. Easiest: re-apply jabra_v0_2_5_1 files and delete ClipCards.kt.
+Files: ClipCards.kt (new); ClipboardFeature.kt, SettingsGroups.kt, app/build.gradle.kts, CHANGELOG.txt, CHECKLIST.txt, HANDOFF_Jabra-Keyboard_v0.2.5.2.txt (new name, replaces ..._v0.2.5.1.txt).
+
+v0.2.5.1 - Clipboard part 1: Add button + Pinned / Recent headers + Clip lines (clipboard like Ridmik, part 1 of 3)
+- NEW: "Add" button in the clipboard top bar (ABC | Search | Add | Clear). Tap = saves the SELECTED text, or if nothing is selected the WHOLE text of the current field, as a new clip on top of Recent (pin it with the star as usual). Empty field -> message "Field is empty"; longer than 2000 characters -> "Too long (max 2000)"; password field -> nothing saved ("Field is empty"). The message shows in a small line under the top bar, once.
+- NEW: small header lines "Pinned" and "Recent" in the list. Shown only when BOTH groups have items and you are not searching.
+- NEW setting: Clip lines = how many lines a long clip shows: 2 lines (default = old look) / 4 lines / 6 lines. Place: app screen -> Clipboard & tools -> Clip lines. Row height grows 44 -> 66 -> 88 dp; the list still scrolls.
+- ENGINE (for part 3): ClipList got viewPinned / viewRecent / pinnedCount / setPinned (many items, stops at 30) / removeAll / check(text). ClipStore got matching safe wrappers. Old methods untouched. Saved data format "clips_v1" is UNCHANGED (old history loads as before).
+- Code: clip/ClipList.java, ClipboardFeature.kt (ClipStore wrappers, ClipPanel: Add, message line, headers, Clip lines), MgbIme.kt (fieldText() + 1 lambda on the ClipPanel line), SettingsGroups.kt (1 row), tools/ClipTest.java (39 checks, the 18 old ones kept), app/build.gradle.kts (0.2.5.1). All hooks marked "v0.2.5.1".
+- Prefs NEW: clip_lines (int, 0 / 1 / 2, default 0).
+
+WHY: roadmap v0.2.5.1 (section 3d of the plan).
+BROKE: nothing intended. Small change in the top bar: ABC button is a bit narrower, Clear a bit wider (4 buttons now); "Sure? (unpinned)" uses a smaller text so it fits.
+NOT tested: Kotlin compile (first check = GitHub Actions), everything on a phone: Add in many apps (some fields give no text; Avro word being typed is committed first), Add with a very long field, 2 / 4 / 6 lines at 360 px (also Bangla text), headers look, top bar with 4 buttons at 360 px, "Sure? (unpinned)" not cut.
+TESTED here: ClipTest 39/39 (18 old + 21 new). The other Java tests were NOT re-run in this chat (their source files were not in the prep zip; this version did not touch them). Code-only diff of MgbIme.kt / SettingsGroups.kt = only the marked hooks; bracket balance of ClipboardFeature.kt / MgbIme.kt / SettingsGroups.kt OK.
+Rollback: Clip lines = 2 lines and do not press Add (no code change). Code level: remove the Add button, message line, headers and Clip lines code in ClipboardFeature.kt, fieldText() + lambda in MgbIme.kt, the SettingsGroups row. New ClipList methods are harmless. Easiest: re-apply jabra_v0_2_4 files.
+Files: ClipList.java, ClipboardFeature.kt, MgbIme.kt, SettingsGroups.kt, tools/ClipTest.java, app/build.gradle.kts, CHANGELOG.txt, CHECKLIST.txt, HANDOFF_Jabra-Keyboard_v0.2.5.1.txt (new name, replaces HANDOFF_Jabra-Keyboard_v0.2.5-plan.txt).
+
 v0.2.4 - Theme pack + theme picker
 - NEW: 13 more themes (total 18). Order is fixed, old ones keep their numbers: 0 Classic, 1 Blue, 2 Mint, 3 Sand, 4 Dark, then 5 Sandstone, 6 Seaweed Grey, 7 Ivory, 8 Gloss Black, 9 Charcoal, 10 Midnight Navy, 11 Moon Blue, 12 Ocean, 13 Deep Green, 14 Aqua, 15 Rose, 16 Silver Grey, 17 Dusk. Own names and colours (ideas from your screenshots, not copied).
 - NEW page: More settings -> Theme picker >. Grid of small preview tiles (background + 2 keys + 1 function key + name), blue frame + check = current. Tap a tile = theme chosen, page redraws in that theme. ABC (apply) shows it on the keyboard. It opens scrolled to the current theme.

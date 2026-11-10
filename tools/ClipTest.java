@@ -44,6 +44,39 @@ public class ClipTest {
         // garbage input never crashes
         ok(ClipList.parse("garbage\n\n9,%ZZ\n1,abc").size() == 1, "garbage tolerated");
         ok(ClipList.parse(null).size() == 0, "null");
+        // ---- v0.2.5.1: new methods ----
+        ClipList h = new ClipList();
+        for (int i = 0; i < 5; i++) h.add("n" + i);
+        ok(h.viewPinned("").size() == 0 && h.viewRecent("").size() == 5 && h.pinnedCount() == 0, "v1 all recent at start");
+        List<ClipList.Item> two2 = new java.util.ArrayList<ClipList.Item>(h.viewRecent("").subList(0, 2));
+        ok(h.setPinned(two2, true) == 2 && h.pinnedCount() == 2, "setPinned pins 2");
+        ok(h.setPinned(two2, true) == 0, "pin again = 0 changed");
+        ok(h.viewPinned("").size() == 2 && h.viewRecent("").size() == 3, "pinned / recent split");
+        ok(h.viewPinned("").get(0).text.equals("n4") && h.viewRecent("").get(0).text.equals("n2"), "each group newest first");
+        ok(h.viewPinned("N3").size() == 1 && h.viewRecent("N3").size() == 0, "search works in both groups");
+        ok(h.view("").size() == 5 && h.view("").get(0).pinned, "old view() unchanged");
+        ok(h.setPinned(two2, false) == 2 && h.pinnedCount() == 0, "setPinned unpin");
+        ok(h.setPinned(null, true) == 0 && h.setPinned(new java.util.ArrayList<ClipList.Item>(), true) == 0, "setPinned null / empty");
+        ClipList k = new ClipList();
+        for (int i = 0; i < ClipList.MAX_PINNED + 10; i++) k.add("q" + i);
+        ok(k.setPinned(k.viewRecent(""), true) == ClipList.MAX_PINNED && k.pinnedCount() == ClipList.MAX_PINNED, "setPinned stops at 30");
+        ok(k.setPinned(k.viewRecent(""), true) == 0, "full: nothing more pinned");
+        List<ClipList.Item> pin3 = new java.util.ArrayList<ClipList.Item>(k.viewPinned("").subList(0, 3));
+        ok(k.setPinned(pin3, false) == 3 && k.setPinned(k.viewRecent("").subList(0, 5), true) == 3, "unpin 3 then only 3 of 5 fit");
+        ClipList m = new ClipList();
+        for (int i = 0; i < 6; i++) m.add("r" + i);
+        List<ClipList.Item> del = new java.util.ArrayList<ClipList.Item>(m.view("").subList(0, 4));
+        ok(m.removeAll(del) == 4 && m.size() == 2, "removeAll 4");
+        ok(m.removeAll(del) == 0 && m.size() == 2, "removeAll again = 0");
+        ok(m.removeAll(null) == 0, "removeAll null");
+        ok(ClipList.check(null) == 1 && ClipList.check("") == 1 && ClipList.check(" \n ") == 1, "check empty");
+        ok(ClipList.check("ok") == 0 && ClipList.check("বাংলা") == 0, "check ok");
+        ok(ClipList.check(new String(new char[ClipList.MAX_LEN]).replace('\0', 'x')) == 0, "check exactly 2000 ok");
+        ok(ClipList.check(new String(new char[ClipList.MAX_LEN + 1]).replace('\0', 'x')) == 2, "check 2001 too long");
+        ClipList n2 = new ClipList();
+        String longClip = new String(new char[ClipList.MAX_LEN]).replace('\0', 'y');
+        ok(n2.add(longClip) && n2.size() == 1, "add of an Add-button clip works");
+        ok(ClipList.parse(n2.serialize()).size() == 1, "format unchanged: 2000-char clip round trip");
         System.out.println((total - fail) + "/" + total + " passed");
         if (fail > 0) System.exit(1);
     }
