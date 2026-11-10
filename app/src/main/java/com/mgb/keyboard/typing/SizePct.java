@@ -8,6 +8,12 @@ public final class SizePct {
     public static final int H_MIN = 70, H_MAX = 150, H_STEP = 5, H_BASE_DP = 48;
     public static final int W_MIN = 50, W_MAX = 95, W_STEP = 5, W_DEF_P = 82, W_DEF_L = 60;
 
+    // v0.2.8: letter (alphabet) text size %. 100 = 14 sp = old size.
+    public static final int L_MIN = 80, L_MAX = 220, L_STEP = 10, L_BASE_SP = 14;
+    public static boolean letterValid(int pct) { return pct >= L_MIN && pct <= L_MAX; }
+    /** Letter text size in sp for a percent; unset / invalid -> 14 sp (old size). */
+    public static float letterSp(int pct) { return letterValid(pct) ? L_BASE_SP * pct / 100f : (float) L_BASE_SP; }
+
     public static boolean heightValid(int pct) { return pct >= H_MIN && pct <= H_MAX; }
     public static boolean widthValid(int pct) { return pct >= W_MIN && pct <= W_MAX; }
 

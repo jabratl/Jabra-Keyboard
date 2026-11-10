@@ -1,3 +1,14 @@
+v0.2.8 - Letter size % (alphabet size option)
+- NEW: Size page now has "Letter size: N%" with [-] [+] (80% .. 220%, step 10, 100% = old size). Place: gear > More settings > Size >  (or the Size toolbar item). Then ABC (apply). Reset sizes also resets it.
+- Code: typing/SizePct.java (letterSp), SizePrefs.kt (row + reset), MgbIme.kt letter() 1 line, TypingExtras.kt (button text), app/build.gradle.kts (0.2.8). New pref letter_pct (unset = old). No permission, no manifest change.
+
+WHY: user saw letters too small and found no resize option.
+BROKE: nothing intended. Default unchanged (letters stay 14 sp until the user presses +).
+NOT tested: Kotlin compile (GitHub Actions), phone: big letters at 360 px, dark / light, Probhat labels at 220%, hint labels overlap.
+TESTED here: SizePctTest 34/34. Bracket balance of MgbIme.kt, SizePrefs.kt, TypingExtras.kt OK.
+Rollback: Size > Reset sizes. Code: remove lines marked "v0.2.8".
+Files: typing/SizePct.java, SizePrefs.kt, MgbIme.kt, TypingExtras.kt, tools/SizePctTest.java, app/build.gradle.kts, CHANGELOG.txt, CHECKLIST.txt, HANDOFF_Jabra-Keyboard_v0.2.8.txt (new).
+
 v0.2.7 - Swipe toolbar + hold 1.5 s "Edit shortcut" (quick add / remove)
 - NEW: the toolbar above the letters now SWIPES right to left (the scrolling Custom toolbar of v0.2.1 is the default now; pref tb_custom unset = ON). Hidden extra tools (Emoji, 123, #+=, Gear, Voice, Globe, Theme, One-hand, Size, Pad) wait at the end of the bar.
 - NEW: hold any toolbar icon for 1.5 seconds (buzz) -> a bubble "Edit shortcut" shows above it (hides itself after 4 s). Tap it -> page "Edit shortcuts": grid of ALL tools, framed + check mark = on the bar. Tap a tool = add / remove at once. "Order >" = old Edit toolbar page (First / up / down). "Done" = back to letters.

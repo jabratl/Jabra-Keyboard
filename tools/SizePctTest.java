@@ -35,6 +35,12 @@ public class SizePctTest {
         t("40x up stops at max", v == 150);
         for (int i = 0; i < 40; i++) v = SizePct.step(v, -1, 70, 150, 5);
         t("40x down stops at min", v == 70);
+        t("letter valid range", SizePct.letterValid(80) && SizePct.letterValid(220) && !SizePct.letterValid(79) && !SizePct.letterValid(221) && !SizePct.letterValid(-1));
+        t("letter 100 = 14 sp", SizePct.letterSp(100) == 14f);
+        t("letter 150 = 21 sp", SizePct.letterSp(150) == 21f);
+        t("letter unset / garbage = 14 sp", SizePct.letterSp(-1) == 14f && SizePct.letterSp(5) == 14f && SizePct.letterSp(999) == 14f);
+        t("letter step 100 -> 110 / 90", SizePct.step(100, 1, 80, 220, 10) == 110 && SizePct.step(100, -1, 80, 220, 10) == 90);
+        t("letter step clamps", SizePct.step(220, 1, 80, 220, 10) == 220 && SizePct.step(80, -1, 80, 220, 10) == 80);
         System.out.println("SizePctTest ok=" + ok + " bad=" + bad);
         if (bad > 0) System.exit(1);
     }

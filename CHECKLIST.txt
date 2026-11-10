@@ -97,3 +97,8 @@ J) v0.2.6 gradient themes + Key border
  [ ] App screen -> Look -> Key border: Borderless. Keys lose their box, a soft highlight shows while pressed. Check Classic, Dark and a gradient theme. Back to Border = old look.
  [ ] Borderless: Shift / Caps still shows a highlight (may be faint on gradient themes - tell me if you cannot see it). Space, Enter, backspace keys look fine.
  [ ] Old themes (Classic / Blue / Dark ...) look exactly as before when Key border = Border.
+
+K) v0.2.8 letter size
+ [ ] gear > More settings > Size >: new row "Letter size: 100%". Press + : 110%, 120% ... Press ABC (apply): letters on the keyboard are bigger.
+ [ ] Press - below 100%: letters smaller. Limits 80% and 220%. Reset sizes -> letters back to old size.
+ [ ] 360 px portrait and landscape, dark + light theme: big letters do not get cut, Probhat letters fine, hint labels still readable.

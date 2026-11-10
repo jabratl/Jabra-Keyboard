@@ -175,7 +175,7 @@ class MorePanel(private val ctx: Context, private val host: JabraHost) {
         root.addView(note("Enter action: Enter does Send / Search / Go when the app asks for it. Long-press ?123 also opens the keyboard picker. Theme / One-hand: tap, then ABC (apply). Emoji: long-press the , key."))
 
         try { val rt = row(); rt.addView(pk("Typing options >", 1f) { host.showPanel("typing") }); root.addView(rt) } catch (_: Throwable) { }   // v0.1.1
-        try { val rz = row(); rz.addView(pk("Size (height / one-hand width) >", 1f) { host.showPanel("size") }); root.addView(rz) } catch (_: Throwable) { }   // v0.1.4
+        try { val rz = row(); rz.addView(pk("Size (height / letters / one-hand width) >", 1f) { host.showPanel("size") }); root.addView(rz) } catch (_: Throwable) { }   // v0.1.4
         try { val rtb = row(); rtb.addView(pk("Edit toolbar >", 1f) { host.showPanel("toolbar") }); root.addView(rtb) } catch (_: Throwable) { }   // v0.2.1
         try { val rpd = row(); rpd.addView(pk("Cursor / select pad >", 1f) { host.showPanel("pad") }); root.addView(rpd) } catch (_: Throwable) { }   // v0.2.3
         try { val rth = row(); rth.addView(pk("Theme picker >", 1f) { host.showPanel("themes") }); root.addView(rth) } catch (_: Throwable) { }   // v0.2.4
