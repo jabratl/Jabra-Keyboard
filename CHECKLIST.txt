@@ -109,3 +109,9 @@ L) v0.2.9 bold letters
 M) v0.3.0 key gap
  [ ] Size page: "Key gap: 2 dp". Press - to 0, ABC (apply): keys touch each other, look bigger. Press + to 6: more space. Reset sizes -> 2 dp.
  [ ] Check Borderless and a gradient theme with gap 0 and 6; toolbar + number row still fit at 360 px.
+
+N) v0.3.1 reliability (nothing should look different)
+ [ ] Type in Chrome (search box + a web form), Telegram/WhatsApp, Notes, Termux if you have it: backspace (tap + hold), Enter, space-drag cursor all work as before.
+ [ ] Cursor pad (Select + arrows, Home / End) and PC mode Ctrl+A / arrows / Del still work in a browser or notes app.
+ [ ] Rotate to landscape in any app: the keyboard shows, NO full-screen text box covers the app. Type a few letters, field is still visible/usable (tell me the app name if the field is hidden behind the keyboard).
+ [ ] Avro / Probhat typing, emoji, clipboard, formatter: same as before.

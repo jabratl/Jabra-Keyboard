@@ -207,8 +207,7 @@ class MgbIme : InputMethodService() {
         val ic = currentInputConnection ?: return
         when (kind) {
             "all" -> if (!ic.performContextMenuAction(android.R.id.selectAll)) {
-                ic.sendKeyEvent(KeyEvent(0, 0, KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_A, 0, KeyEvent.META_CTRL_ON))
-                ic.sendKeyEvent(KeyEvent(0, 0, KeyEvent.ACTION_UP, KeyEvent.KEYCODE_A, 0, KeyEvent.META_CTRL_ON))
+                InputSafe.key(ic, KeyEvent.KEYCODE_A, KeyEvent.META_CTRL_ON)   // v0.3.1: real time + soft-keyboard flags (was time 0)
             }
             "copy" -> if (!ic.performContextMenuAction(android.R.id.copy)) {
                 val s = ic.getSelectedText(0)
@@ -283,6 +282,10 @@ class MgbIme : InputMethodService() {
         } catch (_: Throwable) { latinOnly = false }
     }
 
+    /** v0.3.1: no full-screen "extract" editor in landscape (it hides the app and breaks many apps). Hidden pref fs_extract = true gives the old system behaviour. */
+    override fun onEvaluateFullscreenMode(): Boolean =
+        try { if (prefs.bool("fs_extract", false)) super.onEvaluateFullscreenMode() else false } catch (_: Throwable) { super.onEvaluateFullscreenMode() }
+
     override fun onFinishInput() {
         super.onFinishInput()
         buf.setLength(0)
@@ -313,7 +316,7 @@ class MgbIme : InputMethodService() {
                 if (a >= 0 && currentInputConnection?.performEditorAction(a) == true) return
             }
         } catch (_: Throwable) { }
-        sendDownUpKeyEvents(KeyEvent.KEYCODE_ENTER)
+        InputSafe.enter(currentInputConnection)   // v0.3.1: same key event; new-line text if the app refuses it
     }
 
     /** Opens the phone's own keyboard picker (switch to another keyboard). */
@@ -426,9 +429,7 @@ class MgbIme : InputMethodService() {
         commitWord()
         val ic = currentInputConnection ?: return
         val m = pcState.meta() or extraMeta
-        val t = android.os.SystemClock.uptimeMillis()
-        ic.sendKeyEvent(KeyEvent(t, t, KeyEvent.ACTION_DOWN, code, 0, m))
-        ic.sendKeyEvent(KeyEvent(t, t, KeyEvent.ACTION_UP, code, 0, m))
+        InputSafe.key(ic, code, m)   // v0.3.1: same event + soft-keyboard flags
         pcState.keySent()
         try { pcRows?.refresh() } catch (_: Throwable) { }
     }
@@ -445,9 +446,7 @@ class MgbIme : InputMethodService() {
     private fun padSend(code: Int, meta: Int) {
         commitWord()
         val ic = currentInputConnection ?: return
-        val t = android.os.SystemClock.uptimeMillis()
-        ic.sendKeyEvent(KeyEvent(t, t, KeyEvent.ACTION_DOWN, code, 0, meta))
-        ic.sendKeyEvent(KeyEvent(t, t, KeyEvent.ACTION_UP, code, 0, meta))
+        InputSafe.key(ic, code, meta)   // v0.3.1: same event + soft-keyboard flags
     }
 
     /** v0.2.2: what a toolbar item does. Only opens things that already exist (panels, switcher, theme / one-hand cycle). */
@@ -523,9 +522,7 @@ class MgbIme : InputMethodService() {
     /** Space-drag: move the cursor n steps (negative = left). Stage 1 = DPAD key events; if the app ignores them nothing happens. */
     private fun moveCursor(n: Int) {
         commitWord()
-        val code = if (n < 0) KeyEvent.KEYCODE_DPAD_LEFT else KeyEvent.KEYCODE_DPAD_RIGHT
-        var i = minOf(Math.abs(n), 20)
-        while (i > 0) { sendDownUpKeyEvents(code); i-- }
+        InputSafe.moveCursor(currentInputConnection, n)   // v0.3.1: same DPAD events; setSelection fallback if the app refuses them
     }
 
     private fun onLetter(c: Char) {
@@ -560,7 +557,7 @@ class MgbIme : InputMethodService() {
             buf.setLength(buf.length - 1)
             if (buf.isEmpty()) currentInputConnection?.setComposingText("", 1) else renderWord()
         } else {
-            sendDownUpKeyEvents(KeyEvent.KEYCODE_DEL)
+            InputSafe.backspace(currentInputConnection)   // v0.3.1: same DEL event; delete-text fallback if the app refuses it
         }
     }
 

@@ -1,3 +1,14 @@
+v0.3.1 - Reliability: input safety layer (no new look, no new setting)
+- IMPROVED: Backspace, Enter, space-drag cursor, Select All, PC-mode keys and the cursor pad now send the same key event as the Android system does (real time + soft-keyboard flags). If an app REFUSES the key event, a text-edit fallback runs: backspace = delete selection / one character, Enter = new line, cursor = setSelection. Apps that worked before behave the same.
+- IMPROVED: landscape no longer opens the full-screen "extract" editor (it hid the app and broke many apps). Hidden pref fs_extract = true brings the old system behaviour back (no screen for it yet).
+- Code: NEW InputSafe.kt; MgbIme.kt 8 small hooks (lines marked "v0.3.1"); app/build.gradle.kts (0.3.1). No permission, no manifest change, no pref meaning changed.
+WHY: user asked to make the keyboard stronger, more reliable and supportive on more apps, without changing anything.
+BROKE: nothing intended. Normal typing path (commitText / composing) untouched.
+NOT tested: Kotlin compile (GitHub Actions), phone: all items in CHECKLIST section N.
+TESTED here: bracket balance of MgbIme.kt / InputSafe.kt (Kotlin compiler not available here).
+Rollback: remove lines marked "v0.3.1" in MgbIme.kt (old calls are in the comments) + delete InputSafe.kt.
+Files: InputSafe.kt (new), MgbIme.kt, app/build.gradle.kts, CHANGELOG.txt, CHECKLIST.txt, HANDOFF_Jabra-Keyboard_v0.3.1.txt (new, replaces ..._v0.3.0.txt).
+
 v0.3.0 - Key gap (space between keys)
 - NEW: Size page (gear > More settings > Size >) has "Key gap: 2 dp" with [-] [+] (0 .. 6 dp, default 2 = old look). Smaller gap = keys look bigger and fill the space, easier to hit. Then ABC (apply). Reset sizes puts it back to 2.
 - Code: typing/SizePct.java (gapDp), SizePrefs.kt (row, unit param, reset), MgbIme.kt key() margin, tools/SizePctTest.java, app/build.gradle.kts (0.3.0). New pref key_gap. No permission.
