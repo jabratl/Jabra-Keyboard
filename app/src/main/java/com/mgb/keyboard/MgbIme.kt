@@ -458,6 +458,8 @@ class MgbIme : InputMethodService() {
             "gear" -> showPanel("settings")
             "size" -> showPanel("size")
             "pad" -> showPanel("pad")
+            "undo" -> padSend(KeyEvent.KEYCODE_Z, KeyEvent.META_CTRL_ON or KeyEvent.META_CTRL_LEFT_ON)   // v0.2.7: Ctrl+Z (apps that ignore key events: nothing happens)
+            "redo" -> padSend(KeyEvent.KEYCODE_Z, KeyEvent.META_CTRL_ON or KeyEvent.META_CTRL_LEFT_ON or KeyEvent.META_SHIFT_ON or KeyEvent.META_SHIFT_LEFT_ON)   // v0.2.7: Ctrl+Shift+Z
             "voice" -> { commitWord(); switcher.voice() }
             "globe" -> { commitWord(); switcher.globe() }
             "theme" -> { prefs.setInt("theme", (JabraThemes.index(prefs) + 1) % JabraThemes.ALL.size); showLetters() }
