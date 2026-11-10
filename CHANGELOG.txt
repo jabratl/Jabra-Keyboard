@@ -1,3 +1,20 @@
+v0.0.7 - own unique icons (no emoji) for function keys
+- NEW: JabraIcons.kt draws icons with simple lines (no image files, no emoji, no permission, no dependency).
+  Edit bar: clipboard, select-all (dashed box), scissors (cut), two sheets (copy), board+arrow (paste), T-with-slash (plain text).
+  Keyboard keys: shift (arrow), backspace (tag with x), enter (return arrow), gear (settings).
+  Clipboard panel: search (magnifier), close (x), pin (outline) / pinned (filled), search-box backspace and space icons.
+- NEW setting "Icons" (gear panel, ON by default). OFF = old text/emoji labels come back (no code change needed).
+- If an icon cannot be drawn for any reason, that key silently keeps its old label.
+- When Icons is ON the extra "star" / magnifier text inside the clipboard list and search box is hidden (the icon already shows it).
+- NOT changed on purpose: space key text "space", language key, letters, number keys, "?123"/"ABC"/"123", Clear, line-break mark inside clip items.
+
+WHY: user asked for unique function icons, not emoji.
+BROKE: nothing intended. Visible change: edit-bar buttons show icons instead of words (All/Cut/Copy/Paste/Plain) - turn Icons OFF to get words back.
+NOT tested: Gradle/Kotlin compile (no Kotlin compiler here), how icons look on a real phone (size, clarity, dark/light), landscape, Small/XL height.
+TESTED here: bracket balance of all 4 Kotlin files; ClipList 18/18 (unchanged, tools/ClipTest.java); diff vs v0.0.6 zip = only 3 files changed + 1 new + build.gradle/CHANGELOG/HANDOFF.
+Known limits: icon-only buttons have no words (accessibility label is kept); icon color is fixed dark (#222222); formatter panel moved to v0.0.8.
+Files: JabraIcons.kt (new), MgbIme.kt, JabraExtras.kt, ClipboardFeature.kt (hooks marked "v0.0.7"), app/build.gradle.kts (0.0.7), CHANGELOG.txt, HANDOFF.txt.
+
 v0.0.6 - clipboard history + pinned + search + edit bar
 - NEW: Edit bar (top row of the keyboard, setting "Edit bar", default ON): 📋 | All | Cut | Copy | Paste | Plain.
   All/Cut/Copy/Paste use the editor's own action; if the app refuses we do it ourselves. "Plain" always pastes text only.

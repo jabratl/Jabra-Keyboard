@@ -386,6 +386,7 @@ class MgbIme : InputMethodService() {
                 val items = arrayOf("📋" to "clip", "All" to "all", "Cut" to "cut", "Copy" to "copy", "Paste" to "paste", "Plain" to "plain")
                 for ((label, kind) in items) {
                     val k = key(label, 1f) { if (kind == "clip") openClipboard() else editAction(kind) }
+                    JabraIcons.put(this, k, kind)   // v0.0.7: own icon (kind = clip/all/cut/copy/paste/plain); Icons OFF = old text
                     (k.layoutParams as LinearLayout.LayoutParams).height = dp(36)
                     k.textSize = 12f
                     eb.addView(k)
@@ -414,9 +415,9 @@ class MgbIme : InputMethodService() {
         root.addView(r2)
 
         val r3 = row()
-        r3.addView(key("⇧", 1.5f) { shift = !shift; refreshLetters() })
+        r3.addView(JabraIcons.put(this, key("⇧", 1.5f) { shift = !shift; refreshLetters() }, "shift"))   // v0.0.7
         "zxcvbnm".forEach { r3.addView(letter(it)) }
-        r3.addView(key("⌫", 1.5f) { onBackspace() })
+        r3.addView(JabraIcons.put(this, key("⌫", 1.5f) { onBackspace() }, "back"))   // v0.0.7
         root.addView(r3)
 
         val r4 = row()
@@ -435,7 +436,7 @@ class MgbIme : InputMethodService() {
         dandaBtn = db
         r4.addView(db)
         r4.addView(key(".", 1f) { commitWord(); typeText(".") })
-        r4.addView(key("⏎", 1.4f) { commitWord(); sendDownUpKeyEvents(KeyEvent.KEYCODE_ENTER) })
+        r4.addView(JabraIcons.put(this, key("⏎", 1.4f) { commitWord(); sendDownUpKeyEvents(KeyEvent.KEYCODE_ENTER) }, "enter"))   // v0.0.7
         root.addView(r4)
 
         try { refreshLetters() } catch (_: Throwable) { }   // v0.0.4: right labels from the start (Probhat after rebuild / rotate)

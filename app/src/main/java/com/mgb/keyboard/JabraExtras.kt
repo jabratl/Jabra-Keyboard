@@ -159,12 +159,12 @@ class JabraPanels(private val ctx: Context, private val host: JabraHost) {
     private fun bottomRow(withNumpadKey: Boolean): LinearLayout {
         val r = row()
         r.addView(pk("ABC", 1.5f) { host.showLetters() })
-        r.addView(pk("⚙", 1f) { host.showPanel("settings") })
+        r.addView(JabraIcons.put(ctx, pk("⚙", 1f) { host.showPanel("settings") }, "gear"))   // v0.0.7
         if (withNumpadKey) r.addView(pk("123", 1f) { host.showPanel("numpad") })
         r.addView(pk(",", 1f) { sym(",") })
         r.addView(pk("space", 3f) { sym(" ") })
         r.addView(pk(".", 1f) { sym(".") })
-        r.addView(pk("⏎", 1.4f) { host.commitWord(); host.enter() })
+        r.addView(JabraIcons.put(ctx, pk("⏎", 1.4f) { host.commitWord(); host.enter() }, "enter"))   // v0.0.7
         return r
     }
 
@@ -186,7 +186,7 @@ class JabraPanels(private val ctx: Context, private val host: JabraHost) {
             host.showPanel("symbols")
         })
         pages[2].forEach { ch -> r3.addView(pk(ch.toString(), 1f) { sym(ch.toString()) }) }
-        r3.addView(pk("⌫", 1.5f) { host.backspace() })
+        r3.addView(JabraIcons.put(ctx, pk("⌫", 1.5f) { host.backspace() }, "back"))   // v0.0.7
         root.addView(r3)
         root.addView(bottomRow(true))
         return root
@@ -203,7 +203,7 @@ class JabraPanels(private val ctx: Context, private val host: JabraHost) {
         for (i in 0..2) {
             val r = row()
             grid[i].forEach { s -> r.addView(pk(s, 1f) { sym(s) }) }
-            if (i == 0) r.addView(pk(side[i], 1f) { host.backspace() })
+            if (i == 0) r.addView(JabraIcons.put(ctx, pk(side[i], 1f) { host.backspace() }, "back"))   // v0.0.7
             else r.addView(pk(side[i], 1f) { sym(side[i]) })
             root.addView(r)
         }
@@ -211,7 +211,7 @@ class JabraPanels(private val ctx: Context, private val host: JabraHost) {
         r4.addView(pk("ABC", 1f) { host.showLetters() })
         r4.addView(pk("+", 1f) { sym("+") })
         r4.addView(pk("0", 1f) { sym("0") })
-        r4.addView(pk("⏎", 1f) { host.commitWord(); host.enter() })
+        r4.addView(JabraIcons.put(ctx, pk("⏎", 1f) { host.commitWord(); host.enter() }, "enter"))   // v0.0.7
         root.addView(r4)
         return root
     }
@@ -276,6 +276,7 @@ class JabraPanels(private val ctx: Context, private val host: JabraHost) {
         r35.addView(toggleKey("Clip history", "clip_on", true))
         root.addView(r35)
         val r4 = row()
+        r4.addView(toggleKey("Icons", "icons_on", true))   // v0.0.7: OFF = old text/emoji labels
         r4.addView(pk("ABC  (apply)", 1f) { host.showLetters() })
         root.addView(r4)
         return root

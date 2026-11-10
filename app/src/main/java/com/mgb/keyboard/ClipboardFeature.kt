@@ -79,12 +79,14 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
         // top bar
         val top = row()
         top.addView(btn("ABC", 1.2f, 40) { host.showLetters() })
-        top.addView(btn(if (searching) "✕ Search" else "🔍 Search", 1.6f, 40) {
+        val searchBtn = btn(if (searching) "✕ Search" else "🔍 Search", 1.6f, 40) {
             searching = !searching
             query = ""
             confirmClear = false
             refresh()
-        })
+        }
+        JabraIcons.put(ctx, searchBtn, if (searching) "close" else "search")   // v0.0.7
+        top.addView(searchBtn)
         top.addView(btn(if (confirmClear) "Sure? (unpinned)" else "Clear", 1.6f, 40) {
             if (confirmClear) { store.clearUnpinned(); confirmClear = false } else confirmClear = true
             refresh()
@@ -93,7 +95,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
 
         if (searching) {
             val q = TextView(ctx)
-            q.text = "🔍 " + query + "▏"
+            q.text = (if (JabraPrefs(ctx).bool("icons_on", true)) "" else "🔍 ") + query + "▏"   // v0.0.7: icon is on the button now
             q.textSize = 15f
             q.setTextColor(Color.BLACK)
             q.setPadding(dp(8), dp(2), dp(8), dp(2))
@@ -123,8 +125,8 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
             for (letters in arrayOf("qwertyuiop", "asdfghjkl", "zxcvbnm")) {
                 val r = row()
                 letters.forEach { ch -> r.addView(btn(ch.toString(), 1f, 34) { query += ch; confirmClear = false; refresh() }) }
-                if (letters == "asdfghjkl") r.addView(btn("␣", 1f, 34) { query += " "; refresh() })
-                if (letters == "zxcvbnm") r.addView(btn("⌫", 1.5f, 34) { if (query.isNotEmpty()) query = query.dropLast(1); refresh() })
+                if (letters == "asdfghjkl") r.addView(JabraIcons.put(ctx, btn("␣", 1f, 34) { query += " "; refresh() }, "space"))   // v0.0.7
+                if (letters == "zxcvbnm") r.addView(JabraIcons.put(ctx, btn("⌫", 1.5f, 34) { if (query.isNotEmpty()) query = query.dropLast(1); refresh() }, "back"))   // v0.0.7
                 root.addView(r)
             }
         }
@@ -134,7 +136,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
     private fun itemRow(item: ClipList.Item): View {
         val r = row()
         r.gravity = Gravity.CENTER_VERTICAL
-        val t = btn((if (item.pinned) "★ " else "") + item.text.replace("\n", " ⏎ "), 1f, 44) {
+        val t = btn((if (item.pinned && !JabraPrefs(ctx).bool("icons_on", true)) "★ " else "") + item.text.replace("\n", " ⏎ "), 1f, 44) {
             host.commitWord()
             host.typeText(item.text)
             host.showLetters()
@@ -145,8 +147,8 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
         t.ellipsize = TextUtils.TruncateAt.END
         t.setPadding(dp(8), 0, dp(8), 0)
         r.addView(t)
-        r.addView(btn(if (item.pinned) "★" else "☆", 0f, 44) { store.togglePin(item); refresh() }.also { it.minimumWidth = dp(44); it.minWidth = dp(44) })
-        r.addView(btn("✕", 0f, 44) { store.remove(item); refresh() }.also { it.minimumWidth = dp(44); it.minWidth = dp(44) })
+        r.addView(JabraIcons.put(ctx, btn(if (item.pinned) "★" else "☆", 0f, 44) { store.togglePin(item); refresh() }.also { it.minimumWidth = dp(44); it.minWidth = dp(44) }, if (item.pinned) "pinned" else "pin"))   // v0.0.7
+        r.addView(JabraIcons.put(ctx, btn("✕", 0f, 44) { store.remove(item); refresh() }.also { it.minimumWidth = dp(44); it.minWidth = dp(44) }, "close"))   // v0.0.7
         return r
     }
 }
