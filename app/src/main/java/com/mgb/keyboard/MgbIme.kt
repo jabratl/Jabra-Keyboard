@@ -47,6 +47,11 @@ class MgbIme : InputMethodService() {
     private val emojiPanel by lazy { EmojiPanel(this, host) }   // v0.1.0 emoji panel
     private val sizePanel by lazy { SizePanel(this, host) }   // v0.1.4 "Size" page
     private val toolbarPanel by lazy { ToolbarPanel(this, host) }   // v0.2.1 "Edit toolbar" page
+    private val padPanel by lazy { PadPanel(this, host, padIo) }   // v0.2.3 cursor / select pad
+    private val padIo = object : PadIo {   // v0.2.3
+        override fun sendKey(code: Int, meta: Int) { this@MgbIme.padSend(code, meta) }
+        override fun edit(kind: String) { this@MgbIme.editAction(kind) }
+    }
     private val tbHost = object : ToolbarHost {   // v0.2.1
         override fun makeKey(id: String): Button? = this@MgbIme.toolbarKey(id)
     }
@@ -418,6 +423,15 @@ class MgbIme : InputMethodService() {
         showLetters()
     }
 
+    /** v0.2.3: one movement key (down + up) with the given meta bits (Shift = extend selection). */
+    private fun padSend(code: Int, meta: Int) {
+        commitWord()
+        val ic = currentInputConnection ?: return
+        val t = android.os.SystemClock.uptimeMillis()
+        ic.sendKeyEvent(KeyEvent(t, t, KeyEvent.ACTION_DOWN, code, 0, meta))
+        ic.sendKeyEvent(KeyEvent(t, t, KeyEvent.ACTION_UP, code, 0, meta))
+    }
+
     /** v0.2.2: what a toolbar item does. Only opens things that already exist (panels, switcher, theme / one-hand cycle). */
     private fun toolbarAction(id: String) {
         when (id) {
@@ -428,6 +442,7 @@ class MgbIme : InputMethodService() {
             "sym" -> showPanel("symbols")
             "gear" -> showPanel("settings")
             "size" -> showPanel("size")
+            "pad" -> showPanel("pad")
             "voice" -> { commitWord(); switcher.voice() }
             "globe" -> { commitWord(); switcher.globe() }
             "theme" -> { prefs.setInt("theme", (JabraThemes.index(prefs) + 1) % JabraThemes.ALL.size); showLetters() }
@@ -474,7 +489,7 @@ class MgbIme : InputMethodService() {
     private fun showPanel(name: String) {
         val c = container ?: return
         commitWord()
-        val v = try { if (name == "clipboard") clipPanel.build() else if (name == "format") fmtPanel.build() else if (name == "more") morePanel.build() else if (name == "emoji") emojiPanel.build() else if (name == "typing") typingPanel.build() else if (name == "size") sizePanel.build() else if (name == "toolbar") toolbarPanel.build() else panels.build(name) } catch (_: Throwable) { null }   // v0.0.8: "format"; v0.1.0: "emoji"; v0.1.1: "typing"
+        val v = try { if (name == "clipboard") clipPanel.build() else if (name == "format") fmtPanel.build() else if (name == "more") morePanel.build() else if (name == "emoji") emojiPanel.build() else if (name == "typing") typingPanel.build() else if (name == "size") sizePanel.build() else if (name == "toolbar") toolbarPanel.build() else if (name == "pad") padPanel.build() else panels.build(name) } catch (_: Throwable) { null }   // v0.0.8: "format"; v0.1.0: "emoji"; v0.1.1: "typing"
         if (v == null) { showLetters(); return }
         try { JabraOneHand.apply(this, prefs, v) } catch (_: Throwable) { }   // v0.1.0
         c.removeAllViews()

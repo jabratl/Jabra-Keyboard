@@ -1,3 +1,16 @@
+v0.2.3 - Cursor / select pad
+- NEW panel: Select | Up | All | Backspace, Left | Down | Right | Copy, Home | End | Cut | Paste, ABC. Select ON (blue) + arrows / Home / End = extends the selection. Arrows, Home, End and Backspace repeat while held. Select starts OFF every time the pad opens.
+- Open it: More settings -> Cursor / select pad >, or the new toolbar item "Pad" (Edit toolbar -> scroll down -> Show -> ABC). New own icon (4 arrows). The toolbar item is OFF by default.
+- All / Copy / Cut / Paste use the same actions as the edit bar (work in every app). Arrows / Home / End are key events like space-drag and PC mode: apps that ignore key events ignore them too.
+- Not built: Bangla digits row on the number pad (only if you ask).
+- Code: typing/PadState.java (new, tested), PadPanel.kt (new), tools/PadTest.java (new); hooks marked "v0.2.3": MgbIme.kt (2 fields, padSend(), 1 route, 1 toolbarAction line), TypingExtras.kt (1 line), JabraIcons.kt (name + branch), Toolbar.kt (2 strings), typing/ToolbarOrder.java (id "pad"), tools/ToolbarTest.java (44 checks), app/build.gradle.kts (0.2.3).
+
+WHY: roadmap v0.2.3 (Ridmik-like cursor / select pad from the second video).
+BROKE: nothing intended. Old saved toolbar settings keep working (pad is appended, OFF).
+NOT tested: Kotlin compile (first check = GitHub Actions), everything on a phone: Select + arrows really extends the selection in your apps (WhatsApp, Chrome, Notes), hold-repeat speed, Home / End, the panel at 360 px (4 rows + note + ABC fits?), dark + light, the Pad icon.
+TESTED here: PadTest 9/9, ToolbarTest 44/44; the 10 older Java tests pass (Avro 43, Extras 133, Clip 18, Emoji 1585, Typing 27, DoubleSpace 37, Pc 19, SizePct 28, Look 13, Hint 175); bracket balance of the 5 changed / new Kotlin files.
+Files: PadPanel.kt, typing/PadState.java, tools/PadTest.java (new); MgbIme.kt, TypingExtras.kt, JabraIcons.kt, Toolbar.kt, typing/ToolbarOrder.java, tools/ToolbarTest.java, app/build.gradle.kts, CHANGELOG.txt, HANDOFF.txt, CHECKLIST.txt.
+
 v0.2.2 - Toolbar extra shortcuts
 - NEW: 9 more items for the custom toolbar (Edit toolbar page): Emoji panel, Number pad (123), Symbols, Settings (gear), Voice typing, Next keyboard (globe), Theme (tap = next theme), One-hand (tap = Off / Left / Right), Size page. All only open things that already exist.
 - They are HIDDEN until you press Show in More settings -> Edit toolbar > (scroll the list down). Nothing appears by itself. Reset toolbar hides them again.

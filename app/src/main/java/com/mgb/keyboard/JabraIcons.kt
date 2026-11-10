@@ -21,7 +21,7 @@ object JabraIcons {
 
     val NAMES = listOf(
         "clip", "all", "cut", "copy", "paste", "plain", "search", "close",
-        "pin", "pinned", "gear", "shift", "back", "enter", "space", "fmt", "globe", "mic", "emoji", "mode_phone", "mode_pc", "numpad", "sym", "theme", "onehand", "size"   // v0.1.2; v0.2.2: last 5
+        "pin", "pinned", "gear", "shift", "back", "enter", "space", "fmt", "globe", "mic", "emoji", "mode_phone", "mode_pc", "numpad", "sym", "theme", "onehand", "size", "pad"   // v0.1.2; v0.2.2: 5 names; v0.2.3: pad
     )
 
     /**
@@ -254,6 +254,18 @@ object JabraIcons {
                     line(c, s, 0.70f, 0.30f, 0.50f, 0.10f)
                     line(c, s, 0.30f, 0.70f, 0.50f, 0.90f)
                     line(c, s, 0.70f, 0.70f, 0.50f, 0.90f)
+                }
+                "pad" -> {   // v0.2.3: four arrows (cross)
+                    line(c, s, 0.50f, 0.08f, 0.50f, 0.92f)
+                    line(c, s, 0.08f, 0.50f, 0.92f, 0.50f)
+                    line(c, s, 0.34f, 0.24f, 0.50f, 0.08f)
+                    line(c, s, 0.66f, 0.24f, 0.50f, 0.08f)
+                    line(c, s, 0.34f, 0.76f, 0.50f, 0.92f)
+                    line(c, s, 0.66f, 0.76f, 0.50f, 0.92f)
+                    line(c, s, 0.24f, 0.34f, 0.08f, 0.50f)
+                    line(c, s, 0.24f, 0.66f, 0.08f, 0.50f)
+                    line(c, s, 0.76f, 0.34f, 0.92f, 0.50f)
+                    line(c, s, 0.76f, 0.66f, 0.92f, 0.50f)
                 }
                 "space" -> {  // open bracket shape
                     val path = Path()

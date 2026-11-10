@@ -55,4 +55,7 @@ G. TOOLBAR (v0.2.1)
  [ ] Reset toolbar restores the default order.
  [ ] v0.2.2: Edit toolbar -> scroll down: Emoji, Number pad, Symbols, Settings, Voice, Next keyboard, Theme, One-hand, Size are Hidden. Press Show on some, ABC (apply): they appear and each does its job (Theme / One-hand change the look at once).
  [ ] New icons readable in dark + light; Reset toolbar hides all extras again.
+ [ ] v0.2.3: More settings -> Cursor / select pad >: pad opens. Arrows move the cursor (hold = repeat), Home / End work, All / Copy / Cut / Paste work, Backspace holds.
+ [ ] Select (turns blue) + arrows / Home / End = selection grows. Select OFF = plain movement. Which apps do NOT react (note the names).
+ [ ] Toolbar item "Pad": Edit toolbar -> Show -> ABC (apply) opens the same pad. All 4 rows + ABC visible at 360 px, dark + light.
 
