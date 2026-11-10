@@ -291,7 +291,35 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
             }
         })
         r.addView(btn("Done", 1f, 34) { sel.leave(); confirmDel = false; refresh() })
-        return r
+        // v0.3.8: second row: Merge = save the ticked clips as ONE new clip; 1 line = paste them joined by a space (line breaks removed)
+        val r2 = row()
+        r2.addView(btn("Merge → 1 clip", 1f, 34) {
+            val chosen = sel.selection()
+            if (chosen.size < 2) msg = "Select 2 or more"
+            else when (store.addChecked(chosen.joinToString("\n\n") { it.text })) {
+                0 -> { msg = "Merged " + chosen.size + " into 1 (see Recent)"; sel.leave() }
+                2 -> msg = "Too long (max " + ClipList.MAX_LEN + ")"
+                else -> msg = "Nothing to merge"
+            }
+            confirmDel = false
+            refresh()
+        })
+        r2.addView(btn("Paste in 1 line", 1f, 34) {
+            val chosen = sel.selection()
+            if (chosen.isEmpty()) { msg = "Nothing selected"; confirmDel = false; refresh() }
+            else {
+                val one = chosen.joinToString(" ") { it.text.replace(Regex("\\s*\\n\\s*"), " ").trim() }
+                sel.leave(); confirmDel = false
+                host.commitWord()
+                host.typeText(one)
+                host.showLetters()
+            }
+        })
+        val colAll = LinearLayout(ctx)
+        colAll.orientation = LinearLayout.VERTICAL
+        colAll.addView(r)
+        colAll.addView(r2)
+        return colAll
     }
 
     private fun sectionHeader(label: String): View {

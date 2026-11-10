@@ -1,3 +1,8 @@
+v0.3.8 - NEW: Clipboard Merge + Paste in 1 line
+- Clipboard > Manage: a second row under the action row. "Merge -> 1 clip" saves all ticked clips (tick order, blank line between) as ONE new clip in Recent and leaves select mode (2 or more needed). "Paste in 1 line" types the ticked clips joined by a single space with all line breaks removed.
+- Code: ClipboardFeature.kt only (selectBar(): second row, returns a vertical wrapper). No new setting / key / permission.
+BROKE: nothing intended. Remove the block marked "v0.3.8" to go back.
+
 v0.3.7 - NEW: Clipboard Undo delete
 - Deleted a clip by mistake (x on a clip / card, Manage > Delete, or Clear)? A "↶ Undo" button appears on the header line of the Clipboard panel; one tap brings the deleted clips back (pinned ones get pinned again). Stays until you leave the clipboard or delete something else.
 - Code: ClipboardFeature.kt only (undoBuf, keepUndo(), doUndo(), 5 small hooks marked "v0.3.7"). No new setting / key / permission.
