@@ -177,6 +177,7 @@ class MgbIme : InputMethodService() {
             val l = clipListener
             if (l != null) (getSystemService(CLIPBOARD_SERVICE) as ClipboardManager).removePrimaryClipChangedListener(l)
         } catch (_: Throwable) { }
+        try { fbTone?.release(); fbTone = null } catch (_: Throwable) { }
         super.onDestroy()
     }
 
@@ -410,11 +411,40 @@ class MgbIme : InputMethodService() {
 
     private fun keyDp(): Int = try { prefs.keyHeightDp(JabraPrefs.isLand(this)) } catch (_: Throwable) { 48 }
 
+    private var fbTone: android.media.ToneGenerator? = null
+
+    /** Fix: haptic / sound used to follow the phone's "touch feedback / touch sounds" system switches, so with those OFF nothing happened.
+     *  Now: Vibrate uses the Vibrator directly (VIBRATE permission), Sound plays the system click or, if the system click is OFF, a short tone. */
     private fun feedback(v: View) {
-        try { if (prefs.bool("haptic", true)) v.performHapticFeedback(android.view.HapticFeedbackConstants.KEYBOARD_TAP) } catch (_: Throwable) { }
-        try {
-            if (prefs.bool("sound", false)) (getSystemService(AUDIO_SERVICE) as android.media.AudioManager).playSoundEffect(android.media.AudioManager.FX_KEYPRESS_STANDARD)
-        } catch (_: Throwable) { }
+        if (prefs.bool("haptic", true)) {
+            var done = false
+            try {
+                @Suppress("DEPRECATION")
+                val vb = getSystemService(VIBRATOR_SERVICE) as? android.os.Vibrator
+                if (vb != null && vb.hasVibrator()) {
+                    if (android.os.Build.VERSION.SDK_INT >= 26) vb.vibrate(android.os.VibrationEffect.createOneShot(18L, android.os.VibrationEffect.DEFAULT_AMPLITUDE))
+                    else @Suppress("DEPRECATION") vb.vibrate(18L)
+                    done = true
+                }
+            } catch (_: Throwable) { }
+            if (!done) {
+                try {
+                    v.performHapticFeedback(android.view.HapticFeedbackConstants.KEYBOARD_TAP,
+                        android.view.HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING or android.view.HapticFeedbackConstants.FLAG_IGNORE_VIEW_SETTING)
+                } catch (_: Throwable) { }
+            }
+        }
+        if (prefs.bool("sound", false)) {
+            try {
+                val am = getSystemService(AUDIO_SERVICE) as android.media.AudioManager
+                val sysOn = try { android.provider.Settings.System.getInt(contentResolver, android.provider.Settings.System.SOUND_EFFECTS_ENABLED, 1) == 1 } catch (_: Throwable) { true }
+                if (sysOn) am.playSoundEffect(android.media.AudioManager.FX_KEYPRESS_STANDARD)
+                else {
+                    if (fbTone == null) fbTone = android.media.ToneGenerator(android.media.AudioManager.STREAM_SYSTEM, 60)
+                    fbTone?.startTone(android.media.ToneGenerator.TONE_CDMA_PIP, 25)
+                }
+            } catch (_: Throwable) { }
+        }
     }
 
     // ---------- v0.1.2: PC mode ----------
