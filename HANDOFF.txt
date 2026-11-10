@@ -1,3 +1,101 @@
+JABRA KEYBOARD - HANDOFF  (newest on top; paste this file at the start of the next chat)
+=======================================================================================
+
+0) HOW TO WORK WITH THIS USER (follow these)
+  - Reply in BANGLISH (Bangla written in English letters). User is NOT a coder: simple words, step-by-step.
+  - Before coding: read HANDOFF/CHANGELOG, say in ~5 lines what you understood, state the task in 2-3 lines,
+    ask at most ONE question, otherwise write assumptions. Plan max 5 lines, then build.
+  - RULE 0: never break/rename/slow any existing feature, setting, storage key, build flow. No "clean up/refactor"
+    unless asked. If a new change breaks something old, it is a bug: fix it yourself.
+  - PATCH, do not rewrite files. One version = one topic. Find ROOT CAUSE before fixing; grep for the same bug elsewhere.
+  - New code in separate file/module, only a tiny hook in old code; wrap in try/catch; old behaviour = automatic fallback;
+    ON/OFF switch where possible; never change meaning of old keys/settings.
+  - Risky things (site/API/platform dependent): max 3 stages (best, one alternative, old feature). Stage 2 only if
+    session < 85%. If unsure and cannot test -> write "NOT tested".
+  - New permission/network/tracking: ASK first. No secrets in code. Confirm before deleting/overwriting user data.
+  - Run what can be run here (syntax, tests) and show result. Never say "works" for what was not run on a phone.
+  - Output: version bump, CHANGELOG entry (WHY, what changed, what BROKE, NOT tested, files), HANDOFF update,
+    zip with ONLY changed/new files at exact paths (check nothing was lost vs previous version).
+    Final reply <= 10 lines + Banglish checklist ("which screen, do what, see what").
+  - Session limit: after ~85% no new sub-task; at ~90% stop, give files + HANDOFF + 1 line "what I did / what is left".
+
+1) PROJECT
+  Jabra Keyboard: personal Android keyboard (Ridmik-inspired, own code, NOT copied) + novel-formatter features.
+  GitHub repo: jabra-keyboard (user's repo, PUBLIC needed for in-app update). Android native: Kotlin + one Java engine file.
+  Package id com.mgb.keyboard (kept on purpose: changing it breaks updates/signing). Display name "Jabra Keyboard".
+  Reference for later formatter: novel-formatter_v2_updated.html (user's HTML tool; keep same rule syntax:
+  "find => replace", "re:", "del:", "del-re:", "# comment"; presets JSON keys nvPresets/nvCurrent/nvDraft untouched).
+
+2) SCOPE (decided with user)
+  KEEP: Avro phonetic, Probhat (user wrote "pravati"), English; ALL copy/paste related things (clipboard history, PINNED
+  items, delete/search, select all/cut/copy/paste toolbar, paste plain text); novel formatter panel; number row, number pad,
+  symbols, space-drag cursor, keyboard height (portrait/landscape), one-handed mode, haptic/sound; next-word suggestion,
+  emoji in suggestions, typed-word preview; emoji panel; local themes.
+  DROP: Store (also theme store), key maps, tutorial, tips, survey, more apps.
+  OFF by default unless user asks: Jatiyo layout, GIF (needs internet), contacts suggestions (needs permission),
+  Arabic/Chakma add-ons.
+  Voice: NOT own recording (needs RECORD_AUDIO+INTERNET). Plan = button that switches to the phone's system voice typing.
+
+3) ROADMAP (one topic per version)
+  v0.0.3 Avro phonetic + language switch      <- DONE, see status
+  v0.0.4 Probhat layout (own fixed Bangla layout, shift = aspirates; conjunct-aware backspace is a good extra)
+  v0.0.5 number row, symbols, number pad, space-drag cursor, height, haptic
+  v0.0.6 clipboard history + pinned + edit toolbar (select all/cut/copy/paste/paste plain)
+  v0.0.7 novel formatter panel (see 6)
+  v0.0.8 suggestions: local learning, next word, emoji in suggestions, typed-word preview
+  v0.0.9 emoji panel, local themes, one-handed mode
+  v0.1.0 system voice button, settings polish
+
+4) STATUS (v0.0.3)
+  PROVED BY USER: GitHub build + signed APK + install + keyboard typing works (user ran build 3 and uses it).
+  NOT yet confirmed by user: in-app update, revert, v0.0.3 Bangla typing.
+  Tested here: AvroPhonetic.java compiled for real and 43/43 tests pass (tools/AvroTest.java).
+  NOT tested: Kotlin/Java Gradle compile of v0.0.3, Bangla typing on phone, composing underline, cursor-move reset,
+  password-field auto English.
+
+5) HOW IT WORKS
+  app/src/main/java/com/mgb/keyboard/
+    MgbIme.kt              keyboard UI built in code (no XML). Hooks added in v0.0.3: onLetter, commitWord, onBackspace,
+                           toggleLang, onStartInputView (latinOnly detection), onUpdateSelection (reset on cursor move).
+    phonetic/AvroPhonetic.java   pure Java engine. convert(romanWord) -> Bangla. Tables VOW/CON/AUTO.
+                           Rules: consonant+consonant = hasanta conjunct; vowel after consonant = kar; "o" = inherent (no sign);
+                           y/w after consonant = ya/ba-phala; "ng" before vowel = ঙ else ং; tiny AUTO list (valo, tomar, kono...).
+                           NOT yet: ৎ, ঁ, ঃ, Bangla digits, dictionary autocorrect.
+    SettingsActivity.kt    enable/choose keyboard, test box, Check for updates. Updater.kt = GitHub Releases updater
+                           (stage 1: download apk + system installer; stage 2: open release page in browser).
+  Prefs file "jabra": key "bangla" (boolean). Do not rename.
+  Typing flow in Bangla mode: letters collect in buf -> setComposingText(Bangla) -> commit on space/punct/enter/switch.
+  If engine throws: Latin letters are shown (fallback). Password/email/URL/number fields: always English.
+  Test engine on a computer:
+    java -m jdk.compiler/com.sun.tools.javac.Main -encoding UTF-8 -d out app/src/main/java/com/mgb/keyboard/phonetic/AvroPhonetic.java tools/AvroTest.java
+    java -cp out AvroTest        (or plain javac if available)
+
+6) FORMATTER PLAN (v0.0.7)
+  Own package formatter/, port fixText/applyRules/SCENE from the HTML file. Panel button "Aa" in toolbar. Actions:
+  format selection / format all (with confirm + Undo), find/replace rules (same syntax as HTML), copy as HTML (ClipData html),
+  presets JSON import/export, optional auto mode (default OFF). Stage 1 = InputConnection read/replace;
+  stage 2 = put formatted text in clipboard and tell user to paste; final fallback = normal typing. Never in password fields.
+
+7) BUILD / RELEASE (user's own workflow, do not change unless asked)
+  .github/workflows/build.yml (zip uploads never change .github; user edits it by hand on GitHub).
+  Push to main -> applies *_vX_Y_Z.zip in repo root (zip name must match _v<digits_digits>.zip) -> builds -> release
+  tag v<appVersionName>-b<run number>, apk name Jabra-Keyboard-<tag>.apk. Version = ONE line in app/build.gradle.kts.
+  Secrets (user set, 4): KEYSTORE_B64, KEYSTORE_PASSWORD, KEY_ALIAS, KEY_PASSWORD. Without them debug apk -> update fails.
+  Revert: Actions > Run workflow > revert_to = previous | latest | tag | commit. See REVERT.txt.
+  Build env here has NO Gradle/Android SDK/network: Kotlin cannot be compiled here. Java engine can (see above).
+  Permissions in app: INTERNET (only on "Check for updates"), REQUEST_INSTALL_PACKAGES. Nothing else.
+
+8) TEST CHECKLIST for user (v0.0.3)  -> see bottom of CHANGELOG / last reply
+  Bangla: switch to "বাং", type "ami valo achi" -> আমি ভালো আছি; "bangla" -> বাংলা; backspace removes roman letter by letter;
+  tap elsewhere while typing -> word is kept, no crash; password field -> English letters.
+
+9) NEXT
+  v0.0.4 Probhat. Ask user for Probhat layout details only if needed (use standard Probhat; own table).
+  Optional later: ৎ (khanda-ta) key rule, Bangla digits option, bigger AUTO list, dictionary autocorrect (v0.0.8).
+
+=====================================================================================
+PREVIOUS HANDOFF (v0.0.2)  - kept for history
+=====================================================================================
 JABRA KEYBOARD - HANDOFF (newest on top)
 =====================================
 STATUS (v0.0.2, was v0.0.1 + rename to Jabra Keyboard)

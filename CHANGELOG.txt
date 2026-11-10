@@ -1,3 +1,19 @@
+v0.0.3 - Avro phonetic (Bangla) + English/Bangla switch
+- NEW: Avro-style phonetic typing. English letters likhle Bangla dekhabe (word underline hoye thake), space/punctuation e commit.
+- NEW: bottom row e language key: "EN" / "বাং". Chaple switch hoy, mone rakhe (prefs key "bangla").
+- NEW: Bangla mode e "।" key (English mode e "?" ), "." key alada.
+- NEW: Password / email / URL / number field e auto English (Bangla phonetic bondho).
+- NEW: Backspace Bangla word er bhetore roman letter ek ek kore muchhe, word nai hole normal delete.
+- NEW: tools/AvroTest.java (computer e engine test, 43 case).
+- Engine: alada Java file phonetic/AvroPhonetic.java. Engine fail korle Latin letter-i thake.
+
+WHY: roadmap v0.0.3 = Avro phonetic.
+BROKE: nothing intended. English typing ager moto. Settings/updater/build.yml/package/signing ager moto.
+NOT tested: Gradle compile of Kotlin + Java, phone e Bangla typing, composing underline, cursor-move reset, password field switch.
+TESTED here: AvroPhonetic.java real compile + 43/43 test pass.
+Known limits: dictionary/autocorrect nei (shudhu ~11 word fix: valo, tomar, kono, bolo, to, boi...). "ৎ" (khanda-ta), ঃ ঁ, Bangla digits ekhono nei. "kormo" type korle কর্ম hoy, "valo" ভালো hoy, kintu onek word e Avro er moto nijer spelling dorkar (tOmar, boRo).
+Files: app/.../phonetic/AvroPhonetic.java (new), tools/AvroTest.java (new), MgbIme.kt (hooks), app/build.gradle.kts (version + UTF-8), CHANGELOG.txt, HANDOFF.txt.
+
 v0.0.2 - rename to "Jabra Keyboard" (display names only)
 - Phone e app er nam: Jabra Keyboard
 - Release APK file: Jabra-Keyboard-vX-bN.apk, release title: "Jabra Keyboard X (build N)"

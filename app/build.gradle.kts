@@ -4,7 +4,7 @@ plugins {
 }
 
 // Version: change ONLY this line to bump the version (the workflow reads it).
-val appVersionName = "0.0.2"
+val appVersionName = "0.0.3"
 // versionCode = GitHub run number (always goes up, so Android accepts the update).
 val runNumber = System.getenv("GITHUB_RUN_NUMBER")?.toIntOrNull() ?: 1
 
@@ -53,3 +53,6 @@ android {
 dependencies {
     implementation("androidx.core:core-ktx:1.13.1")
 }
+
+// Java sources (the Avro engine) contain Bangla letters: always read them as UTF-8
+tasks.withType<JavaCompile>().configureEach { options.encoding = "UTF-8" }
