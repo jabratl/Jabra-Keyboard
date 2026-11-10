@@ -132,6 +132,7 @@ class MgbIme : InputMethodService() {
         b.tag = c                       // v0.0.4: remember which letter this key is (labels change in Probhat mode)
         letterKeys.add(b)
         try { val lp = prefs.int("letter_pct", -1); if (com.mgb.keyboard.typing.SizePct.letterValid(lp)) b.textSize = com.mgb.keyboard.typing.SizePct.letterSp(lp) } catch (_: Throwable) { }   // v0.2.8: letter size %
+        try { if (prefs.bool("letter_bold", false)) b.setTypeface(b.typeface, android.graphics.Typeface.BOLD) } catch (_: Throwable) { }   // v0.2.9: bold letters
         try { KeyPopup.attach(b, prefs) } catch (_: Throwable) { }   // v0.1.3: popup on keypress (setting key_popup)
         try { HintKeys.attach(b, prefs, hintHost); HintKeys.refresh(b, prefs, hintHost) } catch (_: Throwable) { }   // v0.1.6: long-press hint (replaces the listener, calls KeyPopup.touch)
         return b

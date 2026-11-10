@@ -1,3 +1,13 @@
+v0.2.9 - Bold letters (light feature)
+- NEW: Size page (gear > More settings > Size >) has a button "Bold letters: ON / OFF" (default OFF). ON = letters on the keys are bold, easier to read. Then ABC (apply). Reset sizes turns it OFF.
+- Code: SizePrefs.kt (button + reset), MgbIme.kt letter() 1 line, app/build.gradle.kts (0.2.9). New pref letter_bold. No permission.
+WHY: user asked for one light, effective feature after letter size.
+BROKE: nothing intended. Default unchanged.
+NOT tested: Kotlin compile (GitHub Actions), phone: bold look at big letter sizes, Probhat glyphs in bold.
+TESTED here: bracket balance of SizePrefs.kt / MgbIme.kt.
+Rollback: Bold letters OFF. Code: remove lines marked "v0.2.9".
+Files: SizePrefs.kt, MgbIme.kt, app/build.gradle.kts, CHANGELOG.txt, CHECKLIST.txt, HANDOFF_Jabra-Keyboard_v0.2.9.txt (new, replaces ..._v0.2.8.txt).
+
 v0.2.8 - Letter size % (alphabet size option)
 - NEW: Size page now has "Letter size: N%" with [-] [+] (80% .. 220%, step 10, 100% = old size). Place: gear > More settings > Size >  (or the Size toolbar item). Then ABC (apply). Reset sizes also resets it.
 - Code: typing/SizePct.java (letterSp), SizePrefs.kt (row + reset), MgbIme.kt letter() 1 line, TypingExtras.kt (button text), app/build.gradle.kts (0.2.8). New pref letter_pct (unset = old). No permission, no manifest change.

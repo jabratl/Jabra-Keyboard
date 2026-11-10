@@ -102,3 +102,6 @@ K) v0.2.8 letter size
  [ ] gear > More settings > Size >: new row "Letter size: 100%". Press + : 110%, 120% ... Press ABC (apply): letters on the keyboard are bigger.
  [ ] Press - below 100%: letters smaller. Limits 80% and 220%. Reset sizes -> letters back to old size.
  [ ] 360 px portrait and landscape, dark + light theme: big letters do not get cut, Probhat letters fine, hint labels still readable.
+
+L) v0.2.9 bold letters
+ [ ] Size page: "Bold letters: OFF" -> tap -> ON, ABC (apply): letters bold. Tap again + ABC: normal. Reset sizes -> OFF.
