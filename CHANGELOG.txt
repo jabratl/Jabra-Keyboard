@@ -1,3 +1,17 @@
+v0.1.3 - Key popup + Large number row
+- NEW "Key popup" (key_popup, default OFF): while you hold a LETTER key, a small white bubble with the letter shows above it (follows shift / Probhat labels). Works at once, no ABC (apply) needed. The key itself (click, haptic, typing) is not touched: the touch listener always returns false.
+- NEW "Large number row" (numrow_large, default OFF): number row keys are 12 dp taller with bigger digits. Needs ABC (apply).
+- Both toggles: gear -> More settings -> Typing options > (new row under Globe / Voice / Emoji).
+- SKIPPED on purpose: "Hide long-press hints". The keyboard has NO hint labels and no long-press alternate characters, so there is nothing to hide. Decision needed from the user (see HANDOFF NEXT).
+- Code: KeyPopup.kt (new), hooks marked "v0.1.3": MgbIme.kt (letter(): 1 line, number row: 1 line), TypingPrefs.kt (1 row + note text), app/build.gradle.kts (0.1.3).
+- Prefs NEW: key_popup(bool,false) numrow_large(bool,false). Old keys untouched.
+
+WHY: roadmap v0.1.3. Defaults OFF = keyboard exactly like v0.1.2.
+BROKE: nothing intended.
+NOT tested: Gradle/Kotlin compile (v0.0.9 - v0.1.3 unbuilt), everything on a phone: bubble position (PopupWindow from an IME window; the top letter row bubble may touch the number row / screen top), bubble look on Dark theme, large number row height with Height XL, 360 / 1280 px, landscape.
+TESTED here: all Java tests still pass (Pc 19, DoubleSpace 37, Typing 27, Emoji 1585, Extras 133, Clip 18, Avro 43); bracket balance of all files; code-only diff vs v0.1.2 removes nothing.
+Files: KeyPopup.kt (new), MgbIme.kt, TypingPrefs.kt, app/build.gradle.kts, CHANGELOG.txt, HANDOFF.txt.
+
 v0.1.2 - PC mode + mode key
 - NEW mode key = FIRST key of the edit bar (the row above the letters). Phone mode shows an own-drawn robot-head icon, PC mode shows an own-drawn monitor icon. Tap = switch Phone <-> PC, keyboard rebuilds. Icons OFF = text "PH" / "PC". If the edit bar is OFF the mode key sits in the bottom row after the language key.
 - NEW PC rows (only in PC mode, above the number row): Esc Tab Ctrl Alt Del Ins / F1-F12 / Home PgUp Up PgDn End Left Down Right / ^A ^C ^V ^X ^Z. Ctrl and Alt are sticky: 1 tap = next key only (light blue), 2nd tap within 0.4 s = lock (dark blue), tap again = off. With Ctrl/Alt active a letter key sends Ctrl/Alt+letter as a key event (not text). ^A ^C ^V ^X reuse the edit bar actions; ^Z sends Ctrl+Z.

@@ -248,9 +248,11 @@ class TypingPanel(private val ctx: Context, private val host: JabraHost) {
         r3.addView(toggleKey("Emoji key", "key_emoji", false))
         root.addView(r3)
 
+        try { val r35 = row(); r35.addView(toggleKey("Key popup", "key_popup", false)); r35.addView(toggleKey("Large number row", "numrow_large", false)); root.addView(r35) } catch (_: Throwable) { }   // v0.1.3
+
         root.addView(note("Double-space: tap space twice = \". \" (Bangla mode: \"\u0964 \"). Tab only when the period does not fit. Not used in password / email / web fields. " +
             "Long-press: System = the phone's own time. Cursor speed: drag on the space key. Globe = next keyboard. Voice = the phone's voice typing (no recording by Jabra). " +
-            "Keys appear on the bottom row after ABC (apply)."))
+            "Keys appear on the bottom row after ABC (apply). Key popup: a bubble above the pressed letter (works at once). Large number row: ABC (apply)."))
 
         val rb = row()
         rb.addView(pk("< More settings", 1f) { host.showPanel("more") })

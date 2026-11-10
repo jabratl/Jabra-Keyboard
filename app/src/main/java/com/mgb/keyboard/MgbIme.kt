@@ -116,6 +116,7 @@ class MgbIme : InputMethodService() {
         val b = key(c.toString(), 1f) { onLetter(c) }
         b.tag = c                       // v0.0.4: remember which letter this key is (labels change in Probhat mode)
         letterKeys.add(b)
+        try { KeyPopup.attach(b, prefs) } catch (_: Throwable) { }   // v0.1.3: popup on keypress (setting key_popup)
         return b
     }
 
@@ -512,6 +513,7 @@ class MgbIme : InputMethodService() {
             if (prefs.bool("numrow", true)) {
                 val nr = row()
                 "1234567890".forEach { d -> nr.addView(key(d.toString(), 1f) { commitWord(); typeText(d.toString()) }) }
+                try { if (prefs.bool("numrow_large", false)) for (i in 0 until nr.childCount) { (nr.getChildAt(i).layoutParams as LinearLayout.LayoutParams).height = dp(keyDp() + 12); (nr.getChildAt(i) as Button).textSize = 18f } } catch (_: Throwable) { }   // v0.1.3: Large number row (setting numrow_large)
                 root.addView(nr)
             }
         } catch (_: Throwable) { }
