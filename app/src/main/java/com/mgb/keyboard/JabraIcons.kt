@@ -21,7 +21,7 @@ object JabraIcons {
 
     val NAMES = listOf(
         "clip", "all", "cut", "copy", "paste", "plain", "search", "close",
-        "pin", "pinned", "gear", "shift", "back", "enter", "space", "fmt", "globe", "mic", "emoji"
+        "pin", "pinned", "gear", "shift", "back", "enter", "space", "fmt", "globe", "mic", "emoji", "mode_phone", "mode_pc"   // v0.1.2
     )
 
     /**
@@ -211,6 +211,25 @@ object JabraIcons {
                     c.drawCircle(0.36f * s, 0.40f * s, 0.06f * s, f)
                     c.drawCircle(0.64f * s, 0.40f * s, 0.06f * s, f)
                     c.drawArc(RectF(0.26f * s, 0.28f * s, 0.74f * s, 0.74f * s), 25f, 130f, false, p)
+                }
+                "mode_phone" -> {  // v0.1.2: own robot head: round top, 2 antennas, 2 eyes
+                    val path = Path()
+                    path.moveTo(0.10f * s, 0.92f * s)
+                    path.lineTo(0.10f * s, 0.62f * s)
+                    path.arcTo(RectF(0.10f * s, 0.30f * s, 0.90f * s, 0.94f * s), 180f, 180f)
+                    path.lineTo(0.90f * s, 0.92f * s)
+                    path.close()
+                    c.drawPath(path, p)
+                    line(c, s, 0.28f, 0.38f, 0.18f, 0.10f)
+                    line(c, s, 0.72f, 0.38f, 0.82f, 0.10f)
+                    c.drawCircle(0.36f * s, 0.62f * s, 0.05f * s, f)
+                    c.drawCircle(0.64f * s, 0.62f * s, 0.05f * s, f)
+                }
+                "mode_pc" -> {  // v0.1.2: own monitor + stand + small keyboard line
+                    rr(c, s, 0.06f, 0.04f, 0.94f, 0.58f, 0.08f)
+                    line(c, s, 0.50f, 0.58f, 0.50f, 0.72f)
+                    line(c, s, 0.30f, 0.72f, 0.70f, 0.72f)
+                    rr(c, s, 0.10f, 0.82f, 0.90f, 0.98f, 0.04f)
                 }
                 "space" -> {  // open bracket shape
                     val path = Path()

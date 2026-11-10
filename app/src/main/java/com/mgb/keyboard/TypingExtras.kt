@@ -175,6 +175,21 @@ class MorePanel(private val ctx: Context, private val host: JabraHost) {
         root.addView(note("Enter action: Enter does Send / Search / Go when the app asks for it. Long-press ?123 also opens the keyboard picker. Theme / One-hand: tap, then ABC (apply). Emoji: long-press the , key."))
 
         try { val rt = row(); rt.addView(pk("Typing options >", 1f) { host.showPanel("typing") }); root.addView(rt) } catch (_: Throwable) { }   // v0.1.1
+        // v0.1.2: PC mode rows (mode key = first key of the edit bar)
+        try {
+            val rm = row()
+            val modeBtn = pk("", 1f) { btn ->
+                val nv = !prefs.bool("pc_mode", false)
+                prefs.setBool("pc_mode", nv)
+                btn.text = "Mode: " + (if (nv) "PC" else "Phone")
+            }
+            modeBtn.text = "Mode: " + (if (prefs.bool("pc_mode", false)) "PC" else "Phone")
+            rm.addView(modeBtn)
+            rm.addView(toggleKey("Mode key", "mode_key", true))
+            rm.addView(toggleKey("Remember mode", "pc_remember", true))
+            root.addView(rm)
+            root.addView(note("PC mode adds Esc Tab Ctrl Alt F1-F12 arrows Home End. Ctrl/Alt: 1 tap = next key, 2 taps = lock. Works only in apps that read key events (Termux, browsers, code editors); many plain text fields ignore them. Then ABC (apply)."))
+        } catch (_: Throwable) { }
 
         val rb = row()
         rb.addView(pk("< Settings", 1f) { host.showPanel("settings") })

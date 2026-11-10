@@ -48,6 +48,8 @@ class MgbIme : InputMethodService() {
     private val typingPanel by lazy { TypingPanel(this, host) }   // v0.1.1 "Typing options" page
     private val spaceHelper by lazy { SpaceHelper(prefs) }   // v0.1.1 double space
     private val switcher by lazy { ImeSwitcher(this) }   // v0.1.1 Globe / Voice key
+    private val pcState = com.mgb.keyboard.typing.PcState()   // v0.1.2 PC mode state (mode itself = pref pc_mode)
+    private var pcRows: PcRows? = null   // v0.1.2
     private val fmtPanel by lazy { FormatterPanel(this, host, ImeFmtIo(this) { pwdField }) }   // v0.0.8 novel formatter
     private val host = object : JabraHost {
         override fun typeText(s: String) { this@MgbIme.typeText(s) }
@@ -211,6 +213,7 @@ class MgbIme : InputMethodService() {
 
     override fun onStartInputView(info: EditorInfo?, restarting: Boolean) {
         super.onStartInputView(info, restarting)
+        try { if (!prefs.bool("pc_remember", true) && prefs.bool("pc_mode", false)) { prefs.setBool("pc_mode", false); pcState.setPc(false); showLetters() } } catch (_: Throwable) { }   // v0.1.2: Remember mode OFF = always start in Phone mode
         try {
             buf.setLength(0)
             val t = info?.inputType ?: 0
@@ -367,6 +370,42 @@ class MgbIme : InputMethodService() {
         } catch (_: Throwable) { }
     }
 
+    // ---------- v0.1.2: PC mode ----------
+    private val pcIo = object : PcIo {
+        override fun sendKey(code: Int, extraMeta: Int) { this@MgbIme.pcSend(code, extraMeta) }
+        override fun edit(kind: String) { this@MgbIme.editAction(kind) }
+        override fun feedback(v: View) { this@MgbIme.feedback(v) }
+        override fun keyDp(): Int = this@MgbIme.keyDp()
+    }
+
+    /** Key down + up with the sticky Ctrl / Alt (a once-modifier ends after this key). */
+    private fun pcSend(code: Int, extraMeta: Int) {
+        commitWord()
+        val ic = currentInputConnection ?: return
+        val m = pcState.meta() or extraMeta
+        val t = android.os.SystemClock.uptimeMillis()
+        ic.sendKeyEvent(KeyEvent(t, t, KeyEvent.ACTION_DOWN, code, 0, m))
+        ic.sendKeyEvent(KeyEvent(t, t, KeyEvent.ACTION_UP, code, 0, m))
+        pcState.keySent()
+        try { pcRows?.refresh() } catch (_: Throwable) { }
+    }
+
+    /** Mode key: one tap = Phone <-> PC (pref pc_mode), then the keyboard is rebuilt. */
+    private fun toggleMode() {
+        commitWord()
+        pcState.setPc(!prefs.bool("pc_mode", false))
+        prefs.setBool("pc_mode", pcState.isPc())
+        showLetters()
+    }
+
+    private fun modeKey(heightDp: Int?): Button {
+        val on = pcState.isPc()
+        val k = key(if (on) "PC" else "PH", 1f) { toggleMode() }
+        JabraIcons.putThemed(this, k, if (on) "mode_pc" else "mode_phone")
+        if (heightDp != null) { (k.layoutParams as LinearLayout.LayoutParams).height = dp(heightDp); k.textSize = 12f }
+        return k
+    }
+
     private fun showLetters() {
         val c = container ?: return
         autoNumpad = false
@@ -398,6 +437,7 @@ class MgbIme : InputMethodService() {
     }
 
     private fun onLetter(c: Char) {
+        try { if (pcState.isPc() && pcState.meta() != 0 && c in 'a'..'z') { pcSend(KeyEvent.KEYCODE_A + (c - 'a'), 0); return } } catch (_: Throwable) { }   // v0.1.2: Ctrl / Alt + letter in PC mode
         val ch = if (shift) c.uppercaseChar() else c
         if (shift) { shiftSt.typed(); refreshLetters() }   // v0.0.9: caps lock stays, one-shot shift ends
         if (probhatOn() && probhatType(ch)) return   // v0.0.4: fixed Bangla layout (not in password/email/URL/number fields)
@@ -446,10 +486,12 @@ class MgbIme : InputMethodService() {
         root.setPadding(dp(2), dp(4), dp(2), dp(4))
         try { root.setBackgroundColor(JabraThemes.bg(prefs)) } catch (_: Throwable) { }   // v0.1.0: theme background (Classic = same grey)
 
+        try { pcState.setPc(prefs.bool("pc_mode", false)) } catch (_: Throwable) { }   // v0.1.2: pref pc_mode is the one truth
         // v0.0.6: edit bar (setting "edit_bar", default ON): clipboard / select all / cut / copy / paste / paste plain
         try {
             if (prefs.bool("edit_bar", true)) {
                 val eb = row()
+                try { if (prefs.bool("mode_key", true)) eb.addView(modeKey(36)) } catch (_: Throwable) { }   // v0.1.2: first key of the edit bar
                 val items0 = arrayOf("📋" to "clip", "All" to "all", "Cut" to "cut", "Copy" to "copy", "Paste" to "paste", "Plain" to "plain")
                 val items = if (prefs.bool("fmt_on", true)) items0 + ("Aa" to "fmt") else items0   // v0.0.8: formatter button (setting "fmt_on")
                 for ((label, kind) in items) {
@@ -463,6 +505,8 @@ class MgbIme : InputMethodService() {
             }
         } catch (_: Throwable) { }
 
+        // v0.1.2: PC rows (only in PC mode)
+        try { if (pcState.isPc()) { val pr = PcRows(this, pcState, pcIo); pcRows = pr; val pv = pr.view(); if (pv != null) root.addView(pv) } } catch (_: Throwable) { }
         // v0.0.5: number row (setting "numrow", default ON). If it fails the keyboard just has no number row.
         try {
             if (prefs.bool("numrow", true)) {
@@ -500,6 +544,7 @@ class MgbIme : InputMethodService() {
         try { JabraLongPress.attach(lb, prefs) { switchBnLayout() } } catch (_: Throwable) { }   // v0.0.4: long-press = Avro <-> Probhat
         langBtn = lb
         r4.addView(lb)
+        try { if (prefs.bool("mode_key", true) && !prefs.bool("edit_bar", true)) r4.addView(modeKey(null)) } catch (_: Throwable) { }   // v0.1.2: edit bar OFF -> mode key here
         // v0.1.1: optional Globe / Voice / Emoji keys (settings key_globe / key_voice / key_emoji, all default OFF = same row as before)
         try {
             if (prefs.bool("key_globe", false)) r4.addView(JabraIcons.putThemed(this, key("\uD83C\uDF10", 1f) { commitWord(); switcher.globe() }, "globe"))

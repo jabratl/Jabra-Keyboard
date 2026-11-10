@@ -1,3 +1,19 @@
+v0.1.2 - PC mode + mode key
+- NEW mode key = FIRST key of the edit bar (the row above the letters). Phone mode shows an own-drawn robot-head icon, PC mode shows an own-drawn monitor icon. Tap = switch Phone <-> PC, keyboard rebuilds. Icons OFF = text "PH" / "PC". If the edit bar is OFF the mode key sits in the bottom row after the language key.
+- NEW PC rows (only in PC mode, above the number row): Esc Tab Ctrl Alt Del Ins / F1-F12 / Home PgUp Up PgDn End Left Down Right / ^A ^C ^V ^X ^Z. Ctrl and Alt are sticky: 1 tap = next key only (light blue), 2nd tap within 0.4 s = lock (dark blue), tap again = off. With Ctrl/Alt active a letter key sends Ctrl/Alt+letter as a key event (not text). ^A ^C ^V ^X reuse the edit bar actions; ^Z sends Ctrl+Z.
+- NEW More settings rows: "Mode: Phone/PC", "Mode key: ON/OFF" (default ON), "Remember mode: ON/OFF" (default ON; OFF = keyboard always opens in Phone mode).
+- Phone mode = exactly v0.1.1 (only difference: one extra key at the start of the edit bar; hide it with Mode key OFF).
+- Code: PcMode.kt (new: PcIo, PcRows), typing/PcState.java (new, pure Java), tools/PcTest.java (new), hooks marked "v0.1.2" in MgbIme.kt (state sync, mode key, PC rows, onLetter Ctrl/Alt, Remember mode in onStartInputView), TypingExtras.kt (3 rows + note), JabraIcons.kt (2 names + 2 branches), app/build.gradle.kts (0.1.2).
+- Prefs NEW: pc_mode(bool,false) mode_key(bool,true) pc_remember(bool,true). Old keys untouched.
+- DEVIATIONS from HANDOFF plan (1 line each): PC rows are added above the letters inside the letters view (no showPanel route "pc"), so letters stay usable with sticky Ctrl/Alt; the mode key is not repeated inside the PC rows (the edit bar one stays); More settings rows have no icons (text only).
+
+WHY: roadmap v0.1.2 (user idea: PC-style keys inside the phone keyboard + a mode key).
+BROKE: nothing intended. Visible change: the edit bar has one more key; its 7 old buttons get a bit narrower (8 keys in the row).
+NOT tested: Gradle/Kotlin compile (v0.0.9 - v0.1.2 all still unbuilt = biggest risk), everything on a phone: icon look (robot / monitor), PC rows size on 360 px wide screens (F1-F12 row is tight), key events in real apps (Termux, Chrome, code editors; plain text fields usually ignore Ctrl/Alt/F-keys), sticky Ctrl/Alt feel, Remember mode, Dark theme colours of the PC rows.
+TESTED here: tools/PcTest.java 19/19 (mode toggle, sticky once / lock / off, 0.4 s window, clock going back, meta bits); DoubleSpaceTest 37/37 still pass; bracket balance of all 9 changed/new source files; code-only diff vs v0.1.1 shows NO removed code line except the icon NAMES line (extended).
+Known limits: UI render at 360 / 1280 px, dark + light was NOT run (no emulator here); no Bluetooth / USB keyboard for another PC (needs permissions; ask first); Alt+letter depends on the app.
+Files: PcMode.kt, typing/PcState.java, tools/PcTest.java (new), MgbIme.kt, TypingExtras.kt, JabraIcons.kt, app/build.gradle.kts, CHANGELOG.txt, HANDOFF.txt.
+
 v0.1.1 - typing preferences (double space, long-press delay, cursor speed, Globe / Voice / Emoji keys)
 - NEW page: gear -> More settings -> "Typing options >". Every setting is OFF / "old behaviour" by default, so the keyboard behaves like v0.1.0 until you change something. Then tap ABC (apply).
 - NEW "Double-space period" (ds_period): tap space twice = ". " (Bangla mode: danda + space). Works after a letter, digit, Bangla letter/vowel sign, closing quote/bracket; not after . , ; : ! ? or danda; only if the 2 taps are within 0.8 s; not in password / email / web / number fields. A 3rd tap is a normal space.
