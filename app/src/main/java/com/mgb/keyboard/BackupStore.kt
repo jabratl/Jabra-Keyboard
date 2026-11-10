@@ -114,6 +114,16 @@ object BackupStore {
         } catch (_: Throwable) { return "Restore failed. A safety copy may exist." }
     }
 
+    /** v0.4.1: checks text from an imported file; if valid it is saved as import_<time>.json in the backups folder (restore it from the list). */
+    fun importText(ctx: Context, text: String): String {
+        return try {
+            val v = BackupCodec.validate(text)
+            if (v != BackupCodec.OK) return "Import stopped: file is not a valid Jabra backup (code $v). Nothing changed."
+            val f = File(dir(ctx), "import_" + SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date()) + ".json")
+            if (write(f, text)) "Imported. Find it in the Backups list and tap Restore." else "Import failed (could not save the file). Nothing changed."
+        } catch (_: Throwable) { "Import failed. Nothing changed." }
+    }
+
     /** Once per day (bk_auto ON): marks the day first, then saves on a background Thread. Safe to call from onStartInputView. */
     fun autoIfDue(ctx: Context) {
         try {
