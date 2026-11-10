@@ -253,6 +253,18 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
         }
         if (confirmDel) del.textSize = 12f
         r.addView(del)
+        // v0.3.6: Paste = type ALL selected clips in the order you tapped them, joined by a blank line, then back to letters
+        r.addView(btn("Paste", 1.2f, 34) {
+            val chosen = sel.selection()
+            if (chosen.isEmpty()) { msg = "Nothing selected"; confirmDel = false; refresh() }
+            else {
+                val joined = chosen.joinToString("\n\n") { it.text }
+                sel.leave(); confirmDel = false
+                host.commitWord()
+                host.typeText(joined)
+                host.showLetters()
+            }
+        })
         r.addView(btn("Done", 1f, 34) { sel.leave(); confirmDel = false; refresh() })
         return r
     }

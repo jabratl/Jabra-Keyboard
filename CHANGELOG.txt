@@ -1,3 +1,8 @@
+v0.3.6 - NEW: Clipboard multi-paste
+- Clipboard > Manage (or long-press a clip) > tick several clips > new "Paste" button types ALL ticked clips at once, in the order you ticked them, separated by a blank line, then returns to the letters. Good for collecting several copied pieces of a chapter and pasting them in one tap.
+- Code: ClipboardFeature.kt (selectBar(): 1 new button). No new setting / key / permission.
+BROKE: nothing intended. Remove the block marked "v0.3.6" to go back.
+
 v0.3.5 - FIX: Vibrate and Sound toggles did nothing
 - ROOT CAUSE: key haptic used performHapticFeedback and key sound used playSoundEffect; both obey the phone's system "Touch feedback" / "Touch sounds" switches, so with those OFF nothing happened even when Vibrate / Sound were ON in the keyboard.
 - Now: Vibrate = Vibrator directly (18 ms, falls back to the old call with ignore-system flags); Sound = system click if system touch sounds are ON, else a short tone. Volume follows the phone's system volume.
