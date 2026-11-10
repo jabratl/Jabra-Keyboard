@@ -53,4 +53,6 @@ G. TOOLBAR (v0.2.1)
  [ ] Swipe the row sideways: it scrolls and does NOT press a key by accident; a normal tap still works (Aa, clipboard, All, Cut, Copy, Paste, Plain, mode key).
  [ ] « key folds the row to: fold key + first item; » unfolds.
  [ ] Reset toolbar restores the default order.
+ [ ] v0.2.2: Edit toolbar -> scroll down: Emoji, Number pad, Symbols, Settings, Voice, Next keyboard, Theme, One-hand, Size are Hidden. Press Show on some, ABC (apply): they appear and each does its job (Theme / One-hand change the look at once).
+ [ ] New icons readable in dark + light; Reset toolbar hides all extras again.
 

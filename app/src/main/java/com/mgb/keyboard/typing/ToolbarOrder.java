@@ -15,7 +15,41 @@ public final class ToolbarOrder {
     private ToolbarOrder() { }
 
     /** Default CUSTOM order: Formatter first, then clipboard, then mode, then the edit keys. Later versions append new ids here. */
-    public static final String[] DEFAULT = { "fmt", "clip", "mode", "all", "cut", "copy", "paste", "plain" };
+    public static final String[] DEFAULT = { "fmt", "clip", "mode", "all", "cut", "copy", "paste", "plain",
+        "emoji", "numpad", "sym", "gear", "voice", "globe", "theme", "onehand", "size" };   // v0.2.2: the last 9 are EXTRAS
+
+    /** v0.2.2 extra shortcuts: NOT shown until the user turns them on (pref tb_on). The first 8 ids keep the v0.2.1 rule (shown unless in tb_hidden). */
+    public static final String[] EXTRAS = { "emoji", "numpad", "sym", "gear", "voice", "globe", "theme", "onehand", "size" };
+
+    public static boolean isExtra(String id) {
+        if (id == null) return false;
+        for (String d : EXTRAS) if (d.equals(id)) return true;
+        return false;
+    }
+
+    /** Ids written in the saved text of tb_on (known extras only, no duplicates). */
+    public static List<String> parseOn(String csv) {
+        List<String> out = new ArrayList<String>();
+        if (csv == null) return out;
+        for (String p : csv.split(",")) {
+            String id = p.trim();
+            if (isExtra(id) && !out.contains(id)) out.add(id);
+        }
+        return out;
+    }
+
+    public static String setOn(String onCsv, String id, boolean on) {
+        List<String> h = parseOn(onCsv);
+        if (!isExtra(id)) return serialize(h);
+        if (on) { if (!h.contains(id)) h.add(id); } else { h.remove(id); }
+        return serialize(h);
+    }
+
+    /** True when the item is NOT on the bar (extra: not turned on; normal item: listed in tb_hidden). */
+    public static boolean off(String hiddenCsv, String onCsv, String id) {
+        if (isExtra(id)) return !parseOn(onCsv).contains(id);
+        return parseHidden(hiddenCsv).contains(id);
+    }
 
     public static boolean known(String id) {
         if (id == null) return false;
@@ -70,11 +104,10 @@ public final class ToolbarOrder {
     }
 
     /** Order without the hidden ids (what the bar shows). */
-    public static List<String> visible(String orderCsv, String hiddenCsv) {
+    public static List<String> visible(String orderCsv, String hiddenCsv, String onCsv) {
         List<String> all = parse(orderCsv);
-        List<String> h = parseHidden(hiddenCsv);
         List<String> out = new ArrayList<String>();
-        for (String id : all) if (!h.contains(id)) out.add(id);
+        for (String id : all) if (!off(hiddenCsv, onCsv, id)) out.add(id);
         return out;
     }
 

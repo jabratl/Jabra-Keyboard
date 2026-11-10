@@ -95,9 +95,10 @@ class ToolbarPanel(private val ctx: Context, private val host: JabraHost) {
         col.orientation = LinearLayout.VERTICAL
         val all = order()
         val hidden = prefs.str("tb_hidden", "")
+        val on = prefs.str("tb_on", "")
         val nameColor = try { JabraThemes.iconColor(prefs) } catch (_: Throwable) { Color.parseColor("#222222") }
         for (id in all) {
-            val isHidden = ToolbarOrder.isHidden(hidden, id)
+            val isHidden = ToolbarOrder.off(hidden, on, id)
             val r = row()
             val ic = pk("", 0.9f, 40) { }
             ic.isClickable = false
@@ -117,7 +118,8 @@ class ToolbarPanel(private val ctx: Context, private val host: JabraHost) {
             r.addView(pk("\u25B2", 0.8f, 40) { save(ToolbarOrder.up(all, id), sv) })
             r.addView(pk("\u25BC", 0.8f, 40) { save(ToolbarOrder.down(all, id), sv) })
             r.addView(pk(if (isHidden) "Show" else "Hide", 1.2f, 40) {
-                prefs.setStr("tb_hidden", ToolbarOrder.setHidden(hidden, id, !isHidden))
+                if (ToolbarOrder.isExtra(id)) prefs.setStr("tb_on", ToolbarOrder.setOn(on, id, isHidden))   // v0.2.2: extras are OFF until turned on
+                else prefs.setStr("tb_hidden", ToolbarOrder.setHidden(hidden, id, !isHidden))
                 refresh(sv)
             })
             col.addView(r)
@@ -127,11 +129,11 @@ class ToolbarPanel(private val ctx: Context, private val host: JabraHost) {
         root.addView(sv)
         sv.post { try { sv.scrollTo(0, scrollY) } catch (_: Throwable) { } }
 
-        root.addView(note("Custom = scrolling toolbar in this order (first item = leftmost, after the fold key). Classic = the old bar. Formatter / Mode items also need Formatter ON / Mode key ON. Then ABC (apply)."))
+        root.addView(note("Custom = scrolling toolbar in this order (first item = leftmost, after the fold key). Classic = the old bar. Formatter / Mode items also need Formatter ON / Mode key ON. Extra shortcuts (Emoji ... Size) are Hidden until you press Show. Scroll the list for them. Then ABC (apply)."))
 
         val rr = row()
         rr.addView(pk("Reset toolbar", 1f, 40) {
-            prefs.setStr("tb_order", ""); prefs.setStr("tb_hidden", ""); prefs.setBool("tb_fold", false)
+            prefs.setStr("tb_order", ""); prefs.setStr("tb_hidden", ""); prefs.setStr("tb_on", ""); prefs.setBool("tb_fold", false)
             scrollY = 0
             host.showPanel("toolbar")
         })

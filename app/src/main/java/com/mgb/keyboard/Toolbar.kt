@@ -25,16 +25,22 @@ object Toolbar {
 
     fun label(id: String): String = when (id) {
         "clip" -> "📋"; "all" -> "All"; "cut" -> "Cut"; "copy" -> "Copy"; "paste" -> "Paste"; "plain" -> "Plain"
-        "fmt" -> "Aa"; "mode" -> "PH"; else -> id
+        "fmt" -> "Aa"; "mode" -> "PH"
+        "emoji" -> "\u263A"; "numpad" -> "123"; "sym" -> "#+="; "gear" -> "\u2699"; "voice" -> "\uD83C\uDFA4"
+        "globe" -> "\uD83C\uDF10"; "theme" -> "Th"; "onehand" -> "1H"; "size" -> "Sz"
+        else -> id
     }
 
     fun title(id: String): String = when (id) {
         "fmt" -> "Formatter (Aa)"; "clip" -> "Clipboard"; "mode" -> "Mode (Phone / PC)"; "all" -> "Select all"
-        "cut" -> "Cut"; "copy" -> "Copy"; "paste" -> "Paste"; "plain" -> "Paste plain"; else -> id
+        "cut" -> "Cut"; "copy" -> "Copy"; "paste" -> "Paste"; "plain" -> "Paste plain"
+        "emoji" -> "Emoji panel"; "numpad" -> "Number pad (123)"; "sym" -> "Symbols"; "gear" -> "Settings (gear)"
+        "voice" -> "Voice typing"; "globe" -> "Next keyboard"; "theme" -> "Theme (cycle)"; "onehand" -> "One-hand (cycle)"; "size" -> "Size page"
+        else -> id
     }
 
     /** Icon name in JabraIcons (same names as the old edit bar). */
-    fun icon(id: String): String = if (id == "mode") "mode_phone" else id
+    fun icon(id: String): String = if (id == "mode") "mode_phone" else if (id == "voice") "mic" else id
 
     fun build(ctx: Context, prefs: JabraPrefs, host: ToolbarHost): View? = try { make(ctx, prefs, host) } catch (_: Throwable) { null }
 
@@ -48,7 +54,7 @@ object Toolbar {
         }
 
         val ids = ArrayList<String>()
-        for (id in ToolbarOrder.visible(prefs.str("tb_order", ""), prefs.str("tb_hidden", ""))) {
+        for (id in ToolbarOrder.visible(prefs.str("tb_order", ""), prefs.str("tb_hidden", ""), prefs.str("tb_on", ""))) {
             if (id == "fmt" && !prefs.bool("fmt_on", true)) continue     // old setting Formatter OFF = item hidden
             if (id == "mode" && !prefs.bool("mode_key", true)) continue  // old setting Mode key OFF = item hidden
             ids.add(id)

@@ -1,3 +1,17 @@
+v0.2.2 - Toolbar extra shortcuts
+- NEW: 9 more items for the custom toolbar (Edit toolbar page): Emoji panel, Number pad (123), Symbols, Settings (gear), Voice typing, Next keyboard (globe), Theme (tap = next theme), One-hand (tap = Off / Left / Right), Size page. All only open things that already exist.
+- They are HIDDEN until you press Show in More settings -> Edit toolbar > (scroll the list down). Nothing appears by itself. Reset toolbar hides them again.
+- 5 new own-drawn icons (number pad, symbols, theme, one-hand, size); the others reuse emoji / globe / gear / mic. Icons OFF = short text (123, #+=, Th, 1H, Sz).
+- Toolbar: Classic (default) is still exactly the v0.2.0 bar. v0.2.1 saved order / hidden settings keep working.
+- Code: typing/ToolbarOrder.java (extras + tb_on logic, 3-argument visible()), Toolbar.kt, ToolbarPanel.kt, MgbIme.kt (toolbarAction() + 1 line), JabraIcons.kt (5 names + branches), tools/ToolbarTest.java (43 checks), app/build.gradle.kts (0.2.2).
+- Prefs NEW: tb_on(str,"").
+
+WHY: roadmap v0.2.2.
+BROKE: nothing intended. Not built: undo / redo / home / end (unreliable key events; the cursor pad in v0.2.3 gives home / end).
+NOT tested: Kotlin compile (first check = GitHub Actions), everything on a phone: each new item opens the right thing, theme / one-hand cycle then rebuild the keyboard, voice / globe key on your phone, the 5 new icons look right (dark + light), scrolling the long strip, 360 px.
+TESTED here: ToolbarTest 43/43; the 10 older Java tests pass (Avro 43, Extras 133, Clip 18, Emoji 1585, Typing 27, DoubleSpace 37, Pc 19, SizePct 28, Look 13, Hint 175); bracket balance of the 4 changed Kotlin files.
+Files: typing/ToolbarOrder.java, Toolbar.kt, ToolbarPanel.kt, MgbIme.kt, JabraIcons.kt, tools/ToolbarTest.java, app/build.gradle.kts, CHANGELOG.txt, HANDOFF.txt, CHECKLIST.txt.
+
 v0.2.1 - Toolbar engine + editor (optional, default = old bar)
 - NEW (More settings -> Edit toolbar >): an optional scrolling toolbar row above the number row. First fixed key = fold / unfold (« / »); folded = fold key + your FIRST item only. Items: Formatter (Aa), Clipboard, Mode, All, Cut, Copy, Paste, Plain. Default Custom order puts Aa FIRST, then Clipboard, then Mode.
 - The Edit toolbar page: switch Toolbar: Classic / Custom, and per item [First] [up] [down] [Hide / Show], Reset toolbar. Press ABC (apply) to see the change.

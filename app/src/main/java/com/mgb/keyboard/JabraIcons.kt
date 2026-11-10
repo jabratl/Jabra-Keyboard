@@ -21,7 +21,7 @@ object JabraIcons {
 
     val NAMES = listOf(
         "clip", "all", "cut", "copy", "paste", "plain", "search", "close",
-        "pin", "pinned", "gear", "shift", "back", "enter", "space", "fmt", "globe", "mic", "emoji", "mode_phone", "mode_pc"   // v0.1.2
+        "pin", "pinned", "gear", "shift", "back", "enter", "space", "fmt", "globe", "mic", "emoji", "mode_phone", "mode_pc", "numpad", "sym", "theme", "onehand", "size"   // v0.1.2; v0.2.2: last 5
     )
 
     /**
@@ -230,6 +230,30 @@ object JabraIcons {
                     line(c, s, 0.50f, 0.58f, 0.50f, 0.72f)
                     line(c, s, 0.30f, 0.72f, 0.70f, 0.72f)
                     rr(c, s, 0.10f, 0.82f, 0.90f, 0.98f, 0.04f)
+                }
+                "numpad" -> {   // v0.2.2: 3 x 3 dots
+                    for (ix in 0..2) for (iy in 0..2) c.drawCircle((0.15f + 0.35f * ix) * s, (0.15f + 0.35f * iy) * s, 0.07f * s, f)
+                }
+                "sym" -> {   // v0.2.2: hash sign
+                    line(c, s, 0.36f, 0.08f, 0.28f, 0.92f)
+                    line(c, s, 0.72f, 0.08f, 0.64f, 0.92f)
+                    line(c, s, 0.10f, 0.36f, 0.92f, 0.36f)
+                    line(c, s, 0.08f, 0.66f, 0.90f, 0.66f)
+                }
+                "theme" -> {   // v0.2.2: circle with a filled half
+                    c.drawCircle(0.5f * s, 0.5f * s, 0.46f * s, p)
+                    c.drawArc(RectF(0.04f * s, 0.04f * s, 0.96f * s, 0.96f * s), 90f, 180f, true, f)
+                }
+                "onehand" -> {   // v0.2.2: phone outline + filled block bottom-left
+                    rr(c, s, 0.22f, 0.02f, 0.78f, 0.98f, 0.10f)
+                    c.drawRoundRect(RectF(0.30f * s, 0.62f * s, 0.52f * s, 0.88f * s), 0.04f * s, 0.04f * s, f)
+                }
+                "size" -> {   // v0.2.2: vertical double arrow
+                    line(c, s, 0.50f, 0.10f, 0.50f, 0.90f)
+                    line(c, s, 0.30f, 0.30f, 0.50f, 0.10f)
+                    line(c, s, 0.70f, 0.30f, 0.50f, 0.10f)
+                    line(c, s, 0.30f, 0.70f, 0.50f, 0.90f)
+                    line(c, s, 0.70f, 0.70f, 0.50f, 0.90f)
                 }
                 "space" -> {  // open bracket shape
                     val path = Path()

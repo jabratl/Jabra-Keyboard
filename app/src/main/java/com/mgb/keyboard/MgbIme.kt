@@ -418,6 +418,24 @@ class MgbIme : InputMethodService() {
         showLetters()
     }
 
+    /** v0.2.2: what a toolbar item does. Only opens things that already exist (panels, switcher, theme / one-hand cycle). */
+    private fun toolbarAction(id: String) {
+        when (id) {
+            "clip" -> openClipboard()
+            "fmt" -> openFormatter()
+            "emoji" -> { emojiPanel.reset(); showPanel("emoji") }
+            "numpad" -> showPanel("numpad")
+            "sym" -> showPanel("symbols")
+            "gear" -> showPanel("settings")
+            "size" -> showPanel("size")
+            "voice" -> { commitWord(); switcher.voice() }
+            "globe" -> { commitWord(); switcher.globe() }
+            "theme" -> { prefs.setInt("theme", (JabraThemes.index(prefs) + 1) % JabraThemes.ALL.size); showLetters() }
+            "onehand" -> { prefs.setInt("onehand", (JabraOneHand.mode(prefs) + 1) % 3); showLetters() }
+            else -> editAction(id)
+        }
+    }
+
     /** v0.2.1: one key of the custom toolbar (id from typing/ToolbarOrder.java, or "fold"). */
     private fun toolbarKey(id: String): Button? {
         if (id == "fold") {
@@ -427,7 +445,7 @@ class MgbIme : InputMethodService() {
             return f
         }
         if (id == "mode") return modeKey(36)
-        val k = key(Toolbar.label(id), 1f) { if (id == "clip") openClipboard() else if (id == "fmt") openFormatter() else editAction(id) }
+        val k = key(Toolbar.label(id), 1f) { toolbarAction(id) }   // v0.2.2
         JabraIcons.putThemed(this, k, Toolbar.icon(id))
         k.textSize = 12f
         return k
