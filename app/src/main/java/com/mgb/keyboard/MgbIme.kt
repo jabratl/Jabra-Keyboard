@@ -39,6 +39,7 @@ class MgbIme : InputMethodService() {
     private val clipPanel by lazy { ClipPanel(this, host, clipStore) }
     private val prefs by lazy { JabraPrefs(this) }
     private val panels by lazy { JabraPanels(this, host) }
+    private val fmtPanel by lazy { FormatterPanel(this, host, ImeFmtIo(this) { pwdField }) }   // v0.0.8 novel formatter
     private val host = object : JabraHost {
         override fun typeText(s: String) { this@MgbIme.typeText(s) }
         override fun commitWord() { this@MgbIme.commitWord() }
@@ -184,6 +185,13 @@ class MgbIme : InputMethodService() {
         showPanel("clipboard")
     }
 
+    /** v0.0.8: opens the novel formatter panel (never in password fields). */
+    private fun openFormatter() {
+        if (pwdField) return
+        fmtPanel.reset()
+        showPanel("format")
+    }
+
     override fun onStartInputView(info: EditorInfo?, restarting: Boolean) {
         super.onStartInputView(info, restarting)
         try {
@@ -317,7 +325,7 @@ class MgbIme : InputMethodService() {
     private fun showPanel(name: String) {
         val c = container ?: return
         commitWord()
-        val v = try { if (name == "clipboard") clipPanel.build() else panels.build(name) } catch (_: Throwable) { null }
+        val v = try { if (name == "clipboard") clipPanel.build() else if (name == "format") fmtPanel.build() else panels.build(name) } catch (_: Throwable) { null }   // v0.0.8: "format"
         if (v == null) { showLetters(); return }
         c.removeAllViews()
         c.addView(v)
@@ -383,9 +391,10 @@ class MgbIme : InputMethodService() {
         try {
             if (prefs.bool("edit_bar", true)) {
                 val eb = row()
-                val items = arrayOf("📋" to "clip", "All" to "all", "Cut" to "cut", "Copy" to "copy", "Paste" to "paste", "Plain" to "plain")
+                val items0 = arrayOf("📋" to "clip", "All" to "all", "Cut" to "cut", "Copy" to "copy", "Paste" to "paste", "Plain" to "plain")
+                val items = if (prefs.bool("fmt_on", true)) items0 + ("Aa" to "fmt") else items0   // v0.0.8: formatter button (setting "fmt_on")
                 for ((label, kind) in items) {
-                    val k = key(label, 1f) { if (kind == "clip") openClipboard() else editAction(kind) }
+                    val k = key(label, 1f) { if (kind == "clip") openClipboard() else if (kind == "fmt") openFormatter() else editAction(kind) }
                     JabraIcons.put(this, k, kind)   // v0.0.7: own icon (kind = clip/all/cut/copy/paste/plain); Icons OFF = old text
                     (k.layoutParams as LinearLayout.LayoutParams).height = dp(36)
                     k.textSize = 12f

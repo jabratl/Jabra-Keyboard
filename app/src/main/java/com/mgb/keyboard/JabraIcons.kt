@@ -21,7 +21,7 @@ object JabraIcons {
 
     val NAMES = listOf(
         "clip", "all", "cut", "copy", "paste", "plain", "search", "close",
-        "pin", "pinned", "gear", "shift", "back", "enter", "space"
+        "pin", "pinned", "gear", "shift", "back", "enter", "space", "fmt"
     )
 
     /**
@@ -178,6 +178,12 @@ object JabraIcons {
                     c.drawPath(path, p)
                     line(c, s, 0.34f, 0.44f, 0.14f, 0.64f)
                     line(c, s, 0.34f, 0.84f, 0.14f, 0.64f)
+                }
+                "fmt" -> {    // v0.0.8 formatter: paragraph lines, first line indented
+                    line(c, s, 0.30f, 0.14f, 0.96f, 0.14f)
+                    line(c, s, 0.04f, 0.38f, 0.96f, 0.38f)
+                    line(c, s, 0.04f, 0.62f, 0.96f, 0.62f)
+                    line(c, s, 0.04f, 0.86f, 0.64f, 0.86f)
                 }
                 "space" -> {  // open bracket shape
                     val path = Path()

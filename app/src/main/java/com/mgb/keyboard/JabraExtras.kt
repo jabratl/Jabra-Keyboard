@@ -277,6 +277,7 @@ class JabraPanels(private val ctx: Context, private val host: JabraHost) {
         root.addView(r35)
         val r4 = row()
         r4.addView(toggleKey("Icons", "icons_on", true))   // v0.0.7: OFF = old text/emoji labels
+        r4.addView(toggleKey("Formatter", "fmt_on", true))   // v0.0.8: OFF = no "Aa" button in the edit bar
         r4.addView(pk("ABC  (apply)", 1f) { host.showLetters() })
         root.addView(r4)
         return root

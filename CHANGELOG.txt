@@ -1,3 +1,33 @@
+v0.0.8 - Novel formatter panel (port of novel-formatter_v2_updated.html)
+- NEW: "Aa" button (own paragraph icon) at the end of the edit bar opens the Formatter panel. Setting "Formatter" (gear panel, ON by default); OFF = button disappears.
+- HOW IT WORKS: you pick text -> tap an action. Text comes from: Source "Text" (selected text, else the whole field), "Clipboard" (keeps bold/italic/headings from Google Docs/Word HTML), or "HTML code" (the text is HTML).
+  Actions: Replace with HTML code / Replace with clean text (puts the result back in the field), Copy code, Copy formatted (rich HTML + plain), Copy WordPress block, Copy plain text, Preview (stats + first 400 characters, Show: Result/Original).
+  Replacing the WHOLE field needs a second tap; "Undo last replace" puts the old text back (only if the new text is still right before the cursor).
+- SAME AS THE HTML TOOL (engine = formatter/NovelFormatter.java, same option keys, same rule syntax, same output):
+  Paragraph (indent on/size/unit, no indent after heading/break, gap + unit, line height, font size, align), Keep formatting (bold, italic, underline, headings as h, center headings),
+  Scene breaks (centered symbol / hr / leave / remove + symbol text), Text cleanup (collapse spaces, quotes none/straight/curly, ... to ellipsis, -- to em dash, markdown *it* **b**, invisible characters, chapter title as heading h1-h3),
+  Find and replace rules (find => replace, re:, del:, del-re:, # comment, $1 $& in regex), Output (inline / one style block + class / plain p; between paragraphs single / nothing / blank line),
+  stats (paragraphs, words, characters of code, unreadable rule lines), presets (3 built-in + your saved, same JSON format as nvPresets), reset all.
+- DIFFERENT (on purpose, because a keyboard has no mouse/keyboard-in-keyboard/file access):
+  * numbers/text boxes -> tap-to-cycle values (indent 0-4, gap 0-2, line height, font size, symbol). Custom values from an imported preset still work.
+  * Rules, preset names, symbol text -> typed in any notes app, copied, then "Rules from clipboard" / "Save current (name from clipboard)" / "Symbol from clipboard".
+  * Download .html / .txt NOT built (needs storage permission = asking you first). Use Copy buttons instead.
+  * Preview = stats + text peek, not the rendered iframe.
+  * Built-in presets do NOT wipe your rules (the HTML tool did). Saving a preset with an existing name adds "(2)", Import never overwrites.
+  * "Clear + Undo Clear" -> "Undo last replace". "HTML code" tab -> Source: HTML code. Auto mode not built.
+- FALLBACK: reading text: selection -> whole field (extracted text -> text around cursor); writing: replace in the field -> if the app refuses, result is copied to the clipboard and the field stays untouched.
+  Any panel error -> keyboard shows normal letters. Password fields: formatter is blocked.
+- PRIVACY: nothing is read from the app until you tap a button in the panel; no network, no new permission; settings kept in prefs keys fmt_cur / fmt_presets / fmt_src / fmt_prev / fmt_on.
+
+WHY: roadmap (formatter) + user asked to keep ALL features of the HTML tool and a good design/working procedure.
+BROKE: nothing intended. Visible change: edit bar gets a 7th button "Aa" (slightly narrower buttons; turn "Formatter" OFF to get 6 again). Gear panel last row now has 3 buttons (Icons, Formatter, ABC apply).
+NOT tested: Gradle/Kotlin compile (no Kotlin compiler here), org.json use, everything on phone (panel look, taps, reading/replacing text in real apps, Undo, clipboard HTML from Google Docs, rich copy paste in WordPress/Docs).
+  Android's regex engine (ICU) vs the Java regex used in tests: not run on a phone.
+TESTED here: engine vs ORIGINAL JS (node): 1500 random cases (all options, rules with regex/$1/del, quotes, markdown, scenes, headings) = 1500/1500 identical output + stats;
+  HTML reader (Google Docs style, entities, junk HTML does not crash), plain/wp output; ClipList 18/18; bracket balance of all Kotlin files.
+Known limits: mini HTML reader is not a full browser parser (tables become paragraphs per cell/row, no CSS classes); selected text from some apps is limited by the app; whole-field read limited to ~100k characters in stage 2.
+Files: formatter/NovelFormatter.java (new), FormatterFeature.kt (new), tools/FormatterTest.java (new), tools/FormatterDiffGen.js (new), MgbIme.kt, JabraExtras.kt, JabraIcons.kt (new "fmt" icon), app/build.gradle.kts (0.0.8), CHANGELOG.txt, HANDOFF.txt.
+
 v0.0.7 - own unique icons (no emoji) for function keys
 - NEW: JabraIcons.kt draws icons with simple lines (no image files, no emoji, no permission, no dependency).
   Edit bar: clipboard, select-all (dashed box), scissors (cut), two sheets (copy), board+arrow (paste), T-with-slash (plain text).
