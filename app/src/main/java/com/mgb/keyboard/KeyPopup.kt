@@ -20,14 +20,19 @@ object KeyPopup {
 
     fun dismiss() { try { pw?.dismiss() } catch (_: Throwable) { }; pw = null }
 
+    /** v0.1.6: the touch handling, shared with HintKeys (one listener per key). */
+    fun touch(v: View, e: MotionEvent, prefs: JabraPrefs) {
+        try {
+            when (e.actionMasked) {
+                MotionEvent.ACTION_DOWN -> if (prefs.bool("key_popup", false)) show(v as Button, prefs)
+                MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> dismiss()
+            }
+        } catch (_: Throwable) { dismiss() }
+    }
+
     fun attach(b: Button, prefs: JabraPrefs) {
         b.setOnTouchListener { v, e ->
-            try {
-                when (e.actionMasked) {
-                    MotionEvent.ACTION_DOWN -> if (prefs.bool("key_popup", false)) show(v as Button, prefs)
-                    MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> dismiss()
-                }
-            } catch (_: Throwable) { dismiss() }
+            touch(v, e, prefs)   // v0.1.6
             false
         }
         b.addOnAttachStateChangeListener(object : View.OnAttachStateChangeListener {

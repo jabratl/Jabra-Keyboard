@@ -121,8 +121,18 @@ class MgbIme : InputMethodService() {
         b.tag = c                       // v0.0.4: remember which letter this key is (labels change in Probhat mode)
         letterKeys.add(b)
         try { KeyPopup.attach(b, prefs) } catch (_: Throwable) { }   // v0.1.3: popup on keypress (setting key_popup)
+        try { HintKeys.attach(b, prefs, hintHost); HintKeys.refresh(b, prefs, hintHost) } catch (_: Throwable) { }   // v0.1.6: long-press hint (replaces the listener, calls KeyPopup.touch)
         return b
     }
+
+    /** v0.1.6: long-press hint letters (English only). */
+    private val hintHost = object : HintHost {
+        override fun hintTypingActive(): Boolean = try { com.mgb.keyboard.typing.LongPressHints.active(true, bangla && !latinOnly, pcState.isPc() && pcState.meta() != 0) } catch (_: Throwable) { false }
+        override fun hintLabelActive(): Boolean = try { com.mgb.keyboard.typing.LongPressHints.active(true, bangla && !latinOnly, false) } catch (_: Throwable) { false }
+        override fun typeHint(s: String) { commitWord(); typeText(s) }
+        override fun hintFeedback(v: View) { feedback(v) }
+    }
+    private fun refreshHints() { try { letterKeys.forEach { HintKeys.refresh(it, prefs, hintHost) } } catch (_: Throwable) { } }
 
     private fun refreshLetters() {
         try { relabelLetters(); return } catch (_: Throwable) { }   // v0.0.4: handles Latin AND Probhat labels
@@ -325,6 +335,7 @@ class MgbIme : InputMethodService() {
         }
         extrasRow?.visibility = if (pb) View.VISIBLE else View.GONE
         try { shiftVisual() } catch (_: Throwable) { }   // v0.0.9
+        refreshHints()   // v0.1.6: hint labels follow the language / layout
     }
 
     private fun extrasRowView(): LinearLayout {

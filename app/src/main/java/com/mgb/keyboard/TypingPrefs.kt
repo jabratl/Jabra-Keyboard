@@ -249,10 +249,12 @@ class TypingPanel(private val ctx: Context, private val host: JabraHost) {
         root.addView(r3)
 
         try { val r35 = row(); r35.addView(toggleKey("Key popup", "key_popup", false)); r35.addView(toggleKey("Large number row", "numrow_large", false)); root.addView(r35) } catch (_: Throwable) { }   // v0.1.3
+        try { val r36 = row(); r36.addView(toggleKey("Long-press characters", "hint_on", true)); r36.addView(toggleKey("Hide long-press hints", "hint_hide", false)); root.addView(r36) } catch (_: Throwable) { }   // v0.1.6
 
         root.addView(note("Double-space: tap space twice = \". \" (Bangla mode: \"\u0964 \"). Tab only when the period does not fit. Not used in password / email / web fields. " +
             "Long-press: System = the phone's own time. Cursor speed: drag on the space key. Globe = next keyboard. Voice = the phone's voice typing (no recording by Jabra). " +
-            "Keys appear on the bottom row after ABC (apply). Key popup: a bubble above the pressed letter (works at once). Large number row: ABC (apply)."))
+            "Keys appear on the bottom row after ABC (apply). Key popup: a bubble above the pressed letter (works at once). Large number row: ABC (apply). " +
+            "Long-press characters: hold a letter key = types its small corner character (English only; not in Avro / Probhat). Hide hints: hides only the small label (ABC apply), long-press still works."))
 
         val rb = row()
         rb.addView(pk("< More settings", 1f) { host.showPanel("more") })
