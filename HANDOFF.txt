@@ -1,9 +1,10 @@
-JABRA KEYBOARD - HANDOFF v0.1.0  (newest on top; paste this file at the start of the next chat)
+JABRA KEYBOARD - HANDOFF v0.1.1  (newest on top; paste this file at the start of the next chat)
 READ ONLY the part above the first "PREVIOUS HANDOFF" line (sections 0-9). Everything below is history.
 =======================================================================================
 
 0) HOW TO WORK WITH THIS USER (follow these)
   - Reply in BANGLISH (Bangla written in English letters). User is NOT a coder: simple words, step-by-step.
+    (The user sometimes writes full English; then answer in the language of the user's LATEST message. In the v0.1.1 session the user wrote English.)
   - Before coding: read HANDOFF/CHANGELOG, say in ~5 lines what you understood, state the task in 2-3 lines,
     ask at most ONE question, otherwise write assumptions. Plan max 5 lines, then build.
   - RULE 0: never break/rename/slow any existing feature, setting, storage key, build flow. No "clean up/refactor"
@@ -48,6 +49,13 @@ READ ONLY the part above the first "PREVIOUS HANDOFF" line (sections 0-9). Every
   PC MODE (user's own idea, not in Ridmik): "PC keyboard" = PC-style key commands INSIDE the phone keyboard. NOT a Bluetooth/USB keyboard for another PC (would need new permissions; ask first if wanted).
     Plan: new file PcMode.kt (+ pure Java logic class for the sticky state, tested), one toggle key, rows built in code. Esc Tab Ctrl Alt: sticky (1 tap = once, double tap = lock). F1-F12, arrows, Home/End/PgUp/PgDn/Del/Ins = key events (sendDownUpKeyEvents / KeyEvent with metaState).
     Ctrl+C/V/X/A = the existing edit-bar actions (editAction, safest); other Ctrl+letter (Z etc.) = KeyEvent with META_CTRL_ON. LIMIT: the app must handle key events; Termux, browsers, code editors do, many plain text fields do not -> say this in the setting text.
+  MODE KEY (user request, 2026-11-10): the keyboard has 2 modes: PHONE mode (normal keyboard) and PC mode. A mode key shows the icon of the CURRENT mode: Android-style icon in Phone mode, PC icon in PC mode. Tap = switch mode. Icons must be UNIQUE (own drawing).
+    WHERE (best fit, decided): (1) the mode key is the FIRST key of the edit bar (the row above the letters); in PC mode the same key is the first key of the PC rows, so one tap always goes back.
+      (2) More settings gets 3 rows: "Mode: Phone / PC" (same icons, same switch), "Mode key: show / hide" (default show), "Remember mode" (default ON; pref pc_mode(bool,false); OFF = keyboard always opens in Phone mode).
+      Why not only settings: switching must be 1 tap while typing; settings rows are the backup if the edit bar is turned OFF (edit_bar pref): then the mode key is added to the bottom row instead.
+    ICONS: add 2 names to JabraIcons.kt NAMES + 2 branches in drawIcon (Canvas lines, no image file): "mode_phone" = simple robot head (round top, 2 antennas, 2 dots) in OUR OWN drawing (do NOT copy Google's Android logo/assets); "mode_pc" = monitor + stand + small keyboard line. Use putThemed() so they follow the theme. Icons OFF (icons_on) = text fallback "PH" / "PC".
+    Code: PcMode.kt (new) holds the rows + sticky state; pure Java class typing/PcState.java (mode, Ctrl/Alt once/lock) + tools/PcTest.java; tiny hooks marked "v0.1.2" in MgbIme.kt (edit bar first key, showPanel route "pc"), TypingExtras.kt (3 More settings rows). Old behaviour = Phone mode = exactly v0.1.1.
+    Rollback: More settings -> Mode key hide + Mode: Phone (no code change). Code level: delete PcMode.kt, typing/PcState.java, tools/PcTest.java, the 2 icon branches and the lines marked "v0.1.2".
   JABRA LOOK (v0.1.5): round-corner keys, own colour for function keys, pill space key, own popup; setting "Classic" keeps the old look. Logo: Bangla letter "জ" on a keycap + cursor bar, adaptive icon drawn as VECTOR XML in code (no image file). Manifest has NO android:icon yet; res/ only has xml/ -> v0.1.5 adds res/drawable + res/mipmap-anydpi-v26 + android:icon.
   Settings page (v0.1.6): Ridmik-like 5 groups. Current settings live in the gear panel + More settings (inside the keyboard); SettingsActivity.kt is the launcher screen.
   Open point for v0.1.3: "Hide long-press hints" only makes sense if hint labels exist; v0.0.9 notes say key long-press extra characters were NOT added. Decide first (small hint letter on keys = new setting, default as user likes).
@@ -60,9 +68,9 @@ READ ONLY the part above the first "PREVIOUS HANDOFF" line (sections 0-9). Every
   v0.0.7 own unique icons for function keys (user request, no emoji)   DONE in code (NOT tested on phone)
   v0.0.8 novel formatter panel (see 6)   DONE in code (NOT tested on phone)
   v0.0.9 typing basics: hold-backspace, caps lock, auto capital, Enter action, keyboard picker, More settings page   DONE in code (NOT tested on phone)   <- this zip (suggestions were dropped by user)
-  v0.1.0 emoji panel, local themes, one-handed mode   DONE in code (NOT tested on phone)   <- this zip
-  v0.1.1 typing prefs: double-space = period, double-space = tab, key long-press delay, space-swipe cursor speed, Globe key (keyboard switch) show/hide, Voice key show/hide (opens the PHONE's system voice typing, NOT own recording), Emoji key show/hide
-  v0.1.2 PC Mode (see 2b): one tap = extra rows: Esc Tab Ctrl Alt (sticky), F1-F12, arrows, Home/End/PgUp/PgDn/Del/Ins, Ctrl+C/V/X/A/Z
+  v0.1.0 emoji panel, local themes, one-handed mode   DONE in code (NOT tested on phone)   (jabra_v0_1_0.zip)
+  v0.1.1 typing prefs: double-space = period, double-space = tab, key long-press delay, space-swipe cursor speed, Globe key (keyboard switch) show/hide, Voice key show/hide (opens the PHONE's system voice typing, NOT own recording), Emoji key show/hide   DONE in code (NOT tested on phone)   <- this zip (jabra_v0_1_1.zip)
+  v0.1.2 PC Mode (see 2b) + MODE ICON KEY: one tap = extra rows: Esc Tab Ctrl Alt (sticky), F1-F12, arrows, Home/End/PgUp/PgDn/Del/Ins, Ctrl+C/V/X/A/Z. Mode key shows an own-drawn ANDROID-style icon in Phone mode and an own-drawn PC icon in PC mode
   v0.1.3 hide long-press hints, popup on keypress, Large number row
   v0.1.4 keyboard height % + one-hand width % (portrait AND landscape each). OLD keys kh_p / kh_l and "onehand" must keep working (new keys only, old ones read as fallback)
   v0.1.5 Jabra look (round-corner keys, own colour for function keys, pill space key, own popup) + logo (adaptive vector in code) + key style, "Classic" = old look as fallback
@@ -70,7 +78,7 @@ READ ONLY the part above the first "PREVIOUS HANDOFF" line (sections 0-9). Every
   v0.2.0 final test round: all unit tests, bracket + compile check (GitHub build), ONE full checklist, HANDOFF cleaned (old PREVIOUS parts removed)
   Each version: ON/OFF setting, rollback step, CHANGELOG entry, tests that can run here.
 
-4) STATUS (v0.1.0 added on top of v0.0.9; v0.1.0 tested here: all 6 Java tests pass (EmojiTest 1585/1585 ...), bracket balance of all 18 source files, every hook read against the real v0.0.9 repo; Dark theme icon/note colour bug FOUND + FIXED (JabraIcons.putThemed). NOT tested: Kotlin compile, phone. Full repo zip (Jabra-Keyboard-main.zip, v0.0.9) was received in the v0.1.0 session: now ALL files are known). (v0.0.9 added on top of v0.0.8; v0.0.4 + v0.0.5 were delivered earlier in jabra_v0_0_5.zip, v0.0.6 in jabra_v0_0_6.zip; USER HAS NOT YET CONFIRMED ANY OF THEM BUILD/RUN)
+4) STATUS (v0.1.1 added on top of v0.1.0: tested here DoubleSpaceTest 37/37 + all older Java tests, bracket balance of 21 files, line-by-line diff vs v0.1.0; NOT tested: Kotlin compile, phone). (v0.1.0 added on top of v0.0.9; v0.1.0 tested here: all 6 Java tests pass (EmojiTest 1585/1585 ...), bracket balance of all 18 source files, every hook read against the real v0.0.9 repo; Dark theme icon/note colour bug FOUND + FIXED (JabraIcons.putThemed). NOT tested: Kotlin compile, phone. Full repo zip (Jabra-Keyboard-main.zip, v0.0.9) was received in the v0.1.0 session: now ALL files are known). (v0.0.9 added on top of v0.0.8; v0.0.4 + v0.0.5 were delivered earlier in jabra_v0_0_5.zip, v0.0.6 in jabra_v0_0_6.zip; USER HAS NOT YET CONFIRMED ANY OF THEM BUILD/RUN)
   PROVED BY USER earlier: GitHub build + signed APK + install + typing works (v0.0.3 build).
   v0.0.9 tested here: tools/TypingTest.java 27/27 (ShiftState + EnterAction), bracket balance of all Kotlin. NOT tested: Kotlin compile, everything on phone.
   v0.0.8 tested here: formatter engine vs ORIGINAL JS (node) 1500/1500 random cases identical (tools/FormatterTest.java + tools/FormatterDiffGen.js), HTML reader, ClipList 18/18, bracket balance of Kotlin. NOT tested: Kotlin compile, org.json, everything on phone.
@@ -85,7 +93,18 @@ READ ONLY the part above the first "PREVIOUS HANDOFF" line (sections 0-9). Every
   If a key is wrong: edit ONLY the table T in probhat/ProbhatLayout.java (key, normal, shift), run tools/ExtrasTest.java.
   SettingsActivity.kt / Updater.kt were NOT in the v0.0.3 zip I received and are NOT touched. New settings live INSIDE the keyboard (? 123 -> gear).
 
-5) HOW IT WORKS (v0.1.0 first, then v0.0.9 typing basics, then v0.0.8 formatter, then v0.0.7 icons, then v0.0.6; then v0.0.4 / v0.0.5; v0.0.3 part is below under PREVIOUS)
+5) HOW IT WORKS (v0.1.1 first, then v0.1.0, then v0.0.9 typing basics, then v0.0.8 formatter, then v0.0.7 icons, then v0.0.6; then v0.0.4 / v0.0.5; v0.0.3 part is below under PREVIOUS)
+  v0.1.1 typing prefs:
+    typing/DoubleSpace.java  pure Java: decide(periodOn, tabOn, lastSpaceAt, now, windowMs, before2) -> NONE / PERIOD / TAB. Window 800 ms. Period needs letter/digit/Bangla letter or vowel sign/closing bracket or quote before the space; never after . , ; : ! ? danda. Both ON: period wins, tab when period does not fit.
+    typing/TypingLevels.java pure Java: long-press levels (System=0 ms means "use setOnLongClickListener as before", 250, 350, 650, 900) and cursor step dp (28, 22, 16 = old, 11, 7). Names arrays for the buttons.
+    TypingPrefs.kt           SpaceHelper (needs InputConnection: getTextBeforeCursor(2), deleteSurroundingText(1,0), commitText; sets lastAt on every normal space), JabraLongPress.attach(view, prefs) { action }
+                             (level 0 = old setOnLongClickListener; else OnTouchListener + Handler timer, returns false on DOWN so the click still works, returns true on the UP after a fired long-press so no click),
+                             ImeSwitcher (picker(), globe() = switchToNextInputMethod (API 28+, old IMM method below 28) else picker, voice() = first ENABLED other keyboard with a "voice" subtype -> switchInputMethod (API 28+) / setInputMethodAndSubtype, else picker),
+                             TypingPanel (route showPanel("typing"); rows: Double-space period/tab, Long-press/Cursor speed levels, Globe/Voice/Emoji toggles, note, "< More settings" + "ABC (apply)").
+    Hooks "v0.1.1": MgbIme.kt (3 lazy fields, spaceKey() = double-space then normal space, space-key action uses spaceKey, 3 long-press sites use JabraLongPress, optional Globe/Voice/Emoji keys after the language key, showPanel route "typing", SpaceDragHelper gets stepDp),
+                    JabraExtras.kt (SpaceDragHelper optional param stepDp = 16f), TypingExtras.kt (MorePanel button "Typing options >"), JabraIcons.kt (names + 3 branches: globe, mic, emoji).
+    Re-run test: java -m jdk.compiler/com.sun.tools.javac.Main -encoding UTF-8 -d out app/src/main/java/com/mgb/keyboard/typing/*.java tools/DoubleSpaceTest.java ; java -Dfile.encoding=UTF-8 -cp out DoubleSpaceTest
+    LESSON (this session): never put a "// comment" in the MIDDLE of a line when patching with a script: it swallowed the rest of the line (.attach(sb) } catch ...). The bracket check caught it. Always run the bracket check + the code-only diff (sed 's#//.*##') after patching.
   v0.1.0 emoji / themes / one-hand:
     Dark fix: JabraThemes.iconColor(p) / noteColor(p); JabraIcons.putThemed(ctx, b, name) = put() with theme icon colour (used in MgbIme, JabraExtras, EmojiPanel). ClipboardFeature.kt still uses put() (light panel, icon #222222).
     emoji/EmojiData.java    pure Java: ICONS, NAMES, list(i) (one text per category, emoji separated by ONE space; edit there to add/remove).
@@ -171,7 +190,12 @@ READ ONLY the part above the first "PREVIOUS HANDOFF" line (sections 0-9). Every
   Build env here has NO Gradle/Android SDK/network: Kotlin cannot be compiled here. Java engine can (see above).
   Permissions in app: INTERNET (only on "Check for updates"), REQUEST_INSTALL_PACKAGES. Nothing else.
 
-8) TEST CHECKLIST for user (v0.1.0 first, then v0.0.9, then v0.0.8, then v0.0.7, v0.0.6, v0.0.4 + v0.0.5)
+8) TEST CHECKLIST for user (v0.1.1 first, then v0.1.0, then v0.0.9, then v0.0.8, then v0.0.7, v0.0.6, v0.0.4 + v0.0.5)
+  v0.1.1: Gear -> More settings -> "Typing options >". Defaults: everything OFF / System / Normal -> keyboard must behave exactly like v0.1.0 (check once).
+          Double-space period ON -> ABC (apply) -> type "hello" + space + space -> "hello. " ; Bangla mode -> danda; 3rd tap = normal space; in a password / email field nothing special. Double-space tab ON (period OFF) -> a tab appears (needs an app that shows tabs).
+          Long-press: Fast / Slow -> ABC -> long-press "," (emoji) and ?123 (picker) and the language key (Avro <-> Probhat): timing follows the setting; a quick tap still types "," / opens symbols / switches language.
+          Cursor speed: Fast / Slow -> drag on space: the cursor moves more / less per finger distance.
+          Globe key ON -> bottom row shows a globe icon -> tap = next keyboard (or picker). Voice key ON -> mic icon -> tap = phone's voice typing (if none: picker). Emoji key ON -> emoji face icon -> opens the emoji panel. Check space key width with all 3 ON, and Dark theme icons.
   v0.1.0: Letters keyboard: LONG-PRESS the "," key -> emoji panel opens (a quick tap still types ","). Tap an emoji -> it is typed; open again -> "Recent" tab shows it first.
           Tabs scroll sideways; grid scrolls up/down; hold backspace in the panel deletes; ABC goes back to letters. Check: do emoji show as pictures (not boxes)?
           Gear -> More settings -> Theme: tap to cycle (Classic/Blue/Mint/Sand/Dark) -> ABC (apply): background + keys + text colour change; Classic = looks like before. Check Dark: are the icons (shift, backspace, edit bar) still visible?
@@ -200,6 +224,8 @@ READ ONLY the part above the first "PREVIOUS HANDOFF" line (sections 0-9). Every
           Vibrate/Sound toggles; Number row OFF -> row disappears.
 
 8b) ROLLBACK
+  Only v0.1.1 off: More settings -> Typing options: Double-space period OFF, tab OFF, Long-press System, Cursor speed Normal, Globe/Voice/Emoji key OFF (no code change). Code level: delete TypingPrefs.kt, typing/DoubleSpace.java, typing/TypingLevels.java, tools/DoubleSpaceTest.java and the lines marked "v0.1.1"
+    (MgbIme.kt: 3 lazy fields, spaceKey(), spaceAction back to { commitWord(); typeText(" ") }, 3 long-press lines back to setOnLongClickListener, the try-block with Globe/Voice/Emoji keys, showPanel "typing" branch, SpaceDragHelper 5th argument; JabraExtras.kt: stepDp param; TypingExtras.kt: 1 line; JabraIcons.kt: 3 names + 3 branches). Easiest: re-apply jabra_v0_1_0.zip files.
   Only v0.1.0 off: More settings -> Theme: Classic, One-hand: Off (no code change; the "," long-press emoji stays, harmless). Code level: delete ThemeEmojiExtras.kt, emoji/*.java, tools/EmojiTest.java and the lines marked "v0.1.0"
     (JabraIcons.kt: putThemed + the colour parameter of apply; MgbIme.kt 7 spots + putThemed -> put, JabraExtras.kt 2 + putThemed -> put, TypingExtras.kt 3 incl. the try-block with Theme/One-hand/Emoji rows; the "," key back to r4.addView(key(",", 1f) { commitWord(); typeText(",") })). Easiest: re-apply jabra_v0_0_9.zip files.
   Only v0.0.9 off: gear -> More settings -> Hold backspace / Auto caps / Enter action OFF (no code change; caps lock + keyboard picker stay, harmless). Code level: delete TypingExtras.kt, typing/*.java, tools/TypingTest.java and the lines marked "v0.0.9" (MgbIme.kt: `shift` back to `private var shift = false`, shift key back to `shift = !shift; refreshLetters()`, onLetter back to `shift = false`). Easiest: re-apply jabra_v0_0_8.zip files.
@@ -216,7 +242,10 @@ READ ONLY the part above the first "PREVIOUS HANDOFF" line (sections 0-9). Every
   Only Probhat off: do not long-press language key (default stays Avro); code level: delete probhat/ProbhatLayout.java + hooks marked "v0.0.4".
 
 9) NEXT
-  00. FIRST: push jabra_v0_0_9 state is already in the repo; upload jabra_v0_1_0.zip, check the GitHub build is green (v0.0.9 + v0.1.0 never built: if red, send the FIRST error text only). Then test v0.1.0 on phone (see 8). Then v0.1.1 (typing prefs, see 3). Ideas for later: apply themes to Clipboard + Formatter panels, emoji search / skin tones, swap-side button for one-hand, own theme colours.
+  00. FIRST: upload jabra_v0_1_0.zip (if not yet) and jabra_v0_1_1.zip to the repo; check the GitHub build is green (v0.0.9, v0.1.0, v0.1.1 were NEVER built: if red, send the FIRST error text only). Test v0.1.1 on the phone (see 8).
+      NEXT TOPIC = v0.1.2 PC Mode + MODE ICON KEY (full decisions in 2b). Starting notes: add route showPanel("pc") in MgbIme.showPanel (same pattern as "typing"); new file PcMode.kt + typing/PcState.java (+ tools/PcTest.java);
+      key events: currentInputConnection.sendKeyEvent(KeyEvent(downTime, eventTime, KeyEvent.ACTION_DOWN, keyCode, 0, metaState)) + ACTION_UP (META_CTRL_ON / META_ALT_ON), sendDownUpKeyEvents(code) for plain keys; Ctrl+C/V/X/A reuse MgbIme.editAction(kind) (check its name/signature in the file first).
+      mode key = first key of the edit bar (MgbIme.buildKeyboard edit-bar loop) + first key of the PC rows; icons "mode_phone" / "mode_pc" drawn in JabraIcons (own drawing, not Google's logo); More settings rows: Mode, Mode key show/hide, Remember mode (pref pc_mode).
   0. v0.0.9 typing basics: test on phone (see 8). Then v0.1.0 (emoji panel, local themes, one-handed mode), v0.1.1 (system voice button, settings polish).
   1. Confirm build is green (Kotlin has never been compiled by me). Send me the error text if red. THIS IS THE BIGGEST RISK: 4 versions of Kotlin are unbuilt.
   2. Look at the icons on the phone: if any looks unclear tell me which (name) -> I fix only that 'when' branch in JabraIcons.kt.

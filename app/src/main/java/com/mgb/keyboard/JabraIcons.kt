@@ -21,7 +21,7 @@ object JabraIcons {
 
     val NAMES = listOf(
         "clip", "all", "cut", "copy", "paste", "plain", "search", "close",
-        "pin", "pinned", "gear", "shift", "back", "enter", "space", "fmt"
+        "pin", "pinned", "gear", "shift", "back", "enter", "space", "fmt", "globe", "mic", "emoji"
     )
 
     /**
@@ -194,6 +194,23 @@ object JabraIcons {
                     line(c, s, 0.04f, 0.38f, 0.96f, 0.38f)
                     line(c, s, 0.04f, 0.62f, 0.96f, 0.62f)
                     line(c, s, 0.04f, 0.86f, 0.64f, 0.86f)
+                }
+                "globe" -> {  // v0.1.1: circle, meridian ellipse, equator
+                    c.drawCircle(0.5f * s, 0.5f * s, 0.46f * s, p)
+                    c.drawOval(RectF(0.26f * s, 0.04f * s, 0.74f * s, 0.96f * s), p)
+                    line(c, s, 0.04f, 0.5f, 0.96f, 0.5f)
+                }
+                "mic" -> {    // v0.1.1: capsule, cup arc, stem, base
+                    rr(c, s, 0.34f, 0.02f, 0.66f, 0.58f, 0.16f)
+                    c.drawArc(RectF(0.16f * s, 0.20f * s, 0.84f * s, 0.78f * s), 0f, 180f, false, p)
+                    line(c, s, 0.5f, 0.78f, 0.5f, 0.96f)
+                    line(c, s, 0.32f, 0.96f, 0.68f, 0.96f)
+                }
+                "emoji" -> {  // v0.1.1: face with two eyes and a smile
+                    c.drawCircle(0.5f * s, 0.5f * s, 0.46f * s, p)
+                    c.drawCircle(0.36f * s, 0.40f * s, 0.06f * s, f)
+                    c.drawCircle(0.64f * s, 0.40f * s, 0.06f * s, f)
+                    c.drawArc(RectF(0.26f * s, 0.28f * s, 0.74f * s, 0.74f * s), 25f, 130f, false, p)
                 }
                 "space" -> {  // open bracket shape
                     val path = Path()

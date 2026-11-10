@@ -45,6 +45,9 @@ class MgbIme : InputMethodService() {
     private val panels by lazy { JabraPanels(this, host) }
     private val morePanel by lazy { MorePanel(this, host) }   // v0.0.9 "More settings" page
     private val emojiPanel by lazy { EmojiPanel(this, host) }   // v0.1.0 emoji panel
+    private val typingPanel by lazy { TypingPanel(this, host) }   // v0.1.1 "Typing options" page
+    private val spaceHelper by lazy { SpaceHelper(prefs) }   // v0.1.1 double space
+    private val switcher by lazy { ImeSwitcher(this) }   // v0.1.1 Globe / Voice key
     private val fmtPanel by lazy { FormatterPanel(this, host, ImeFmtIo(this) { pwdField }) }   // v0.0.8 novel formatter
     private val host = object : JabraHost {
         override fun typeText(s: String) { this@MgbIme.typeText(s) }
@@ -95,6 +98,12 @@ class MgbIme : InputMethodService() {
         val r = LinearLayout(this)
         r.orientation = LinearLayout.HORIZONTAL
         return r
+    }
+
+    /** v0.1.1: space key = normal space, or double-space period / tab (settings ds_period / ds_tab, default OFF). Not in password / email / URL / number fields. */
+    private fun spaceKey() {
+        val done = try { !latinOnly && !pwdField && spaceHelper.handle(currentInputConnection, android.os.SystemClock.uptimeMillis(), bangla) } catch (_: Throwable) { false }
+        if (!done) typeText(" ")
     }
 
     private fun typeText(s: String) {
@@ -373,7 +382,7 @@ class MgbIme : InputMethodService() {
     private fun showPanel(name: String) {
         val c = container ?: return
         commitWord()
-        val v = try { if (name == "clipboard") clipPanel.build() else if (name == "format") fmtPanel.build() else if (name == "more") morePanel.build() else if (name == "emoji") emojiPanel.build() else panels.build(name) } catch (_: Throwable) { null }   // v0.0.8: "format"; v0.1.0: "emoji"
+        val v = try { if (name == "clipboard") clipPanel.build() else if (name == "format") fmtPanel.build() else if (name == "more") morePanel.build() else if (name == "emoji") emojiPanel.build() else if (name == "typing") typingPanel.build() else panels.build(name) } catch (_: Throwable) { null }   // v0.0.8: "format"; v0.1.0: "emoji"; v0.1.1: "typing"
         if (v == null) { showLetters(); return }
         try { JabraOneHand.apply(this, prefs, v) } catch (_: Throwable) { }   // v0.1.0
         c.removeAllViews()
@@ -485,19 +494,25 @@ class MgbIme : InputMethodService() {
 
         val r4 = row()
         val symKey = key("?123", 1.2f) { showPanel("symbols") }   // v0.0.5: symbols / number pad / settings panel
-        try { symKey.setOnLongClickListener { try { pickKeyboard() } catch (_: Throwable) { }; true } } catch (_: Throwable) { }   // v0.0.9: long-press = keyboard picker
+        try { JabraLongPress.attach(symKey, prefs) { pickKeyboard() } } catch (_: Throwable) { }   // v0.0.9: long-press = keyboard picker
         r4.addView(symKey)
         val lb = key(langLabel(), 1.3f) { toggleLang() }
-        try { lb.setOnLongClickListener { try { switchBnLayout() } catch (_: Throwable) { }; true } } catch (_: Throwable) { }   // v0.0.4: long-press = Avro <-> Probhat
+        try { JabraLongPress.attach(lb, prefs) { switchBnLayout() } } catch (_: Throwable) { }   // v0.0.4: long-press = Avro <-> Probhat
         langBtn = lb
         r4.addView(lb)
+        // v0.1.1: optional Globe / Voice / Emoji keys (settings key_globe / key_voice / key_emoji, all default OFF = same row as before)
+        try {
+            if (prefs.bool("key_globe", false)) r4.addView(JabraIcons.putThemed(this, key("\uD83C\uDF10", 1f) { commitWord(); switcher.globe() }, "globe"))
+            if (prefs.bool("key_voice", false)) r4.addView(JabraIcons.putThemed(this, key("\uD83C\uDFA4", 1f) { commitWord(); switcher.voice() }, "mic"))
+            if (prefs.bool("key_emoji", false)) r4.addView(JabraIcons.putThemed(this, key("\u263A", 1f) { emojiPanel.reset(); showPanel("emoji") }, "emoji"))
+        } catch (_: Throwable) { }
         val commaKey = key(",", 1f) { commitWord(); typeText(",") }
-        try { commaKey.setOnLongClickListener { try { emojiPanel.reset(); showPanel("emoji") } catch (_: Throwable) { }; true } } catch (_: Throwable) { }   // v0.1.0: long-press "," = emoji panel
+        try { JabraLongPress.attach(commaKey, prefs) { emojiPanel.reset(); showPanel("emoji") } } catch (_: Throwable) { }   // v0.1.0: long-press "," = emoji panel
         r4.addView(commaKey)
-        val spaceAction = { commitWord(); typeText(" ") }
+        val spaceAction = { commitWord(); spaceKey() }   // v0.1.1: double space
         val sb = key("space", 4f) { spaceAction() }
         // v0.0.5: drag on space = move cursor. If attaching fails, the normal click above still types a space.
-        try { SpaceDragHelper(resources.displayMetrics.density, { n -> moveCursor(n) }, { spaceAction() }, { v -> feedback(v) }).attach(sb) } catch (_: Throwable) { }
+        try { SpaceDragHelper(resources.displayMetrics.density, { n -> moveCursor(n) }, { spaceAction() }, { v -> feedback(v) }, com.mgb.keyboard.typing.TypingLevels.stepDp(prefs.int("cursor_speed", com.mgb.keyboard.typing.TypingLevels.CS_DEFAULT))).attach(sb) } catch (_: Throwable) { }   // v0.1.1: cursor speed (setting cursor_speed)
         r4.addView(sb)
         val db = key(if (bangla) "।" else "?", 1f) { commitWord(); val d = dandaBtn?.text?.toString() ?: "."; typeText(if (latinOnly && d == "।") "?" else d) }
         dandaBtn = db

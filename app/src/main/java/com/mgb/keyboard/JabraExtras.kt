@@ -63,9 +63,10 @@ class SpaceDragHelper(
     density: Float,
     private val onStep: (Int) -> Unit,
     private val onTap: () -> Unit,
-    private val onFeedback: (View) -> Unit
+    private val onFeedback: (View) -> Unit,
+    stepDp: Float = 16f   // v0.1.1: setting "cursor_speed" (16 = old value)
 ) {
-    private val drag = SpaceDrag(16f * density)
+    private val drag = SpaceDrag(stepDp * density)
 
     fun attach(v: View) {
         v.setOnTouchListener { view, ev ->
