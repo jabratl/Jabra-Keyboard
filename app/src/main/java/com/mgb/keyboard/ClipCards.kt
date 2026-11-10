@@ -22,7 +22,9 @@ class SelectMode(
     val on: Boolean = false,
     val isSel: (ClipList.Item) -> Boolean = { false },
     val onToggle: (ClipList.Item) -> Unit = { },
-    val onLong: (ClipList.Item) -> Unit = { }
+    val onLong: (ClipList.Item) -> Unit = { },
+    val onPaste: (ClipList.Item) -> Unit = { },   // v0.4.3: paste counter
+    val info: (ClipList.Item) -> String = { "" }    // v0.4.3: small grey line under the text ("123 chars"), "" = none
 )
 
 object ClipCards {
@@ -123,6 +125,7 @@ object ClipCards {
             } else try {
                 host.commitWord()
                 host.typeText(item.text)
+                try { sm.onPaste(item) } catch (_: Throwable) { }   // v0.4.3
                 host.showLetters()
             } catch (_: Throwable) { }
         }
@@ -131,6 +134,17 @@ object ClipCards {
         }
         t.layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f)
         box.addView(t)
+        try {   // v0.4.3: char count line
+            val inf = sm.info(item)
+            if (inf.isNotEmpty()) {
+                val ct = TextView(ctx)
+                ct.text = inf
+                ct.textSize = 10f
+                ct.setTextColor(Color.GRAY)
+                ct.setPadding(dp(ctx, 8), 0, dp(ctx, 8), 0)
+                box.addView(ct)
+            }
+        } catch (_: Throwable) { }
 
         // bottom line: pin (left) and x (right)
         val bar = LinearLayout(ctx)

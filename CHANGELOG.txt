@@ -1,3 +1,18 @@
+v0.4.3 - NEW: Clipboard upgrade, history side (S3a): sort, character count, paste count, auto-delete, "Already saved"
+- WHY: plan S3a (HANDOFF 3e). More useful history without touching the saved clips (clips_v1 format is unchanged).
+- What you get (keyboard Clipboard panel + app screen > Clipboard & tools):
+  1) Sort button in the clipboard header: Newest (default = exactly as before) / Oldest / A-Z / Used (most pasted first). Applies to Pinned and Recent, List and Cards. Same setting in the app screen ("Clip sort").
+  2) Small grey character count on every clip ("123"), plus "123 · 2x" after you pasted it twice. Setting "Clip character count" (default ON).
+  3) Auto-delete for UNPINNED clips: Never (default = today) / 1 hour / 1 day / 7 days (setting "Clip auto-delete"). Pinned clips are never deleted. It runs only when the clipboard panel is drawn or a clip is added (no timer). Old clips that have no date yet get "now" as their date, so switching it on does NOT wipe your history at once. A paste counts as use (a pasted clip lives on).
+  4) Add button: if the text is already saved it says "Already saved (moved to top)" instead of silently doing nothing.
+- Code: NEW clip/ClipMeta.java (pure: made / used / count per clip in NEW pref clip_meta_v1, sort, expiry rule) + tools/ClipMetaTest.java (22 checks). ClipboardFeature.kt (ClipStore: meta helpers, expireNow, add records "made"; ClipPanel: sort button, info line, noteUse on paste, expire when drawn, duplicate message), ClipCards.kt (SelectMode got 2 optional params: onPaste, info; count line under the text), SettingsGroups.kt (3 rows), typing/SettingsIndex.java (3 help lines) + its test (36 help lines), app/build.gradle.kts (0.4.3). Hooks marked "v0.4.3". No manifest change, no permission.
+- Prefs NEW: clip_meta_v1(str), clip_sort(int,0), clip_count(bool,true), clip_expire(int,0).
+- NOT built in this step (split to v0.4.3.1 to keep one step small): the clip "Edit" button (edit text of ONE ticked clip). "Sensitive clips expire" row skipped: sensitive / password clips are never saved at all.
+BROKE: nothing intended. Defaults = old behaviour (Newest, no auto-delete). Count line is ON by default (small grey text, can be switched off).
+NOT tested: Kotlin compile (GitHub Actions first), header row width on a 360 px phone (Sort + View + Manage + Undo + message may be tight), count line look in List and Cards, auto-delete with real time passing.
+TESTED here: ClipMetaTest 22/22, SettingsIndexTest 34/34 (36 help lines), 15 older Java tests green; bracket balance of the 3 changed Kotlin files OK; code-only diff = only the marked hooks.
+Rollback: Clip sort Newest, Clip character count OFF, auto-delete Never (no code change). Code: delete clip/ClipMeta.java + tools/ClipMetaTest.java and re-apply ClipboardFeature.kt / ClipCards.kt / SettingsGroups.kt / SettingsIndex.java of v0.4.2. clip_meta_v1 is harmless.
+
 v0.4.2 - NEW: Settings search, recently changed, help lines, reset group, undo (S2, safe half)
 - WHY: the app screen has ~33 settings in 5 groups; finding one meant opening every group. Plan S2 (HANDOFF 3e): find settings fast WITHOUT moving them.
 - What you get (app screen, same settings as before, nothing moved or renamed):

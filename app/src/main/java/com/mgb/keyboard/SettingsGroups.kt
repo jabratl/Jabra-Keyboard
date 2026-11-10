@@ -302,6 +302,9 @@ object SettingsGroups {
             toggle(g, "Formatter (Aa button)", "fmt_on", true)
             level(g, "Clip lines", "clip_lines", 0, arrayOf("2 lines", "4 lines", "6 lines"))   // v0.2.5.1
             level(g, "Clipboard view", "clip_view", 0, arrayOf("List", "Cards"))   // v0.2.5.2
+            level(g, "Clip sort", "clip_sort", 0, com.mgb.keyboard.clip.ClipMeta.SORT_NAMES)   // v0.4.3
+            toggle(g, "Clip character count", "clip_count", true)   // v0.4.3
+            level(g, "Clip auto-delete (unpinned)", "clip_expire", 0, com.mgb.keyboard.clip.ClipMeta.EXPIRE_NAMES)   // v0.4.3
         }
 
         try { group("Data & Backup") { g -> g.addView(DataPage.build(ctx)) } } catch (_: Throwable) { }   // v0.4.1

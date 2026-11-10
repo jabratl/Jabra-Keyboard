@@ -10,6 +10,7 @@ import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
 import com.mgb.keyboard.clip.ClipList
+import com.mgb.keyboard.clip.ClipMeta
 import com.mgb.keyboard.typing.ClipSelect
 
 /*
@@ -24,7 +25,28 @@ class ClipStore(private val prefs: JabraPrefs) {
 
     private fun save() { try { prefs.setStr("clips_v1", list.serialize()) } catch (_: Throwable) { } }
 
-    fun add(t: String) { try { if (list.add(t)) save() } catch (_: Throwable) { } }
+    // v0.4.3: side table (made / used / count) in NEW pref clip_meta_v1; clips_v1 is untouched. Loaded lazily.
+    private val meta: ClipMeta by lazy { try { ClipMeta.parse(prefs.str("clip_meta_v1", "")) } catch (_: Throwable) { ClipMeta() } }
+    private fun saveMeta() { try { prefs.setStr("clip_meta_v1", meta.serialize()) } catch (_: Throwable) { } }
+    fun has(t: String): Boolean = try { list.view("").any { it.text == t } } catch (_: Throwable) { false }
+    fun countOf(t: String): Int = try { meta.count(t) } catch (_: Throwable) { 0 }
+    fun noteUse(i: ClipList.Item) { try { meta.used(i.text, System.currentTimeMillis()); saveMeta() } catch (_: Throwable) { } }
+    fun sorted(l: List<ClipList.Item>, mode: Int): List<ClipList.Item> = try { if (mode == 0) l else meta.sort(l, mode) } catch (_: Throwable) { l }
+    /** Auto-delete (pref clip_expire 0..3): unpinned only; runs when the panel opens or a clip is added, never on a timer. Returns how many were removed. */
+    fun expireNow(): Int = try {
+        val ttl = ClipMeta.ttlMs(prefs.int("clip_expire", 0))
+        if (ttl <= 0L) 0 else {
+            val before = meta.size()
+            val gone = meta.expired(list.view(""), ttl, System.currentTimeMillis())
+            val n = if (gone.isNotEmpty()) list.removeAll(gone) else 0
+            if (n > 0) save()
+            val pr = meta.prune(list.view(""))
+            if (pr || n > 0 || meta.size() != before) saveMeta()
+            n
+        }
+    } catch (_: Throwable) { 0 }
+
+    fun add(t: String) { try { val isNew = !has(t); if (list.add(t)) save(); if (isNew) { meta.made(t, System.currentTimeMillis()); saveMeta() }; expireNow() } catch (_: Throwable) { } }   // v0.4.3: records "made" for new clips
     fun view(q: String): List<ClipList.Item> = try { list.view(q) } catch (_: Throwable) { emptyList() }
     fun togglePin(i: ClipList.Item): Boolean = try { val ok = list.togglePin(i); if (ok) save(); ok } catch (_: Throwable) { false }
     fun remove(i: ClipList.Item) { try { if (list.remove(i)) save() } catch (_: Throwable) { } }
@@ -151,6 +173,14 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
             undoBtn.setPadding(dp(10), 0, dp(10), 0)
             head.addView(undoBtn)
         }
+        val sortLv = try { JabraPrefs(ctx).int("clip_sort", 0).coerceIn(0, 3) } catch (_: Throwable) { 0 }   // v0.4.3
+        val sortBtn = btn("\u2195 " + arrayOf("Newest", "Oldest", "A-Z", "Used")[sortLv], 0f, 30) {
+            try { JabraPrefs(ctx).setInt("clip_sort", (sortLv + 1) % 4) } catch (_: Throwable) { }
+            confirmClear = false
+            refresh()
+        }
+        sortBtn.textSize = 12f
+        sortBtn.setPadding(dp(10), 0, dp(10), 0)
         val viewBtn = btn(if (cardsOn) "View: Cards" else "View: List", 0f, 30) {
             try { JabraPrefs(ctx).setInt("clip_view", if (cardsOn) 0 else 1) } catch (_: Throwable) { }
             confirmClear = false
@@ -159,6 +189,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
         viewBtn.textSize = 12f
         viewBtn.setPadding(dp(10), 0, dp(10), 0)
         if (!selOn) {   // v0.2.5.3: in select mode the action row below replaces View / Manage
+            head.addView(sortBtn)   // v0.4.3
             head.addView(viewBtn)
             val manageBtn = btn("Manage", 0f, 30) { sel.enter(); confirmClear = false; confirmDel = false; refresh() }
             manageBtn.textSize = 12f
@@ -178,6 +209,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
         }
 
         // list
+        try { store.expireNow() } catch (_: Throwable) { }   // v0.4.3: auto-delete (only when the panel is drawn, no timer)
         val items = store.view(query)
         val listH = if (searching) 88 else 176
         val sv = ScrollView(ctx)
@@ -192,8 +224,8 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
             col.addView(t)
         }
         // v0.2.5.1: "Pinned" / "Recent" header lines (only when both groups have items and not searching)
-        val pinnedItems = store.pinnedView(query)
-        val recentItems = store.recentView(query)
+        val pinnedItems = store.sorted(store.pinnedView(query), sortLv)   // v0.4.3 (Newest = unchanged)
+        val recentItems = store.sorted(store.recentView(query), sortLv)
         val showHeaders = !searching && pinnedItems.isNotEmpty() && recentItems.isNotEmpty()
         // v0.2.5.2: Cards view (clip_view = 1); any problem -> null -> the old List code below
         val lines = try { JabraPrefs(ctx).int("clip_lines", 0).coerceIn(0, 2) } catch (_: Throwable) { 0 }
@@ -201,7 +233,8 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
             ClipCards.build(ctx, host, pinnedItems, recentItems, !searching, lines,
                 { it2 -> store.togglePin(it2); refresh() },
                 { it2 -> keepUndo(listOf(it2)); store.remove(it2); refresh() },
-                SelectMode(selOn, { x -> sel.isSelected(x) }, { x -> sel.toggle(x); confirmDel = false; refresh() }, { x -> sel.enterWith(x); confirmDel = false; refresh() }))
+                SelectMode(selOn, { x -> sel.isSelected(x) }, { x -> sel.toggle(x); confirmDel = false; refresh() }, { x -> sel.enterWith(x); confirmDel = false; refresh() },
+                    { x -> store.noteUse(x) }, { x -> infoLine(x) }))   // v0.4.3
         } else null
         if (cards != null) {
             col.addView(cards)
@@ -230,8 +263,9 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
     /** v0.2.5.1: tap on Add = save selected text (or the whole field) as a new clip. */
     private fun addFromField() {
         val t = try { fieldText() } catch (_: Throwable) { "" }
+        val dup = store.has(t)   // v0.4.3
         when (store.addChecked(t)) {
-            0 -> msg = "Added to Recent"
+            0 -> msg = if (dup) "Already saved (moved to top)" else "Added to Recent"
             2 -> msg = "Too long (max " + ClipList.MAX_LEN + ")"
             else -> msg = "Field is empty"
         }
@@ -332,6 +366,14 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
         return h
     }
 
+    /** v0.4.3: "123" (chars) or "123 · 2x" (pasted twice). Empty when clip_count is OFF. */
+    private fun infoLine(item: ClipList.Item): String = try {
+        if (!JabraPrefs(ctx).bool("clip_count", true)) "" else {
+            val n = store.countOf(item.text)
+            item.text.length.toString() + (if (n > 0) " \u00B7 " + n + "x" else "")
+        }
+    } catch (_: Throwable) { "" }
+
     private fun itemRow(item: ClipList.Item): View {
         val lv = try { JabraPrefs(ctx).int("clip_lines", 0).coerceIn(0, 2) } catch (_: Throwable) { 0 }   // v0.2.5.1: 0/1/2 = 2/4/6 lines
         val rowH = 44 + 22 * lv
@@ -346,6 +388,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
             } else {
                 host.commitWord()
                 host.typeText(item.text)
+                store.noteUse(item)   // v0.4.3
                 host.showLetters()
             }
         }
@@ -359,6 +402,17 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
         t.ellipsize = TextUtils.TruncateAt.END
         t.setPadding(dp(8), 0, dp(8), 0)
         r.addView(t)
+        try {   // v0.4.3: char count (small grey) between the text and the star
+            val inf = infoLine(item)
+            if (inf.isNotEmpty()) {
+                val ct = TextView(ctx)
+                ct.text = inf
+                ct.textSize = 10f
+                ct.setTextColor(Color.GRAY)
+                ct.setPadding(dp(2), 0, dp(2), 0)
+                r.addView(ct)
+            }
+        } catch (_: Throwable) { }
         if (selOn) return r   // v0.2.5.3: no star / x while selecting
         r.addView(JabraIcons.put(ctx, btn(if (item.pinned) "★" else "☆", 0f, rowH) { store.togglePin(item); refresh() }.also { it.minimumWidth = dp(44); it.minWidth = dp(44) }, if (item.pinned) "pinned" else "pin"))   // v0.0.7
         r.addView(JabraIcons.put(ctx, btn("✕", 0f, rowH) { keepUndo(listOf(item)); store.remove(item); refresh() }.also { it.minimumWidth = dp(44); it.minWidth = dp(44) }, "close"))   // v0.0.7

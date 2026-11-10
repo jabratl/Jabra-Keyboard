@@ -56,10 +56,10 @@ public class SettingsIndexTest {
         check("parse trailing bar", SettingsIndex.parseLast("haptic|") == null);
         check("encode bad key", SettingsIndex.encodeLast("a|b", 1).isEmpty());
 
-        String[] keys = { "bn_layout","numrow","numpad_auto","pc_mode","mode_key","pc_remember","bs_repeat","bs_word","autocap","enter_action","ds_period","ds_tab","hint_on","theme","look","key_border","onehand","icons_on","numrow_large","hint_hide","haptic","sound","key_popup","key_globe","key_voice","key_emoji","lp_delay","cursor_speed","edit_bar","clip_on","fmt_on","clip_lines","clip_view" };
+        String[] keys = { "bn_layout","numrow","numpad_auto","pc_mode","mode_key","pc_remember","bs_repeat","bs_word","autocap","enter_action","ds_period","ds_tab","hint_on","theme","look","key_border","onehand","icons_on","numrow_large","hint_hide","haptic","sound","key_popup","key_globe","key_voice","key_emoji","lp_delay","cursor_speed","edit_bar","clip_on","fmt_on","clip_lines","clip_view","clip_sort","clip_count","clip_expire" };
         boolean all33 = true;
         for (String k : keys) { String h = SettingsIndex.help(k); if (h.isEmpty() || h.length() > 90) { all33 = false; System.out.println("help issue: " + k + " len " + h.length()); } }
-        check("33 help lines exist and are one short line", all33);
+        check("36 help lines exist and are one short line", all33);
         check("unknown help empty", SettingsIndex.help("nope").isEmpty() && SettingsIndex.help(null).isEmpty());
 
         System.out.println("SettingsIndexTest " + ok + "/" + (ok + bad) + (bad == 0 ? " OK" : " FAILED"));
