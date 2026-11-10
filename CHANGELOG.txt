@@ -1,3 +1,35 @@
+v0.0.5 - number row, symbols, number pad, space-drag cursor, key height, haptic/sound  (delivered in the same zip as v0.0.4)
+- NEW: number row on top (setting "Number row", default ON).
+- NEW: "?123" key (bottom-left) -> symbols panel (2 pages, includes ৳ and ₹), gear -> quick settings, "123" -> number pad, "ABC" back.
+- NEW: number / phone field -> number pad opens automatically (setting "Auto numpad", default ON); other field -> letters.
+- NEW: drag finger on space key left/right = move cursor (tap = space as before).
+- NEW: key height Small/Medium/Large/XL, separate for portrait and landscape. Default Medium = 48dp = exactly the old size.
+- NEW: Vibrate (default ON) and Sound (default OFF) on key press.
+- NEW: all these settings are inside the keyboard (gear panel), because SettingsActivity.kt was not in the zip I received and is untouched.
+- Code: new file JabraExtras.kt + extras/SpaceDrag.java (tested); MgbIme.kt only hooks marked "v0.0.5".
+
+WHY: roadmap v0.0.5.
+BROKE: nothing intended. Visible change: number row now shows by default (turn OFF in gear panel) and a "?123" key is added left of the language key, so space is a little narrower.
+NOT tested: Gradle/Kotlin compile (no Kotlin compiler here), everything on phone (panels, auto numpad, space-drag with real apps, height, haptic/sound, landscape/rotation).
+TESTED here: SpaceDrag logic (tools/ExtrasTest.java, part of 133/133).
+Known limits: space-drag uses DPAD key events (some apps may ignore them; stage 2 not added). Haptic follows the phone's "touch feedback" system setting. Landscape: 5 rows may look tall -> use Height Small.
+Files: JabraExtras.kt (new), extras/SpaceDrag.java (new), tools/ExtrasTest.java (new), MgbIme.kt (hooks), app/build.gradle.kts (version 0.0.5), CHANGELOG.txt, HANDOFF.txt.
+
+v0.0.4 - Probhat (fixed Bangla layout)
+- NEW: Probhat layout: each key types one Bangla letter, shift = second letter, labels on keys change to Bangla (kar signs shown with a dotted circle).
+- NEW: Probhat extra row (only in Probhat mode): আ ই ঈ উ ঊ এ ঐ ঁ ঃ ৎ ZWNJ.
+- NEW: language key: tap = EN <-> Bangla (same as before). Long-press = switch Avro <-> Probhat. Caption: EN / বাং (Avro) / প্রভা (Probhat). Same choice is also in the gear panel ("Bangla:"). Saved in new prefs key "bn_layout" (default avro, so nothing changes until you choose Probhat).
+- Password / email / URL / number fields: still always English.
+- Code: probhat/ProbhatLayout.java (pure Java, edit table T to fix a key); MgbIme.kt hooks marked "v0.0.4".
+
+WHY: roadmap v0.0.4.
+BROKE: nothing intended. Avro typing, "bangla" pref key, English typing unchanged (Avro is still the default Bangla layout).
+NOT tested: Kotlin compile, Probhat typing on phone, labels, extra row, long-press.
+PROBHAT TABLE NOT VERIFIED against the official chart (could not open ekushey.org from here). Consonants, kar signs and all vowels are reachable (checked by test) but some letters may sit on a different key than your Ridmik Probhat.
+TESTED here: ProbhatLayout table coverage (every consonant, kar sign, vowel reachable) in tools/ExtrasTest.java.
+Known limits: no conjunct-aware backspace (deletes one code point), no Bangla digits, no ZWJ key.
+Files: probhat/ProbhatLayout.java (new), tools/ExtrasTest.java (new), MgbIme.kt (hooks).
+
 v0.0.3 - Avro phonetic (Bangla) + English/Bangla switch
 - NEW: Avro-style phonetic typing. English letters likhle Bangla dekhabe (word underline hoye thake), space/punctuation e commit.
 - NEW: bottom row e language key: "EN" / "বাং". Chaple switch hoy, mone rakhe (prefs key "bangla").

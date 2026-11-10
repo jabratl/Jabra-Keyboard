@@ -7,8 +7,10 @@ import android.text.InputType
 import android.view.View
 import android.view.inputmethod.EditorInfo
 import android.widget.Button
+import android.widget.FrameLayout
 import android.widget.LinearLayout
 import com.mgb.keyboard.phonetic.AvroPhonetic
+import com.mgb.keyboard.probhat.ProbhatLayout
 
 /** v0.1: minimal English QWERTY keyboard. Every key press is wrapped in try/catch. */
 class MgbIme : InputMethodService() {
@@ -23,10 +25,32 @@ class MgbIme : InputMethodService() {
     private var langBtn: Button? = null
     private var dandaBtn: Button? = null
 
+    // v0.0.4 Probhat + v0.0.5 extras state (all new; old fields untouched)
+    private var probhat = false                // prefs key "bn_layout" = "probhat"
+    private var container: FrameLayout? = null // holds the letters view OR a panel (symbols / numpad / settings)
+    private var autoNumpad = false             // numpad was opened automatically for a number/phone field
+    private var extrasRow: LinearLayout? = null // Probhat extra row (vowels, ঁ ঃ ৎ)
+    private val prefs by lazy { JabraPrefs(this) }
+    private val panels by lazy { JabraPanels(this, host) }
+    private val host = object : JabraHost {
+        override fun typeText(s: String) { this@MgbIme.typeText(s) }
+        override fun commitWord() { this@MgbIme.commitWord() }
+        override fun backspace() { this@MgbIme.onBackspace() }
+        override fun enter() { this@MgbIme.sendDownUpKeyEvents(KeyEvent.KEYCODE_ENTER) }
+        override fun showLetters() { this@MgbIme.showLetters() }
+        override fun showPanel(name: String) { this@MgbIme.showPanel(name) }
+        override fun feedback(v: View) { this@MgbIme.feedback(v) }
+        override fun keyHeightDp(): Int = this@MgbIme.keyDp()
+        override fun layoutChanged() { this@MgbIme.applyLayoutPref() }
+    }
+
     override fun onCreateInputView(): View {
         return try {
             letterKeys.clear()
-            buildKeyboard()
+            val c = FrameLayout(this)
+            c.addView(buildKeyboard())
+            container = c
+            c
         } catch (e: Throwable) {
             LinearLayout(this) // empty view instead of crashing
         }
@@ -42,9 +66,10 @@ class MgbIme : InputMethodService() {
         b.minimumWidth = 0
         b.setPadding(0, 0, 0, 0)
         b.setOnClickListener {
+            try { feedback(b) } catch (_: Throwable) { }   // v0.0.5: haptic/sound (own try, never blocks typing)
             try { onClick() } catch (_: Throwable) { }
         }
-        val lp = LinearLayout.LayoutParams(0, dp(48), weight)
+        val lp = LinearLayout.LayoutParams(0, dp(keyDp()), weight)   // v0.0.5: 48dp unless user changed height
         lp.setMargins(dp(2), dp(2), dp(2), dp(2))
         b.layoutParams = lp
         return b
@@ -62,11 +87,13 @@ class MgbIme : InputMethodService() {
 
     private fun letter(c: Char): Button {
         val b = key(c.toString(), 1f) { onLetter(c) }
+        b.tag = c                       // v0.0.4: remember which letter this key is (labels change in Probhat mode)
         letterKeys.add(b)
         return b
     }
 
     private fun refreshLetters() {
+        try { relabelLetters(); return } catch (_: Throwable) { }   // v0.0.4: handles Latin AND Probhat labels
         letterKeys.forEach { b ->
             val t = b.text.toString()
             b.text = if (shift) t.uppercase() else t.lowercase()
@@ -78,6 +105,7 @@ class MgbIme : InputMethodService() {
     override fun onCreate() {
         super.onCreate()
         try { bangla = getSharedPreferences("jabra", MODE_PRIVATE).getBoolean("bangla", false) } catch (_: Throwable) { }
+        try { probhat = prefs.str("bn_layout", "avro") == "probhat" } catch (_: Throwable) { probhat = false }
     }
 
     override fun onStartInputView(info: EditorInfo?, restarting: Boolean) {
@@ -94,6 +122,13 @@ class MgbIme : InputMethodService() {
                 v == InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS ||
                 v == InputType.TYPE_TEXT_VARIATION_WEB_EMAIL_ADDRESS ||
                 v == InputType.TYPE_TEXT_VARIATION_URI
+            // v0.0.5: number / phone field -> number pad automatically (setting "numpad_auto"); other field -> back to letters
+            try {
+                val isNum = cls == InputType.TYPE_CLASS_NUMBER || cls == InputType.TYPE_CLASS_PHONE
+                if (isNum && prefs.bool("numpad_auto", true)) { autoNumpad = true; showPanel("numpad") }
+                else if (autoNumpad) { autoNumpad = false; showLetters() }
+            } catch (_: Throwable) { }
+            try { refreshLetters() } catch (_: Throwable) { }   // v0.0.4: Probhat labels follow the field type
         } catch (_: Throwable) { latinOnly = false }
     }
 
@@ -116,11 +151,110 @@ class MgbIme : InputMethodService() {
         } catch (_: Throwable) { }
     }
 
-    private fun phoneticOn(): Boolean = bangla && !latinOnly
+    private fun phoneticOn(): Boolean = bangla && !latinOnly && !probhat   // v0.0.4: Probhat is not phonetic
+    private fun probhatOn(): Boolean = bangla && !latinOnly && probhat
+
+    // ---------- v0.0.4: Probhat (fixed layout) ----------
+
+    /** Types the Bangla letter for this key. Returns false (-> normal typing) if the key is not in the table or anything fails. */
+    private fun probhatType(ch: Char): Boolean {
+        val s: String = (try { ProbhatLayout.map(ch) } catch (_: Throwable) { null }) ?: return false
+        typeText(s)
+        return true
+    }
+
+    /** Puts Bangla (Probhat) or Latin labels on the letter keys, and shows/hides the Probhat extra row. */
+    private fun relabelLetters() {
+        val pb = probhatOn()
+        letterKeys.forEach { b ->
+            val c = (b.tag as? Char) ?: return@forEach
+            b.text = if (pb) ProbhatLayout.label(if (shift) c.uppercaseChar() else c)
+                     else if (shift) c.uppercase() else c.toString()
+        }
+        extrasRow?.visibility = if (pb) View.VISIBLE else View.GONE
+    }
+
+    private fun extrasRowView(): LinearLayout {
+        val r = row()
+        ProbhatLayout.EXTRAS.forEach { s ->
+            val k = key(ProbhatLayout.extraLabel(s), 1f) { commitWord(); typeText(s) }
+            (k.layoutParams as LinearLayout.LayoutParams).height = dp(38)
+            r.addView(k)
+        }
+        r.visibility = if (probhatOn()) View.VISIBLE else View.GONE
+        extrasRow = r
+        return r
+    }
+
+    private fun langLabel(): String = if (!bangla) "EN" else if (probhat) "প্রভা" else "বাং"
+
+    /** After the language / layout changed: refresh the key captions and letter labels. */
+    private fun afterLangChange() {
+        langBtn?.text = langLabel()
+        dandaBtn?.text = if (bangla) "।" else "?"
+        refreshLetters()
+    }
+
+    /** Long-press on the language key: switch Bangla layout Avro <-> Probhat (and turn Bangla on). */
+    private fun switchBnLayout() {
+        commitWord()
+        probhat = !probhat
+        prefs.setStr("bn_layout", if (probhat) "probhat" else "avro")
+        bangla = true
+        try { getSharedPreferences("jabra", MODE_PRIVATE).edit().putBoolean("bangla", true).apply() } catch (_: Throwable) { }
+        afterLangChange()
+    }
+
+    /** The settings panel changed "bn_layout": follow it. */
+    private fun applyLayoutPref() {
+        commitWord()
+        probhat = prefs.str("bn_layout", "avro") == "probhat"
+    }
+
+    // ---------- v0.0.5: panels, height, haptic, space-drag ----------
+
+    private fun keyDp(): Int = try { prefs.keyHeightDp(JabraPrefs.isLand(this)) } catch (_: Throwable) { 48 }
+
+    private fun feedback(v: View) {
+        try { if (prefs.bool("haptic", true)) v.performHapticFeedback(android.view.HapticFeedbackConstants.KEYBOARD_TAP) } catch (_: Throwable) { }
+        try {
+            if (prefs.bool("sound", false)) (getSystemService(AUDIO_SERVICE) as android.media.AudioManager).playSoundEffect(android.media.AudioManager.FX_KEYPRESS_STANDARD)
+        } catch (_: Throwable) { }
+    }
+
+    private fun showLetters() {
+        val c = container ?: return
+        autoNumpad = false
+        c.removeAllViews()
+        try {
+            letterKeys.clear()
+            c.addView(buildKeyboard())
+        } catch (_: Throwable) {
+            c.addView(LinearLayout(this))
+        }
+    }
+
+    private fun showPanel(name: String) {
+        val c = container ?: return
+        commitWord()
+        val v = try { panels.build(name) } catch (_: Throwable) { null }
+        if (v == null) { showLetters(); return }
+        c.removeAllViews()
+        c.addView(v)
+    }
+
+    /** Space-drag: move the cursor n steps (negative = left). Stage 1 = DPAD key events; if the app ignores them nothing happens. */
+    private fun moveCursor(n: Int) {
+        commitWord()
+        val code = if (n < 0) KeyEvent.KEYCODE_DPAD_LEFT else KeyEvent.KEYCODE_DPAD_RIGHT
+        var i = minOf(Math.abs(n), 20)
+        while (i > 0) { sendDownUpKeyEvents(code); i-- }
+    }
 
     private fun onLetter(c: Char) {
         val ch = if (shift) c.uppercaseChar() else c
         if (shift) { shift = false; refreshLetters() }
+        if (probhatOn() && probhatType(ch)) return   // v0.0.4: fixed Bangla layout (not in password/email/URL/number fields)
         if (!phoneticOn()) { typeText(ch.toString()); return }
         buf.append(ch)
         renderWord()
@@ -156,8 +290,7 @@ class MgbIme : InputMethodService() {
         commitWord()
         bangla = !bangla
         try { getSharedPreferences("jabra", MODE_PRIVATE).edit().putBoolean("bangla", bangla).apply() } catch (_: Throwable) { }
-        langBtn?.text = if (bangla) "বাং" else "EN"
-        dandaBtn?.text = if (bangla) "।" else "?"
+        afterLangChange()   // v0.0.4: sets lang/danda captions and letter labels (was 2 lines here)
     }
 
     private fun buildKeyboard(): View {
@@ -165,6 +298,17 @@ class MgbIme : InputMethodService() {
         root.orientation = LinearLayout.VERTICAL
         root.setBackgroundColor(Color.parseColor("#DDDDDD"))
         root.setPadding(dp(2), dp(4), dp(2), dp(4))
+
+        // v0.0.5: number row (setting "numrow", default ON). If it fails the keyboard just has no number row.
+        try {
+            if (prefs.bool("numrow", true)) {
+                val nr = row()
+                "1234567890".forEach { d -> nr.addView(key(d.toString(), 1f) { commitWord(); typeText(d.toString()) }) }
+                root.addView(nr)
+            }
+        } catch (_: Throwable) { }
+        // v0.0.4: Probhat extra row (vowels, ঁ ঃ ৎ). Hidden (GONE) unless Probhat is active.
+        try { root.addView(extrasRowView()) } catch (_: Throwable) { extrasRow = null }
 
         val r1 = row()
         "qwertyuiop".forEach { r1.addView(letter(it)) }
@@ -181,11 +325,17 @@ class MgbIme : InputMethodService() {
         root.addView(r3)
 
         val r4 = row()
-        val lb = key(if (bangla) "বাং" else "EN", 1.3f) { toggleLang() }
+        r4.addView(key("?123", 1.2f) { showPanel("symbols") })   // v0.0.5: symbols / number pad / settings panel
+        val lb = key(langLabel(), 1.3f) { toggleLang() }
+        try { lb.setOnLongClickListener { try { switchBnLayout() } catch (_: Throwable) { }; true } } catch (_: Throwable) { }   // v0.0.4: long-press = Avro <-> Probhat
         langBtn = lb
         r4.addView(lb)
         r4.addView(key(",", 1f) { commitWord(); typeText(",") })
-        r4.addView(key("space", 4f) { commitWord(); typeText(" ") })
+        val spaceAction = { commitWord(); typeText(" ") }
+        val sb = key("space", 4f) { spaceAction() }
+        // v0.0.5: drag on space = move cursor. If attaching fails, the normal click above still types a space.
+        try { SpaceDragHelper(resources.displayMetrics.density, { n -> moveCursor(n) }, { spaceAction() }, { v -> feedback(v) }).attach(sb) } catch (_: Throwable) { }
+        r4.addView(sb)
         val db = key(if (bangla) "।" else "?", 1f) { commitWord(); val d = dandaBtn?.text?.toString() ?: "."; typeText(if (latinOnly && d == "।") "?" else d) }
         dandaBtn = db
         r4.addView(db)
@@ -193,6 +343,7 @@ class MgbIme : InputMethodService() {
         r4.addView(key("⏎", 1.4f) { commitWord(); sendDownUpKeyEvents(KeyEvent.KEYCODE_ENTER) })
         root.addView(r4)
 
+        try { refreshLetters() } catch (_: Throwable) { }   // v0.0.4: right labels from the start (Probhat after rebuild / rotate)
         return root
     }
 }

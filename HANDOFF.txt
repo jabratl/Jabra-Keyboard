@@ -37,15 +37,86 @@ JABRA KEYBOARD - HANDOFF  (newest on top; paste this file at the start of the ne
   Voice: NOT own recording (needs RECORD_AUDIO+INTERNET). Plan = button that switches to the phone's system voice typing.
 
 3) ROADMAP (one topic per version)
-  v0.0.3 Avro phonetic + language switch      <- DONE, see status
-  v0.0.4 Probhat layout (own fixed Bangla layout, shift = aspirates; conjunct-aware backspace is a good extra)
-  v0.0.5 number row, symbols, number pad, space-drag cursor, height, haptic
+  v0.0.3 Avro phonetic + language switch      DONE (user uses it)
+  v0.0.4 Probhat fixed Bangla layout          DONE in code (NOT tested on phone)   <- delivered together with v0.0.5 in ONE zip
+  v0.0.5 number row, symbols, number pad, space-drag cursor, key height, haptic/sound   DONE in code (NOT tested on phone)
   v0.0.6 clipboard history + pinned + edit toolbar (select all/cut/copy/paste/paste plain)
   v0.0.7 novel formatter panel (see 6)
   v0.0.8 suggestions: local learning, next word, emoji in suggestions, typed-word preview
   v0.0.9 emoji panel, local themes, one-handed mode
   v0.1.0 system voice button, settings polish
 
+4) STATUS (v0.0.5 = v0.0.4 + v0.0.5, one zip: jabra_v0_0_5.zip)
+  PROVED BY USER earlier: GitHub build + signed APK + install + typing works (v0.0.3 build).
+  Tested here (computer): AvroPhonetic 43/43; ProbhatLayout table + SpaceDrag logic 133/133 (tools/ExtrasTest.java).
+  NOT tested: Gradle/Kotlin compile of v0.0.4 + v0.0.5 (no Kotlin compiler here; code was only read carefully + bracket check),
+  everything on a real phone: Probhat typing, extra row, number row, symbols/numpad/settings panels, auto numpad,
+  space-drag, height change, haptic/sound, rotation (landscape), long-press on language key.
+  PROBHAT TABLE NOT VERIFIED: official chart (ekushey.org) could not be opened from here. Table is from memory of standard Probhat.
+  Independent vowels (আ ই ঈ উ ঊ এ ঐ) + ঁ ঃ ৎ + ZWNJ are in an EXTRA ROW (shown only in Probhat mode), not on letter keys.
+  If a key is wrong: edit ONLY the table T in probhat/ProbhatLayout.java (key, normal, shift), run tools/ExtrasTest.java.
+  SettingsActivity.kt / Updater.kt were NOT in the v0.0.3 zip I received and are NOT touched. New settings live INSIDE the keyboard (? 123 -> gear).
+
+5) HOW IT WORKS (new in v0.0.4 / v0.0.5; v0.0.3 part is below under PREVIOUS)
+  app/src/main/java/com/mgb/keyboard/
+    probhat/ProbhatLayout.java  pure Java. map(char) -> Bangla for a pressed key (UPPER-case letter = shift), label(), EXTRAS row.
+    extras/SpaceDrag.java       pure Java. Drag distance -> cursor steps (16dp per step).
+    JabraExtras.kt              JabraHost (interface MgbIme implements), JabraPrefs (safe pref reader), SpaceDragHelper (touch),
+                                JabraPanels (symbols 2 pages, number pad, quick settings). Panels built in code. build() returns null on error
+                                -> MgbIme shows normal letters.
+    MgbIme.kt                   tiny hooks: container(FrameLayout) holds letters OR a panel; showLetters()/showPanel(); probhatOn()/phoneticOn();
+                                relabelLetters() (Latin or Probhat labels via button.tag); number row + Probhat extra row in buildKeyboard();
+                                "?123" key (bottom-left); language key long-press = Avro<->Probhat; space key touch = drag cursor;
+                                key() now reads height + gives haptic/sound; onStartInputView opens number pad for number/phone fields.
+  Prefs file "jabra" (old key "bangla" unchanged). NEW keys: bn_layout("avro"|"probhat", default avro), numrow(true), haptic(true),
+    sound(false), numpad_auto(true), kh_p / kh_l (0..3 = 40/48/56/64dp, default 1 = 48dp = old size).
+  Bangla modes: tap language key = EN <-> Bangla (same as before). Key caption: EN / বাং (Avro) / প্রভা (Probhat).
+    Long-press language key, OR settings panel "Bangla:" button = switch Avro <-> Probhat.
+  Probhat: each key types ONE Bangla letter directly (no composing underline, no buffer). Shift = second letter. Backspace = normal delete.
+    Password/email/URL/number fields: always English (same rule as Avro).
+  Space-drag: stage 1 = DPAD_LEFT/RIGHT key events. Stage 2 (ExtractedText + setSelection) NOT added - add only if some app ignores DPAD.
+  Test on computer:
+    javac -encoding UTF-8 -d out app/src/main/java/com/mgb/keyboard/probhat/ProbhatLayout.java app/src/main/java/com/mgb/keyboard/extras/SpaceDrag.java tools/ExtrasTest.java && java -cp out ExtrasTest
+    (Avro: see PREVIOUS section, tools/AvroTest.java)
+
+6) FORMATTER PLAN (v0.0.7)
+  Own package formatter/, port fixText/applyRules/SCENE from the HTML file. Panel button "Aa" in toolbar. Actions:
+  format selection / format all (with confirm + Undo), find/replace rules (same syntax as HTML), copy as HTML (ClipData html),
+  presets JSON import/export, optional auto mode (default OFF). Stage 1 = InputConnection read/replace;
+  stage 2 = put formatted text in clipboard and tell user to paste; final fallback = normal typing. Never in password fields.
+
+7) BUILD / RELEASE (user's own workflow, do not change unless asked)
+  .github/workflows/build.yml (zip uploads never change .github; user edits it by hand on GitHub).
+  Push to main -> applies *_vX_Y_Z.zip in repo root (zip name must match _v<digits_digits>.zip) -> builds -> release
+  tag v<appVersionName>-b<run number>, apk name Jabra-Keyboard-<tag>.apk. Version = ONE line in app/build.gradle.kts.
+  Secrets (user set, 4): KEYSTORE_B64, KEYSTORE_PASSWORD, KEY_ALIAS, KEY_PASSWORD. Without them debug apk -> update fails.
+  Revert: Actions > Run workflow > revert_to = previous | latest | tag | commit. See REVERT.txt.
+  Build env here has NO Gradle/Android SDK/network: Kotlin cannot be compiled here. Java engine can (see above).
+  Permissions in app: INTERNET (only on "Check for updates"), REQUEST_INSTALL_PACKAGES. Nothing else.
+
+8) TEST CHECKLIST for user (v0.0.4 + v0.0.5)  -> same list is at the end of the last reply
+  Build: Actions green, release has Jabra-Keyboard-v0.0.5-bN.apk, in-app "Check for updates" installs it (v0.0.3 -> v0.0.5).
+  Old things still OK: English typing, বাং Avro ("ami valo achi" -> আমি ভালো আছি), password field = English.
+  v0.0.4: long-press language key -> caption "প্রভা", extra vowel row appears, f=া j=ক g=্ (hasanta) etc.
+  v0.0.5: number row on top; "?123" -> symbols (2 pages), gear -> settings; "123" -> number pad; open a number/phone field -> number pad auto;
+          drag finger left/right on space -> cursor moves, plain tap -> space; Height button -> back with ABC -> keys taller;
+          Vibrate/Sound toggles; Number row OFF -> row disappears.
+
+8b) ROLLBACK
+  Easy: Actions > Run workflow > revert_to = previous (= v0.0.3 build) (see REVERT.txt).
+  Only v0.0.5 off (keep Probhat): in settings panel switch Number row/Auto numpad OFF (no code change). Code level: delete JabraExtras.kt + extras/SpaceDrag.java
+    and the v0.0.5 hooks in MgbIme.kt (marked "v0.0.5").
+  Only Probhat off: do not long-press language key (default stays Avro); code level: delete probhat/ProbhatLayout.java + hooks marked "v0.0.4".
+
+9) NEXT
+  1. Confirm build is green (Kotlin has never been compiled by me). Send me the error text if red.
+  2. Compare Probhat keys with your Ridmik Probhat (send photo) -> I fix table T in one file.
+  3. v0.0.6 clipboard history + pinned + edit toolbar.
+  Optional later: conjunct-aware backspace for Probhat, Bangla digits option, space-drag stage 2, one-handed mode (v0.0.9), settings screen link in SettingsActivity.
+
+=====================================================================================
+PREVIOUS HANDOFF (v0.0.3)  - kept for history (parts that are still true and not repeated above)
+=====================================================================================
 4) STATUS (v0.0.3)
   PROVED BY USER: GitHub build + signed APK + install + keyboard typing works (user ran build 3 and uses it).
   NOT yet confirmed by user: in-app update, revert, v0.0.3 Bangla typing.
@@ -69,21 +140,6 @@ JABRA KEYBOARD - HANDOFF  (newest on top; paste this file at the start of the ne
   Test engine on a computer:
     java -m jdk.compiler/com.sun.tools.javac.Main -encoding UTF-8 -d out app/src/main/java/com/mgb/keyboard/phonetic/AvroPhonetic.java tools/AvroTest.java
     java -cp out AvroTest        (or plain javac if available)
-
-6) FORMATTER PLAN (v0.0.7)
-  Own package formatter/, port fixText/applyRules/SCENE from the HTML file. Panel button "Aa" in toolbar. Actions:
-  format selection / format all (with confirm + Undo), find/replace rules (same syntax as HTML), copy as HTML (ClipData html),
-  presets JSON import/export, optional auto mode (default OFF). Stage 1 = InputConnection read/replace;
-  stage 2 = put formatted text in clipboard and tell user to paste; final fallback = normal typing. Never in password fields.
-
-7) BUILD / RELEASE (user's own workflow, do not change unless asked)
-  .github/workflows/build.yml (zip uploads never change .github; user edits it by hand on GitHub).
-  Push to main -> applies *_vX_Y_Z.zip in repo root (zip name must match _v<digits_digits>.zip) -> builds -> release
-  tag v<appVersionName>-b<run number>, apk name Jabra-Keyboard-<tag>.apk. Version = ONE line in app/build.gradle.kts.
-  Secrets (user set, 4): KEYSTORE_B64, KEYSTORE_PASSWORD, KEY_ALIAS, KEY_PASSWORD. Without them debug apk -> update fails.
-  Revert: Actions > Run workflow > revert_to = previous | latest | tag | commit. See REVERT.txt.
-  Build env here has NO Gradle/Android SDK/network: Kotlin cannot be compiled here. Java engine can (see above).
-  Permissions in app: INTERNET (only on "Check for updates"), REQUEST_INSTALL_PACKAGES. Nothing else.
 
 8) TEST CHECKLIST for user (v0.0.3)  -> see bottom of CHANGELOG / last reply
   Bangla: switch to "বাং", type "ami valo achi" -> আমি ভালো আছি; "bangla" -> বাংলা; backspace removes roman letter by letter;
