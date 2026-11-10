@@ -81,11 +81,11 @@ class ToolbarPanel(private val ctx: Context, private val host: JabraHost) {
         // top: Classic / Custom
         val top = row()
         val sw = pk("", 1f, 40) { btn ->
-            val nv = !prefs.bool("tb_custom", false)
+            val nv = !prefs.bool("tb_custom", true)   // v0.2.7: default is now Custom
             prefs.setBool("tb_custom", nv)
             btn.text = "Toolbar: " + (if (nv) "Custom" else "Classic")
         }
-        sw.text = "Toolbar: " + (if (prefs.bool("tb_custom", false)) "Custom" else "Classic")
+        sw.text = "Toolbar: " + (if (prefs.bool("tb_custom", true)) "Custom" else "Classic")
         top.addView(sw)
         root.addView(top)
 

@@ -13,7 +13,7 @@ interface ToolbarHost {
 }
 
 /**
- * v0.2.1 custom toolbar (setting tb_custom, default OFF = the old edit bar, untouched).
+ * v0.2.1 custom toolbar (setting tb_custom; default ON since v0.2.7, OFF = the old fixed edit bar).
  * One row: fixed fold / unfold key on the left + a horizontally scrollable strip of keys built from the saved order
  * (prefs tb_order / tb_hidden, see typing/ToolbarOrder.java). Folded (pref tb_fold) = fold key + the FIRST visible item only.
  * build() returns null on any problem -> MgbIme uses the old edit bar.

@@ -1,3 +1,16 @@
+v0.2.7 - Swipe toolbar + hold 1.5 s "Edit shortcut" (quick add / remove)
+- NEW: the toolbar above the letters now SWIPES right to left (the scrolling Custom toolbar of v0.2.1 is the default now; pref tb_custom unset = ON). Hidden extra tools (Emoji, 123, #+=, Gear, Voice, Globe, Theme, One-hand, Size, Pad) wait at the end of the bar.
+- NEW: hold any toolbar icon for 1.5 seconds (buzz) -> a bubble "Edit shortcut" shows above it (hides itself after 4 s). Tap it -> page "Edit shortcuts": grid of ALL tools, framed + check mark = on the bar. Tap a tool = add / remove at once. "Order >" = old Edit toolbar page (First / up / down). "Done" = back to letters.
+- Adding Formatter (Aa) / Mode also turns Formatter / Mode key setting ON, so it really shows. Swiping the bar does not start the hold (swipe cancels it). A hold does not run the key's action.
+- Code: ToolbarQuick.kt (new: ToolbarEdit + ToolbarQuickPanel), MgbIme.kt (lazy panel, route "tbquick", attachEdit, tb_custom default true), ToolbarPanel.kt (default Custom), Toolbar.kt (comment), app/build.gradle.kts (0.2.7). No new prefs, no new permission.
+
+WHY: user wanted to swipe the bar and add more tools quickly.
+BROKE: nothing intended. LOOK CHANGES: a fold key (<<) is now the first key and the first item is Formatter (Aa), as in the Custom default order, instead of Mode key first. Fix: Edit toolbar -> Toolbar: Classic (old fixed bar), or reorder.
+NOT tested: Kotlin compile (first check = GitHub Actions), everything on a phone: 1.5 s hold timing, bubble position / hide, swipe vs tap on the 36 dp bar, quick page grid at 360 px (4 columns, names 9 sp), tap-to-toggle scroll position, dark / gradient themes.
+TESTED here: ToolbarTest (pure logic, unchanged). Bracket balance of the 3 changed Kotlin files.
+Rollback: Edit toolbar -> Toolbar: Classic. Code level: delete ToolbarQuick.kt and the lines marked "v0.2.7".
+Files: ToolbarQuick.kt (new), MgbIme.kt, ToolbarPanel.kt, Toolbar.kt, app/build.gradle.kts, CHANGELOG.txt.
+
 v0.2.6 - Gradient themes + Key border (finishes the v0.2.1 - v0.2.6 roadmap)
 - NEW: 2 gradient themes at the END of the theme list: "Purple Haze" (index 18) and "Coral Sunset" (index 19). Keyboard + all keyboard panels (More settings, Size, Toolbar, Pad, Typing, Emoji, Theme picker) show the gradient. Picker tiles show the gradient too. Theme list order is NOT changed (saved theme index still works).
 - NEW setting: Key border = Border (default, exactly as before) / Borderless (flat keys: no key box, only a soft highlight while pressed). Place: app screen -> Look -> Key border, and More settings -> Key border button. Works with Look Classic and Jabra, and with every theme.
