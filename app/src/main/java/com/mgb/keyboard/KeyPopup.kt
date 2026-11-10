@@ -24,7 +24,7 @@ object KeyPopup {
         b.setOnTouchListener { v, e ->
             try {
                 when (e.actionMasked) {
-                    MotionEvent.ACTION_DOWN -> if (prefs.bool("key_popup", false)) show(v as Button)
+                    MotionEvent.ACTION_DOWN -> if (prefs.bool("key_popup", false)) show(v as Button, prefs)
                     MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> dismiss()
                 }
             } catch (_: Throwable) { dismiss() }
@@ -36,7 +36,7 @@ object KeyPopup {
         })
     }
 
-    private fun show(b: Button) {
+    private fun show(b: Button, prefs: JabraPrefs) {
         dismiss()
         val label = b.text?.toString() ?: ""
         if (label.isEmpty()) return
@@ -47,11 +47,12 @@ object KeyPopup {
         t.text = label
         t.textSize = 26f
         t.gravity = Gravity.CENTER
-        t.setTextColor(Color.parseColor("#222222"))
+        val lookOn = try { JabraLook.on(prefs) } catch (_: Throwable) { false }   // v0.1.5: own bubble look
+        t.setTextColor(if (lookOn) (try { JabraThemes.iconColor(prefs) } catch (_: Throwable) { Color.parseColor("#222222") }) else Color.parseColor("#222222"))
         val bg = GradientDrawable()
-        bg.setColor(Color.parseColor("#FFFFFF"))
+        bg.setColor(if (lookOn) (try { JabraLook.fill(prefs) } catch (_: Throwable) { Color.parseColor("#FFFFFF") }) else Color.parseColor("#FFFFFF"))
         bg.setStroke((1 * d).toInt().coerceAtLeast(1), Color.parseColor("#888888"))
-        bg.cornerRadius = 10 * d
+        bg.cornerRadius = (if (lookOn) 16 else 10) * d
         t.background = bg
         val p = PopupWindow(t, w, h, false)
         p.isTouchable = false

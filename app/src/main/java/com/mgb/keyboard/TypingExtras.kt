@@ -176,6 +176,17 @@ class MorePanel(private val ctx: Context, private val host: JabraHost) {
 
         try { val rt = row(); rt.addView(pk("Typing options >", 1f) { host.showPanel("typing") }); root.addView(rt) } catch (_: Throwable) { }   // v0.1.1
         try { val rz = row(); rz.addView(pk("Size (height / one-hand width) >", 1f) { host.showPanel("size") }); root.addView(rz) } catch (_: Throwable) { }   // v0.1.4
+        try {   // v0.1.5: Look Classic / Jabra
+            val rl = row()
+            val lookBtn = pk("", 1f) { btn ->
+                val nv = if (prefs.int("look", 0) == 1) 0 else 1
+                prefs.setInt("look", nv)
+                btn.text = "Look: " + (if (nv == 1) "Jabra" else "Classic")
+            }
+            lookBtn.text = "Look: " + (if (prefs.int("look", 0) == 1) "Jabra" else "Classic")
+            rl.addView(lookBtn)
+            root.addView(rl)
+        } catch (_: Throwable) { }
         // v0.1.2: PC mode rows (mode key = first key of the edit bar)
         try {
             val rm = row()

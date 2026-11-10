@@ -97,6 +97,9 @@ class MgbIme : InputMethodService() {
         return b
     }
 
+    /** v0.1.5: function key colour (only when look = Jabra; Classic = unchanged). */
+    private fun fn(b: Button): Button { try { JabraLook.shape(prefs, b, JabraLook.FUNC) } catch (_: Throwable) { }; return b }
+
     private fun row(): LinearLayout {
         val r = LinearLayout(this)
         r.orientation = LinearLayout.HORIZONTAL
@@ -532,21 +535,22 @@ class MgbIme : InputMethodService() {
         val r3 = row()
         val shb = JabraIcons.putThemed(this, key("⇧", 1.5f) { shiftSt.tap(android.os.SystemClock.uptimeMillis()); refreshLetters() }, "shift")   // v0.0.7 + v0.0.9 (double tap = caps lock)
         shiftBtn = shb
+        fn(shb)   // v0.1.5
         r3.addView(shb)
         "zxcvbnm".forEach { r3.addView(letter(it)) }
         val bkb = JabraIcons.putThemed(this, key("⌫", 1.5f) { onBackspace() }, "back")   // v0.0.7
         try { if (prefs.bool("bs_repeat", true)) RepeatKeyHelper({ onBackspace() }, { v -> feedback(v) }).attach(bkb) } catch (_: Throwable) { }   // v0.0.9: hold = repeat
-        r3.addView(bkb)
+        r3.addView(fn(bkb))   // v0.1.5
         root.addView(r3)
 
         val r4 = row()
         val symKey = key("?123", 1.2f) { showPanel("symbols") }   // v0.0.5: symbols / number pad / settings panel
         try { JabraLongPress.attach(symKey, prefs) { pickKeyboard() } } catch (_: Throwable) { }   // v0.0.9: long-press = keyboard picker
-        r4.addView(symKey)
+        r4.addView(fn(symKey))   // v0.1.5
         val lb = key(langLabel(), 1.3f) { toggleLang() }
         try { JabraLongPress.attach(lb, prefs) { switchBnLayout() } } catch (_: Throwable) { }   // v0.0.4: long-press = Avro <-> Probhat
         langBtn = lb
-        r4.addView(lb)
+        r4.addView(fn(lb))   // v0.1.5
         try { if (prefs.bool("mode_key", true) && !prefs.bool("edit_bar", true)) r4.addView(modeKey(null)) } catch (_: Throwable) { }   // v0.1.2: edit bar OFF -> mode key here
         // v0.1.1: optional Globe / Voice / Emoji keys (settings key_globe / key_voice / key_emoji, all default OFF = same row as before)
         try {
@@ -559,6 +563,7 @@ class MgbIme : InputMethodService() {
         r4.addView(commaKey)
         val spaceAction = { commitWord(); spaceKey() }   // v0.1.1: double space
         val sb = key("space", 4f) { spaceAction() }
+        try { JabraLook.shape(prefs, sb, JabraLook.PILL) } catch (_: Throwable) { }   // v0.1.5: pill space key
         // v0.0.5: drag on space = move cursor. If attaching fails, the normal click above still types a space.
         try { SpaceDragHelper(resources.displayMetrics.density, { n -> moveCursor(n) }, { spaceAction() }, { v -> feedback(v) }, com.mgb.keyboard.typing.TypingLevels.stepDp(prefs.int("cursor_speed", com.mgb.keyboard.typing.TypingLevels.CS_DEFAULT))).attach(sb) } catch (_: Throwable) { }   // v0.1.1: cursor speed (setting cursor_speed)
         r4.addView(sb)
@@ -566,7 +571,7 @@ class MgbIme : InputMethodService() {
         dandaBtn = db
         r4.addView(db)
         r4.addView(key(".", 1f) { commitWord(); typeText(".") })
-        r4.addView(JabraIcons.putThemed(this, key("⏎", 1.4f) { commitWord(); doEnter() }, "enter"))   // v0.0.7 + v0.0.9
+        r4.addView(fn(JabraIcons.putThemed(this, key("⏎", 1.4f) { commitWord(); doEnter() }, "enter")))   // v0.0.7 + v0.0.9
         root.addView(r4)
 
         try { refreshLetters() } catch (_: Throwable) { }   // v0.0.4: right labels from the start (Probhat after rebuild / rotate)

@@ -53,6 +53,7 @@ object JabraThemes {
         if (k != null) b.backgroundTintList = ColorStateList.valueOf(k)
         val x = t.text
         if (x != null) b.setTextColor(x)
+        try { JabraLook.shape(p, b, JabraLook.NORMAL) } catch (_: Throwable) { }   // v0.1.5: Jabra look (look = 0 Classic does nothing)
     }
 }
 

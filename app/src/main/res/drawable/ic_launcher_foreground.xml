@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- v0.1.5 logo foreground: a keycap with a stylised Bangla-style letter and a cursor bar (own drawing, no font, no image file) -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- keycap depth -->
+    <path
+        android:fillColor="#9CC3E6"
+        android:pathData="M40,34 H76 A10,10 0 0 1 86,44 V72 A10,10 0 0 1 76,82 H40 A10,10 0 0 1 30,72 V44 A10,10 0 0 1 40,34 Z" />
+    <!-- keycap top -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M36,28 H72 A10,10 0 0 1 82,38 V66 A10,10 0 0 1 72,76 H36 A10,10 0 0 1 26,66 V38 A10,10 0 0 1 36,28 Z" />
+    <!-- letter: top bar, stem with tail, left loop -->
+    <path
+        android:strokeColor="#2271B1"
+        android:strokeWidth="4"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M34,42 H66" />
+    <path
+        android:strokeColor="#2271B1"
+        android:strokeWidth="4"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M58,42 V64 Q58,69 62,69" />
+    <path
+        android:strokeColor="#2271B1"
+        android:strokeWidth="4"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M58,51 C50,46 38,50 40,58 C42,66 54,64 58,57" />
+    <!-- cursor bar -->
+    <path
+        android:fillColor="#FF9800"
+        android:pathData="M70,48 A2,2 0 0 1 72,50 V66 A2,2 0 0 1 70,68 A2,2 0 0 1 68,66 V50 A2,2 0 0 1 70,48 Z" />
+</vector>
