@@ -1,0 +1,19 @@
+v0.0.2 - rename to "Jabra Keyboard" (display names only)
+- Phone e app er nam: Jabra Keyboard
+- Release APK file: Jabra-Keyboard-vX-bN.apk, release title: "Jabra Keyboard X (build N)"
+- build.yml: shudhu 3ta nam line bodlano (artifact name, apk file name, release title)
+
+WHY: user chaiyechhe build/app e "Jabra Keyboard" nam thakuk.
+BROKE: nothing. Package (com.mgb.keyboard), signing, tag format (vX-bN), revert logic, ext zip name ager moto, tai ager install er upor update cholbe.
+NOT tested: Gradle compile, phone install, update, revert (no Android/network here).
+Files: build.yml, AndroidManifest.xml, SettingsActivity.kt, settings.gradle.kts, app/build.gradle.kts, README/HANDOFF/REVERT/CHANGELOG.
+
+v0.0.1 - build/release/update pipeline + minimal keyboard
+- NEW: GitHub Actions build (your build.yml, unchanged): zip upload auto-applied, signed APK, release, revert
+- NEW: In-app "Check for updates" -> download -> install (fallback: opens release page)
+- NEW: Minimal English QWERTY keyboard (placeholder, so the app exists and can be tested)
+
+WHY: first version, set up the safe pipeline before adding Bangla / formatter features.
+BROKE: nothing (first version).
+NOT tested: Gradle compile, install on phone, keyboard typing, in-app update, revert (no Android/network in the build environment).
+Files: whole project (first version).

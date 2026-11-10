@@ -1,0 +1,33 @@
+JABRA KEYBOARD - HANDOFF (newest on top)
+=====================================
+STATUS (v0.0.2, was v0.0.1 + rename to Jabra Keyboard)
+  Android native keyboard (Kotlin, InputMethodService). Package com.mgb.keyboard.
+  Done: build pipeline, signing via 4 secrets, in-app updater, minimal English keyboard.
+  NOT tested: everything on a real phone and the first Gradle compile.
+
+HOW IT WORKS
+  - app/.../MgbIme.kt          keyboard (keys built in code, no XML layout)
+  - app/.../SettingsActivity.kt  enable/choose keyboard, test box, Check for updates
+  - app/.../Updater.kt         GitHub Releases API -> download .apk -> installer; fallback = open release page
+  - Updater needs a PUBLIC repo (no token stored in the app on purpose).
+  - versionCode = GitHub run number. Version name = ONE line in app/build.gradle.kts (appVersionName).
+  - Signing: secrets KEYSTORE_B64, KEYSTORE_PASSWORD, KEY_ALIAS, KEY_PASSWORD. Without them the
+    workflow builds DEBUG apk whose signature changes every run, so in-app update FAILS to install.
+  - Workflow (.github/workflows/build.yml) is the user's own proven one, copied unchanged.
+
+PERMISSIONS ADDED (flagged to user): INTERNET (only on "Check for updates"), REQUEST_INSTALL_PACKAGES.
+
+TEST FIRST (next session)
+  1. Actions run is green, Release has MGB-v0.0.1-bN.apk.
+  2. Install, enable, type in any app.
+  3. Make v0.0.2 (change appVersionName), upload zip, then Check for updates on the phone.
+
+ROLLBACK
+  See REVERT.txt (Actions > Run workflow > revert_to).
+
+NOTE: package id stays com.mgb.keyboard on purpose (changing it breaks updates). Old releases are named MGB-*.apk, new ones Jabra-Keyboard-*.apk (updater takes any .apk).
+
+NEXT / OPEN
+  - v0.0.3: Bangla phonetic layout + language switch
+  - then symbols/emoji/theme -> formatter panel (port fixText/applyRules/SCENE from novel-formatter_v2_updated.html)
+  - formatter must live in its own package (formatter/), try/catch, ON/OFF switch, fallback = plain typing

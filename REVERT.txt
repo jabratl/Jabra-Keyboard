@@ -1,0 +1,19 @@
+JABRA KEYBOARD - HOW TO REVERT TO AN OLDER VERSION
+=======================================
+ONE-TIME: put build.yml at .github/workflows/build.yml in the repo (zip uploads never change .github).
+
+REVERT
+  1. GitHub > Actions > "Build APK" > Run workflow (branch main).
+  2. In "revert_to" type ONE of:
+       previous          the release before the newest one
+       latest            newest SUCCESSFULLY built release (if a zip failed to build)
+       v0.0.1-b3         a specific release tag (see Releases page)
+       a commit id
+     Leave empty for a normal build.
+  3. Wait for the green tick. On the phone: Jabra Keyboard app > Check for updates > Download & install.
+  A revert build has a NEW higher build number but the OLD source, so Android accepts it.
+
+AUTO REVERT: if Gradle fails after a zip upload, main is put back to the newest good release by itself.
+  The failed commit stays in history (run with revert_to = <that commit id> to bring it back).
+
+AFTER A REVERT: do not upload a zip made from the newer version. Make the next zip from the reverted one.
