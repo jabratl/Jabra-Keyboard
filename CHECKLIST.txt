@@ -45,3 +45,12 @@ F. LOOK / SIZE
  [ ] Globe key ON = next keyboard; Voice key ON = phone voice typing; Emoji key ON = emoji panel. Space key still wide enough with all 3.
  [ ] Vibrate / Sound toggles work.
  [ ] Rotate phone: layout fine in landscape.
+
+G. TOOLBAR (v0.2.1)
+ [ ] More settings -> Edit toolbar >: the page opens, list scrolls, buttons readable (dark + light).
+ [ ] Toolbar: Custom -> ABC (apply): a scrolling row appears, Aa is first after the « key. Toolbar: Classic -> ABC: old bar back.
+ [ ] [First] / [up] / [down] / [Hide] change the order after ABC (apply); the list does not jump to the top after a tap.
+ [ ] Swipe the row sideways: it scrolls and does NOT press a key by accident; a normal tap still works (Aa, clipboard, All, Cut, Copy, Paste, Plain, mode key).
+ [ ] « key folds the row to: fold key + first item; » unfolds.
+ [ ] Reset toolbar restores the default order.
+

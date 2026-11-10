@@ -1,3 +1,17 @@
+v0.2.1 - Toolbar engine + editor (optional, default = old bar)
+- NEW (More settings -> Edit toolbar >): an optional scrolling toolbar row above the number row. First fixed key = fold / unfold (« / »); folded = fold key + your FIRST item only. Items: Formatter (Aa), Clipboard, Mode, All, Cut, Copy, Paste, Plain. Default Custom order puts Aa FIRST, then Clipboard, then Mode.
+- The Edit toolbar page: switch Toolbar: Classic / Custom, and per item [First] [up] [down] [Hide / Show], Reset toolbar. Press ABC (apply) to see the change.
+- Classic (default) = the old edit bar exactly as v0.2.0. If the custom toolbar fails for any reason the old bar is used automatically. Edit bar OFF = no toolbar at all. Old settings Formatter OFF / Mode key OFF still hide those two items.
+- Plan note (user decision, 2026-11-10): the Ridmik-like clipboard "Manage" will be an in-keyboard select mode (v0.2.5), NOT a full-screen page (that would need manifest changes). Plan text updated in HANDOFF.txt.
+- Code: typing/ToolbarOrder.java (new, pure Java, tested), Toolbar.kt (new), ToolbarPanel.kt (new), tools/ToolbarTest.java (new); hooks marked "v0.2.1": MgbIme.kt (2 fields, toolbarKey(), 1 route, 1 if / else in the edit-bar block), TypingExtras.kt (1 line), app/build.gradle.kts (0.2.1).
+- Prefs NEW: tb_custom(bool,false) tb_order(str) tb_hidden(str) tb_fold(bool,false). Old keys untouched.
+
+WHY: roadmap v0.2.1 (user: Formatter must be 1 tap and first; toolbar editable like Ridmik).
+BROKE: nothing intended. Deviations from plan: folded keeps the FIRST item (no separate pinned pref); Edit toolbar only in More settings (not on the launcher screen); fold key is text, no new icon.
+NOT tested: Gradle / Kotlin compile of the 3 new / 2 changed Kotlin files (compile in GitHub Actions is the first real check), everything on a phone: scroll vs tap on the 36 dp strip (a scroll container may delay the pressed look), 360 px and 1280 px, dark + light, list position after a tap, fold key, Reset toolbar.
+TESTED here: ToolbarTest 30/30; the 10 older Java tests pass again (Avro 43, Extras 133, Clip 18, Emoji 1585, Typing 27, DoubleSpace 37, Pc 19, SizePct 28, Look 13, Hint 175); bracket balance of MgbIme.kt, TypingExtras.kt, Toolbar.kt, ToolbarPanel.kt; code-only diff of MgbIme.kt / TypingExtras.kt = only the marked hooks.
+Files: typing/ToolbarOrder.java, Toolbar.kt, ToolbarPanel.kt, tools/ToolbarTest.java (new); MgbIme.kt, TypingExtras.kt, app/build.gradle.kts, CHANGELOG.txt, HANDOFF.txt, CHECKLIST.txt.
+
 v0.2.0 - Final test round (no new feature)
 - NEW CHECKLIST.txt in the repo root: ONE full phone checklist (A install / B English / C Bangla / D panels / E PC mode / F look + size) that replaces the per-version lists of v0.0.4 - v0.1.7 in HANDOFF.
 - HANDOFF.txt cleaned: the old "PREVIOUS HANDOFF" parts (v0.0.2 - v0.0.7 copies) are removed, the still-useful v0.0.3 Avro notes moved into section 5, status / next rewritten, per-version checklists replaced by a pointer to CHECKLIST.txt, finished v0.1.6 plan (3b) removed (documented in section 5).

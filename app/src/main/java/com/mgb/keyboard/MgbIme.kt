@@ -46,6 +46,10 @@ class MgbIme : InputMethodService() {
     private val morePanel by lazy { MorePanel(this, host) }   // v0.0.9 "More settings" page
     private val emojiPanel by lazy { EmojiPanel(this, host) }   // v0.1.0 emoji panel
     private val sizePanel by lazy { SizePanel(this, host) }   // v0.1.4 "Size" page
+    private val toolbarPanel by lazy { ToolbarPanel(this, host) }   // v0.2.1 "Edit toolbar" page
+    private val tbHost = object : ToolbarHost {   // v0.2.1
+        override fun makeKey(id: String): Button? = this@MgbIme.toolbarKey(id)
+    }
     private val typingPanel by lazy { TypingPanel(this, host) }   // v0.1.1 "Typing options" page
     private val spaceHelper by lazy { SpaceHelper(prefs) }   // v0.1.1 double space
     private val switcher by lazy { ImeSwitcher(this) }   // v0.1.1 Globe / Voice key
@@ -414,6 +418,21 @@ class MgbIme : InputMethodService() {
         showLetters()
     }
 
+    /** v0.2.1: one key of the custom toolbar (id from typing/ToolbarOrder.java, or "fold"). */
+    private fun toolbarKey(id: String): Button? {
+        if (id == "fold") {
+            val folded = prefs.bool("tb_fold", false)
+            val f = key(if (folded) "\u00BB" else "\u00AB", 1f) { prefs.setBool("tb_fold", !prefs.bool("tb_fold", false)); showLetters() }
+            f.textSize = 14f
+            return f
+        }
+        if (id == "mode") return modeKey(36)
+        val k = key(Toolbar.label(id), 1f) { if (id == "clip") openClipboard() else if (id == "fmt") openFormatter() else editAction(id) }
+        JabraIcons.putThemed(this, k, Toolbar.icon(id))
+        k.textSize = 12f
+        return k
+    }
+
     private fun modeKey(heightDp: Int?): Button {
         val on = pcState.isPc()
         val k = key(if (on) "PC" else "PH", 1f) { toggleMode() }
@@ -437,7 +456,7 @@ class MgbIme : InputMethodService() {
     private fun showPanel(name: String) {
         val c = container ?: return
         commitWord()
-        val v = try { if (name == "clipboard") clipPanel.build() else if (name == "format") fmtPanel.build() else if (name == "more") morePanel.build() else if (name == "emoji") emojiPanel.build() else if (name == "typing") typingPanel.build() else if (name == "size") sizePanel.build() else panels.build(name) } catch (_: Throwable) { null }   // v0.0.8: "format"; v0.1.0: "emoji"; v0.1.1: "typing"
+        val v = try { if (name == "clipboard") clipPanel.build() else if (name == "format") fmtPanel.build() else if (name == "more") morePanel.build() else if (name == "emoji") emojiPanel.build() else if (name == "typing") typingPanel.build() else if (name == "size") sizePanel.build() else if (name == "toolbar") toolbarPanel.build() else panels.build(name) } catch (_: Throwable) { null }   // v0.0.8: "format"; v0.1.0: "emoji"; v0.1.1: "typing"
         if (v == null) { showLetters(); return }
         try { JabraOneHand.apply(this, prefs, v) } catch (_: Throwable) { }   // v0.1.0
         c.removeAllViews()
@@ -506,6 +525,8 @@ class MgbIme : InputMethodService() {
         // v0.0.6: edit bar (setting "edit_bar", default ON): clipboard / select all / cut / copy / paste / paste plain
         try {
             if (prefs.bool("edit_bar", true)) {
+                val tb = try { if (prefs.bool("tb_custom", false)) Toolbar.build(this, prefs, tbHost) else null } catch (_: Throwable) { null }   // v0.2.1
+                if (tb != null) root.addView(tb) else {   // v0.2.1: custom toolbar, else the old bar below
                 val eb = row()
                 try { if (prefs.bool("mode_key", true)) eb.addView(modeKey(36)) } catch (_: Throwable) { }   // v0.1.2: first key of the edit bar
                 val items0 = arrayOf("📋" to "clip", "All" to "all", "Cut" to "cut", "Copy" to "copy", "Paste" to "paste", "Plain" to "plain")
@@ -518,6 +539,7 @@ class MgbIme : InputMethodService() {
                     eb.addView(k)
                 }
                 root.addView(eb)
+                }   // v0.2.1
             }
         } catch (_: Throwable) { }
 
