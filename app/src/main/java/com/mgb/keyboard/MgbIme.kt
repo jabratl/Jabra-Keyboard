@@ -103,7 +103,8 @@ class MgbIme : InputMethodService() {
             try { onClick() } catch (_: Throwable) { }
         }
         val lp = LinearLayout.LayoutParams(0, dp(keyDp()), weight)   // v0.0.5: 48dp unless user changed height
-        lp.setMargins(dp(2), dp(2), dp(2), dp(2))
+        val g = try { dp(com.mgb.keyboard.typing.SizePct.gapDp(prefs.int("key_gap", -1))) } catch (_: Throwable) { dp(2) }   // v0.3.0: key gap setting
+        lp.setMargins(g, g, g, g)
         b.layoutParams = lp
         return b
     }

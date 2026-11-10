@@ -14,6 +14,11 @@ public final class SizePct {
     /** Letter text size in sp for a percent; unset / invalid -> 14 sp (old size). */
     public static float letterSp(int pct) { return letterValid(pct) ? L_BASE_SP * pct / 100f : (float) L_BASE_SP; }
 
+    // v0.3.0: gap between keys in dp (0..6, default 2 = old look).
+    public static final int G_MIN = 0, G_MAX = 6, G_DEF = 2;
+    public static boolean gapValid(int dp) { return dp >= G_MIN && dp <= G_MAX; }
+    public static int gapDp(int dp) { return gapValid(dp) ? dp : G_DEF; }
+
     public static boolean heightValid(int pct) { return pct >= H_MIN && pct <= H_MAX; }
     public static boolean widthValid(int pct) { return pct >= W_MIN && pct <= W_MAX; }
 

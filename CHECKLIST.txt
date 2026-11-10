@@ -105,3 +105,7 @@ K) v0.2.8 letter size
 
 L) v0.2.9 bold letters
  [ ] Size page: "Bold letters: OFF" -> tap -> ON, ABC (apply): letters bold. Tap again + ABC: normal. Reset sizes -> OFF.
+
+M) v0.3.0 key gap
+ [ ] Size page: "Key gap: 2 dp". Press - to 0, ABC (apply): keys touch each other, look bigger. Press + to 6: more space. Reset sizes -> 2 dp.
+ [ ] Check Borderless and a gradient theme with gap 0 and 6; toolbar + number row still fit at 360 px.

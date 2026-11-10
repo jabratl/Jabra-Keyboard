@@ -16,6 +16,7 @@ import com.mgb.keyboard.typing.SizePct
 object SizeKeys {
     fun heightKey(land: Boolean): String = if (land) "kh_pct_l" else "kh_pct_p"
     fun widthKey(land: Boolean): String = if (land) "oh_w_l" else "oh_w_p"
+    const val GAP = "key_gap"   // v0.3.0: gap between keys in dp (unset = 2)
     const val BOLD = "letter_bold"   // v0.2.9: bold letters (default OFF)
     const val LETTER = "letter_pct"   // v0.2.8: letter text size % (unset = old 14 sp)
 }
@@ -71,15 +72,15 @@ class SizePanel(private val ctx: Context, private val host: JabraHost) {
         return if (SizePct.widthValid(v)) v else Math.round(SizePct.widthFrac(SizePct.UNSET, land) * 100f)
     }
 
-    private fun label(title: String, v: Int): String = title + ": " + v + "%"
+    private fun label(title: String, v: Int, unit: String = "%"): String = title + ": " + v + unit
 
     /** One line: [ - ] [ title: value% ] [ + ]. */
-    private fun sizeRow(title: String, get: () -> Int, set: (Int) -> Unit, min: Int, max: Int, step: Int): LinearLayout {
+    private fun sizeRow(title: String, get: () -> Int, set: (Int) -> Unit, min: Int, max: Int, step: Int, unit: String = "%"): LinearLayout {
         val r = row()
-        val mid = pk(label(title, get()), 3f) { }
+        val mid = pk(label(title, get(), unit), 3f) { }
         mid.isClickable = false
-        val minus = pk("-", 1f) { val nv = SizePct.step(get(), -1, min, max, step); set(nv); mid.text = label(title, nv) }
-        val plus = pk("+", 1f) { val nv = SizePct.step(get(), 1, min, max, step); set(nv); mid.text = label(title, nv) }
+        val minus = pk("-", 1f) { val nv = SizePct.step(get(), -1, min, max, step); set(nv); mid.text = label(title, nv, unit) }
+        val plus = pk("+", 1f) { val nv = SizePct.step(get(), 1, min, max, step); set(nv); mid.text = label(title, nv, unit) }
         r.addView(minus); r.addView(mid); r.addView(plus)
         return r
     }
@@ -106,6 +107,9 @@ class SizePanel(private val ctx: Context, private val host: JabraHost) {
         // v0.2.8: letter (alphabet) size, one value for portrait + landscape
         root.addView(sizeRow("Letter size", { val v = prefs.int(SizeKeys.LETTER, SizePct.UNSET); if (SizePct.letterValid(v)) v else 100 }, { prefs.setInt(SizeKeys.LETTER, it) }, SizePct.L_MIN, SizePct.L_MAX, SizePct.L_STEP))
 
+        // v0.3.0: gap between keys (smaller gap = bigger keys, easier to hit)
+        root.addView(sizeRow("Key gap", { SizePct.gapDp(prefs.int(SizeKeys.GAP, SizePct.G_DEF)) }, { prefs.setInt(SizeKeys.GAP, it) }, SizePct.G_MIN, SizePct.G_MAX, 1, " dp"))
+
         // v0.2.9: bold letters toggle
         val rbold = row()
         rbold.addView(pk(if (prefs.bool(SizeKeys.BOLD, false)) "Bold letters: ON" else "Bold letters: OFF", 1f) { b ->
@@ -121,6 +125,7 @@ class SizePanel(private val ctx: Context, private val host: JabraHost) {
             for (land in booleanArrayOf(false, true)) { prefs.setInt(SizeKeys.heightKey(land), SizePct.UNSET); prefs.setInt(SizeKeys.widthKey(land), SizePct.UNSET) }
             prefs.setInt(SizeKeys.LETTER, SizePct.UNSET)   // v0.2.8
             prefs.setBool(SizeKeys.BOLD, false)   // v0.2.9
+            prefs.setInt(SizeKeys.GAP, SizePct.UNSET)   // v0.3.0
             host.showPanel("size")
         })
         root.addView(rr)

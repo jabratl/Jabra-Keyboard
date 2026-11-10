@@ -1,3 +1,13 @@
+v0.3.0 - Key gap (space between keys)
+- NEW: Size page (gear > More settings > Size >) has "Key gap: 2 dp" with [-] [+] (0 .. 6 dp, default 2 = old look). Smaller gap = keys look bigger and fill the space, easier to hit. Then ABC (apply). Reset sizes puts it back to 2.
+- Code: typing/SizePct.java (gapDp), SizePrefs.kt (row, unit param, reset), MgbIme.kt key() margin, tools/SizePctTest.java, app/build.gradle.kts (0.3.0). New pref key_gap. No permission.
+WHY: user asked for another light, effective improvement.
+BROKE: nothing intended. Default = 2 dp = exactly as before.
+NOT tested: Kotlin compile (GitHub Actions), phone: gap 0 look in Borderless / gradient themes, toolbar + number row heights at gap 6, 360 px.
+TESTED here: SizePctTest 37/37, bracket balance of SizePrefs.kt / MgbIme.kt.
+Rollback: Key gap 2 dp (or Reset sizes). Code: remove lines marked "v0.3.0".
+Files: typing/SizePct.java, SizePrefs.kt, MgbIme.kt, tools/SizePctTest.java, app/build.gradle.kts, CHANGELOG.txt, CHECKLIST.txt, HANDOFF_Jabra-Keyboard_v0.3.0.txt (new, replaces ..._v0.2.9.txt).
+
 v0.2.9 - Bold letters (light feature)
 - NEW: Size page (gear > More settings > Size >) has a button "Bold letters: ON / OFF" (default OFF). ON = letters on the keys are bold, easier to read. Then ABC (apply). Reset sizes turns it OFF.
 - Code: SizePrefs.kt (button + reset), MgbIme.kt letter() 1 line, app/build.gradle.kts (0.2.9). New pref letter_bold. No permission.

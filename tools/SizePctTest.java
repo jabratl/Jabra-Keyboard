@@ -41,6 +41,9 @@ public class SizePctTest {
         t("letter unset / garbage = 14 sp", SizePct.letterSp(-1) == 14f && SizePct.letterSp(5) == 14f && SizePct.letterSp(999) == 14f);
         t("letter step 100 -> 110 / 90", SizePct.step(100, 1, 80, 220, 10) == 110 && SizePct.step(100, -1, 80, 220, 10) == 90);
         t("letter step clamps", SizePct.step(220, 1, 80, 220, 10) == 220 && SizePct.step(80, -1, 80, 220, 10) == 80);
+        t("gap valid range", SizePct.gapValid(0) && SizePct.gapValid(6) && !SizePct.gapValid(-1) && !SizePct.gapValid(7));
+        t("gap unset / garbage = 2", SizePct.gapDp(-1) == 2 && SizePct.gapDp(99) == 2 && SizePct.gapDp(4) == 4 && SizePct.gapDp(0) == 0);
+        t("gap step 2 -> 3 / 1, clamps", SizePct.step(2, 1, 0, 6, 1) == 3 && SizePct.step(2, -1, 0, 6, 1) == 1 && SizePct.step(6, 1, 0, 6, 1) == 6 && SizePct.step(0, -1, 0, 6, 1) == 0);
         System.out.println("SizePctTest ok=" + ok + " bad=" + bad);
         if (bad > 0) System.exit(1);
     }
