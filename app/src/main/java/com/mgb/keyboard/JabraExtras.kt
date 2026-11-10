@@ -29,6 +29,7 @@ interface JabraHost {
     fun feedback(v: View)            // haptic / sound on key press
     fun keyHeightDp(): Int
     fun layoutChanged()              // bn_layout pref changed in the settings panel
+    fun pickKeyboard() { }           // v0.0.9: open the phone's keyboard picker (default: does nothing)
 }
 
 /** Safe pref reader/writer: every read has a default, nothing ever throws. */
@@ -151,6 +152,12 @@ class JabraPanels(private val ctx: Context, private val host: JabraHost) {
         null
     }
 
+    /** v0.0.9: hold = repeat (setting "bs_repeat"). On any problem the plain click stays. */
+    private fun repeatable(b: Button): Button {
+        try { if (prefs.bool("bs_repeat", true)) RepeatKeyHelper({ host.backspace() }, { v -> host.feedback(v) }).attach(b) } catch (_: Throwable) { }
+        return b
+    }
+
     private fun sym(s: String) {
         host.commitWord()
         host.typeText(s)
@@ -186,7 +193,7 @@ class JabraPanels(private val ctx: Context, private val host: JabraHost) {
             host.showPanel("symbols")
         })
         pages[2].forEach { ch -> r3.addView(pk(ch.toString(), 1f) { sym(ch.toString()) }) }
-        r3.addView(JabraIcons.put(ctx, pk("⌫", 1.5f) { host.backspace() }, "back"))   // v0.0.7
+        r3.addView(repeatable(JabraIcons.put(ctx, pk("⌫", 1.5f) { host.backspace() }, "back")))   // v0.0.7 + v0.0.9 hold-repeat
         root.addView(r3)
         root.addView(bottomRow(true))
         return root
@@ -203,7 +210,7 @@ class JabraPanels(private val ctx: Context, private val host: JabraHost) {
         for (i in 0..2) {
             val r = row()
             grid[i].forEach { s -> r.addView(pk(s, 1f) { sym(s) }) }
-            if (i == 0) r.addView(JabraIcons.put(ctx, pk(side[i], 1f) { host.backspace() }, "back"))   // v0.0.7
+            if (i == 0) r.addView(repeatable(JabraIcons.put(ctx, pk(side[i], 1f) { host.backspace() }, "back")))   // v0.0.7 + v0.0.9 hold-repeat
             else r.addView(pk(side[i], 1f) { sym(side[i]) })
             root.addView(r)
         }
@@ -280,6 +287,9 @@ class JabraPanels(private val ctx: Context, private val host: JabraHost) {
         r4.addView(toggleKey("Formatter", "fmt_on", true))   // v0.0.8: OFF = no "Aa" button in the edit bar
         r4.addView(pk("ABC  (apply)", 1f) { host.showLetters() })
         root.addView(r4)
+        val r5 = row()   // v0.0.9: second settings page
+        r5.addView(pk("More settings  >", 1f) { host.showPanel("more") })
+        root.addView(r5)
         return root
     }
 }

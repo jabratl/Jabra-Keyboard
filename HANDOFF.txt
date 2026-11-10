@@ -1,4 +1,4 @@
-JABRA KEYBOARD - HANDOFF  (newest on top; paste this file at the start of the next chat)
+JABRA KEYBOARD - HANDOFF v0.0.9  (newest on top; paste this file at the start of the next chat)
 READ ONLY the part above the first "PREVIOUS HANDOFF" line (sections 0-9). Everything below is history.
 =======================================================================================
 
@@ -33,6 +33,7 @@ READ ONLY the part above the first "PREVIOUS HANDOFF" line (sections 0-9). Every
   symbols, space-drag cursor, keyboard height (portrait/landscape), one-handed mode, haptic/sound; next-word suggestion,
   emoji in suggestions, typed-word preview; emoji panel; local themes.
   DROP: Store (also theme store), key maps, tutorial, tips, survey, more apps.
+  DROPPED BY USER (v0.0.9 session): Bangla suggestions, next-word, local learning, emoji in suggestions, typed-word preview, suggestion bar. Do NOT build them unless the user asks again.
   OFF by default unless user asks: Jatiyo layout, GIF (needs internet), contacts suggestions (needs permission),
   Arabic/Chakma add-ons.
   Voice: NOT own recording (needs RECORD_AUDIO+INTERNET). Plan = button that switches to the phone's system voice typing.
@@ -43,13 +44,14 @@ READ ONLY the part above the first "PREVIOUS HANDOFF" line (sections 0-9). Every
   v0.0.5 number row, symbols, number pad, space-drag cursor, key height, haptic/sound   DONE in code (NOT tested on phone)
   v0.0.6 clipboard history + pinned + search + edit bar   DONE in code (NOT tested on phone)
   v0.0.7 own unique icons for function keys (user request, no emoji)   DONE in code (NOT tested on phone)
-  v0.0.8 novel formatter panel (see 6)   DONE in code (NOT tested on phone)   <- this zip
-  v0.0.9 suggestions: local learning, next word, emoji in suggestions, typed-word preview
+  v0.0.8 novel formatter panel (see 6)   DONE in code (NOT tested on phone)
+  v0.0.9 typing basics: hold-backspace, caps lock, auto capital, Enter action, keyboard picker, More settings page   DONE in code (NOT tested on phone)   <- this zip (suggestions were dropped by user)
   v0.1.0 emoji panel, local themes, one-handed mode
   v0.1.1 system voice button, settings polish
 
-4) STATUS (v0.0.8; v0.0.4 + v0.0.5 were delivered earlier in jabra_v0_0_5.zip, v0.0.6 in jabra_v0_0_6.zip; USER HAS NOT YET CONFIRMED ANY OF THEM BUILD/RUN)
+4) STATUS (v0.0.9 added on top of v0.0.8; v0.0.4 + v0.0.5 were delivered earlier in jabra_v0_0_5.zip, v0.0.6 in jabra_v0_0_6.zip; USER HAS NOT YET CONFIRMED ANY OF THEM BUILD/RUN)
   PROVED BY USER earlier: GitHub build + signed APK + install + typing works (v0.0.3 build).
+  v0.0.9 tested here: tools/TypingTest.java 27/27 (ShiftState + EnterAction), bracket balance of all Kotlin. NOT tested: Kotlin compile, everything on phone.
   v0.0.8 tested here: formatter engine vs ORIGINAL JS (node) 1500/1500 random cases identical (tools/FormatterTest.java + tools/FormatterDiffGen.js), HTML reader, ClipList 18/18, bracket balance of Kotlin. NOT tested: Kotlin compile, org.json, everything on phone.
   v0.0.7 tested here: bracket balance of 4 Kotlin files, ClipList 18/18, diff vs v0.0.6 zip. NOT tested: Kotlin compile, icon look on phone.
   NOTE: the zips I receive are PARTIAL (only changed files). Files NOT in the v0.0.6 zip and NOT touched by me: probhat/, extras/, phonetic/, SettingsActivity.kt, Updater.kt, AndroidManifest, .github.
@@ -62,7 +64,16 @@ READ ONLY the part above the first "PREVIOUS HANDOFF" line (sections 0-9). Every
   If a key is wrong: edit ONLY the table T in probhat/ProbhatLayout.java (key, normal, shift), run tools/ExtrasTest.java.
   SettingsActivity.kt / Updater.kt were NOT in the v0.0.3 zip I received and are NOT touched. New settings live INSIDE the keyboard (? 123 -> gear).
 
-5) HOW IT WORKS (v0.0.8 formatter first, then v0.0.7 icons, then v0.0.6; then v0.0.4 / v0.0.5; v0.0.3 part is below under PREVIOUS)
+5) HOW IT WORKS (v0.0.9 typing basics first, then v0.0.8 formatter, then v0.0.7 icons, then v0.0.6; then v0.0.4 / v0.0.5; v0.0.3 part is below under PREVIOUS)
+  v0.0.9 typing basics:
+    typing/ShiftState.java   pure Java: tap(now) off->shift->(2nd tap within 350 ms)->caps->off; typed() ends one-shot shift (caps stays); autoCap(want) only touches shift it set itself; reset() on new field.
+    typing/EnterAction.java  pure Java: decide(imeOptions) -> action id (Go/Search/Send/Next/Done) or -1 = normal Enter (NO_ENTER_ACTION flag, NONE, UNSPECIFIED -> -1).
+    TypingExtras.kt          RepeatKeyHelper (touch listener: fire at once, again after 400 ms, then every 70 ms / 35 ms after 12 ticks; stops on UP/CANCEL/detach) + MorePanel ("More settings" page, route showPanel("more")).
+    MgbIme.kt hooks "v0.0.9": `shift` is now a property backed by shiftSt (old code unchanged); shift key calls shiftSt.tap; onLetter calls shiftSt.typed; shiftVisual() (blue = caps, light blue = shift, via backgroundTintList);
+                    autoCapUpdate() (getCursorCapsMode(inputType); called in onStartInputView and onUpdateSelection; skipped for Avro/Probhat); doEnter() (host.enter + enter key); pickKeyboard() (InputMethodManager.showInputMethodPicker, long-press ?123);
+                    backspace key gets RepeatKeyHelper; showPanel route "more".
+    JabraExtras.kt hooks "v0.0.9": JabraHost.pickKeyboard() (default empty), JabraPanels.repeatable() on symbols + numpad backspace, settings row r5 "More settings >".
+    Prefs NEW: bs_repeat(true) autocap(true) enter_action(true).
   v0.0.8 formatter:
     formatter/NovelFormatter.java  pure Java engine = port of novel-formatter_v2_updated.html (same option keys: indent indentVal indentUnit skipFirst spacing spacingUnit lh fs align
                     keepB keepI keepU headings hcenter scene sceneText collapse quotes dots dash md zw autoH rules mode sep; booleans are "true"/"false" strings).
@@ -128,7 +139,10 @@ READ ONLY the part above the first "PREVIOUS HANDOFF" line (sections 0-9). Every
   Build env here has NO Gradle/Android SDK/network: Kotlin cannot be compiled here. Java engine can (see above).
   Permissions in app: INTERNET (only on "Check for updates"), REQUEST_INSTALL_PACKAGES. Nothing else.
 
-8) TEST CHECKLIST for user (v0.0.8 first, then v0.0.7, v0.0.6, v0.0.4 + v0.0.5)
+8) TEST CHECKLIST for user (v0.0.9 first, then v0.0.8, then v0.0.7, v0.0.6, v0.0.4 + v0.0.5)
+  v0.0.9: Backspace: type a long line, HOLD backspace -> deletes by itself, faster after a moment; also in ?123 symbols and number pad. Shift: tap = one capital letter; double-tap quickly = CAPS LOCK (key blue), tap = off.
+          Auto caps: new empty note -> first letter is capital (shift light blue); after ". " capital again; Gear -> More settings -> Auto caps OFF -> stops. Avro/Probhat: no auto capital.
+          Enter: in a chat/search box Enter = Send/Search; in a notes app Enter = new line; More settings -> Enter action OFF -> old behaviour. Long-press ?123 (or More settings -> Switch keyboard) -> phone's keyboard picker.
   v0.0.8: type 3-4 paragraphs in a notes app (one with "quotes", ... , **bold**, a line ***). Edit bar -> "Aa" (7th button). Run tab: Source Text -> Preview -> stats + peek appear.
           Select ALL text -> "Replace with HTML code" -> text becomes <p style=...> lines; "Undo last replace" -> old text is back.
           No selection -> Replace -> first tap shows "Tap again..." (nothing changed yet), second tap replaces. Para tab: Indent OFF -> Preview again -> no text-indent. Clean tab: Quotes Curly, dots ON.
@@ -150,6 +164,7 @@ READ ONLY the part above the first "PREVIOUS HANDOFF" line (sections 0-9). Every
           Vibrate/Sound toggles; Number row OFF -> row disappears.
 
 8b) ROLLBACK
+  Only v0.0.9 off: gear -> More settings -> Hold backspace / Auto caps / Enter action OFF (no code change; caps lock + keyboard picker stay, harmless). Code level: delete TypingExtras.kt, typing/*.java, tools/TypingTest.java and the lines marked "v0.0.9" (MgbIme.kt: `shift` back to `private var shift = false`, shift key back to `shift = !shift; refreshLetters()`, onLetter back to `shift = false`). Easiest: re-apply jabra_v0_0_8.zip files.
   Only v0.0.8 off: gear panel -> Formatter OFF -> ABC (apply) (no code change; saved settings keys fmt_* stay, harmless). Code level: delete FormatterFeature.kt, formatter/NovelFormatter.java, tools/FormatterTest.java, tools/FormatterDiffGen.js
     and the lines marked "v0.0.8" (MgbIme.kt: fmtPanel line, openFormatter fun, showPanel route (restore the 2-way if/else), edit bar: items0/items back to one "items" array + the click line without the kind == "fmt" branch; JabraExtras.kt 1 line; JabraIcons.kt "fmt" name + branch). Easiest: re-apply jabra_v0_0_7.zip files.
   Only v0.0.7 off: gear panel -> Icons OFF -> ABC (apply) (no code change). Code level: delete JabraIcons.kt and every line marked "v0.0.7"
@@ -163,12 +178,13 @@ READ ONLY the part above the first "PREVIOUS HANDOFF" line (sections 0-9). Every
   Only Probhat off: do not long-press language key (default stays Avro); code level: delete probhat/ProbhatLayout.java + hooks marked "v0.0.4".
 
 9) NEXT
+  0. v0.0.9 typing basics: test on phone (see 8). Then v0.1.0 (emoji panel, local themes, one-handed mode), v0.1.1 (system voice button, settings polish).
   1. Confirm build is green (Kotlin has never been compiled by me). Send me the error text if red. THIS IS THE BIGGEST RISK: 4 versions of Kotlin are unbuilt.
   2. Look at the icons on the phone: if any looks unclear tell me which (name) -> I fix only that 'when' branch in JabraIcons.kt.
   3. Compare Probhat keys with your Ridmik Probhat (send photo) -> I fix table T in one file.
   4. v0.0.8 formatter: test on phone (see 8). Tell me what feels slow/unclear (tabs, chips, text size) -> I change only FormatterFeature.kt UI part.
-  5. Next roadmap topic: v0.0.9 suggestions (local learning, next word, emoji in suggestions, typed-word preview).
-  Optional later: conjunct-aware backspace for Probhat, Bangla digits option, space-drag stage 2, one-handed mode (v0.0.9), settings screen link in SettingsActivity.
+  5. Next roadmap topic: v0.1.0 (emoji panel, local themes, one-handed mode). Suggestions are DROPPED (user decision).
+  Optional later: conjunct-aware backspace for Probhat, Bangla digits option, space-drag stage 2, settings screen link in SettingsActivity.
 
 =====================================================================================
 PREVIOUS HANDOFF (v0.0.7 file, kept as it was)

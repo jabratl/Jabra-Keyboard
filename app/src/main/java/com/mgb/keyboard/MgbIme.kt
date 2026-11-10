@@ -17,7 +17,11 @@ import com.mgb.keyboard.probhat.ProbhatLayout
 /** v0.1: minimal English QWERTY keyboard. Every key press is wrapped in try/catch. */
 class MgbIme : InputMethodService() {
 
-    private var shift = false
+    private val shiftSt = com.mgb.keyboard.typing.ShiftState()   // v0.0.9: shift / caps lock / auto-capital logic (typing/ShiftState.java)
+    private var shift: Boolean                                   // v0.0.9: same name as before, now backed by shiftSt
+        get() = shiftSt.isShift()
+        set(v) { shiftSt.setShift(v) }
+    private var shiftBtn: Button? = null                         // v0.0.9: to show caps-lock state
     private val letterKeys = mutableListOf<Button>()
 
     // v0.0.3: Avro phonetic state
@@ -39,12 +43,14 @@ class MgbIme : InputMethodService() {
     private val clipPanel by lazy { ClipPanel(this, host, clipStore) }
     private val prefs by lazy { JabraPrefs(this) }
     private val panels by lazy { JabraPanels(this, host) }
+    private val morePanel by lazy { MorePanel(this, host) }   // v0.0.9 "More settings" page
     private val fmtPanel by lazy { FormatterPanel(this, host, ImeFmtIo(this) { pwdField }) }   // v0.0.8 novel formatter
     private val host = object : JabraHost {
         override fun typeText(s: String) { this@MgbIme.typeText(s) }
         override fun commitWord() { this@MgbIme.commitWord() }
         override fun backspace() { this@MgbIme.onBackspace() }
-        override fun enter() { this@MgbIme.sendDownUpKeyEvents(KeyEvent.KEYCODE_ENTER) }
+        override fun enter() { this@MgbIme.doEnter() }   // v0.0.9: was sendDownUpKeyEvents(ENTER) - now uses the app's Send/Search/Go action when it has one
+        override fun pickKeyboard() { this@MgbIme.pickKeyboard() }   // v0.0.9
         override fun showLetters() { this@MgbIme.showLetters() }
         override fun showPanel(name: String) { this@MgbIme.showPanel(name) }
         override fun feedback(v: View) { this@MgbIme.feedback(v) }
@@ -216,6 +222,7 @@ class MgbIme : InputMethodService() {
                 if (isNum && prefs.bool("numpad_auto", true)) { autoNumpad = true; showPanel("numpad") }
                 else if (autoNumpad) { autoNumpad = false; showLetters() }
             } catch (_: Throwable) { }
+            try { shiftSt.reset(); autoCapUpdate() } catch (_: Throwable) { }   // v0.0.9: new field = shift/caps off, then sentence-start rule
             try { refreshLetters() } catch (_: Throwable) { }   // v0.0.4: Probhat labels follow the field type
         } catch (_: Throwable) { latinOnly = false }
     }
@@ -237,6 +244,44 @@ class MgbIme : InputMethodService() {
                 currentInputConnection?.finishComposingText()
             }
         } catch (_: Throwable) { }
+        autoCapUpdate()   // v0.0.9 (has its own try/catch)
+    }
+
+    // ---------- v0.0.9: typing basics ----------
+
+    /** Enter key: if the app asked for an action (Send / Search / Go / Next / Done) do that, else a normal Enter. Setting "enter_action". */
+    private fun doEnter() {
+        try {
+            if (prefs.bool("enter_action", true)) {
+                val a = com.mgb.keyboard.typing.EnterAction.decide(currentInputEditorInfo?.imeOptions ?: 0)
+                if (a >= 0 && currentInputConnection?.performEditorAction(a) == true) return
+            }
+        } catch (_: Throwable) { }
+        sendDownUpKeyEvents(KeyEvent.KEYCODE_ENTER)
+    }
+
+    /** Opens the phone's own keyboard picker (switch to another keyboard). */
+    private fun pickKeyboard() {
+        try { (getSystemService(INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager).showInputMethodPicker() } catch (_: Throwable) { }
+    }
+
+    /** Sentence-start capital for English typing (setting "autocap"). The field decides (inputType flags). Not used for Avro/Probhat (Avro uses capitals on purpose). */
+    private fun autoCapUpdate() {
+        try {
+            if (!prefs.bool("autocap", true)) return
+            if (phoneticOn() || probhatOn()) return
+            val ic = currentInputConnection ?: return
+            val inType = currentInputEditorInfo?.inputType ?: 0
+            val want = ic.getCursorCapsMode(inType) != 0
+            if (shiftSt.autoCap(want)) refreshLetters()
+        } catch (_: Throwable) { }
+    }
+
+    /** Caps lock = blue shift key, one-shot shift = light blue, off = normal. */
+    private fun shiftVisual() {
+        val b = shiftBtn ?: return
+        val tint: Int? = if (shiftSt.isCaps()) Color.parseColor("#2271B1") else if (shiftSt.isShift()) Color.parseColor("#9CC3E6") else null
+        b.backgroundTintList = if (tint == null) null else android.content.res.ColorStateList.valueOf(tint)
     }
 
     private fun phoneticOn(): Boolean = bangla && !latinOnly && !probhat   // v0.0.4: Probhat is not phonetic
@@ -260,6 +305,7 @@ class MgbIme : InputMethodService() {
                      else if (shift) c.uppercase() else c.toString()
         }
         extrasRow?.visibility = if (pb) View.VISIBLE else View.GONE
+        try { shiftVisual() } catch (_: Throwable) { }   // v0.0.9
     }
 
     private fun extrasRowView(): LinearLayout {
@@ -325,7 +371,7 @@ class MgbIme : InputMethodService() {
     private fun showPanel(name: String) {
         val c = container ?: return
         commitWord()
-        val v = try { if (name == "clipboard") clipPanel.build() else if (name == "format") fmtPanel.build() else panels.build(name) } catch (_: Throwable) { null }   // v0.0.8: "format"
+        val v = try { if (name == "clipboard") clipPanel.build() else if (name == "format") fmtPanel.build() else if (name == "more") morePanel.build() else panels.build(name) } catch (_: Throwable) { null }   // v0.0.8: "format"
         if (v == null) { showLetters(); return }
         c.removeAllViews()
         c.addView(v)
@@ -341,7 +387,7 @@ class MgbIme : InputMethodService() {
 
     private fun onLetter(c: Char) {
         val ch = if (shift) c.uppercaseChar() else c
-        if (shift) { shift = false; refreshLetters() }
+        if (shift) { shiftSt.typed(); refreshLetters() }   // v0.0.9: caps lock stays, one-shot shift ends
         if (probhatOn() && probhatType(ch)) return   // v0.0.4: fixed Bangla layout (not in password/email/URL/number fields)
         if (!phoneticOn()) { typeText(ch.toString()); return }
         buf.append(ch)
@@ -424,13 +470,19 @@ class MgbIme : InputMethodService() {
         root.addView(r2)
 
         val r3 = row()
-        r3.addView(JabraIcons.put(this, key("⇧", 1.5f) { shift = !shift; refreshLetters() }, "shift"))   // v0.0.7
+        val shb = JabraIcons.put(this, key("⇧", 1.5f) { shiftSt.tap(android.os.SystemClock.uptimeMillis()); refreshLetters() }, "shift")   // v0.0.7 + v0.0.9 (double tap = caps lock)
+        shiftBtn = shb
+        r3.addView(shb)
         "zxcvbnm".forEach { r3.addView(letter(it)) }
-        r3.addView(JabraIcons.put(this, key("⌫", 1.5f) { onBackspace() }, "back"))   // v0.0.7
+        val bkb = JabraIcons.put(this, key("⌫", 1.5f) { onBackspace() }, "back")   // v0.0.7
+        try { if (prefs.bool("bs_repeat", true)) RepeatKeyHelper({ onBackspace() }, { v -> feedback(v) }).attach(bkb) } catch (_: Throwable) { }   // v0.0.9: hold = repeat
+        r3.addView(bkb)
         root.addView(r3)
 
         val r4 = row()
-        r4.addView(key("?123", 1.2f) { showPanel("symbols") })   // v0.0.5: symbols / number pad / settings panel
+        val symKey = key("?123", 1.2f) { showPanel("symbols") }   // v0.0.5: symbols / number pad / settings panel
+        try { symKey.setOnLongClickListener { try { pickKeyboard() } catch (_: Throwable) { }; true } } catch (_: Throwable) { }   // v0.0.9: long-press = keyboard picker
+        r4.addView(symKey)
         val lb = key(langLabel(), 1.3f) { toggleLang() }
         try { lb.setOnLongClickListener { try { switchBnLayout() } catch (_: Throwable) { }; true } } catch (_: Throwable) { }   // v0.0.4: long-press = Avro <-> Probhat
         langBtn = lb
@@ -445,7 +497,7 @@ class MgbIme : InputMethodService() {
         dandaBtn = db
         r4.addView(db)
         r4.addView(key(".", 1f) { commitWord(); typeText(".") })
-        r4.addView(JabraIcons.put(this, key("⏎", 1.4f) { commitWord(); sendDownUpKeyEvents(KeyEvent.KEYCODE_ENTER) }, "enter"))   // v0.0.7
+        r4.addView(JabraIcons.put(this, key("⏎", 1.4f) { commitWord(); doEnter() }, "enter"))   // v0.0.7 + v0.0.9
         root.addView(r4)
 
         try { refreshLetters() } catch (_: Throwable) { }   // v0.0.4: right labels from the start (Probhat after rebuild / rotate)
