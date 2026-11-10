@@ -135,7 +135,7 @@ class MorePanel(private val ctx: Context, private val host: JabraHost) {
         val root = LinearLayout(ctx)
         root.orientation = LinearLayout.VERTICAL
         root.setBackgroundColor(Color.parseColor("#DDDDDD"))
-        try { root.setBackgroundColor(JabraThemes.bg(prefs)) } catch (_: Throwable) { }   // v0.1.0
+        try { JabraThemes.paint(prefs, root) } catch (_: Throwable) { }   // v0.1.0   // v0.2.6
         root.setPadding(dp(2), dp(4), dp(2), dp(4))
 
         val r1 = row()
@@ -189,6 +189,17 @@ class MorePanel(private val ctx: Context, private val host: JabraHost) {
             lookBtn.text = "Look: " + (if (prefs.int("look", 0) == 1) "Jabra" else "Classic")
             rl.addView(lookBtn)
             root.addView(rl)
+        } catch (_: Throwable) { }
+        try {   // v0.2.6: Key border Border / Borderless
+            val rkb = row()
+            val kbBtn = pk("", 1f) { btn ->
+                val nv = if (prefs.int("key_border", 0) == 1) 0 else 1
+                prefs.setInt("key_border", nv)
+                btn.text = "Key border: " + (if (nv == 1) "Borderless" else "Border")
+            }
+            kbBtn.text = "Key border: " + (if (prefs.int("key_border", 0) == 1) "Borderless" else "Border")
+            rkb.addView(kbBtn)
+            root.addView(rkb)
         } catch (_: Throwable) { }
         // v0.1.2: PC mode rows (mode key = first key of the edit bar)
         try {

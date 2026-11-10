@@ -21,8 +21,29 @@ object JabraLook {
     /** Normal key fill: the theme key colour, white for the Classic theme. */
     fun fill(p: JabraPrefs): Int = JabraThemes.cur(p).key ?: 0xFFFFFFFF.toInt()
 
+    /** v0.2.6 Key border: Borderless = flat key (theme bg colour, transparent-ish on gradient themes), soft highlight while pressed. */
+    private fun flat(p: JabraPrefs, b: Button) {
+        val d = b.resources.displayMetrics.density
+        val t = JabraThemes.cur(p)
+        val base = if (t.bg2 != null) ((t.key ?: 0xFFFFFFFF.toInt()) and 0x00FFFFFF) or 0x2A000000 else t.bg
+        val press = ((t.text ?: 0xFF222222.toInt()) and 0x00FFFFFF) or 0x33000000
+        val up = GradientDrawable()
+        up.setColor(base)
+        up.cornerRadius = 8f * d
+        val down = GradientDrawable()
+        down.setColor(press)
+        down.cornerRadius = 8f * d
+        val sl = StateListDrawable()
+        sl.addState(intArrayOf(android.R.attr.state_pressed), down)
+        sl.addState(intArrayOf(), up)
+        b.background = sl
+        b.backgroundTintList = null
+        b.stateListAnimator = null
+    }
+
     fun shape(p: JabraPrefs, b: Button, kind: Int) {
         try {
+            if (JabraThemes.borderless(p)) { flat(p, b); return }   // v0.2.6
             if (!on(p)) return
             val d = b.resources.displayMetrics.density
             val base = if (kind == FUNC) LookColors.funcFill(JabraThemes.index(p)) else fill(p)

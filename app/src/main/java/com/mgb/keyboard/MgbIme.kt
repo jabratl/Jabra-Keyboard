@@ -566,7 +566,7 @@ class MgbIme : InputMethodService() {
         root.orientation = LinearLayout.VERTICAL
         root.setBackgroundColor(Color.parseColor("#DDDDDD"))
         root.setPadding(dp(2), dp(4), dp(2), dp(4))
-        try { root.setBackgroundColor(JabraThemes.bg(prefs)) } catch (_: Throwable) { }   // v0.1.0: theme background (Classic = same grey)
+        try { JabraThemes.paint(prefs, root) } catch (_: Throwable) { }   // v0.1.0: theme background (Classic = same grey)   // v0.2.6
 
         try { pcState.setPc(prefs.bool("pc_mode", false)) } catch (_: Throwable) { }   // v0.1.2: pref pc_mode is the one truth
         // v0.0.6: edit bar (setting "edit_bar", default ON): clipboard / select all / cut / copy / paste / paste plain

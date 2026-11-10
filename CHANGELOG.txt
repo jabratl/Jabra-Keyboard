@@ -1,3 +1,15 @@
+v0.2.6 - Gradient themes + Key border (finishes the v0.2.1 - v0.2.6 roadmap)
+- NEW: 2 gradient themes at the END of the theme list: "Purple Haze" (index 18) and "Coral Sunset" (index 19). Keyboard + all keyboard panels (More settings, Size, Toolbar, Pad, Typing, Emoji, Theme picker) show the gradient. Picker tiles show the gradient too. Theme list order is NOT changed (saved theme index still works).
+- NEW setting: Key border = Border (default, exactly as before) / Borderless (flat keys: no key box, only a soft highlight while pressed). Place: app screen -> Look -> Key border, and More settings -> Key border button. Works with Look Classic and Jabra, and with every theme.
+- Code: ThemeEmojiExtras.kt (bg2 field, paint(), borderless(), 2 themes), JabraLook.kt (flat() + 1 line in shape()), typing/LookColors.java (funcFill 18, 19), ThemePanel.kt (gradient tile), 9 one-line hooks setBackgroundColor(JabraThemes.bg) -> JabraThemes.paint, SettingsGroups.kt, TypingExtras.kt, app/build.gradle.kts (0.2.6). Hooks marked "v0.2.6". New pref key_border (default 0). No new permission, no manifest change.
+
+WHY: roadmap v0.2.6 (user asked "V0.2.6 kore dao").
+BROKE: nothing intended. tools/LookTest.java: the old check "index 18 -> classic" is now index 20 (18 / 19 are real themes).
+NOT tested: Kotlin compile (first check = GitHub Actions), everything on a phone: gradient look at 360 px and 1280 px (portrait + landscape), readability of key text on Purple Haze / Coral Sunset, Borderless on light, dark and gradient themes, Shift / Caps highlight in Borderless (faint on gradient themes, tint on a mostly transparent key), press highlight visible, function / space keys in Borderless, panels (More settings, Size, Toolbar, Pad, Emoji) with gradient, one-hand mode + gradient.
+TESTED here: LookTest 31/31, ClipSelect 20, Clip 39, Toolbar 44, Pad 9, Typing 27, DoubleSpace 37, Pc 19, SizePct 28, Hint 175. Bracket balance of the 6 changed Kotlin files OK; code-only diff = only the marked hooks.
+Rollback: Key border: Border + pick another theme (no code change). Code level + easiest way: see HANDOFF section 8b (re-apply jabra_v0_2_5_3 files).
+Files: ThemeEmojiExtras.kt, JabraLook.kt, ThemePanel.kt, JabraExtras.kt, MgbIme.kt, PadPanel.kt, SizePrefs.kt, ToolbarPanel.kt, TypingExtras.kt, TypingPrefs.kt, SettingsGroups.kt, typing/LookColors.java, tools/LookTest.java, app/build.gradle.kts, CHANGELOG.txt, CHECKLIST.txt, HANDOFF_Jabra-Keyboard_v0.2.6.txt (new name, replaces ..._v0.2.5.3.txt).
+
 v0.2.5.3 - Clipboard part 3: Select mode / Manage (finishes v0.2.5 = clipboard like Ridmik, part 3 of 3)
 - NEW: select mode, in BOTH views (List and Cards). Long-press a clip = select mode with that clip selected. Or press the new "Manage" button on the header line (right of View) = select mode with 0 selected.
 - In select mode: tap = check / uncheck (NO paste), every row / card shows a check box, pinned clips keep a visible "★" / "★ Pinned" tag, header line says "N selected". Star and x are hidden while selecting.

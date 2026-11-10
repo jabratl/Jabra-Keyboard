@@ -4,7 +4,7 @@ package com.mgb.keyboard.typing;
 public final class LookColors {
     private LookColors() { }
 
-    /** Function-key fill per theme index (0 Classic, 1 Blue, 2 Mint, 3 Sand, 4 Dark; v0.2.4: 5..17). Unknown index -> Classic value. */
+    /** Function-key fill per theme index (0 Classic, 1 Blue, 2 Mint, 3 Sand, 4 Dark; v0.2.4: 5..17, v0.2.6: 18..19). Unknown index -> Classic value. */
     public static int funcFill(int themeIndex) {
         switch (themeIndex) {
             case 1: return 0xFFB5CFE8;
@@ -24,6 +24,8 @@ public final class LookColors {
             case 15: return 0xFFE9B3C5;
             case 16: return 0xFFA0A5AE;
             case 17: return 0xFF332B52;
+            case 18: return 0xFF4A2C80;   // v0.2.6 gradient themes 18..19
+            case 19: return 0xFFFFC9BA;
             default: return 0xFFC3C9D0;
         }
     }

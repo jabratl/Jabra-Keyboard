@@ -25,7 +25,7 @@ import com.mgb.keyboard.emoji.RecentEmoji
 
 /** Local colour themes (no network, no store). */
 object JabraThemes {
-    class T(val name: String, val bg: Int, val key: Int?, val text: Int?)
+    class T(val name: String, val bg: Int, val key: Int?, val text: Int?, val bg2: Int? = null)   // v0.2.6: bg2 != null = gradient bg (bg -> bg2)
 
     val ALL: Array<T> = arrayOf(
         T("Classic", 0xFFDDDDDD.toInt(), null, null),
@@ -45,12 +45,25 @@ object JabraThemes {
         T("Aqua", 0xFFBFEEE3.toInt(), 0xFFEAFBF7.toInt(), 0xFF0F4A40.toInt()),
         T("Rose", 0xFFF6D3DE.toInt(), 0xFFFFF1F5.toInt(), 0xFF5A1F35.toInt()),
         T("Silver Grey", 0xFFB9BDC4.toInt(), 0xFFE6E8EC.toInt(), 0xFF23262B.toInt()),
-        T("Dusk", 0xFF2A2340.toInt(), 0xFF3C3460.toInt(), 0xFFEDE8FF.toInt())
+        T("Dusk", 0xFF2A2340.toInt(), 0xFF3C3460.toInt(), 0xFFEDE8FF.toInt()),
+        T("Purple Haze", 0xFF3B1F6B.toInt(), 0xFF5B3A9A.toInt(), 0xFFF3EBFF.toInt(), 0xFF9C45C2.toInt()),   // v0.2.6: indexes 18..19 appended (gradients), NEVER reorder
+        T("Coral Sunset", 0xFFFF9A7B.toInt(), 0xFFFFF1EC.toInt(), 0xFF4A1A22.toInt(), 0xFFE8587A.toInt())
     )
 
     fun index(p: JabraPrefs): Int = p.int("theme", 0).coerceIn(0, ALL.size - 1)
     fun cur(p: JabraPrefs): T = ALL[index(p)]
     fun bg(p: JabraPrefs): Int = cur(p).bg
+
+    /** v0.2.6: paints the theme background on a view: gradient (bg -> bg2) for gradient themes, else the solid bg as before. */
+    fun paint(p: JabraPrefs, v: View) {
+        val t = cur(p)
+        val b2 = t.bg2
+        if (b2 == null) { v.setBackgroundColor(t.bg); return }
+        v.background = android.graphics.drawable.GradientDrawable(android.graphics.drawable.GradientDrawable.Orientation.TL_BR, intArrayOf(t.bg, b2))
+    }
+
+    /** v0.2.6: pref key_border (int): 0 = Border (default = as before), 1 = Borderless (flat keys, only a soft press highlight). */
+    fun borderless(p: JabraPrefs): Boolean = p.int("key_border", 0) == 1
     fun keyTint(p: JabraPrefs): ColorStateList? = cur(p).key?.let { ColorStateList.valueOf(it) }
 
     /** Line-icon colour: Classic = #222222 (as before), other themes = the theme text colour (Dark = light icons). */
@@ -121,7 +134,7 @@ class EmojiPanel(private val ctx: Context, private val host: JabraHost) {
         val root = LinearLayout(ctx)
         root.orientation = LinearLayout.VERTICAL
         root.setBackgroundColor(Color.parseColor("#DDDDDD"))
-        try { root.setBackgroundColor(JabraThemes.bg(prefs)) } catch (_: Throwable) { }
+        try { JabraThemes.paint(prefs, root) } catch (_: Throwable) { }   // v0.2.6
         root.setPadding(dp(2), dp(4), dp(2), dp(4))
 
         // tabs: recent + one per category

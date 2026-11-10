@@ -109,6 +109,7 @@ object SettingsGroups {
         group("Look") { g ->
             cycle(g, "Theme", { Array(JabraThemes.ALL.size) { i -> JabraThemes.ALL[i].name } }, { JabraThemes.index(prefs) }, { prefs.setInt("theme", it) })
             cycle(g, "Look", { arrayOf("Classic", "Jabra") }, { if (prefs.int("look", 0) == 1) 1 else 0 }, { prefs.setInt("look", it) })
+            cycle(g, "Key border", { arrayOf("Border", "Borderless") }, { if (prefs.int("key_border", 0) == 1) 1 else 0 }, { prefs.setInt("key_border", it) })   // v0.2.6
             cycle(g, "One-hand", { arrayOf("Off", "Left", "Right") }, { JabraOneHand.mode(prefs) }, { prefs.setInt("onehand", it) })
             toggle(g, "Icons", "icons_on", true)
             toggle(g, "Large number row", "numrow_large", false)

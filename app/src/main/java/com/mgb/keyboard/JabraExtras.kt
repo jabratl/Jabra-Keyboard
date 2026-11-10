@@ -140,7 +140,7 @@ class JabraPanels(private val ctx: Context, private val host: JabraHost) {
         val r = LinearLayout(ctx)
         r.orientation = LinearLayout.VERTICAL
         r.setBackgroundColor(Color.parseColor("#DDDDDD"))
-        try { r.setBackgroundColor(JabraThemes.bg(prefs)) } catch (_: Throwable) { }   // v0.1.0
+        try { JabraThemes.paint(prefs, r) } catch (_: Throwable) { }   // v0.1.0   // v0.2.6
         r.setPadding(dp(2), dp(4), dp(2), dp(4))
         return r
     }

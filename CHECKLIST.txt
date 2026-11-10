@@ -90,3 +90,10 @@ I. CLIPBOARD (v0.2.5.1)
  [ ] Delete: first tap "Sure? delete N" (text not cut), second tap deletes; "Deleted N"; pinned ones you selected are deleted too. Tap Done instead = nothing deleted.
  [ ] Done and ABC leave select mode; close and reopen the clipboard = normal mode, nothing checked.
  [ ] Search in select mode: the selection stays; Add and Clear still work. Outside select mode: star, x, tap = paste work as before.
+
+J) v0.2.6 gradient themes + Key border
+ [ ] More settings -> Theme picker: 2 new tiles "Purple Haze" and "Coral Sunset" with a gradient. Tap one, ABC (apply): keyboard background is a gradient, key text readable (360 px + landscape).
+ [ ] Open More settings, Size, Toolbar, Pad, Emoji panels with a gradient theme: same gradient behind them, texts readable.
+ [ ] App screen -> Look -> Key border: Borderless. Keys lose their box, a soft highlight shows while pressed. Check Classic, Dark and a gradient theme. Back to Border = old look.
+ [ ] Borderless: Shift / Caps still shows a highlight (may be faint on gradient themes - tell me if you cannot see it). Space, Enter, backspace keys look fine.
+ [ ] Old themes (Classic / Blue / Dark ...) look exactly as before when Key border = Border.

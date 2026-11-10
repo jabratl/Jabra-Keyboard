@@ -89,7 +89,7 @@ class SizePanel(private val ctx: Context, private val host: JabraHost) {
         val root = LinearLayout(ctx)
         root.orientation = LinearLayout.VERTICAL
         root.setBackgroundColor(Color.parseColor("#DDDDDD"))
-        try { root.setBackgroundColor(JabraThemes.bg(prefs)) } catch (_: Throwable) { }
+        try { JabraThemes.paint(prefs, root) } catch (_: Throwable) { }   // v0.2.6
         root.setPadding(dp(2), dp(4), dp(2), dp(4))
 
         for (land in booleanArrayOf(false, true)) {

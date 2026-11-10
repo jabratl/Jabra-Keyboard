@@ -74,7 +74,10 @@ class ThemePanel(private val ctx: Context, private val host: JabraHost) {
             p.style = Paint.Style.FILL
             p.color = t.bg
             rect.set(0f, 0f, w, h)
+            val g2 = t.bg2   // v0.2.6: gradient preview
+            if (g2 != null) p.shader = android.graphics.LinearGradient(0f, 0f, w, h, t.bg, g2, android.graphics.Shader.TileMode.CLAMP)
             canvas.drawRoundRect(rect, r, r, p)
+            p.shader = null
             val keyC = t.key ?: Color.WHITE
             val fnC = LookColors.funcFill(idx)
             val pad = dp(8).toFloat()
@@ -129,7 +132,7 @@ class ThemePanel(private val ctx: Context, private val host: JabraHost) {
         val root = LinearLayout(ctx)
         root.orientation = LinearLayout.VERTICAL
         root.setBackgroundColor(Color.parseColor("#DDDDDD"))
-        try { root.setBackgroundColor(JabraThemes.bg(prefs)) } catch (_: Throwable) { }
+        try { JabraThemes.paint(prefs, root) } catch (_: Throwable) { }   // v0.2.6
         root.setPadding(dp(2), dp(4), dp(2), dp(4))
 
         val sv = ScrollView(ctx)
