@@ -1,3 +1,8 @@
+v0.3.7 - NEW: Clipboard Undo delete
+- Deleted a clip by mistake (x on a clip / card, Manage > Delete, or Clear)? A "↶ Undo" button appears on the header line of the Clipboard panel; one tap brings the deleted clips back (pinned ones get pinned again). Stays until you leave the clipboard or delete something else.
+- Code: ClipboardFeature.kt only (undoBuf, keepUndo(), doUndo(), 5 small hooks marked "v0.3.7"). No new setting / key / permission.
+BROKE: nothing intended.
+
 v0.3.6 - NEW: Clipboard multi-paste
 - Clipboard > Manage (or long-press a clip) > tick several clips > new "Paste" button types ALL ticked clips at once, in the order you ticked them, separated by a blank line, then returns to the letters. Good for collecting several copied pieces of a chapter and pasting them in one tap.
 - Code: ClipboardFeature.kt (selectBar(): 1 new button). No new setting / key / permission.

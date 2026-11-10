@@ -51,7 +51,25 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
     private var confirmDel = false        // v0.2.5.3: "Sure? delete N" two-tap safety
 
     /** Call when the panel is opened from outside (fresh start). */
-    fun reset() { searching = false; query = ""; confirmClear = false; msg = ""; sel.leave(); confirmDel = false }
+    // v0.3.7: Undo for deleted clips (x, Delete, Clear). Kept until you leave the clipboard or delete something else.
+    private var undoBuf: List<Pair<String, Boolean>> = emptyList()
+    private fun keepUndo(items: List<ClipList.Item>) { if (items.isNotEmpty()) undoBuf = items.map { Pair(it.text, it.pinned) } }
+    private fun doUndo() {
+        var n = 0
+        for ((t, p) in undoBuf.reversed()) {
+            try {
+                store.add(t)
+                if (p) { val x = store.view("").firstOrNull { c -> c.text == t }; if (x != null && !x.pinned) store.togglePin(x) }
+                n++
+            } catch (_: Throwable) { }
+        }
+        undoBuf = emptyList()
+        msg = "Restored " + n
+        confirmClear = false; confirmDel = false
+        refresh()
+    }
+
+    fun reset() { undoBuf = emptyList(); searching = false; query = ""; confirmClear = false; msg = ""; sel.leave(); confirmDel = false }
 
     private fun dp(v: Int): Int = (v * ctx.resources.displayMetrics.density).toInt()
 
@@ -106,7 +124,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
         top.addView(searchBtn)
         top.addView(btn("Add", 1.0f, 40) { addFromField() })   // v0.2.5.1: save the current field text as a clip
         val clearBtn = btn(if (confirmClear) "Sure? (unpinned)" else "Clear", 1.8f, 40) {
-            if (confirmClear) { store.clearUnpinned(); confirmClear = false } else confirmClear = true
+            if (confirmClear) { keepUndo(store.recentView("")); store.clearUnpinned(); confirmClear = false } else confirmClear = true
             refresh()
         }
         if (confirmClear) clearBtn.textSize = 12f   // v0.2.5.1: the button is a bit narrower now
@@ -127,6 +145,12 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
         m.setPadding(dp(8), 0, dp(4), 0)
         m.layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
         head.addView(m)
+        if (undoBuf.isNotEmpty()) {   // v0.3.7
+            val undoBtn = btn("↶ Undo", 0f, 30) { doUndo() }
+            undoBtn.textSize = 12f
+            undoBtn.setPadding(dp(10), 0, dp(10), 0)
+            head.addView(undoBtn)
+        }
         val viewBtn = btn(if (cardsOn) "View: Cards" else "View: List", 0f, 30) {
             try { JabraPrefs(ctx).setInt("clip_view", if (cardsOn) 0 else 1) } catch (_: Throwable) { }
             confirmClear = false
@@ -176,7 +200,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
         val cards: View? = if (cardsOn && items.isNotEmpty()) {
             ClipCards.build(ctx, host, pinnedItems, recentItems, !searching, lines,
                 { it2 -> store.togglePin(it2); refresh() },
-                { it2 -> store.remove(it2); refresh() },
+                { it2 -> keepUndo(listOf(it2)); store.remove(it2); refresh() },
                 SelectMode(selOn, { x -> sel.isSelected(x) }, { x -> sel.toggle(x); confirmDel = false; refresh() }, { x -> sel.enterWith(x); confirmDel = false; refresh() }))
         } else null
         if (cards != null) {
@@ -244,6 +268,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
         val del = btn(if (confirmDel) "Sure? delete " + n else "Delete", if (confirmDel) 2.2f else 1.2f, 34) {
             if (n == 0) { msg = "Nothing selected"; confirmDel = false }
             else if (confirmDel) {
+                keepUndo(sel.selection())
                 val gone = store.removeAll(sel.selection())
                 sel.clear()
                 msg = "Deleted " + gone
@@ -308,7 +333,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
         r.addView(t)
         if (selOn) return r   // v0.2.5.3: no star / x while selecting
         r.addView(JabraIcons.put(ctx, btn(if (item.pinned) "★" else "☆", 0f, rowH) { store.togglePin(item); refresh() }.also { it.minimumWidth = dp(44); it.minWidth = dp(44) }, if (item.pinned) "pinned" else "pin"))   // v0.0.7
-        r.addView(JabraIcons.put(ctx, btn("✕", 0f, rowH) { store.remove(item); refresh() }.also { it.minimumWidth = dp(44); it.minWidth = dp(44) }, "close"))   // v0.0.7
+        r.addView(JabraIcons.put(ctx, btn("✕", 0f, rowH) { keepUndo(listOf(item)); store.remove(item); refresh() }.also { it.minimumWidth = dp(44); it.minWidth = dp(44) }, "close"))   // v0.0.7
         return r
     }
 }
