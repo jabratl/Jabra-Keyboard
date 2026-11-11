@@ -38,7 +38,8 @@ class MgbIme : InputMethodService() {
     private var probhat = false                // prefs key "bn_layout" = "probhat"
     private var container: FrameLayout? = null // holds the letters view OR a panel (symbols / numpad / settings)
     private var autoNumpad = false             // numpad was opened automatically for a number/phone field
-    private var extrasRow: LinearLayout? = null // Probhat extra row (vowels, ঁ ঃ ৎ)
+    private var extrasRow: LinearLayout? = null // (old v0.0.4 Probhat vowel row; not built any more since v0.9.10.3)
+    private val pbExtraKeys = mutableListOf<Pair<Button, Array<String>>>()   // v0.9.10.3: Probhat keys inside the 3 letter rows (GONE outside Probhat)
     // v0.0.6: clipboard history + edit bar
     private var pwdField = false               // true in password fields: nothing is recorded there
     private var clipListener: ClipboardManager.OnPrimaryClipChangedListener? = null
@@ -415,9 +416,37 @@ class MgbIme : InputMethodService() {
             if (!nt.contentEquals(b.text)) b.text = nt   // v0.6.1: no relayout when the label is already right
         }
         relabelNumbers()   // v0.9.4 (R4)
-        extrasRow?.visibility = extrasVis(pb)   // v0.9.7 (V2): h_lock keeps the row's space outside Probhat
+        relabelPbExtras(pb)   // v0.9.10.3: extra Probhat keys inside the letter rows (no separate vowel row, so no blank row)
         try { shiftVisual() } catch (_: Throwable) { }   // v0.0.9
         refreshHints()   // v0.1.6: hint labels follow the language / layout
+    }
+
+    /** v0.9.10.3: adds one Probhat-only key ({normal, shift}) to a letter row. It is GONE in English / Avro, so those rows are unchanged. */
+    private fun pbExtra(r: LinearLayout, pair: Array<String>) {
+        val b = key("", 1f) { onPbExtra(pair) }
+        try { val lp = prefs.int("letter_pct", -1); if (com.mgb.keyboard.typing.SizePct.letterValid(lp)) b.textSize = com.mgb.keyboard.typing.SizePct.letterSp(lp) } catch (_: Throwable) { }
+        try { if (prefs.bool("letter_bold", false)) b.setTypeface(b.typeface, android.graphics.Typeface.BOLD) } catch (_: Throwable) { }
+        val pb = probhatOn()
+        b.text = ProbhatLayout.extraLabel(if (pb && shift) pair[1] else pair[0])
+        b.visibility = if (pb) View.VISIBLE else View.GONE
+        pbExtraKeys.add(Pair(b, pair))
+        r.addView(b)
+    }
+
+    private fun onPbExtra(pair: Array<String>) {
+        commitWord()
+        val s = if (shift) pair[1] else pair[0]
+        if (shift) { shiftSt.typed(); refreshLetters() }
+        typeText(s)
+    }
+
+    private fun relabelPbExtras(pb: Boolean) {
+        pbExtraKeys.forEach { (b, pair) ->
+            val v = if (pb) View.VISIBLE else View.GONE
+            if (b.visibility != v) b.visibility = v
+            val nt = ProbhatLayout.extraLabel(if (pb && shift) pair[1] else pair[0])
+            if (!nt.contentEquals(b.text)) b.text = nt
+        }
     }
 
     private fun extrasRowView(): LinearLayout {
@@ -859,14 +888,17 @@ class MgbIme : InputMethodService() {
             }
         } catch (_: Throwable) { }
         // v0.0.4: Probhat extra row (vowels, ঁ ঃ ৎ). Hidden (GONE) unless Probhat is active.
-        try { root.addView(extrasRowView()) } catch (_: Throwable) { extrasRow = null }
+        // v0.9.10.3: the Probhat vowel row (and its reserved blank space in English / Avro) is gone; Probhat fits in the 3 letter rows
+        pbExtraKeys.clear()
 
         val r1 = row()
         "qwertyuiop".forEach { r1.addView(letter(it)) }
+        try { ProbhatLayout.EXTRA_ROW1.forEach { pbExtra(r1, it) } } catch (_: Throwable) { }   // v0.9.10.3
         root.addView(r1)
 
         val r2 = row()
         "asdfghjkl".forEach { r2.addView(letter(it)) }
+        try { ProbhatLayout.EXTRA_ROW2.forEach { pbExtra(r2, it) } } catch (_: Throwable) { }   // v0.9.10.3
         root.addView(r2)
 
         val r3 = row()
@@ -875,6 +907,7 @@ class MgbIme : InputMethodService() {
         fn(shb)   // v0.1.5
         r3.addView(shb)
         "zxcvbnm".forEach { r3.addView(letter(it)) }
+        try { ProbhatLayout.EXTRA_ROW3.forEach { pbExtra(r3, it) } } catch (_: Throwable) { }   // v0.9.10.3
         val bkb = JabraIcons.putThemed(this, key("⌫", 1.5f) { onBackspace() }, "back")   // v0.0.7
         try { if (prefs.bool("bs_repeat", true)) RepeatKeyHelper({ onBackspace() }, { v -> feedback(v) }, if (prefs.bool("bs_word", true)) ({ onBackspaceWord() }) else null).attach(bkb) } catch (_: Throwable) { }   // v0.0.9: hold = repeat
         r3.addView(fn(bkb))   // v0.1.5

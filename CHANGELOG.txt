@@ -1,3 +1,11 @@
+v0.9.10.3 - FIX: no blank row under the number row; Probhat fits in the 3 letter rows
+- WHY: v0.9.7 kept the Probhat vowel row (38 dp) as an INVISIBLE blank band in English / Avro so the height would not jump. User wants the older look: Probhat Bangla alphabet inside the 3 letter rows, no extra row.
+- What you get: English and Avro have NO blank row (number row, then q-row, a-row, z-row). Probhat uses the same 3 rows: row 1 = 12 keys (q..p + ে ো), row 2 = 10 keys (a..l + ৃ/ঞ), row 3 = shift + 7 letters + 2 extra keys (্ / ZWNJ and ঁ / ৎ) + backspace. Vowels আ ই ঈ উ ঊ এ ঐ ও ঔ and ং ঃ are on the letters / shift layer. Keyboard height is the same in all languages without the old lock.
+- Code: probhat/ProbhatLayout.java (new table + EXTRA_ROW1/2/3), MgbIme.kt (vowel row no longer added; pbExtra / onPbExtra / relabelPbExtras; extra keys are GONE outside Probhat), tools/ExtrasTest.java (new table). Pref h_lock stays but now does nothing.
+BROKE: nothing intended. Probhat key positions changed (old 26-key table replaced). NOT tested: Kotlin compile (GitHub Actions first); phone look at 360 dp.
+TESTED here: ExtrasTest 134/134; bracket balance of MgbIme.kt.
+Rollback: restore the 4 files from v0.9.10.2.
+
 v0.9.10.2 - CHANGE: space-bar swipe = max 1 language per swipe (user request)
 - WHY: user wants one swipe to move only one language (like a simple swipe), not 2-3 languages on a long swipe.
 - What you get: swipe on space right = next language, left = previous, never more than 1 step away from the language you started on, however far the finger goes. Moving the finger back to the start point gives the start language again. Cursor drag (short drag) and tap = space are unchanged.

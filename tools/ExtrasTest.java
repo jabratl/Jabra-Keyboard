@@ -30,22 +30,23 @@ public class ExtrasTest {
         String cons = "কখগঘঙচছজঝঞটঠডঢণতথদধনপফবভমযরলশষসহ";
         for (char c : cons.toCharArray()) ok(all.contains(String.valueOf(c)), "consonant not reachable: " + c);
         // ড় ঢ় য় (decomposed with nukta)
-        ok(ProbhatLayout.map('p').equals("ড়"), "p should be ড়");
-        ok(ProbhatLayout.map('P').equals("ঢ়"), "P should be ঢ়");
-        ok(ProbhatLayout.map('W').equals("য়"), "W should be য়");
+        ok(ProbhatLayout.map('R').equals("ড়"), "R should be ড়");
+        ok(ProbhatLayout.map('X').equals("ঢ়"), "X should be ঢ়");
+        ok(ProbhatLayout.map('z').equals("য়"), "z should be য়");
         // kar signs + hasanta + vowels
         String signs = "াি ীুূৃেৈোৌ্অঋ".replace(" ", "");
         for (char c : signs.toCharArray()) ok(all.contains(String.valueOf(c)), "sign/vowel not reachable: " + c);
         for (String v : new String[]{"আ","ই","ঈ","উ","ঊ","এ","ঐ","ও","ঔ","ং","ঃ","ঁ","ৎ"}) ok(all.contains(v), "missing " + v);
         // a few spot checks
-        ok("ক".equals(ProbhatLayout.map('j')), "j=ক");
-        ok("া".equals(ProbhatLayout.map('f')), "f=া");
-        ok("্".equals(ProbhatLayout.map('g')), "g=্");
+        ok("ক".equals(ProbhatLayout.map('k')), "k=ক");
+        ok("া".equals(ProbhatLayout.map('a')), "a=া");
+        ok("্".equals(ProbhatLayout.EXTRA_ROW3[0][0]), "extra row3 key1 = ্");
+        ok(ProbhatLayout.EXTRA_ROW1.length == 2 && ProbhatLayout.EXTRA_ROW2.length == 1 && ProbhatLayout.EXTRA_ROW3.length == 2, "extra key counts 2/1/2");
         // unknown key -> null (app falls back to normal typing), label never crashes
         ok(ProbhatLayout.map('1') == null, "digit must be null");
         ok(ProbhatLayout.label('1').equals("1"), "label of unknown key");
-        ok(ProbhatLayout.label('f').startsWith("◌"), "kar label has dotted circle");
-        ok(ProbhatLayout.label('j').equals("ক"), "letter label plain");
+        ok(ProbhatLayout.label('a').startsWith("◌"), "kar label has dotted circle");
+        ok(ProbhatLayout.label('k').equals("ক"), "letter label plain");
         ok(ProbhatLayout.extraLabel("‌").equals("ZWNJ"), "zwnj label");
         ok(ProbhatLayout.extraLabel("ঁ").startsWith("◌"), "chandrabindu label");
         ok(ProbhatLayout.extraLabel("").equals("") && ProbhatLayout.extraLabel(null).equals(""), "empty extra label");
