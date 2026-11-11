@@ -306,6 +306,15 @@ object SettingsGroups {
             toggle(g, "Sound", "sound", false)
             toggle(g, "Key popup", "key_popup", false)
             toggle(g, "Reference-style bubble", "pop_ref", true)   // v0.9.6 (V1): bigger rounded bubble in the theme colour; works only while Key popup is ON
+            toggle(g, "Learn my words", "learn_on", false)   // v0.10.2 (G3.1): remembers typed words on this phone only (default OFF)
+            run {   // v0.10.2 (G3.1): Forget (tap twice)
+                var sure = false
+                val fb = btn("Forget learned words") { v ->
+                    if (!sure) { sure = true; (v as Button).text = "Sure? Tap again" }
+                    else { sure = false; val n = LearnStore.clearAll(ctx); (v as Button).text = "Forgot " + n + " words" }
+                }
+                g.addView(fb)
+            }
             toggle(g, "Suggestion row", "sg_on", true)   // v0.10.1 (G2): word suggestions (needs the toolbar unfolded)
             toggle(g, "Fast bubble", "pop_fast", true)   // v0.9.9 (V4): bubble drawn inside the keyboard (no window call) on rows with room above; works only while Key popup is ON
             toggle(g, "Same keyboard height", "h_lock", true)   // v0.9.7 (V2): no height jump when the language changes (keeps the Probhat row space)

@@ -160,6 +160,7 @@ class MgbIme : InputMethodService() {
     }
 
     private fun typeText(s: String) {
+        try { sg.noteTyped(s) } catch (_: Throwable) { }   // v0.10.2 (G3.1): learn the finished word (only when learn_on is ON; a pref read otherwise)
         try { sg.schedule() } catch (_: Throwable) { }   // v0.10.1 (G2): only restarts a 50 ms timer
         try { pendingKind = com.mgb.keyboard.typing.AutoCapGate.kindOf(s) } catch (_: Throwable) { pendingKind = com.mgb.keyboard.typing.AutoCapGate.E_JUMP }   // v0.6.1
         currentInputConnection?.commitText(s, 1)
@@ -344,6 +345,7 @@ class MgbIme : InputMethodService() {
 
     override fun onFinishInput() {
         super.onFinishInput()
+        try { sg.flushLearned() } catch (_: Throwable) { }   // v0.10.2 (G3.1)
         buf.setLength(0)
     }
 

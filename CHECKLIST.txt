@@ -567,3 +567,13 @@ Z45) v0.10.1 Suggestion row at the top (G2)
  [ ] Settings > Typing options > "Suggestion row" OFF: the toolbar is back in the top row, keyboard as v0.10.0. ON again: suggestions back.
  [ ] Type fast: typing feels the same as before. Tell me if it lags.
  [ ] Classic + one dark theme: words and icons readable; grid colours follow the theme. Does it look like the video? Tell me what differs (colour, size, icon).
+
+Z46) v0.10.2 Learn my words (G3.1)
+ [ ] Settings > Keys > "Learn my words" is OFF by default. With it OFF: type "zorblax zorblax zorblax" - it never shows in the suggestion row.
+ [ ] Turn it ON, type "zorblax " 2 times, then type "zo": "zorblax" is in the row (1st slot). After typing it only once it did NOT show.
+ [ ] Avro: type a Bangla word 2 times (+ space), type its first letters again: the word is suggested. Probhat the same.
+ [ ] Tap a learned suggestion: it replaces your letters + one space, capital style kept (Zo > Zorblax).
+ [ ] Password / email / URL field: nothing is learned (type a word 2 times there, then in a normal field: not suggested).
+ [ ] Close the keyboard / switch app, wait, come back: the learned word is still there. Restart the phone: still there.
+ [ ] "Forget learned words": first tap = "Sure? Tap again", second tap = "Forgot N words"; "zo" gives no learned word any more.
+ [ ] Turn "Learn my words" OFF again: learned words stop showing; typing feels the same as before (tell me if it lags).

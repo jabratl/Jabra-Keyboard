@@ -250,7 +250,17 @@ class TypingPanel(private val ctx: Context, private val host: JabraHost) {
 
         try { val r35 = row(); r35.addView(toggleKey("Key popup", "key_popup", false)); r35.addView(toggleKey("Large number row", "numrow_large", false)); root.addView(r35) } catch (_: Throwable) { }
         try { val r35b = row(); r35b.addView(toggleKey("Reference-style bubble", "pop_ref", true)); root.addView(r35b) } catch (_: Throwable) { }   // v0.9.6 (V1): look of the key bubble (only while Key popup is ON)   // v0.1.3
-        try { val r35g = row(); r35g.addView(toggleKey("Suggestion row", "sg_on", true)); root.addView(r35g) } catch (_: Throwable) { }   // v0.10.1 (G2): 3 word suggestions + clipboard + mic row (hidden while the toolbar is folded)
+        try { val r35g = row(); r35g.addView(toggleKey("Suggestion row", "sg_on", true)); root.addView(r35g) } catch (_: Throwable) { }
+        try {   // v0.10.2 (G3.1): learn my words (default OFF, on this phone only) + Forget (tap twice)
+            val r35l = row()
+            r35l.addView(toggleKey("Learn my words", "learn_on", false))
+            var sure = false
+            r35l.addView(pk("Forget learned words", 1f) { btn ->
+                if (!sure) { sure = true; btn.text = "Sure? Tap again" }
+                else { sure = false; val n = LearnStore.clearAll(ctx); btn.text = "Forgot " + n + " words" }
+            })
+            root.addView(r35l)
+        } catch (_: Throwable) { }   // v0.10.1 (G2): 3 word suggestions + clipboard + mic row (hidden while the toolbar is folded)
         try { val r35d = row(); r35d.addView(toggleKey("Fast bubble", "pop_fast", true)); root.addView(r35d) } catch (_: Throwable) { }   // v0.9.9 (V4): bubble inside the keyboard view (only while Key popup is ON)
         try { val r35c = row(); r35c.addView(toggleKey("Same keyboard height", "h_lock", true)); root.addView(r35c) } catch (_: Throwable) { }   // v0.9.7 (V2): keyboard height stays the same when the language changes
         try {   // v0.5.0: custom character row (extra row above the numbers)

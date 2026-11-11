@@ -5,6 +5,7 @@ import android.os.Handler
 import android.os.Looper
 import android.widget.LinearLayout
 import com.mgb.keyboard.typing.SuggestPlan
+import com.mgb.keyboard.typing.UserWords
 import com.mgb.keyboard.typing.WordIndex
 
 /**
@@ -81,14 +82,39 @@ class SuggestController(
         curWord = word; curAvro = a.isNotEmpty()
         if (!SuggestPlan.wantsLookup(word)) { s.set(emptyList()); return }
         val idx = if (SuggestPlan.lang(banglaOn(), false) == "bn") bn else en
-        val l = if (idx == null) emptyList<String>() else idx.lookup(word, SuggestPlan.GRID_MAX, true).map { WordIndex.matchCase(word, it) }
+        val base = if (idx == null) emptyList<String>() else idx.lookup(word, SuggestPlan.GRID_MAX, true)
+        val mine = try { learned(word) } catch (_: Throwable) { emptyList<String>() }   // v0.10.2 (G3.1): words you typed before (only when learn_on is ON)
+        val l = (if (mine.isEmpty()) base else UserWords.merge(mine, base, SuggestPlan.GRID_MAX)).map { WordIndex.matchCase(word, it) }
         s.set(SuggestPlan.layout(word, l), SuggestPlan.grid(l))   // [suggestion 1][typed word][suggestion 2] + grid
     }
+
+    /** v0.10.2 (G3.1): learned words for [word]; empty when learn_on is OFF (default) or the file is still loading. */
+    private fun learned(word: String): List<String> {
+        if (!prefs.bool("learn_on", false)) return emptyList()
+        LearnStore.ensure(ctx)
+        val u = LearnStore.words() ?: return emptyList()
+        return u.lookup(word, SuggestPlan.GRID_MAX, true)
+    }
+
+    /** v0.10.2 (G3.1): called for every text the keyboard types. When it ends a word (space / punctuation / newline) the finished word is learned. Only with learn_on ON; never in password / email / URL / number fields. */
+    fun noteTyped(s: String) {
+        try {
+            if (!UserWords.isBoundary(s)) return   // letters / digits: nothing to do (no pref read on the key path)
+            if (!prefs.bool("learn_on", false) || blocked()) return
+            LearnStore.ensure(ctx)
+            val w = SuggestPlan.currentWord(textBefore())
+            if (w.isNotEmpty()) LearnStore.learn(w)
+        } catch (_: Throwable) { }
+    }
+
+    /** v0.10.2 (G3.1): keyboard closed = write the learned words to the file (only when something changed). */
+    fun flushLearned() { try { if (prefs.bool("learn_on", false)) LearnStore.flush() } catch (_: Throwable) { } }
 
     private fun pick(w: String) {
         try {
             val t = SuggestPlan.toType(curWord, w)
             if (t.isEmpty()) return
+            try { if (prefs.bool("learn_on", false) && !blocked()) LearnStore.learn(w) } catch (_: Throwable) { }   // v0.10.2 (G3.1): a picked word counts as used
             onApply(t, if (curAvro) 0 else curWord.length, curAvro)
             strip?.set(emptyList())
         } catch (_: Throwable) { }
