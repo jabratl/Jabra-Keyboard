@@ -17,7 +17,8 @@ import com.mgb.keyboard.emoji.RecentEmoji
 class EmojiGridPanel(private val ctx: Context, private val host: JabraHost, private val db: EmojiDb) {
 
     private val prefs = JabraPrefs(ctx)
-    private var cat = 0   // 0 = recent, 1.. = group (cat - 1) of the data file
+    private var cat = 0   // 0 = recent, 1.. = tab (cat - 1) in gs
+    private var gs: List<Int> = emptyList()   // v0.8.2: data-file groups that have at least one emoji this phone can draw (a group with none gets no tab)
 
     private fun dp(v: Int): Int = (v * ctx.resources.displayMetrics.density).toInt()
 
@@ -41,24 +42,27 @@ class EmojiGridPanel(private val ctx: Context, private val host: JabraHost, priv
 
     /** Opens on the recent tab (or the first group if there are no recent emoji yet). */
     fun reset() {
-        cat = if (RecentEmoji.parse(prefs.str("emoji_recent", "")).isEmpty()) 1 else 0
+        cat = if (itemsFor(0).isEmpty()) 1 else 0
     }
 
     fun build(): View? = try { make() } catch (_: Throwable) { null }
 
     private fun itemsFor(c: Int): List<String> {
-        if (c == 0) return RecentEmoji.parse(prefs.str("emoji_recent", ""))
-        val g = c - 1
-        val out = ArrayList<String>()
-        var i = db.groupStart(g)
-        val e = db.groupEnd(g)
-        while (i < e) { out.add(db.emoji(i)); i++ }
-        return out
+        if (c == 0) {
+            val out = ArrayList<String>()
+            for (e in RecentEmoji.parse(prefs.str("emoji_recent", ""))) if (!EmojiStore.isHidden(e)) out.add(e)   // v0.8.2: recent also hides what the phone cannot draw
+            return out
+        }
+        if (c - 1 >= gs.size) return emptyList()
+        return EmojiStore.groupItems(gs[c - 1])   // v0.8.2: filtered list (Paint.hasGlyph)
     }
 
     private fun make(): View {
-        val groups = db.groupCount()
-        if (cat < 0 || cat > groups) cat = 1
+        val gl = ArrayList<Int>()
+        for (g in 0 until db.groupCount()) if (EmojiStore.groupItems(g).isNotEmpty()) gl.add(g)
+        gs = gl
+        val groups = gl.size
+        if (cat < 0 || cat > groups) cat = if (groups > 0) 1 else 0
         val root = LinearLayout(ctx)
         root.orientation = LinearLayout.VERTICAL
         root.setBackgroundColor(Color.parseColor("#DDDDDD"))
@@ -83,7 +87,7 @@ class EmojiGridPanel(private val ctx: Context, private val host: JabraHost, priv
         fun fillTabs() {
             tabs.removeAllViews()
             for (i in 0..groups) {
-                val label = if (i == 0) "\uD83D\uDD58" else db.emoji(db.groupStart(i - 1))
+                val label = if (i == 0) "\uD83D\uDD58" else EmojiStore.groupItems(gl[i - 1])[0]
                 val t = btn(label, dp(44), 0f, dp(36)) {
                     cat = i
                     fillTabs()

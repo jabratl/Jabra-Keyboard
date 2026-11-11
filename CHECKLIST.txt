@@ -353,3 +353,11 @@ Z20) v0.8.1 Fast emoji panel (E2)
  [ ] Dark theme (Dark or Gloss Black): panel background dark, tab buttons dark, tap highlight visible, grey line readable.
  [ ] Rotate to landscape / wide screen: more emoji per row, nothing cut off, still scrolls.
  [ ] Say what you see if some emoji are empty boxes (E3 will hide them), or if scrolling feels slow.
+
+Z21) v0.8.2 Safe emoji render (E3)
+ [ ] (GitHub) the build of v0.8.2 is GREEN. If red: paste the error lines in the next chat (it becomes a FIX).
+ [ ] Update the app, open any app with the keyboard, wait 2-3 seconds, open the emoji panel: it still opens (old or new panel, never blank). Close and open again: the new grid panel.
+ [ ] Scroll all tabs. You should see NO empty boxes / question marks. (On an old phone some new emoji are simply missing: that is correct.)
+ [ ] Tap an emoji, check the Recent tab: only drawable emoji are listed.
+ [ ] Restart the phone (or force-stop the app), open the emoji panel: the new panel opens at once (cache works).
+ [ ] Tell me: phone model + Android version, and if you miss a tab (for example Flags) or if emoji you know your phone can draw are missing.
