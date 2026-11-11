@@ -1,3 +1,13 @@
+v0.9.0 - NEW: reusable key-preview bubble (plan step R1, speed only)
+- WHY: video audit finding M1: with "Popup on keypress" ON, every finger-down built a new TextView + GradientDrawable + PopupWindow and added a window; release removed it. That is extra work on every key.
+- What you get: nothing new on screen. The bubble looks the same (same size, colours, Jabra look, position) but is built ONCE and reused: a press only changes the text and moves it. Release hides it; the window is removed after 1.5 s without a press, when the keyboard is rebuilt (theme / look change = ABC apply) and when a key detaches. Bonus: the bubble is now kept fully on screen at the q / p edges (typing/TipPlace.x).
+- Code: KeyPopup.kt (showFast(), dropCached(), invalidate(); old body kept as showOld() = automatic fallback on any error; touch() / attach() / dismiss() names and meaning unchanged, HintKeys.kt untouched), MgbIme.kt (1 marked line at the start of buildKeyboard: KeyPopup.invalidate()). No new setting, no new pref, no permission, no library. key_popup stays default OFF.
+- Timer: one Handler.postDelayed (idle drop) only after a bubble was shown; removed on the next press.
+BROKE: nothing intended. If anything fails the v0.8.9 bubble code runs.
+NOT tested: Kotlin compile (GitHub Actions first); phone: flicker / stuck bubble after very quick taps, rotate, theme change, Jabra look colours, edge keys. Speed gain NOT measured (only the per-press allocations are removed; the bubble window is still added once per burst of typing).
+TESTED here: all 38 Java test programs green (TipPlaceTest, HintTest 196 included); bracket balance of KeyPopup.kt and MgbIme.kt OK.
+Rollback: turn "Popup on keypress" OFF (no code change), or restore KeyPopup.kt + MgbIme.kt from v0.8.9.
+
 v0.8.9 - NEW: space key language swipe (hold 0.2 s, then swipe) + optional EN key
 - WHY: like Ridmik, you can switch language without the EN key. Your screenshot also shows the language name on the space key.
 - What you get: new setting "Space swipe = language (hold 0.2 s)", default OFF. When ON: put your finger on the space key and keep it still for 0.2 s (short vibration = ready), then swipe right = next language, swipe left = previous. Order: English > Avro > Probhat (a layout you switched off in "Languages & layouts" is skipped; the list wraps round). One swipe step = 44 dp, so a longer swipe jumps over more than one language. The space key now shows the current language like "◂ English ▸" / "◂ বাংলা (Avro) ▸" / "◂ বাংলা (Probhat) ▸".

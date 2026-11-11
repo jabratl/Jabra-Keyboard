@@ -727,6 +727,7 @@ class MgbIme : InputMethodService() {
     }
 
     private fun buildKeyboard(): View {
+        try { KeyPopup.invalidate() } catch (_: Throwable) { }   // v0.9.0: key bubble is rebuilt on the next press (theme / look may have changed)
         val root = LinearLayout(this)
         root.orientation = LinearLayout.VERTICAL
         root.setBackgroundColor(Color.parseColor("#DDDDDD"))

@@ -423,3 +423,11 @@ Z28) v0.8.9 Space swipe language + optional EN key
  [ ] Turn Show language key (EN) OFF + ABC (apply): the EN key is gone from the bottom row, space is wider, swipe still switches. Turn Space swipe OFF: the EN key comes back by itself (after apply).
  [ ] Typing works in each language after a swipe (Avro words, Probhat letters). Dark + light theme: space label readable and not cut at 360 dp.
 
+Z29) v0.9.0 Reusable key-preview bubble
+ [ ] Gear > More settings > Typing (or app screen): turn "Popup on keypress" ON. Type fast in a note: a bubble with the letter shows above each key and is gone when you lift (no bubble stuck on screen).
+ [ ] Tap a key very quickly many times, then stop: bubble disappears. Wait 2 s, tap again: bubble shows again.
+ [ ] q and p (screen edges): the bubble stays fully on screen.
+ [ ] Change theme (Dark, then a light one) + ABC (apply): bubble colours follow the theme. Jabra look ON: rounded bubble (16 dp). Classic: square-ish (10 dp).
+ [ ] Rotate the phone, type: bubble still works. Switch to Probhat / Avro: bubble shows the Bangla letter.
+ [ ] Hold a letter for the long-press hint: hint types, bubble goes away. Popup OFF: no bubble at all.
+
