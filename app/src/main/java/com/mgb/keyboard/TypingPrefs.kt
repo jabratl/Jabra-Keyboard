@@ -281,6 +281,9 @@ class TypingPanel(private val ctx: Context, private val host: JabraHost) {
             r41.addView(toggleKey("Space swipe = language", "space_lang", false))
             r41.addView(toggleKey("Show language key (EN)", "key_lang", true))
             root.addView(r41)
+            val r41b = row()   // v0.9.2 (R3)
+            r41b.addView(toggleKey("Language bubble on swipe", "sp_preview", true))
+            root.addView(r41b)
         } catch (_: Throwable) { }
         try {   // v0.8.6: hint look (Bangla digits on number row, hint size, hint opacity). ABC (apply) redraws the keys.
             val r40 = row()

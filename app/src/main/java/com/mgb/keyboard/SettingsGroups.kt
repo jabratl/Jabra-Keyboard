@@ -260,6 +260,7 @@ object SettingsGroups {
             toggle(g, "Avro available", "lang_avro_on", true)   // v0.5.0
             toggle(g, "Probhat available", "lang_probhat_on", true)   // v0.5.0
             toggle(g, "Space swipe = language (hold 0.2 s)", "space_lang", false)   // v0.8.9
+            toggle(g, "Language bubble on swipe", "sp_preview", true)   // v0.9.2 (R3): works only while Space swipe is ON
             toggle(g, "Show language key (EN)", "key_lang", true)   // v0.8.9: hidden only when Space swipe is ON
             toggle(g, "Number row", "numrow", true)
             toggle(g, "Auto numpad (number / phone fields)", "numpad_auto", true)

@@ -31,7 +31,8 @@ public final class ProfileCodec {
         "hint_digits:b", "hint_size_lv:i", "hint_alpha_lv:i",   // v0.8.6
         "tb_tip:b",   // v0.8.8
         "space_lang:b", "key_lang:b",   // v0.8.9
-        "fb_down:b", "haptic_native:b"   // v0.9.1
+        "fb_down:b", "haptic_native:b",   // v0.9.1
+        "sp_preview:b"   // v0.9.2
     };
     public static final String[] KEYS = new String[SPEC.length];
     private static final char[] TYPE = new char[SPEC.length];

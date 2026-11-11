@@ -47,6 +47,18 @@ object KeyPopup {
         cpw = null; ct = null
     }
 
+    /** v0.9.2 (R3): hide the bubble now (same as dismiss; named for callers that are not key presses, e.g. the space swipe). */
+    fun hide() { dismiss() }
+
+    /** v0.9.2 (R3): show [text] above [anchor] with the same reusable bubble (no key_popup needed). Any problem = no bubble. */
+    fun showText(anchor: View, text: String, prefs: JabraPrefs) {
+        try {
+            showFast(anchor, prefs, text)
+        } catch (_: Throwable) {
+            dropCached()
+        }
+    }
+
     /** v0.1.6: the touch handling, shared with HintKeys (one listener per key). */
     fun touch(v: View, e: MotionEvent, prefs: JabraPrefs) {
         try {
@@ -78,9 +90,9 @@ object KeyPopup {
         }
     }
 
-    private fun showFast(b: Button, prefs: JabraPrefs) {
+    private fun showFast(b: View, prefs: JabraPrefs, text: String? = null) {   // v0.9.2: View + optional text (key press passes none = button label)
         hnd.removeCallbacks(idle)
-        val label = b.text?.toString() ?: ""
+        val label = text ?: ((b as? Button)?.text?.toString() ?: "")
         if (label.isEmpty()) { dismiss(); return }
         val d = b.resources.displayMetrics.density
         val w = (b.width + 12 * d).toInt().coerceAtLeast((44 * d).toInt())

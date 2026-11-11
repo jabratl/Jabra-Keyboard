@@ -112,6 +112,7 @@ public final class SettingsIndex {
             case "icons_on": return "Own drawn icons on function keys. OFF = text labels.";
             case "numrow_large": return "Makes the number row a bit taller.";
             case "space_lang": return "Hold the space key 0.2 s, then swipe left / right to switch language. A quick drag still moves the cursor.";
+            case "sp_preview": return "Shows the active language in a bubble while you swipe on space. Needs Space swipe ON.";
             case "key_lang": return "Hide the language (EN) key. Works only while Space swipe is ON (else the key stays).";
             case "tb_tip": return "Hold a toolbar icon for 0.3 s to see its name above it.";
             case "hint_digits": return "Number row shows a small Bangla digit; hold the key to type it.";

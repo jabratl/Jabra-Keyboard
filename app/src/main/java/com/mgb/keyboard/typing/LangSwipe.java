@@ -38,6 +38,17 @@ public final class LangSwipe {
         return probhat ? "\u09AC\u09BE\u0982\u09B2\u09BE (Probhat)" : "\u09AC\u09BE\u0982\u09B2\u09BE (Avro)";
     }
 
+    /** v0.9.2 (R3): short name shown in the live bubble while swiping: "English" / "Avro" / "Probhat". */
+    public static String label(boolean bangla, boolean probhat) {
+        if (!bangla) return "English";
+        return probhat ? "Probhat" : "Avro";
+    }
+
+    /** v0.9.2 (R3): the live bubble is drawn only when the space swipe is ON and sp_preview is ON. */
+    public static boolean previewOn(boolean spaceLang, boolean spPreview) {
+        return spaceLang && spPreview;
+    }
+
     /** Text on the space key while the swipe feature is ON, e.g. "◂ English ▸". */
     public static String spaceLabel(boolean bangla, boolean probhat) {
         return "\u25C2 " + name(bangla, probhat) + " \u25B8";
