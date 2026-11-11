@@ -400,3 +400,10 @@ Z25) v0.8.6 Hint label look
  [ ] Dark theme + light theme: corner characters readable, do not cover the main character at Extra.
  [ ] "Hide long-press hints" ON hides the digit hints too; holding still types. Save a profile, change hints, load the profile: hints come back.
 
+Z26) v0.8.7 Clipboard follows the theme
+ [ ] Pick Dark (or Gloss Black / Ocean) theme, open Clipboard: background = theme colour, buttons = theme key colour with readable text, no light grey blocks.
+ [ ] Cards view: card fill / border / text follow the theme; a ticked card is blue-tinted and readable; Pinned tag and check box readable.
+ [ ] List view: ticked row highlighted, grey count text readable, star and x icons visible (light icons on dark theme).
+ [ ] Search (mini keyboard), Edit screen, select bar (All / Pin / Unpin / Delete / Paste / Merge): all readable in a dark and a light theme.
+ [ ] Classic theme + Classic look: looks like before (grey background, light cards). Custom theme from Theme Studio: clipboard uses its colours.
+

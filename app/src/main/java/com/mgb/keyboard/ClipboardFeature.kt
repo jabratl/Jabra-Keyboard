@@ -108,7 +108,20 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
 
     private fun dp(v: Int): Int = (v * ctx.resources.displayMetrics.density).toInt()
 
+    // v0.8.7: theme helpers (Classic theme + Classic look = exactly the old colours; any error = old colour)
+    private val pf: JabraPrefs by lazy { JabraPrefs(ctx) }
+    private fun paintBg(v: View) { try { JabraThemes.paint(pf, v) } catch (_: Throwable) { v.setBackgroundColor(Color.parseColor("#DDDDDD")) } }
+    private fun dim(): Int = try { JabraTokens.dimText(pf) } catch (_: Throwable) { Color.DKGRAY }
+    private fun ink(): Int = try { if (JabraTokens.isClassic(pf)) Color.BLACK else JabraTokens.panelText(pf) } catch (_: Throwable) { Color.BLACK }
+    private fun hush(): Int = try { JabraTokens.cardNote(pf) } catch (_: Throwable) { Color.GRAY }
+
+    /** v0.8.7: themed button (UiKit.btn follows theme colour + look); old plain button = automatic fallback. */
     private fun btn(label: String, weight: Float, hDp: Int, onClick: (Button) -> Unit): Button {
+        try { return UiKit.btn(ctx, pf, label, weight, hDp, 0f, { v -> try { host.feedback(v) } catch (_: Throwable) { } }, onClick) } catch (_: Throwable) { }
+        return btnOld(label, weight, hDp, onClick)
+    }
+
+    private fun btnOld(label: String, weight: Float, hDp: Int, onClick: (Button) -> Unit): Button {
         val b = Button(ctx)
         b.text = label
         b.isAllCaps = false
@@ -140,7 +153,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
         if (editing != null) { try { return makeEdit() } catch (_: Throwable) { editing = null } }   // v0.4.3.1
         val root = LinearLayout(ctx)
         root.orientation = LinearLayout.VERTICAL
-        root.setBackgroundColor(Color.parseColor("#DDDDDD"))
+        paintBg(root)   // v0.8.7
         root.setPadding(dp(2), dp(4), dp(2), dp(4))
 
         // v0.2.5.3: forget selected clips that no longer exist (after delete / Clear)
@@ -156,7 +169,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
             confirmClear = false
             refresh()
         }
-        JabraIcons.put(ctx, searchBtn, if (searching) "close" else "search")   // v0.0.7
+        JabraIcons.putThemed(ctx, searchBtn, if (searching) "close" else "search")   // v0.0.7
         top.addView(searchBtn)
         top.addView(btn("Add", 1.0f, 40) { addFromField() })   // v0.2.5.1: save the current field text as a clip
         val clearBtn = btn(if (confirmClear) "Sure? (unpinned)" else "Clear", 1.8f, 40) {
@@ -177,7 +190,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
         val m = TextView(ctx)
         m.text = if (selOn && shownMsg.isEmpty()) sel.count().toString() + " selected" else shownMsg   // v0.2.5.3
         m.textSize = 12f
-        m.setTextColor(Color.DKGRAY)
+        m.setTextColor(dim())
         m.setPadding(dp(8), 0, dp(4), 0)
         m.layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
         head.addView(m)
@@ -217,7 +230,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
             val q = TextView(ctx)
             q.text = (if (JabraPrefs(ctx).bool("icons_on", true)) "" else "🔍 ") + query + "▏"   // v0.0.7: icon is on the button now
             q.textSize = 15f
-            q.setTextColor(Color.BLACK)
+            q.setTextColor(ink())
             q.setPadding(dp(8), dp(2), dp(8), dp(2))
             root.addView(q)
         }
@@ -234,7 +247,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
             val t = TextView(ctx)
             t.text = if (searching) "No match" else "Nothing copied yet. Copy some text and it will show here."
             t.setPadding(dp(8), dp(12), dp(8), dp(12))
-            t.setTextColor(Color.DKGRAY)
+            t.setTextColor(dim())
             col.addView(t)
         }
         // v0.2.5.1: "Pinned" / "Recent" header lines (only when both groups have items and not searching)
@@ -266,8 +279,8 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
             for (letters in arrayOf("qwertyuiop", "asdfghjkl", "zxcvbnm")) {
                 val r = row()
                 letters.forEach { ch -> r.addView(btn(ch.toString(), 1f, 34) { query += ch; confirmClear = false; refresh() }) }
-                if (letters == "asdfghjkl") r.addView(JabraIcons.put(ctx, btn("␣", 1f, 34) { query += " "; refresh() }, "space"))   // v0.0.7
-                if (letters == "zxcvbnm") r.addView(JabraIcons.put(ctx, btn("⌫", 1.5f, 34) { if (query.isNotEmpty()) query = query.dropLast(1); refresh() }, "back"))   // v0.0.7
+                if (letters == "asdfghjkl") r.addView(JabraIcons.putThemed(ctx, btn("␣", 1f, 34) { query += " "; refresh() }, "space"))   // v0.0.7
+                if (letters == "zxcvbnm") r.addView(JabraIcons.putThemed(ctx, btn("⌫", 1.5f, 34) { if (query.isNotEmpty()) query = query.dropLast(1); refresh() }, "back"))   // v0.0.7
                 root.addView(r)
             }
         }
@@ -279,7 +292,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
         val item = editing ?: return make()
         val root = LinearLayout(ctx)
         root.orientation = LinearLayout.VERTICAL
-        root.setBackgroundColor(Color.parseColor("#DDDDDD"))
+        paintBg(root)   // v0.8.7
         root.setPadding(dp(2), dp(4), dp(2), dp(4))
         fun touched(a: () -> Unit) { a(); confirmSave = false; refresh() }
 
@@ -312,7 +325,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
         info.text = (if (msg.isEmpty()) "Edit clip" else msg) + "   " + editText.length + "/" + ClipList.MAX_LEN
         msg = ""
         info.textSize = 12f
-        info.setTextColor(Color.DKGRAY)
+        info.setTextColor(dim())
         info.setPadding(dp(8), dp(2), dp(8), dp(2))
         root.addView(info)
 
@@ -321,7 +334,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
         val tv = TextView(ctx)
         tv.text = editText.replace("\n", " \u23CE ") + "\u258F"
         tv.textSize = 14f
-        tv.setTextColor(Color.BLACK)
+        tv.setTextColor(ink())
         tv.setPadding(dp(8), dp(2), dp(8), dp(2))
         sv.addView(tv)
         root.addView(sv)
@@ -461,7 +474,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
         h.text = label
         h.textSize = 12f
         h.setTypeface(h.typeface, android.graphics.Typeface.BOLD)
-        h.setTextColor(Color.DKGRAY)
+        h.setTextColor(dim())
         h.setPadding(dp(8), dp(4), dp(8), dp(2))
         return h
     }
@@ -492,7 +505,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
                 host.showLetters()
             }
         }
-        if (picked) t.setBackgroundColor(Color.parseColor("#CFE0F5"))
+        if (picked) t.setBackgroundColor(try { JabraTokens.rowPicked(pf) } catch (_: Throwable) { Color.parseColor("#CFE0F5") })
         t.setOnLongClickListener {   // v0.2.5.3: long-press = select mode with this clip selected
             if (sel.isOn) false else { sel.enterWith(item); confirmDel = false; refresh(); true }
         }
@@ -508,14 +521,14 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
                 val ct = TextView(ctx)
                 ct.text = inf
                 ct.textSize = 10f
-                ct.setTextColor(Color.GRAY)
+                ct.setTextColor(hush())
                 ct.setPadding(dp(2), 0, dp(2), 0)
                 r.addView(ct)
             }
         } catch (_: Throwable) { }
         if (selOn) return r   // v0.2.5.3: no star / x while selecting
-        r.addView(JabraIcons.put(ctx, btn(if (item.pinned) "★" else "☆", 0f, rowH) { store.togglePin(item); refresh() }.also { it.minimumWidth = dp(44); it.minWidth = dp(44) }, if (item.pinned) "pinned" else "pin"))   // v0.0.7
-        r.addView(JabraIcons.put(ctx, btn("✕", 0f, rowH) { keepUndo(listOf(item)); store.remove(item); refresh() }.also { it.minimumWidth = dp(44); it.minWidth = dp(44) }, "close"))   // v0.0.7
+        r.addView(JabraIcons.putThemed(ctx, btn(if (item.pinned) "★" else "☆", 0f, rowH) { store.togglePin(item); refresh() }.also { it.minimumWidth = dp(44); it.minWidth = dp(44) }, if (item.pinned) "pinned" else "pin"))   // v0.0.7
+        r.addView(JabraIcons.putThemed(ctx, btn("✕", 0f, rowH) { keepUndo(listOf(item)); store.remove(item); refresh() }.also { it.minimumWidth = dp(44); it.minWidth = dp(44) }, "close"))   // v0.0.7
         return r
     }
 }

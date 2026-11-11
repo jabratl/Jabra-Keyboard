@@ -62,7 +62,7 @@ object ClipCards {
         h.text = label
         h.textSize = 12f
         h.setTypeface(h.typeface, Typeface.BOLD)
-        h.setTextColor(Color.DKGRAY)
+        h.setTextColor(try { JabraTokens.dimText(JabraPrefs(ctx)) } catch (_: Throwable) { Color.DKGRAY })   // v0.8.7
         h.setPadding(dp(ctx, 8), dp(ctx, 4), dp(ctx, 8), dp(ctx, 2))
         return h
     }
@@ -99,11 +99,8 @@ object ClipCards {
         val iconsOn = try { JabraPrefs(ctx).bool("icons_on", true) } catch (_: Throwable) { true }
         val box = LinearLayout(ctx)
         box.orientation = LinearLayout.VERTICAL
-        val bg = GradientDrawable()
-        bg.setColor(Color.parseColor(if (picked) "#DCE9FA" else "#F7F7F7"))
-        bg.cornerRadius = dp(ctx, 10).toFloat()
-        bg.setStroke(dp(ctx, if (picked) 2 else 1), if (picked) Color.parseColor("#2F6FD0") else if (item.pinned) Color.parseColor("#7A9CC6") else Color.parseColor("#C8C8C8"))
-        box.background = bg
+        val pf = try { JabraPrefs(ctx) } catch (_: Throwable) { null }   // v0.8.7: theme colours (Classic = same as before)
+        box.background = try { UiKit.cardBackground(ctx, pf!!, picked, item.pinned) } catch (_: Throwable) { oldCardBg(ctx, picked, item.pinned) }
         val lp = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 1f)   // equal width, same height as the other card in the row
         lp.setMargins(dp(ctx, 3), dp(ctx, 3), dp(ctx, 3), dp(ctx, 3))
         box.layoutParams = lp
@@ -112,7 +109,7 @@ object ClipCards {
         val t = TextView(ctx)
         t.text = item.text.replace("\n", " ⏎ ")
         t.textSize = 12.5f
-        t.setTextColor(Color.BLACK)
+        t.setTextColor(try { JabraTokens.cardText(pf!!) } catch (_: Throwable) { Color.BLACK })
         t.maxLines = 2 + 2 * lv
         t.ellipsize = TextUtils.TruncateAt.END
         t.minLines = 2
@@ -140,7 +137,7 @@ object ClipCards {
                 val ct = TextView(ctx)
                 ct.text = inf
                 ct.textSize = 10f
-                ct.setTextColor(Color.GRAY)
+                ct.setTextColor(try { JabraTokens.cardNote(pf!!) } catch (_: Throwable) { Color.GRAY })
                 ct.setPadding(dp(ctx, 8), 0, dp(ctx, 8), 0)
                 box.addView(ct)
             }
@@ -154,7 +151,7 @@ object ClipCards {
             val ck = TextView(ctx)
             ck.text = if (picked) "☑" else "☐"
             ck.textSize = 18f
-            ck.setTextColor(if (picked) Color.parseColor("#2F6FD0") else Color.DKGRAY)
+            ck.setTextColor(try { if (picked) JabraTokens.cardStroke(pf!!, true, false) else JabraTokens.onCardDim(pf!!) } catch (_: Throwable) { if (picked) Color.parseColor("#2F6FD0") else Color.DKGRAY })
             ck.setPadding(dp(ctx, 8), 0, 0, 0)
             ck.layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, dp(ctx, 30))
             ck.gravity = Gravity.CENTER_VERTICAL
@@ -166,7 +163,7 @@ object ClipCards {
                 val tag = TextView(ctx)
                 tag.text = "★ Pinned"
                 tag.textSize = 11f
-                tag.setTextColor(Color.DKGRAY)
+                tag.setTextColor(try { JabraTokens.onCardDim(pf!!) } catch (_: Throwable) { Color.DKGRAY })
                 tag.setPadding(0, 0, dp(ctx, 8), 0)
                 bar.addView(tag)
             }
@@ -179,6 +176,15 @@ object ClipCards {
         }
         box.addView(bar)
         return box
+    }
+
+    /** v0.8.7: the v0.8.6 card look, kept as the fallback of UiKit.cardBackground. */
+    private fun oldCardBg(ctx: Context, picked: Boolean, pinned: Boolean): GradientDrawable {
+        val bg = GradientDrawable()
+        bg.setColor(Color.parseColor(if (picked) "#DCE9FA" else "#F7F7F7"))
+        bg.cornerRadius = dp(ctx, 10).toFloat()
+        bg.setStroke(dp(ctx, if (picked) 2 else 1), if (picked) Color.parseColor("#2F6FD0") else if (pinned) Color.parseColor("#7A9CC6") else Color.parseColor("#C8C8C8"))
+        return bg
     }
 
     private fun small(ctx: Context, host: JabraHost, label: String, icon: String, iconsOn: Boolean, onClick: () -> Unit): Button {
@@ -194,7 +200,7 @@ object ClipCards {
             try { onClick() } catch (_: Throwable) { }
         }
         b.layoutParams = LinearLayout.LayoutParams(dp(ctx, 40), dp(ctx, 30))
-        JabraIcons.put(ctx, b, icon)
+        JabraIcons.putThemed(ctx, b, icon)   // v0.8.7: icon colour follows the theme
         return b
     }
 }
