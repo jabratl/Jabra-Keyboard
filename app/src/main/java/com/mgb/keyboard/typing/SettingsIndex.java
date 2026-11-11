@@ -115,6 +115,7 @@ public final class SettingsIndex {
             case "sp_preview": return "Shows the active language in a bubble while you swipe on space. Needs Space swipe ON.";
             case "key_lang": return "Hide the language (EN) key. Works only while Space swipe is ON (else the key stays).";
             case "tb_tip": return "Hold a toolbar icon for 0.3 s to see its name above it.";
+            case "numrow_bn": return "Avro / Probhat show Bangla digits on the number row; hold a key for the Latin digit.";
             case "hint_digits": return "Number row shows a small Bangla digit; hold the key to type it.";
             case "hint_size_lv": return "Size of the small hint characters (Normal = as before).";
             case "hint_alpha_lv": return "How strong the small hint characters look (Normal = as before).";

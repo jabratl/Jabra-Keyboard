@@ -31,6 +31,25 @@ public final class HintStyle {
         return s < 9f ? 9f : (s > 40f ? 40f : s);
     }
 
+    /**
+     * v0.9.4 (R4): main label AND typed text of a number-row key. [bnOn] = pref numrow_bn, [banglaActive] = a Bangla layout is active AND the field
+     * is not Latin-only (password / email / URL / number fields). Anything else = the Latin digit, exactly as before.
+     */
+    public static String digitLabel(char c, boolean bnOn, boolean banglaActive) {
+        if (!bnOn || !banglaActive || !isDigit(c)) return String.valueOf(c);
+        return String.valueOf(BN_DIGITS.charAt(LATIN_DIGITS.indexOf(c)));
+    }
+
+    /**
+     * v0.9.4 (R4): the small long-press hint of a number-row key. Bangla number row active = the LATIN digit (the main label is Bangla now);
+     * otherwise = the old v0.8.6 rule (Bangla digit hint when hint_digits is ON, else none). null = no hint.
+     */
+    public static String digitHintFor(char c, boolean hintDigits, boolean bnOn, boolean banglaActive) {
+        if (!isDigit(c)) return null;
+        if (bnOn && banglaActive) return String.valueOf(c);
+        return digitHint(c, hintDigits);
+    }
+
     public static boolean isDigit(char c) { return c >= '0' && c <= '9'; }
 
     /** The Bangla digit for a Latin digit key, or null when [on] is false or [c] is not 0-9. */

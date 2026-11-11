@@ -11,7 +11,7 @@ public class ProfileTest {
         // whitelist
         t("allowed theme", ProfileCodec.allowed("theme") && ProfileCodec.allowed("xrow_chars") && ProfileCodec.allowed("haptic_lv"));
         t("ct_json NOT allowed", !ProfileCodec.allowed("ct_json") && !ProfileCodec.allowed("clips_v1") && !ProfileCodec.allowed("fmt_cur") && !ProfileCodec.allowed(null));
-        t("46 keys", ProfileCodec.KEYS.length == 46);
+        t("47 keys", ProfileCodec.KEYS.length == 47);
         Set<String> seen = new HashSet<String>(Arrays.asList(ProfileCodec.KEYS));
         t("keys unique", seen.size() == ProfileCodec.KEYS.length);
 

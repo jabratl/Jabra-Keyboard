@@ -289,6 +289,7 @@ object SettingsGroups {
             toggle(g, "Hide long-press hints", "hint_hide", false)
             toggle(g, "Toolbar name tip (hold icon)", "tb_tip", true)   // v0.8.8
             toggle(g, "Bangla digit hints", "hint_digits", false)   // v0.8.6
+            toggle(g, "Bangla digits on number row", "numrow_bn", false)   // v0.9.4 (R4)
             cycle(g, "Hint size", "hint_size_lv", { com.mgb.keyboard.typing.HintStyle.SIZE_NAMES }, { prefs.int("hint_size_lv", 1).coerceIn(0, 3) }, { prefs.setInt("hint_size_lv", it) }, 1)
             cycle(g, "Hint opacity", "hint_alpha_lv", { com.mgb.keyboard.typing.HintStyle.ALPHA_NAMES }, { prefs.int("hint_alpha_lv", 1).coerceIn(0, 3) }, { prefs.setInt("hint_alpha_lv", it) }, 1)
             val note = TextView(ctx)

@@ -456,3 +456,12 @@ Z32) v0.9.3 Space swipe without hold
  [ ] Space swipe = language ON: swipe left / right on space at once (no waiting): language changes, bubble shows the new language, lift = bubble gone.
  [ ] Type a normal sentence with space taps: no accidental language change, every tap types a space.
  [ ] Space swipe OFF: dragging on space moves the cursor again.
+
+Z33) v0.9.4 Bangla digits on the number row
+ [ ] Gear > More settings > Typing: row "Bangla digits on number row" (also app screen > Keys & gestures). Default OFF: number row exactly as before.
+ [ ] Turn it ON, tap ABC to apply. Avro active: number row shows Bangla digits. Probhat: same. English: Latin digits. Switch language (EN key / space swipe / long-press): labels change at once.
+ [ ] In Avro, tap the Bangla 1 key: types the Bangla digit. Hold the key: the Latin 1 types (one buzz), small Latin digit is visible top-right.
+ [ ] Open a password field, an email field and a URL field: number row shows Latin digits and types Latin. Back in a normal text field: Bangla digits again.
+ [ ] "Bangla digit hints" ON + this ON: in Bangla layouts the hint is the Latin digit; in English the small Bangla digit hint works as before.
+ [ ] Letter size %, Bold letters, Large number row: Bangla digits look fine and are not cut off. Classic + one dark theme.
+ [ ] Feedback at touch-down ON: number row still buzzes once per tap. Number row OFF: nothing breaks. Setting OFF: back to Latin digits.

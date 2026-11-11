@@ -155,6 +155,7 @@ class MgbIme : InputMethodService() {
     private val hintHost = object : HintHost {
         override fun hintTypingActive(): Boolean = try { com.mgb.keyboard.typing.LongPressHints.active(true, bangla && !latinOnly, pcState.isPc() && pcState.meta() != 0) } catch (_: Throwable) { false }
         override fun hintLabelActive(): Boolean = try { com.mgb.keyboard.typing.LongPressHints.active(true, bangla && !latinOnly, false) } catch (_: Throwable) { false }
+        override fun banglaNumbers(): Boolean = bangla && !latinOnly   // v0.9.4 (R4)
         override fun typeHint(s: String) { commitWord(); typeText(s) }
         override fun hintFeedback(v: View) { feedback(v) }
     }
@@ -388,6 +389,20 @@ class MgbIme : InputMethodService() {
     }
 
     /** Puts Bangla (Probhat) or Latin labels on the letter keys, and shows/hides the Probhat extra row. */
+    /** v0.9.4 (R4): the Latin digit the number-row key [d] types / shows now (Bangla digit when numrow_bn is ON and a Bangla layout is active). */
+    private fun numDigit(d: Char): String = try { com.mgb.keyboard.typing.HintStyle.digitLabel(d, prefs.bool("numrow_bn", false), bangla && !latinOnly) } catch (_: Throwable) { d.toString() }
+
+    /** v0.9.4 (R4): number-row labels follow the language / field type (numKeys is empty unless a digit hint or numrow_bn is ON). */
+    private fun relabelNumbers() {
+        try {
+            numKeys.forEach { b ->
+                val c = (b.tag as? Char) ?: return@forEach
+                val nt = numDigit(c)
+                if (!nt.contentEquals(b.text)) b.text = nt
+            }
+        } catch (_: Throwable) { }
+    }
+
     private fun relabelLetters() {
         val pb = probhatOn()
         letterKeys.forEach { b ->
@@ -396,6 +411,7 @@ class MgbIme : InputMethodService() {
                      else if (shift) c.uppercase() else c.toString()
             if (!nt.contentEquals(b.text)) b.text = nt   // v0.6.1: no relayout when the label is already right
         }
+        relabelNumbers()   // v0.9.4 (R4)
         extrasRow?.visibility = if (pb) View.VISIBLE else View.GONE
         try { shiftVisual() } catch (_: Throwable) { }   // v0.0.9
         refreshHints()   // v0.1.6: hint labels follow the language / layout
@@ -776,10 +792,11 @@ class MgbIme : InputMethodService() {
         try {
             if (prefs.bool("numrow", true)) {
                 val nr = row()
-                "1234567890".forEach { d -> nr.addView(key(d.toString(), 1f) { commitWord(); typeText(d.toString()) }) }
+                "1234567890".forEach { d -> nr.addView(key(d.toString(), 1f) { commitWord(); typeText(numDigit(d)) }) }   // v0.9.4: numDigit = Latin unless numrow_bn
                 try {   // v0.8.6: Bangla digit hint on the number row (setting hint_digits, default OFF = nothing attached, old behaviour)
-                    if (prefs.bool("hint_digits", false)) {
+                    if (prefs.bool("hint_digits", false) || prefs.bool("numrow_bn", false)) {   // v0.9.4: numrow_bn also needs the hint listener (Latin digit on long-press)
                         for (i in 0 until nr.childCount) { val nb = nr.getChildAt(i) as Button; nb.tag = "1234567890"[i]; numKeys.add(nb); HintKeys.attach(nb, prefs, hintHost); HintKeys.refresh(nb, prefs, hintHost) }
+                        relabelNumbers()   // v0.9.4
                     } else {
                         for (i in 0 until nr.childCount) KeyCfg.attachDown(nr.getChildAt(i), prefs) { v -> feedback(v) }   // v0.9.1: number row without hints = tiny listener for fb_down
                     }

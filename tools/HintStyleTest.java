@@ -44,6 +44,25 @@ public class HintStyleTest {
         eq("names size", HintStyle.SIZE_NAMES.length, 4);
         eq("names alpha", HintStyle.ALPHA_NAMES.length, 4);
         eq("normal name", HintStyle.SIZE_NAMES[HintStyle.LV_DEFAULT], "Normal");
+        // v0.9.4 (R4): Bangla digits as main labels (digitLabel) + Latin digit as the hint (digitHintFor)
+        eq("label 1 bn on+bangla", HintStyle.digitLabel('1', true, true), "\u09E7");
+        eq("label 0 bn on+bangla", HintStyle.digitLabel('0', true, true), "\u09E6");
+        eq("label 9 bn on+bangla", HintStyle.digitLabel('9', true, true), "\u09EF");
+        for (char c = '0'; c <= '9'; c++) {
+            eq("on+bangla = same as BN_DIGITS " + c, HintStyle.digitLabel(c, true, true), HintStyle.digitHint(c, true));
+            eq("pref OFF stays Latin " + c, HintStyle.digitLabel(c, false, true), String.valueOf(c));
+            eq("English stays Latin " + c, HintStyle.digitLabel(c, true, false), String.valueOf(c));
+            eq("both off stays Latin " + c, HintStyle.digitLabel(c, false, false), String.valueOf(c));
+            eq("bn row: hint is the Latin digit " + c, HintStyle.digitHintFor(c, false, true, true), String.valueOf(c));
+            eq("bn row + hint_digits ON: still Latin hint " + c, HintStyle.digitHintFor(c, true, true, true), String.valueOf(c));
+            eq("old rule kept (pref OFF, hint_digits ON) " + c, HintStyle.digitHintFor(c, true, false, true), HintStyle.digitHint(c, true));
+            eq("old rule kept (English, hint_digits ON) " + c, HintStyle.digitHintFor(c, true, true, false), HintStyle.digitHint(c, true));
+            eq("old rule kept (all OFF) " + c, HintStyle.digitHintFor(c, false, false, false), null);
+        }
+        eq("label letter unchanged", HintStyle.digitLabel('a', true, true), "a");
+        eq("hint for letter null", HintStyle.digitHintFor('a', true, true, true), null);
+        eq("label of Bangla digit stays", HintStyle.digitLabel('\u09E7', true, true), "\u09E7");
+        eq("round trip: label then hint recovers Latin", HintStyle.digitHintFor('5', false, true, true) + HintStyle.digitLabel('5', true, true), "5\u09EB");
         System.out.println("HintStyleTest ok=" + ok + " bad=" + bad);
         if (bad > 0) System.exit(1);
     }

@@ -30,6 +30,8 @@ interface HintHost {
     fun hintLabelActive(): Boolean
     fun typeHint(s: String)
     fun hintFeedback(v: View)
+    /** v0.9.4 (R4): true = a Bangla layout is active and the field accepts Bangla (not password / email / URL / number). Default false = old behaviour. */
+    fun banglaNumbers(): Boolean = false
 }
 
 object HintKeys {
@@ -44,7 +46,7 @@ object HintKeys {
                 val c = letterOf(b) ?: return@Runnable
                 val isNum = HintStyle.isDigit(c)   // v0.8.6: number-row key (Bangla digit hint); language does not matter
                 if ((!isNum && !host.hintTypingActive()) || !prefs.bool("hint_on", true)) return@Runnable
-                val hint = (if (isNum) HintStyle.digitHint(c, prefs.bool("hint_digits", false)) else LongPressHints.hintFor(c, prefs.bool("numrow", true), prefs.str("hint_custom", ""))) ?: return@Runnable   // v0.5.2 (custom override first)
+                val hint = (if (isNum) HintStyle.digitHintFor(c, prefs.bool("hint_digits", false), prefs.bool("numrow_bn", false), host.banglaNumbers()) else LongPressHints.hintFor(c, prefs.bool("numrow", true), prefs.str("hint_custom", ""))) ?: return@Runnable   // v0.5.2 (custom override first); v0.9.4: digitHintFor (numrow_bn)
                 fired = true
                 host.typeHint(hint)
                 if (KeyCfg.hintBuzz(b)) host.hintFeedback(b)   // v0.9.1: no 2nd buzz when fb_down already buzzed at finger-down
@@ -91,7 +93,7 @@ object HintKeys {
             val on = KeyCfg.hintOn(prefs)   // v0.6.1: cached
             val isNum = c != null && HintStyle.isDigit(c)   // v0.8.6
             val show = c != null && LongPressHints.labelVisible(on && (isNum || host.hintLabelActive()), hide ?: prefs.bool("hint_hide", false))
-            val t = if (!show) null else if (isNum) HintStyle.digitHint(c!!, prefs.bool("hint_digits", false)) else LongPressHints.hintFor(c!!, numrow ?: prefs.bool("numrow", true), custom ?: prefs.str("hint_custom", ""))   // v0.5.2
+            val t = if (!show) null else if (isNum) HintStyle.digitHintFor(c!!, prefs.bool("hint_digits", false), prefs.bool("numrow_bn", false), host.banglaNumbers()) else LongPressHints.hintFor(c!!, numrow ?: prefs.bool("numrow", true), custom ?: prefs.str("hint_custom", ""))   // v0.5.2; v0.9.4: digitHintFor (numrow_bn)
             if (t == null) { if (b.foreground is HintDrawable) b.foreground = null; return }
             val col = try { JabraThemes.iconColor(prefs) } catch (_: Throwable) { Color.parseColor("#222222") }
             val cur = b.foreground

@@ -291,6 +291,9 @@ class TypingPanel(private val ctx: Context, private val host: JabraHost) {
             r40.addView(levelKey("Hint size", "hint_size_lv", com.mgb.keyboard.typing.HintStyle.LV_DEFAULT, com.mgb.keyboard.typing.HintStyle.SIZE_NAMES))
             r40.addView(levelKey("Hint opacity", "hint_alpha_lv", com.mgb.keyboard.typing.HintStyle.LV_DEFAULT, com.mgb.keyboard.typing.HintStyle.ALPHA_NAMES))
             root.addView(r40)
+            val r40n = row()   // v0.9.4 (R4)
+            r40n.addView(toggleKey("Bangla digits on number row", "numrow_bn", false))
+            root.addView(r40n)
         } catch (_: Throwable) { }
         try { val r36 = row(); r36.addView(toggleKey("Long-press characters", "hint_on", true)); r36.addView(toggleKey("Hide long-press hints", "hint_hide", false)); root.addView(r36) } catch (_: Throwable) { }   // v0.1.6
 
