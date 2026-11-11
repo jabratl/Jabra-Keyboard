@@ -1,3 +1,13 @@
+v0.8.4 - NEW: kaomoji tab in the emoji panel (E5)
+- WHY: text faces like the shrug and the table flip are popular and not emoji.
+- What you get: the LAST tab of the emoji panel (label ^_^) shows about 30 text emoticons, 2 per row, scrolls. Tap = types it (no Recent entry: kaomoji contain spaces and emoji_recent splits on spaces). Examples: shrug, table flip, lenny, (^_^), (T_T), orz, <3, :D.
+- Safe: the list is conservative (no emoji, only BMP characters). On first open the panel asks the phone (Paint.hasGlyph, one character at a time) and hides an entry if any of its symbols cannot be drawn, so no empty boxes. Plain ASCII entries (orz, :D, <3) always stay. If the check fails the whole list is shown; if nothing is left there is no tab.
+- Code: NEW emoji/Kaomoji.java (pure: list + filter), NEW tools/KaomojiTest.java (45 checks). MODIFY EmojiGridPanel.kt (tab, small ScrollView filled on first use, glyph filter). app/build.gradle.kts 0.8.4. No new pref, no permission, no library. Search and tone picker unchanged.
+BROKE: nothing intended.
+NOT tested: Kotlin compile (v0.8.3 build result not known when this was made), phone: tab width at 360 dp, two buttons per row fit for the longest entry (table flip), hasGlyph on single symbols such as the box-drawing and katakana characters, dark theme.
+TESTED here: all 33 Java test programs green (new KaomojiTest 45).
+Rollback: restore EmojiGridPanel.kt from v0.8.3; delete emoji/Kaomoji.java + tools/KaomojiTest.java; version back to 0.8.3.
+
 v0.8.3 - NEW: emoji search + skin tone picker (E4)
 - WHY: the emoji panel had all emoji but no way to find one fast, and no skin tones.
 - What you get: (1) a new first tab (magnifier) opens SEARCH: type English words on the small keyboard (heart, cat, pizza, bangladesh, thumbs up). Every word must start a word of the emoji name or its sub-group; "smile" also finds "smiling". Best match first. Tap = types the emoji + Recent. [Back to emoji] / ABC leave search. (2) LONG PRESS an emoji that takes a skin tone (hand, face, person ...) = the tab row turns into a tone row: [no tone] [5 tones] [x]. Tap one = types it AND remembers it (pref emoji_tone, one default tone for all). From then on every tone-capable emoji in the grid shows in that tone. Pick [no tone] to go back to yellow. (3) Search results and tone variants are filtered by what the phone can draw (Paint.hasGlyph, kept in memory). A tone the phone cannot draw is not offered; if none can be drawn, long press does nothing.

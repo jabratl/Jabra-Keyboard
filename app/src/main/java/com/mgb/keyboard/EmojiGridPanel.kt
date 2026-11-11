@@ -8,9 +8,11 @@ import android.view.View
 import android.widget.Button
 import android.widget.HorizontalScrollView
 import android.widget.LinearLayout
+import android.widget.ScrollView
 import android.widget.TextView
 import com.mgb.keyboard.emoji.EmojiDb
 import com.mgb.keyboard.emoji.EmojiSearch
+import com.mgb.keyboard.emoji.Kaomoji
 import com.mgb.keyboard.emoji.RecentEmoji
 
 /**
@@ -25,6 +27,7 @@ class EmojiGridPanel(private val ctx: Context, private val host: JabraHost, priv
     private var query = ""
     private var toneBase: String? = null   // v0.8.3: base emoji whose tone picker row is showing
     private var fillTopRef: (() -> Unit)? = null
+    private var kaoCache: List<String>? = null   // v0.8.4: kaomoji this phone can draw (checked once per panel)
     private var gs: List<Int> = emptyList()   // v0.8.2: data-file groups that have at least one emoji this phone can draw (a group with none gets no tab)
 
     private fun dp(v: Int): Int = (v * ctx.resources.displayMetrics.density).toInt()
@@ -65,6 +68,18 @@ class EmojiGridPanel(private val ctx: Context, private val host: JabraHost, priv
         return EmojiStore.groupItems(gs[c - 1])   // v0.8.2: filtered list (Paint.hasGlyph)
     }
 
+    /** v0.8.4: the kaomoji list minus entries with a character the phone cannot draw (Paint.hasGlyph per character). Any problem = whole list. */
+    private fun kaomoji(): List<String> {
+        val c = kaoCache
+        if (c != null) return c
+        val l: List<String> = try {
+            val p = android.graphics.Paint()
+            Kaomoji.filter(Kaomoji.CharCheck { ch -> try { p.hasGlyph(ch) } catch (_: Throwable) { true } })
+        } catch (_: Throwable) { Kaomoji.filter(null) }
+        kaoCache = l
+        return l
+    }
+
     private fun tone(): Int = try { prefs.int("emoji_tone", -1).coerceIn(-1, 4) } catch (_: Throwable) { -1 }   // v0.8.3: default skin tone, -1 = none
 
     private fun make(): View {
@@ -72,7 +87,9 @@ class EmojiGridPanel(private val ctx: Context, private val host: JabraHost, priv
         for (g in 0 until db.groupCount()) if (EmojiStore.groupItems(g).isNotEmpty()) gl.add(g)
         gs = gl
         val groups = gl.size
-        if (cat < 0 || cat > groups) cat = if (groups > 0) 1 else 0
+        val kao = try { kaomoji() } catch (_: Throwable) { emptyList<String>() }
+        val kaoTab = if (kao.isNotEmpty()) groups + 1 else -1   // v0.8.4: the last tab = kaomoji
+        if (cat < 0 || cat > (if (kaoTab > 0) kaoTab else groups)) cat = if (groups > 0) 1 else 0
         val root = LinearLayout(ctx)
         root.orientation = LinearLayout.VERTICAL
         root.setBackgroundColor(Color.parseColor("#DDDDDD"))
@@ -95,7 +112,40 @@ class EmojiGridPanel(private val ctx: Context, private val host: JabraHost, priv
         }
         val recentHint = "No recent emoji yet. Pick one from the other tabs."
         val searchHint = "Type a word, for example: heart, cat, pizza"
+        val kaoView = ScrollView(ctx)   // v0.8.4: text emoticons, 2 per row (plain buttons, about 30 of them), filled on first use
+        kaoView.visibility = View.GONE
+        fun fillKao() {
+            if ((kaoView.getChildAt(0) as? LinearLayout) != null) return
+            val col = LinearLayout(ctx)
+            col.orientation = LinearLayout.VERTICAL
+            var k = 0
+            while (k < kao.size) {
+                val r = LinearLayout(ctx)
+                r.orientation = LinearLayout.HORIZONTAL
+                for (j in 0..1) {
+                    if (k + j < kao.size) {
+                        val txt = kao[k + j]
+                        val b = btn(txt, 0, 1f, dp(40)) { host.commitWord(); host.typeText(txt) }   // never saved in emoji_recent (kaomoji contain spaces)
+                        b.textSize = 13f
+                        b.maxLines = 1
+                        r.addView(b)
+                    } else r.addView(View(ctx), LinearLayout.LayoutParams(0, dp(40), 1f))
+                }
+                col.addView(r)
+                k += 2
+            }
+            kaoView.addView(col)
+        }
         fun showCat(keep: Boolean) {
+            val onKao = !searching && kaoTab > 0 && cat == kaoTab
+            if (onKao) {
+                try { fillKao() } catch (_: Throwable) { }
+                grid.visibility = View.GONE
+                kaoView.visibility = View.VISIBLE
+                return
+            }
+            grid.visibility = View.VISIBLE
+            kaoView.visibility = View.GONE
             if (searching) {
                 setGrid(if (query.isBlank()) emptyList() else EmojiStore.search(query, 120), if (query.isBlank()) searchHint else "No match", keep)
             } else setGrid(itemsFor(cat), if (cat == 0) recentHint else "", keep)
@@ -195,6 +245,17 @@ class EmojiGridPanel(private val ctx: Context, private val host: JabraHost, priv
                 if (i == cat) t.backgroundTintList = ColorStateList.valueOf(Color.parseColor("#9CC3E6"))
                 tabs.addView(t)
             }
+            if (kaoTab > 0) {   // v0.8.4: kaomoji tab (last)
+                val kt = btn("^_^", dp(44), 0f, dp(36)) {
+                    cat = kaoTab
+                    toneBase = null
+                    fillTabs()
+                    showCat(false)
+                }
+                kt.textSize = 13f
+                if (cat == kaoTab) kt.backgroundTintList = ColorStateList.valueOf(Color.parseColor("#9CC3E6"))
+                tabs.addView(kt)
+            }
         }
         fillTabs()
         fillTop()
@@ -203,6 +264,8 @@ class EmojiGridPanel(private val ctx: Context, private val host: JabraHost, priv
         showCat(false)
         grid.layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, if (searching) dp(88) else dp(host.keyHeightDp()) * 4)
         root.addView(grid)
+        kaoView.layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(host.keyHeightDp()) * 4)
+        root.addView(kaoView)
 
         if (searching) {
             // v0.8.3: tiny search keyboard (Latin letters only, same pattern as the clipboard search)

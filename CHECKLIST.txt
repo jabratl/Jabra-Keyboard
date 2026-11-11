@@ -374,3 +374,11 @@ Z22) v0.8.3 Emoji search + skin tone (E4)
  [ ] Close the keyboard, open again: the chosen tone is still on. Scroll position stays when you pick a tone.
  [ ] Dark theme: search line, tone row and mini keys readable. Landscape / wide screen: nothing cut off.
  [ ] Tell me: phone + Android version, if search feels slow, if the search screen is too tall, if a tone shows as an empty box.
+
+Z23) v0.8.4 Kaomoji tab (E5)
+ [ ] (GitHub) the build of v0.8.4 is GREEN (and v0.8.3 too). If red: paste the error lines.
+ [ ] Emoji panel -> scroll the tab row to the end: last tab "^_^". Tap it: list of text faces, 2 per row, scrolls.
+ [ ] Tap the shrug, the table flip, ":D": each is typed in the field exactly. Long ones are not cut off (tell me if one is).
+ [ ] No empty boxes / question marks in any face. (If your phone font misses a symbol, that face is simply not listed.)
+ [ ] Kaomoji are NOT added to the Recent tab. Back to a normal tab: grid + tone + search still work.
+ [ ] Dark theme: buttons readable. Landscape: still fits.
