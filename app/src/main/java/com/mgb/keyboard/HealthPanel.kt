@@ -187,5 +187,14 @@ object PanelGuard {
         } catch (_: Throwable) { }
     }
 
+    /** v0.5.7: one warning line for the app screen when a panel is switched off right now ("" = nothing to say). */
+    fun note(ctx: Context): String = try {
+        val s = sp(ctx)
+        val n = s.getInt("crash_n", 0); val p = s.getString("crash_p", "") ?: ""
+        if (p.isNotEmpty() && n >= HealthCheck.CRASH_LIMIT && HealthCheck.blocked(p, n, s.getLong("crash_t", 0L), p, System.currentTimeMillis()))
+            "Warning: the keyboard panel \"$p\" is switched off after repeated crashes. Open Data & Backup > Jabra Health Check to switch it on again."
+        else ""
+    } catch (_: Throwable) { "" }
+
     fun reset(ctx: Context) { try { sp(ctx).edit().remove("crash_p").remove("crash_n").remove("crash_t").apply() } catch (_: Throwable) { } }
 }

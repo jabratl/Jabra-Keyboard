@@ -253,3 +253,7 @@ Z6) v0.5.6 Logo
  [ ] App screen: logo left of the title "Jabra Keyboard".
  [ ] Keyboard gear panel: logo + "Jabra Keyboard 0.5.6" on top, the rest unchanged (scroll if needed).
  [ ] Settings > Keyboards / keyboard picker: Jabra Keyboard shows the same icon.
+
+Z7) v0.5.7 Warning line
+ [ ] Normal case: app screen shows NO orange warning line under the version.
+ [ ] (Only if a panel was switched off) the orange line names the panel; Health Check > "Switch the panel on again" removes it.

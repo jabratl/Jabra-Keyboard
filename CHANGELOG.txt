@@ -1,3 +1,10 @@
+v0.5.7 - NEW: warning line on the app screen when the crash guard switched a panel off
+- WHY: since v0.5.3 a panel that fails twice in a row is switched off for 24 h, but the only hint was a short toast inside the keyboard. Now the app screen says it plainly and where to fix it.
+- What you get: under "Version ..." an orange line: Warning: the keyboard panel "vault" is switched off after repeated crashes. Open Data & Backup > Jabra Health Check to switch it on again. Nothing is shown when all panels are fine (normal case) or the 24 h block is over.
+- Code: HealthPanel.kt PanelGuard.note(ctx) (3 pref reads, same rules as blocked()), SettingsActivity.kt (1 try-block, marked "v0.5.7"). No new pref, no permission, nothing on the key-press path.
+BROKE: nothing intended. NOT tested: Kotlin compile (GitHub Actions first), the line on a phone (needs a real panel crash to appear).
+Rollback: delete the try-block marked "v0.5.7" in SettingsActivity.kt (PanelGuard.note can stay).
+
 v0.5.6 - NEW: Jabra logo in the app icon, the app screen, the keyboard panel and the keyboard picker
 - WHY: you sent your logo (keycap with J + 3 click sparks, black background). Redrawn as OUR OWN version, not a copy: solid white keycap with a light-blue lip, blue J with a top bar, 3 sparks (2 blue, 1 amber), deep navy background. Drawn as Android vector files (no image file, no font, no new permission).
 - What you get: 1) launcher icon (adaptive, content kept inside the safe zone so round / squircle masks do not cut it; old icon replaced). 2) App screen: logo next to the title "Jabra Keyboard". 3) Keyboard gear panel: small logo + "Jabra Keyboard <version>" on top (the panel already scrolls when tall). 4) Keyboard picker / input-method list shows the same icon.

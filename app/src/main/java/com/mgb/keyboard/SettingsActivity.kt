@@ -55,6 +55,10 @@ class SettingsActivity : Activity() {
         val ver = TextView(this)
         ver.text = "Version ${BuildConfig.VERSION_NAME} (build ${BuildConfig.VERSION_CODE})"
         col.addView(ver)
+        try {   // v0.5.7: visible warning when the crash guard switched a panel off
+            val w = PanelGuard.note(this)
+            if (w.isNotEmpty()) { val wt = TextView(this); wt.text = w; wt.setTextColor(0xFFD84315.toInt()); wt.setPadding(0, dp(6), 0, dp(6)); col.addView(wt) }
+        } catch (_: Throwable) { }
 
         col.addView(btn("1. Enable keyboard") {
             startActivity(Intent(Settings.ACTION_INPUT_METHOD_SETTINGS))
