@@ -547,3 +547,8 @@ Z43) v0.9.10.5 Pinned cards visible (FIX)
  [ ] Unpin it: the card goes back to the normal look and moves to the Recent group.
  [ ] Try Classic and one dark theme: pinned card clear in both, text readable.
  [ ] Long-press a card (select mode): ticked card look still works, pinned ones still show "★ Pinned". View: List unchanged.
+
+Z44) v0.10.0 Word index engine (G1)
+ [ ] Install the new APK. Type in any chat in English, Avro, Probhat: everything works exactly as before (G1 has no screen change).
+ [ ] Settings > Data & Backup > Health: still opens, no error.
+ [ ] Nothing else to see: the suggestion strip comes in G2.

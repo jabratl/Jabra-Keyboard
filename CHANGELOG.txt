@@ -1,3 +1,12 @@
+v0.10.0 - NEW: offline word index (G1, engine only, NO screen change)
+- WHY: user said YES to the suggestion plan (G1). This is only the engine: nothing in the keyboard uses it yet, so typing looks and works exactly as v0.9.10.5.
+- What you get: a bundled word list (English 569 words, Bangla 191 words, most frequent first) and a lookup "words that start with ..." in frequency order, Latin case-insensitive, Bangla exact. Reader refuses a broken / cut-off file (then the feature just stays off). Nothing you type is stored. No permission, no network.
+- Code: typing/WordIndex.java (new, pure Java), assets/words/en.txt + bn.txt (new, starter lists: small on purpose, G2 / a later data drop can replace them with bigger lists in the same format), tools/WordIndexTest.java (73 checks), build.gradle.kts version. No Kotlin file changed.
+BROKE: nothing intended (no existing file touched except the version line).
+NOT tested: phone (nothing visible yet); Kotlin compile is not affected (no Kotlin change). The starter word lists were written by hand (not from a real frequency corpus): order is approximate.
+TESTED here: all 45 Java test programs green, WordIndexTest 73/73 (10k lookups = ~20 ms).
+Rollback: delete WordIndex.java, assets/words/, WordIndexTest.java; version back to 0.9.10.5.
+
 v0.9.10.5 - FIX: pinned clips not visible in Clipboard "Cards" view
 - WHY: user: in card style the pinned clips are not seen. Code check: pinned data goes to the Pinned group correctly; the only cue on a pinned card was a 1dp grey-blue border (#7A9CC6 vs #C8C8C8) and a tiny filled-head pin icon, and the "Pinned" tag existed only in select mode.
 - What you get: a pinned card now has a light blue tint + 2dp accent border + a bold "Pinned" tag next to the pin button (every theme; dark theme uses the soft accent for the tag). Select mode (ticked card look + "★ Pinned" tag), recent cards, List view and the Pinned / Recent headers are unchanged.
