@@ -192,3 +192,14 @@ W) v0.4.6 Text tools (toolbar item is OFF by default)
  [ ] Date: sample shows today's date; tap to change format; Insert types it into the field and goes back to letters.
  [ ] Copy: paste somewhere else, the result is there. Bangla text works in Count / Clean / Repeat.
  [ ] Password field: Tt key does nothing. Panel fits at 360 px and landscape; tabs not cut off.
+
+X) v0.4.8 Theme Studio (custom theme)
+ [ ] Gear > More settings > Theme picker: 20 tiles as before + a button "Custom theme (colours)...". Tap it: studio with a preview and hex keys.
+ [ ] Choose "Background", type 000000 with the hex keys: the preview turns black. "Text" = FFFFFF. Tap a swatch: the colour changes at once.
+ [ ] "Bg 2": type a colour = gradient preview; "None" = plain again.
+ [ ] Round - / + and Opacity - / +: numbers change. Presets (AMOLED, Reading, Cyber, Professional) fill the colours.
+ [ ] Save: message "Saved. Custom theme is ON". Tap ABC: the keyboard uses the colours. Settings > Look = Jabra: round corners / opacity follow the numbers.
+ [ ] Picker shows a 21st tile "Custom" with the blue frame. Choose another theme: it works; choose Custom again: back.
+ [ ] Studio > Reset: first tap "Sure? Delete", second deletes; keyboard goes back to Classic, the Custom tile is gone.
+ [ ] Data & Backup > Backup now, change the custom theme, Restore: the old custom colours are back.
+ [ ] Studio fits at 360 px (scrolls if needed) and in landscape. Typing speed is the same as before.

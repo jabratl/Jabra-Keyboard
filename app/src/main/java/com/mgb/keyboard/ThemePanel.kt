@@ -66,7 +66,7 @@ class ThemePanel(private val ctx: Context, private val host: JabraHost) {
 
         override fun onDraw(canvas: Canvas) {
             super.onDraw(canvas)
-            val t = JabraThemes.ALL[idx]
+            val t = if (idx >= JabraThemes.ALL.size) (JabraThemes.customT(prefs) ?: JabraThemes.ALL[0]) else JabraThemes.ALL[idx]   // v0.4.8: 20 = custom
             val w = width.toFloat()
             val h = height.toFloat()
             val r = dp(8).toFloat()
@@ -79,7 +79,7 @@ class ThemePanel(private val ctx: Context, private val host: JabraHost) {
             canvas.drawRoundRect(rect, r, r, p)
             p.shader = null
             val keyC = t.key ?: Color.WHITE
-            val fnC = LookColors.funcFill(idx)
+            val fnC = JabraThemes.funcFillAt(prefs, idx)   // v0.4.8 (same value for 0..19)
             val pad = dp(8).toFloat()
             val gap = dp(4).toFloat()
             val kw = (w - 2f * pad - 2f * gap) / 3f
@@ -138,7 +138,7 @@ class ThemePanel(private val ctx: Context, private val host: JabraHost) {
         val sv = ScrollView(ctx)
         val col = LinearLayout(ctx)
         col.orientation = LinearLayout.VERTICAL
-        val n = JabraThemes.ALL.size
+        val n = JabraThemes.count(prefs)   // v0.4.8: 20, or 21 with a saved custom theme
         var i = 0
         while (i < n) {
             val r = row()
@@ -173,6 +173,11 @@ class ThemePanel(private val ctx: Context, private val host: JabraHost) {
 
         root.addView(note("Tap a tile to choose a theme (blue frame = current). Then ABC (apply). The old Theme: tap-to-cycle button in More settings still works."))
 
+        val rc = row()   // v0.4.8: custom theme studio
+        val studio = pk("\u270E Custom theme (colours)\u2026", 1f)
+        studio.setOnClickListener { try { host.feedback(studio) } catch (_: Throwable) { }; scrollY = 0; host.showPanel("tstudio") }
+        rc.addView(studio)
+        root.addView(rc)
         val rb = row()
         val back = pk("< More settings", 1f)
         back.setOnClickListener { try { host.feedback(back) } catch (_: Throwable) { }; scrollY = 0; host.showPanel("more") }

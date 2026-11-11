@@ -46,8 +46,10 @@ object JabraLook {
             if (JabraThemes.borderless(p)) { flat(p, b); return }   // v0.2.6
             if (!on(p)) return
             val d = b.resources.displayMetrics.density
-            val base = if (kind == FUNC) LookColors.funcFill(JabraThemes.index(p)) else fill(p)
-            val radius = if (kind == PILL) 200f * d else 9f * d
+            val ct = JabraThemes.customActive(p)   // v0.4.8: custom theme = own roundness + key opacity (only when theme 20 is chosen)
+            var base = if (kind == FUNC) JabraThemes.funcFill(p) else fill(p)
+            if (ct != null) base = ct.withKeyAlpha(base)
+            val radius = if (kind == PILL) 200f * d else if (ct != null) ct.radiusDp() * d else 9f * d
             val up = GradientDrawable()
             up.setColor(base)
             up.cornerRadius = radius

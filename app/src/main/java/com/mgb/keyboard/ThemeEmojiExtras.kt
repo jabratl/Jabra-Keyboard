@@ -50,8 +50,29 @@ object JabraThemes {
         T("Coral Sunset", 0xFFFF9A7B.toInt(), 0xFFFFF1EC.toInt(), 0xFF4A1A22.toInt(), 0xFFE8587A.toInt())
     )
 
-    fun index(p: JabraPrefs): Int = p.int("theme", 0).coerceIn(0, ALL.size - 1)
-    fun cur(p: JabraPrefs): T = ALL[index(p)]
+    // v0.4.8: slot 20 = the user's custom theme (pref ct_json, see typing/CustomTheme.java). Missing / invalid = slot 20 does not exist (old 20 themes untouched).
+    private var ctJson = ""
+    private var ctCache: com.mgb.keyboard.typing.CustomTheme? = null
+    /** The saved custom theme, or null. Parsed again only when the saved text changed. */
+    fun custom(p: JabraPrefs): com.mgb.keyboard.typing.CustomTheme? = try {
+        val s = p.str("ct_json", "")
+        if (s.isEmpty()) null else { if (s != ctJson) { ctJson = s; ctCache = com.mgb.keyboard.typing.CustomTheme.parse(s) }; ctCache }
+    } catch (_: Throwable) { null }
+    /** Number of themes to show: 20, or 21 when a custom theme is saved. */
+    fun count(p: JabraPrefs): Int = ALL.size + (if (custom(p) != null) 1 else 0)
+    /** The custom theme when it is the chosen one (theme == 20), else null. Used by JabraLook for roundness / opacity. */
+    fun customActive(p: JabraPrefs): com.mgb.keyboard.typing.CustomTheme? = if (index(p) == ALL.size) custom(p) else null
+    fun customT(p: JabraPrefs): T? = custom(p)?.let { T("Custom", it.bg, it.key, it.text, if (it.hasBg2) it.bg2 else null) }
+    /** Function-key colour of theme [i] (20 = custom). */
+    fun funcFillAt(p: JabraPrefs, i: Int): Int = if (i == ALL.size) (custom(p)?.func ?: com.mgb.keyboard.typing.LookColors.funcFill(i)) else com.mgb.keyboard.typing.LookColors.funcFill(i)
+    fun funcFill(p: JabraPrefs): Int = funcFillAt(p, index(p))
+
+    fun index(p: JabraPrefs): Int {
+        val raw = p.int("theme", 0)
+        if (raw == ALL.size) return if (custom(p) != null) raw else 0   // v0.4.8: custom chosen but not saved (any more) = Classic
+        return raw.coerceIn(0, ALL.size - 1)
+    }
+    fun cur(p: JabraPrefs): T { val i = index(p); return if (i == ALL.size) (customT(p) ?: ALL[0]) else ALL[i] }
     fun bg(p: JabraPrefs): Int = cur(p).bg
 
     /** v0.2.6: paints the theme background on a view: gradient (bg -> bg2) for gradient themes, else the solid bg as before. */
