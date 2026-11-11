@@ -1,0 +1,246 @@
+JABRA KEYBOARD - HANDOFF (PLAN v0.6 - v0.7)   code now = v0.6.3   file = HANDOFF_Jabra-Keyboard_v0.6.3.txt
+Paste this file at the start of EVERY chat together with Jabra-Keyboard-context.zip. It is self-contained.
+Written in a PLANNING chat (2026-11-11). No project code was changed in that chat.
+==========================================================================================
+
+0) HOW TO WORK WITH THIS USER (follow)
+  - Reply in BANGLISH (Bangla in English letters). User is NOT a coder: short, simple, step-by-step.
+    If the user's latest message is full English, answer in English.
+  - Start of chat: say in ~5 lines what you understood, name the step, write assumptions in ONE line,
+    ask a question ONLY if truly blocking. Plan max 5 lines, then build.
+  - End of chat: final reply max 10 lines + a Banglish checklist ("which screen, do what, see what").
+  - Never say "works" for what was not run on a phone. Write "NOT tested" honestly (Kotlin has no compiler here;
+    GitHub Actions is the first compile check). Java pure classes + tools/*Test.java CAN be run here: run them.
+
+1) PROJECT SUMMARY
+  Jabra Keyboard = personal Android keyboard (Ridmik-inspired, own code). Kotlin app + pure Java logic classes.
+  Package com.mgb.keyboard (never change: breaks updates/signing). Prefs file "jabra". minSdk 24, target/compile 34,
+  only dependency androidx.core-ktx. Build = push to GitHub main -> Actions builds APK -> Releases -> in-app updater.
+  No res/values at all: ALL UI is built in Kotlin code. res has only drawable (vector logo/icons), mipmap, xml(method, file_paths).
+  Permissions: INTERNET (only "Check for updates"), REQUEST_INSTALL_PACKAGES, VIBRATE. NO new permission without ASKING.
+  Core identity (user): Personalization + Productivity + Data Ownership. Offline-first, no account, no cloud.
+  Languages: English, Avro phonetic, Probhat. Panels: clipboard, formatter, vault, text tools, profiles, theme picker/studio,
+  emoji, numpad, symbols, cursor pad, PC mode, size, settings, health check, backup.
+  DROPPED BY USER (do NOT build unless user asks again): auto-correct / suggestions / next-word, Store, tutorial, cloud/sync,
+  floating overlay tools, clipboard images, volume-key cursor, split keyboard.
+  SKIPPED BY USER 2026-11-11: v0.4.7 Calculator, v0.4.9 Photo background + theme export/import/favorites. Not in this plan.
+
+2) VIDEO AUDIT (user's screen recording = ChatGPT "9-part idea document") vs CODE (checked by grep in the planning chat)
+  Idea in video                         | Status in code v0.5.9
+  1 Clipboard (folders, edit, sort, expiry, count, favorite, templates, export) | DONE: Pin=favorite, edit v0.4.3.1, sort/count/expiry v0.4.3, folders live in Vault v0.4.4, export = backup
+  2 Theme (custom colours, profiles AMOLED/Reading/Cyber/Pro)                  | DONE v0.4.8 Theme Studio (4 presets). Photo bg / share / favourites = SKIPPED by user
+  3 Tools (counter, case, cleaner, date) / Calculator                          | DONE v0.4.6 Text Tools. Calculator SKIPPED by user
+  4 Language (switch, favourites, order)                                      | DONE v0.5.0
+  5 Keyboard (height, gap, haptic profiles, presets, gestures)                | DONE v0.2.8-v0.3.0, v0.5.2
+  6 Data safety (backup, auto, restore, health, privacy)                      | DONE v0.4.0-v0.5.9
+  7 Settings UX (search, recent, reset group, undo)                           | DONE v0.4.2 (SettingsIndex has help for 33 rows only -> S11)
+  8 Top-10 features: Vault, Theme Studio, Quick Insert, Dictionary, Dyn. toolbar, Health Check | DONE (vault v0.4.4-5, dyn toolbar v0.5.4, health v0.5.3)
+  8 "Text Diff Tool" (compare two texts)                                      | NOT BUILT, not in older plan -> S10 (optional)
+  Result: the whole idea document is built in code. What is LEFT = (a) proof it compiles/works on a phone, (b) speed,
+  (c) design consistency, (d) one optional tool. This plan covers exactly those.
+  !! RISK: v0.5.0 - v0.5.9 Kotlin was NEVER compiled (GitHub build result unknown) and never phone-tested. Step S0 is a gate.
+
+3) SENIOR-ENGINEER AUDIT (what was found; only ADD what is missing)
+  PERFORMANCE (key-press path = MgbIme.key()/letter()/onLetter()/feedback()/onUpdateSelection()):
+   F1 onUpdateSelection() -> autoCapUpdate() -> ic.getCursorCapsMode() runs on EVERY selection change = a synchronous
+      cross-process call to the host app after almost every keystroke. Biggest lag risk on slow apps. (-> S2)
+   F2 feedback() on every tap: getSystemService(VIBRATOR) each time + 2-3 SharedPreferences reads. (-> S1)
+   F3 KeyPopup.touch() reads pref key_popup on every ACTION_DOWN; HintKeys.attach touch reads hint_on / lp_delay each DOWN;
+      HintKeys.refresh() runs for 26 keys on every shift tap, each reading 3-4 prefs (~100 reads per Shift tap). (-> S1, S2)
+   F4 Build cost (buildKeyboard): ~45 Buttons x (2 GradientDrawable + StateListDrawable + ~15 pref reads). Only matters at
+      keyboard open / rotate / "ABC apply". Small win; do only if S1-S2 phone test still feels slow. (-> S3, optional)
+   OK ALREADY (do not touch): backup runs on a background Thread, once per day, 1 int read on input start; stores load lazily;
+      AtomicFile for big data; theme custom JSON parse is cached (ctCache); no timers/services; no new libraries.
+   NOT adding: R8/minify (risk with updater/signing, cannot test), custom drawing View instead of Button (big rewrite, Rule 0),
+      background services, WorkManager, any library.
+  DESIGN:
+   G1 Panels do not follow the keyboard theme: ClipboardFeature, ClipCards, FormatterFeature, VaultPanel, TextToolsPanel,
+      ProfilePanel, HealthPanel have 0 references to JabraThemes (the theme only colours the keys + theme screens) -> in a
+      dark theme the panels keep their own default buttons / hard-coded greys (not phone-verified how bad it looks). (-> S4-S8)
+   G2 about 19 private copies of a btn()/pk() helper (ClipboardFeature, FormatterFeature, VaultPanel, TextToolsPanel, ProfilePanel,
+      ThemeStudio, ToolbarPanel, ToolbarQuick, SizePrefs, TypingExtras, TypingPrefs, PadPanel, JabraExtras, SettingsGroups, DataPage, HealthPanel...). No shared tokens;
+      hex colours scattered (#DDDDDD x17, #555555 x9, #222222 x9). (-> S4 shared kit, then migrate panel by panel)
+   G3 App screen (SettingsActivity) is fixed Theme.DeviceDefault.Light = no dark mode. (-> S9 optional)
+
+4) DESIGN RULES (existing style; new UI must match; Classic theme must look EXACTLY as today)
+  Colour system
+   - Themes = JabraThemes.ALL list of T(name, bg, key, text, bg2?) in ThemeEmojiExtras.kt. Index 0-19 fixed, NEVER reorder/append-in-middle.
+     Slot 20 = custom theme from pref ct_json (Theme Studio). 0 Classic (bg #DDDDDD, key=null=system button, text=null).
+     Examples: 1 Blue bg D6E6F5/key FFFFFF/text 1B3A57; 4 Dark bg 1E1F22/key 3A3C42/text F2F2F2; 8 Gloss Black; 12 Ocean 1C6BC0;
+     18 Purple Haze + 19 Coral Sunset have bg2 = gradient TL->BR.
+   - Helpers: JabraThemes.cur(p).bg/key/text/bg2, iconColor(p) = text ?: #222222, noteColor(p) = luminance(bg)<0.4 ? #B8B8B8 : #555555,
+     funcFill(p) (function-key colour), keyTint(p), borderless(p) (pref key_border=1), JabraLook.on(p) (pref look=1 "Jabra").
+   - Fixed accents: caps lock #2271B1, one-shot shift #9CC3E6, sticky Ctrl light blue #BBDEFB, warning orange #D84315, danger #AA0000,
+     logo: navy #0B1220, white keycap, J #1D9BF0, sparks #38BDF8 + #FFB020. Popup bubble border #888888.
+  Typography: system font only (no custom font). textSize in code: 12sp (37 uses, panel buttons/labels), 11sp (15, small notes),
+     14sp (letters default; letter_pct 80-220 scales it; 9 uses), 13/15/16/18, 22sp only for app-screen title.
+  Spacing / size: key height 48dp default (kh %: 40/48/56/64 legacy or percent), key gap = pref key_gap 0-6dp (default 2),
+     keyboard root padding 2dp sides / 4dp top-bottom, edit-bar keys 36dp tall, Probhat extra row 38dp, number row +12dp when large,
+     app screen padding 16dp, logo 56dp.
+  Shape: Jabra look = rounded keys 9dp radius, function keys own fill (JabraThemes.funcFill), space key pill (200dp radius),
+     popup bubble 16dp (Classic 10dp), Borderless = flat 8dp with soft press highlight, custom theme radius = round*0.2dp,
+     key alpha 40-100. Pressed state = same colour darkened 0.18 (LookColors.darken).
+  Components (all built in code): key() Button with weight + margin gap; fn() function key; JabraIcons.putThemed(ctx, btn, name)
+     = own vector line icons (no emoji; Icons OFF = text); panel buttons pk()/btn() (private per file); "mini keys" (Latin+digits only,
+     used for search / edit / hex entry); chips (kind/folder rows); cards (2 columns, ClipCards.kt); select bar; [-][n][+] steppers;
+     two-tap confirm for destructive actions ("Sure?" on second tap); toast via BackupStore.toast.
+  Dark / light: ONLY through the theme (keyboard). App screen = light only (Theme.DeviceDefault.Light).
+  Breakpoints / widths: none formal. Test at 360 px portrait and 1280 px wide; landscape has own keys (kh_l, oh_w_l ...).
+     Tall panels are capped to letters-keyboard height and scroll (MgbIme.capTall(): settings, more, typing, size, themes, vault, tt,
+     profiles, tstudio) - a new tall panel must be added to that name list.
+  Rules for new UI: Kotlin code, same look as SizePanel / ThemePanel, fits 360 px, theme-aware (from S4 on use JabraTokens/UiKit),
+     Classic theme = unchanged colours, every panel has a back route (showLetters), no new permission, no blocking work on UI thread.
+
+5) FILE MAP (app/src/main/java/com/mgb/keyboard/ ... K = Kotlin, J = pure Java, no Android classes, tested in tools/)
+  MgbIme.kt (K, 765 lines) the keyboard service. key()/letter()/fn()/row(); buildKeyboard(); onLetter/commitWord/renderWord (Avro buffer buf);
+     feedback(v); onStartInputView; onUpdateSelection; autoCapUpdate; showPanel(name)/showLetters()/capTall(); toolbarAction(id); toggleLang/applyLang.
+  JabraExtras.kt: JabraPrefs (bool/int/str/setBool/setInt/setStr on prefs "jabra"; keyHeightDp(land)), JabraHost interface (sendKey,
+     edit, typeText, commitWord, backspace, enter, showPanel, showLetters, feedback, keyHeightDp, layoutChanged, fieldText), SpaceDragHelper, panels more/settings.
+  ThemeEmojiExtras.kt: JabraThemes (ALL, cur, custom/customActive, paint, style, iconColor, noteColor, borderless, keyTint, funcFill), JabraOneHand, EmojiPanel.
+  JabraLook.kt: shape(p, btn, kind NORMAL/FUNC/PILL) builds GradientDrawable + StateListDrawable. KeyPopup.kt: PopupWindow bubble on press (pref key_popup).
+  HintKeys.kt: long-press hint letters + touch listener (calls KeyPopup.touch). JabraIcons.kt: vector icons by name (NAMES list).
+  Toolbar.kt / ToolbarPanel.kt (+ToolbarQuick.kt): custom toolbar. ClipboardFeature.kt: ClipStore + ClipPanel (+ClipCards.kt cards/select mode).
+  FormatterFeature.kt: Novel formatter panel + FmtStore + ImeFmtIo (field reader / Replace / Undo). VaultPanel.kt + VaultStore.kt: vault UI + AtomicFile store.
+  TextToolsPanel.kt (route tt), ProfilePanel.kt (route profiles), ThemePanel.kt (route themes), ThemeStudio.kt (route tstudio), SizePrefs.kt (route size),
+  TypingPrefs.kt (route typing), TypingExtras.kt, PcMode.kt, PadPanel.kt, InputSafe.kt (key events with fallback), HealthPanel.kt (PanelGuard + health UI),
+  DataPage.kt (Data & Backup), BackupStore.kt, SettingsActivity.kt (app screen, SAF export/import, onActivityResult 4101/4102), SettingsGroups.kt (settings rows registry,
+  search, recent, undo, reset group), Updater.kt.
+  Java (typing/ clip/ vault/ emoji/ extras/ formatter/ phonetic/ probhat/): ShiftState, SizePct, TypingLevels (hapticMs, longPressMs, stepDp), LongPressHints, LangOrder,
+     ToolbarOrder (DEFAULT/EXTRAS id lists), ToolUsage, ProfileCodec, CustomTheme, LookColors, SettingsIndex, HealthCheck, Migrate, BackupCodec, TextTools,
+     VarFill, ClipList/ClipMeta/ClipSelect, VaultList, NovelFormatter, AvroPhonetic, ProbhatLayout, DoubleSpace, WordDelete, SpaceDrag.
+  tools/*Test.java: 28 test programs (plain javac/java, e.g. HintTest 196 checks, HealthTest 81, ToolbarTest 44). Run ALL each step (they must stay green).
+  Old detailed notes (per-version 'HOW IT WORKS'): docs/ARCHIVE_HANDOFF_v0.5.9_FULL.txt inside the context zip = grep-only reference (section 5 there), never read fully.
+  Docs in repo root: CHANGELOG.txt (116 KB, newest on top), CHECKLIST.txt (phone tests, sections ... Z9), README.txt, REVERT.txt, old HANDOFF files (30 stale copies).
+
+6) KEY IDS / DATA SHAPES (never change meaning; new data = new keys/files, new JSON gets {"ver":1,...})
+  Panel routes (MgbIme.showPanel): clipboard, format, more, emoji, settings, typing, size, themes, tstudio, vault, tt, profiles, numpad, symbols, tbquick, (letters = showLetters()).
+  Toolbar ids (ToolbarOrder.DEFAULT): fmt clip mode all cut copy paste plain | extras: emoji numpad sym gear voice globe theme onehand size pad undo redo vault tt profiles.
+     Adding an id = update ToolbarOrder.java DEFAULT + EXTRAS, Toolbar.kt label/make, JabraIcons NAMES, MgbIme.toolbarAction branch + lazy panel, AND tools/ToolbarTest.java (hard-codes the id lists: 4 spots + EXT string + down() check).
+  Prefs (file "jabra"): autocap bk_auto bk_day bk_keep bk_last bn_layout bs_repeat bs_word clip_count clip_expire clip_lines clip_meta_v1 clip_on clip_sort clip_view clips_v1
+     crash_n crash_p ct_json cursor_speed ds_period ds_tab edit_bar emoji_recent enter_action fmt_cur fmt_on fmt_presets fmt_prev fmt_src fs_extract haptic haptic_lv hint_custom hint_hide
+     hint_on icons_on key_border key_emoji key_gap key_globe key_popup key_voice lang_avro_on lang_fav lang_probhat_on lang_tap letter_bold letter_pct look lp_delay mode_key numpad_auto
+     numrow numrow_large onehand pc_mode pc_remember schema_v set_last set_recent sound tb_auto tb_custom tb_fold tb_hidden tb_on tb_order tb_use theme vault_dest vault_sort xrow_chars
+     (+ size keys kh_p/kh_l, oh_w_p/oh_w_l via SizeKeys). bk_* and upd* are not saved in backups. Profiles whitelist = ProfileCodec.KEYS.
+  Files in filesDir: vault_v1.json {"ver":1,"next","folders","entries"[{id,kind,folder,title,text,made,used,count}]}, profiles_v1.json, backups/jabra_YYYYMMDD_HHmm.json
+     {"ver":1,app,time,sha256,prefs{key:{t,v}},files{name:text}} (+ before_restore_*), all via AtomicFile.
+  clips_v1 = lines "<0|1 pinned>,<urlencoded text>" (limits 40 unpinned / 30 pinned / 2000 chars); clip_meta_v1 = lines "key,made,used,count"; ct_json = {"ver":1,"bg","bg2","key","text","func","round","alpha"}.
+  Shift state = typing/ShiftState (tap / typed / autoCap / reset). Avro buffer = MgbIme.buf (StringBuilder) rendered with setComposingText.
+
+7) VERSION + CHANGELOG CONVENTION
+  - Version = ONE line: val appVersionName in app/build.gradle.kts (the workflow reads it). One step = one version = one topic.
+  - New version numbers for this plan: S1 v0.6.0, S2 v0.6.1, S3 v0.6.2, S4 v0.6.3, S5 v0.6.4, S6 v0.6.5, S7 v0.6.6, S8 v0.6.7, S9 v0.6.8, S10 v0.7.0, S11 v0.7.1 (S0 = fix, version v0.5.9.1 only if code changes).
+    If a step is skipped, keep the numbers of the others (gaps are fine).
+  - CHANGELOG.txt entry on TOP, format: "vX.Y.Z - NEW|FIX: title / - WHY: / - What you get: / - Code: files + hooks marked "vX.Y.Z" / BROKE: nothing intended | list / NOT tested: ... / TESTED here: test counts / Rollback: ..."
+  - Every hook in old code is a tiny line marked with a comment "// vX.Y.Z"; new code goes in a NEW file where possible.
+  - CHECKLIST.txt: new section Z10, Z11, ... one per step (last existing = Z9): "[ ] which screen -> do what -> see what".
+  - HANDOFF: tick the step [x], update section 9 status line, rename this file to the new version (HANDOFF_Jabra-Keyboard_vX.Y.Z.txt).
+  - Repo root cleanup (user does by hand on GitHub, listed once in S11): delete HANDOFF.txt (stale v0.2.3) and every old HANDOFF_Jabra-Keyboard_v0.2.4 ... v0.5.8 file; keep only the newest.
+
+8) STEP PLAN  (size: S ~<=30% of a chat, M ~30-60%, L 60-85% = must be split. Each step leaves the project working; old behaviour = default/fallback.)
+  [x] S0  GATE / FIX      mode FIX    size S
+      Goal: confirm GitHub build of v0.5.9 (Kotlin v0.5.0-v0.5.9 never compiled); fix compile errors only. No feature work.
+      Input from user in the kickoff: GREEN, or the pasted error lines. GREEN = tick S0 and do nothing else; ask for NO more.
+      Modify only what errors name. Suspects: HealthPanel.kt (trailing lambda + "?: return"), ProfilePanel.kt (when on Java Map<String,Object>),
+      TypingPrefs.kt (lambdas), SettingsGroups.kt (cycle(...) lambdas), MgbIme.kt (showPanel catch / applyLang), ThemeStudio.kt, DataPage.kt, SettingsActivity.kt, BackupStore.kt.
+      Read-only: CHANGELOG head, CHECKLIST Z3-Z9. Checks: all Java tests green; bracket balance of changed Kotlin; version only if code changed.
+  [x] S1  PERF-1 key feedback cache   (v0.6.0)   mode MODIFY   size S
+      Goal: cut per-tap work: cache Vibrator service + haptic/sound/popup/hint flags in one small object, kept fresh by a prefs-change listener.
+      ADD: KeyCfg.kt (object/class: haptic, hapticMs, sound, popup, hintOn, lpDelay; lazy vibrator; SharedPreferences.OnSharedPreferenceChangeListener
+           sets dirty=true; get() reloads only when dirty; listener held in a field; every read has try/catch + old-default fallback).
+      MODIFY: MgbIme.kt feedback() (read KeyCfg, keep exact same vibrate/tone logic as fallback), KeyPopup.kt touch(), HintKeys.kt attach() (ACTION_DOWN flags).
+      Read-only: JabraExtras.kt (JabraPrefs), typing/TypingLevels.java, typing/LongPressHints.java.
+      Deps: S0. Design note: no visual change. Checks: Java tests green; haptic Light/Medium/Strong still differ; Sound/Popup/Hint ON/OFF take effect WITHOUT reopening (listener);
+      typing speed feel. Rollback: restore the old feedback() body (kept as fallback in a try/catch).
+  [x] S2  PERF-2 auto-cap gate + shift relabel   (v0.6.1)   mode MODIFY   size M
+      Goal: stop the cross-process getCursorCapsMode() call after ordinary letters; make Shift tap cheap.
+      ADD: typing/AutoCapGate.java (pure: shouldCheck(event, lastChar, shiftOffNow): true on start-input, after space / newline / . ! ? । / backspace / cursor jump,
+           false after a plain letter while shift is already off) + tools/AutoCapGateTest.java (>= 25 checks, incl. Bangla danda, restart, selection jump).
+      MODIFY: MgbIme.kt (onUpdateSelection + autoCapUpdate hook; remember last typed char in onLetter/typeText; relabelLetters writes b.text only when it changed),
+              HintKeys.kt refresh() (read KeyCfg flags once per refreshHints() call, not per key).
+      Read-only: typing/ShiftState.java, tools/HintTest.java (must stay 196 green), typing/DoubleSpace.java.
+      Deps: S1. Design note: no visual change. Checks: new empty note -> first letter capital; after ". " capital again; after a normal letter no extra call; Autocap OFF still stops it;
+      Avro/Probhat unchanged; Shift/CapsLock colours still right. Rollback: remove the 2 marked hooks (autoCapUpdate runs every time again).
+  [-] S3  (SKIPPED for now, optional) PERF-3 build cost (OPTIONAL: do only if S1-S2 phone test still feels slow at keyboard open / rotate / ABC apply)   (v0.6.2)   mode MODIFY   size M
+      Goal: smaller rebuild time. One BuildCfg snapshot of the ~15 prefs read per buildKeyboard() (instead of per key); JabraLook.shape()/flat() share one drawable
+      ConstantState per kind per build and hand out newDrawable().mutate() copies.
+      ADD: BuildCfg inside KeyCfg.kt (or new file). MODIFY: MgbIme.kt (key(), letter(), number row lines), JabraLook.kt, ThemeEmojiExtras.kt (JabraThemes.style).
+      Read-only: SizePrefs.kt, typing/SizePct.java, typing/CustomTheme.java, typing/LookColors.java.
+      Deps: S1. Design note: pixel-identical output; compare Classic, Jabra look, Borderless, Custom(20), gradient theme before/after on a phone.
+      Rollback: set the snapshot to "off" (each reader keeps its old direct pref read as fallback).
+  [x] S4  DESIGN TOKENS + UiKit (no existing panel changed)   (v0.6.3)   mode BUILD   size S
+      Goal: one place for panel look so later steps migrate panels without inventing styles.
+      ADD: JabraTokens.kt (object: dp radii 9 / 12 / 16, spacing 4 / 8 / 12 / 16, text sizes 11 / 12 / 14 / 16 / 22 sp, colour functions that read the CURRENT theme:
+           panelBg = theme.bg, panelText = iconColor, note = noteColor, btnFill = theme.key ?: system default, btnText = theme.text, accent #2271B1, accentSoft #9CC3E6,
+           warn #D84315, danger #AA0000; Classic returns exactly today's values) and UiKit.kt (btn(ctx,p,label,weight,hDp,onClick), chip, noteText, sectionTitle,
+           card background; each reuses JabraLook.shape so Jabra look / Borderless / Custom apply; every call has try/catch -> plain Button fallback).
+      Read-only: ThemeEmojiExtras.kt, JabraLook.kt, JabraExtras.kt, ThemePanel.kt, SizePrefs.kt (pk() pattern), JabraIcons.kt.
+      Deps: S0. Design note: values must match section 4. Checks: compiles; no screen changes yet (nothing calls UiKit). Rollback: delete the 2 files.
+  [ ] S5  THEME the Clipboard panel (list + cards + select bar)   (v0.6.4)   mode MODIFY   size M
+      Goal: ClipboardFeature + ClipCards follow the keyboard theme (dark theme readable, same key shape as the keys).
+      MODIFY: ClipboardFeature.kt (replace private btn() body by UiKit.btn; header / row text colours from JabraTokens), ClipCards.kt (card fill + text + info line colours).
+      Read-only: JabraTokens.kt, UiKit.kt, typing/ClipSelect.java, JabraIcons.kt.
+      Deps: S4. Design note: Classic theme = pixel-same as now; 2-column cards still fit 360 px; long Bangla text; select bar 4-5 buttons. Rollback: UiKit.btn falls back to old Button.
+  [ ] S6  THEME the Formatter panel   (v0.6.5)   mode MODIFY   size M
+      Goal: FormatterFeature (6 pages, presets, preview) uses UiKit + tokens. MODIFY: FormatterFeature.kt only (31 KB: patch btn() + colour lines, do not read all).
+      Read-only: JabraTokens.kt, UiKit.kt. Deps: S4. Checks: Replace two-tap + Undo unchanged, FormatterTest green, preview text readable in Dark / Gloss Black / Ocean.
+  [ ] S7  THEME the Vault panel   (v0.6.6)   mode MODIFY   size M
+      Goal: VaultPanel (list, chips, editor, move, folders, fill) uses UiKit + tokens. MODIFY: VaultPanel.kt (31 KB: patch btn()/chip()/colour lines, grep first).
+      Read-only: vault/VaultList.java, VaultStore.kt, JabraTokens.kt, UiKit.kt. Deps: S4. Checks: VaultTest + VarFillTest green; chips row at 360 px; edit screen height inside capTall.
+  [ ] S8  THEME Text Tools + Profiles + Toolbar editor   (v0.6.7)   mode MODIFY   size M
+      Goal: TextToolsPanel, ProfilePanel, ToolbarPanel follow theme the same way. MODIFY: TextToolsPanel.kt, ProfilePanel.kt, ToolbarPanel.kt.
+      Read-only: JabraTokens.kt, UiKit.kt, typing/ProfileCodec.java. Deps: S4. Checks: TextToolsTest / ProfileTest / ToolbarTest green; all 3 panels in Classic + one dark theme.
+  [ ] S9  APP SCREEN follows system dark / light (OPTIONAL)   (v0.6.8)   mode MODIFY   size M
+      Goal: SettingsActivity + SettingsGroups + DataPage + HealthPanel use JabraTokens-style colours chosen from Configuration.uiMode (no res/values, no manifest theme change unless needed).
+      MODIFY: SettingsActivity.kt, SettingsGroups.kt, DataPage.kt, HealthPanel.kt (+ AndroidManifest.xml only if the window background must change).
+      Read-only: JabraTokens.kt, UiKit.kt. Deps: S4. Checks: light mode looks exactly as today; dark mode readable incl. orange warnings; search box, undo strip, Data & Backup list.
+  [ ] S10 TEXT DIFF TOOL (OPTIONAL; user's own idea list item 7, never built)   (v0.7.0)   mode BUILD   size M
+      Goal: compare two texts (selection or field vs latest clipboard) and show added / removed words in colour; [Copy result].
+      ADD: typing/TextDiff.java (pure: word-level LCS diff, caps 5000 chars / 800 words, returns segments {SAME, ADD, DEL}), tools/TextDiffTest.java (>= 25 checks, Bangla text, empty, identical, huge),
+           TextDiffPanel.kt (route "diff", theme-aware via UiKit; own state; field untouched).
+      MODIFY: MgbIme.kt (lazy panel + route + toolbarAction branch "diff" + capTall name list), Toolbar.kt, typing/ToolbarOrder.java (id "diff", EXTRAS, OFF until added),
+              JabraIcons.kt (1 icon), tools/ToolbarTest.java (id lists).
+      Read-only: TextToolsPanel.kt (panel pattern + field reader), FormatterFeature.kt (FmtIo read-only grep), ClipboardFeature.kt (ClipStore only), UiKit.kt.
+      Deps: S4. Checks: all Java tests green incl. new; panel at 360 px; password fields skip it like Text Tools. Rollback: remove toolbar id + hooks.
+  [ ] S11 HOUSEKEEPING   (v0.7.1)   mode MODIFY   size S
+      Goal: settings search knows every row added since v0.4.2 (Vault key, Haptic strength, Language options, Custom row, Most-used toolbar ...); docs tidy.
+      MODIFY: typing/SettingsIndex.java (+help lines), tools/SettingsIndexTest.java (key count), SettingsGroups.kt (only if a row has no key), CHECKLIST.txt, CHANGELOG.txt, README.txt.
+      Output also: list of old HANDOFF files for the user to delete (section 7).
+      Read-only: app/build.gradle.kts. Deps: any. Checks: SettingsIndexTest green.
+
+  Order = S0, S1, S2, (S3 only if still slow), S4, S5, S6, S7, S8, then optional S9, S10, then S11. Perf first (user-visible lag), then design.
+
+9) STATUS
+  Code = v0.6.3 (S1 + S2 + S4 DONE in code; S3 skipped = optional). S4 = NEW JabraTokens.kt + NEW UiKit.kt only, NO old file changed except the version line, nothing calls them yet.
+  Kotlin NOT compiled yet (GitHub Actions = first compile check), NOT phone-tested. All 28 Java tests green (command in section 10).
+  What S4 gives to S5-S8 (use these, do not invent styles):
+   JabraTokens: R_SM 9 / R_MD 12 / R_LG 16 / R_CARD 10 dp; S1..S4 = 4 / 8 / 12 / 16 dp; GAP 2 dp; T_NOTE 11 / T_BTN 12 / T_BODY 14 / T_HEAD 16 / T_TITLE 22 sp;
+     ACCENT #2271B1, ACCENT_SOFT #9CC3E6, WARN #D84315, DANGER #AA0000, ON_ACCENT_SOFT #1B1B1B; dp(ctx, v), withAlpha(c, a), isClassic(p), isDark(p);
+     panelBg(p), panelText(p), note(p), btnFill(p) (null = system button), btnText(p) (null = default), funcFill(p);
+     cardFill(p, picked), cardStroke(p, picked, pinned), cardText(p), cardNote(p)  (Classic = exactly today's ClipCards colours).
+   UiKit: btn(ctx, p, label, weight, hDp, textSp = 0f, feedback = null, onClick)  [textSp 0 = keep system size like ClipboardFeature today; pass 12f where a panel sets it;
+     feedback = { host.feedback(it) }]; chip(ctx, p, label, selected, hDp = 30, feedback = null, onClick); noteText(ctx, p, text); sectionTitle(ctx, p, text);
+     cardBackground(ctx, p, picked, pinned). All go through JabraThemes.style -> JabraLook.shape; every call falls back to a plain Button / TextView.
+   Migration recipe (S5-S8): in the panel keep its private btn() NAME, replace the BODY with a call to UiKit.btn(ctx, prefs, label, weight, hDp, <old textSize>, { host.feedback(it) }, onClick) inside try/catch
+     with the old body kept as fallback; keep every old call site unchanged. Check the panel's old textSize / margins / padding first (grep) so Classic stays pixel-same.
+  Next = S5 (theme the Clipboard panel). Context zip: add JabraTokens.kt + UiKit.kt (new in v0.6.3) and the CURRENT ClipboardFeature.kt / ClipCards.kt from the repo.
+  Assumption used: the video is the same ChatGPT idea document that the older plan (v0.4.0-v0.5.4) already covered; sizes are estimates.
+
+10) STANDING RULES (every chat)
+  - RULE 0: never break / rename / slow any existing feature, setting, storage key, build flow. No "clean up / refactor" unless the step says so.
+    If a new change breaks something old, it is a bug: fix it in the same step.
+  - PATCH ONLY: use small replacements, never rewrite a file. grep first; do NOT read big files fully (MgbIme.kt, ClipboardFeature.kt, FormatterFeature.kt,
+    VaultPanel.kt, CHANGELOG.txt, old HANDOFF): grep / sed -n ranges only.
+  - ONE STEP PER CHAT. Do only the first unchecked step (or the step the user names). Do not start the next one.
+  - DELIVER CHANGED FILES ONLY: a zip with only changed / new files at exact repo paths (check nothing else changed vs the context zip). Zip name: jabra_v0_6_0.zip style
+    (digits after "_v" separated by "_"). Also deliver the updated HANDOFF (renamed to the new version).
+  - SESSION GUARD: plan so the step ends before ~85% of the session; after 85% no new sub-task; at 90% hard stop: give files + HANDOFF + one line "done / left".
+    If a step is too big, split it as ".1 / .2" and say so.
+  - RUN TESTS (javac is not on PATH but works): mkdir /tmp/cls; java --add-modules jdk.compiler -m jdk.compiler/com.sun.tools.javac.Main -encoding UTF-8 -d /tmp/cls $(find app -name '*.java') tools/*Test.java ; then for each tools/*Test.java: java -Dfile.encoding=UTF-8 -cp /tmp/cls <TestName>. Shell is sh: no brace expansion in zip commands, list paths. Keep grep output ASCII-safe (| iconv -c -t ascii).
+  - Speed rules (P1-P9 kept): nothing new on the key-press path except what S1-S3 remove; new work only when a panel opens / button tapped / background Thread;
+    no timers, services, WorkManager, libraries; big data = AtomicFile in filesDir; load lazily; old formats and pref meanings never change; new JSON has "ver";
+    every new hook = try/catch + old behaviour as automatic fallback + ON/OFF where possible; new logic = pure Java + tools/*Test.java and RUN all tests.
+  - New permission / network / tracking: STOP and ASK. No secrets in code. Confirm before deleting user data.
+  - Each step writes: version bump, CHANGELOG entry, CHECKLIST section, HANDOFF update, rollback line. Never claim phone behaviour that was not tested.
+
+11) KICKOFF LINE for the next chat (copy exactly; fill the build result)
+  Jabra Keyboard: attached HANDOFF_Jabra-Keyboard_v0.6.3.txt + Jabra-Keyboard-context.zip. Do the FIRST unchecked step in section 8 and only that step. GitHub build of v0.6.3: GREEN (or: ERRORS: <paste lines>) - if ERRORS, the step becomes a FIX first. Follow the standing rules, reply in Banglish.

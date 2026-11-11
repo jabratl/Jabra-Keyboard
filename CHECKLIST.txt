@@ -283,3 +283,7 @@ Z11) v0.6.1 Auto capital without lag
  [ ] Paste text, then type: capital follows the pasted text end (e.g. paste "Hello." then space -> capital).
  [ ] Typing feels same or faster in a slow app (Chrome text field / big notes). Avro / Probhat unchanged.
 
+Z12) v0.6.3 Design tokens + UiKit (foundation, NO visible change)
+ [ ] GitHub Actions build of v0.6.3 is green (this is the only real test: the new files are not used by any screen yet).
+ [ ] Install the APK: keyboard opens, typing, clipboard, formatter, vault, themes look EXACTLY like v0.6.1 (nothing should be different).
+
