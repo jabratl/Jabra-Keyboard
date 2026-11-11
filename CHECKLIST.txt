@@ -431,3 +431,13 @@ Z29) v0.9.0 Reusable key-preview bubble
  [ ] Rotate the phone, type: bubble still works. Switch to Probhat / Avro: bubble shows the Bangla letter.
  [ ] Hold a letter for the long-press hint: hint types, bubble goes away. Popup OFF: no bubble at all.
 
+Z30) v0.9.1 Feedback at touch-down + system key tap
+ [ ] Gear > More settings > Typing: row "Feedback at touch-down / System key tap vibration" (also app screen > Keys & gestures). Both OFF = typing feels like v0.9.0.
+ [ ] Turn Feedback at touch-down ON (Vibrate ON): put a finger on a letter and hold: you feel ONE short buzz at once, nothing more when you lift. Letter still types when you lift.
+ [ ] Type fast for 10 s: one buzz per letter, no double buzz, no missing letters. Same on the number row (with and without Bangla digit hints).
+ [ ] Hold a letter with a long-press hint (e.g. q): one buzz at touch, the hint character types, no second buzz.
+ [ ] Touch a key and slide off it before lifting: you feel the buzz, no letter is typed. Backspace hold, space drag, Shift, enter: feel and work as before.
+ [ ] Sound ON + touch-down ON: click sound at touch, only once per tap.
+ [ ] System key tap vibration ON: buzz is the phone's own key tap; the Vibration strength level no longer changes it. OFF again: Light / Medium / Strong differ as before.
+ [ ] Vibrate OFF: no buzz at all with either setting. Turn both settings OFF: back to buzz at lift.
+

@@ -297,6 +297,8 @@ object SettingsGroups {
 
         group("Keys & gestures") { g ->
             toggle(g, "Vibrate", "haptic", true)
+            toggle(g, "Feedback at touch-down", "fb_down", false)   // v0.9.1
+            toggle(g, "System key tap vibration", "haptic_native", false)   // v0.9.1
             toggle(g, "Sound", "sound", false)
             toggle(g, "Key popup", "key_popup", false)
             toggle(g, "Globe key", "key_globe", false)

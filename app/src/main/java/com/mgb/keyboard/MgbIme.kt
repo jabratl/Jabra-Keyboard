@@ -108,7 +108,7 @@ class MgbIme : InputMethodService() {
         b.setPadding(0, 0, 0, 0)
         try { JabraThemes.style(prefs, b) } catch (_: Throwable) { }   // v0.1.0: theme colours (Classic = no change)
         b.setOnClickListener {
-            try { feedback(b) } catch (_: Throwable) { }   // v0.0.5: haptic/sound (own try, never blocks typing)
+            try { if (KeyCfg.clickBuzz(b)) feedback(b) } catch (_: Throwable) { }   // v0.0.5: haptic/sound (own try, never blocks typing); v0.9.1: skipped when fb_down already buzzed at finger-down
             try { onClick() } catch (_: Throwable) { }
         }
         val lp = LinearLayout.LayoutParams(0, dp(keyDp()), weight)   // v0.0.5: 48dp unless user changed height
@@ -457,8 +457,9 @@ class MgbIme : InputMethodService() {
         try {
             if (c.haptic) {
                 var done = false
+                try { if (c.hapticNative) { v.performHapticFeedback(android.view.HapticFeedbackConstants.KEYBOARD_TAP, android.view.HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING or android.view.HapticFeedbackConstants.FLAG_IGNORE_VIEW_SETTING); done = true } } catch (_: Throwable) { }   // v0.9.1: system key tap (strength level ignored)
                 try {
-                    val vb = keyCfg.vibrator()
+                    val vb = if (done) null else keyCfg.vibrator()
                     if (vb != null) {
                         if (android.os.Build.VERSION.SDK_INT >= 26) vb.vibrate(android.os.VibrationEffect.createOneShot(c.hapticMs, android.os.VibrationEffect.DEFAULT_AMPLITUDE))
                         else @Suppress("DEPRECATION") vb.vibrate(c.hapticMs)
@@ -769,7 +770,11 @@ class MgbIme : InputMethodService() {
                 val nr = row()
                 "1234567890".forEach { d -> nr.addView(key(d.toString(), 1f) { commitWord(); typeText(d.toString()) }) }
                 try {   // v0.8.6: Bangla digit hint on the number row (setting hint_digits, default OFF = nothing attached, old behaviour)
-                    if (prefs.bool("hint_digits", false)) for (i in 0 until nr.childCount) { val nb = nr.getChildAt(i) as Button; nb.tag = "1234567890"[i]; numKeys.add(nb); HintKeys.attach(nb, prefs, hintHost); HintKeys.refresh(nb, prefs, hintHost) }
+                    if (prefs.bool("hint_digits", false)) {
+                        for (i in 0 until nr.childCount) { val nb = nr.getChildAt(i) as Button; nb.tag = "1234567890"[i]; numKeys.add(nb); HintKeys.attach(nb, prefs, hintHost); HintKeys.refresh(nb, prefs, hintHost) }
+                    } else {
+                        for (i in 0 until nr.childCount) KeyCfg.attachDown(nr.getChildAt(i), prefs) { v -> feedback(v) }   // v0.9.1: number row without hints = tiny listener for fb_down
+                    }
                 } catch (_: Throwable) { }
                 try { val lp = prefs.int("letter_pct", -1); if (com.mgb.keyboard.typing.SizePct.letterValid(lp)) for (i in 0 until nr.childCount) (nr.getChildAt(i) as Button).textSize = com.mgb.keyboard.typing.SizePct.letterSp(lp) } catch (_: Throwable) { }   // v0.3.4: number row follows Letter size %
                 try { if (prefs.bool("letter_bold", false)) for (i in 0 until nr.childCount) { val nb = nr.getChildAt(i) as Button; nb.setTypeface(nb.typeface, android.graphics.Typeface.BOLD) } } catch (_: Throwable) { }   // v0.3.4: and Bold letters

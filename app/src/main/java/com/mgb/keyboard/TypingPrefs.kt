@@ -263,6 +263,10 @@ class TypingPanel(private val ctx: Context, private val host: JabraHost) {
             val r38 = row()
             r38.addView(levelKey("Vibration strength", "haptic_lv", TypingLevels.HAPTIC_DEFAULT, TypingLevels.HAPTIC_NAMES))
             root.addView(r38)
+            val r38b = row()   // v0.9.1 (R2): feedback at finger-down + system key tap
+            r38b.addView(toggleKey("Feedback at touch-down", "fb_down", false))
+            r38b.addView(toggleKey("System key tap vibration", "haptic_native", false))
+            root.addView(r38b)
             val r39 = row()
             val hc = prefs.str("hint_custom", "")
             r39.addView(pk("Hint override: " + (if (hc.isEmpty()) "none" else hc), 2f) { b ->

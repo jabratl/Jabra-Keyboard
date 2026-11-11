@@ -47,10 +47,11 @@ object HintKeys {
                 val hint = (if (isNum) HintStyle.digitHint(c, prefs.bool("hint_digits", false)) else LongPressHints.hintFor(c, prefs.bool("numrow", true), prefs.str("hint_custom", ""))) ?: return@Runnable   // v0.5.2 (custom override first)
                 fired = true
                 host.typeHint(hint)
-                host.hintFeedback(b)
+                if (KeyCfg.hintBuzz(b)) host.hintFeedback(b)   // v0.9.1: no 2nd buzz when fb_down already buzzed at finger-down
             } catch (_: Throwable) { }
         }
         b.setOnTouchListener { v, e ->
+            try { if (e.actionMasked == MotionEvent.ACTION_DOWN && KeyCfg.downBuzz(v, prefs)) host.hintFeedback(v) } catch (_: Throwable) { }   // v0.9.1: fb_down = feedback at finger-down (OFF = nothing here)
             try { KeyPopup.touch(v, e, prefs) } catch (_: Throwable) { }   // popup behaviour is the same as v0.1.3
             try {
                 when (e.actionMasked) {
@@ -72,7 +73,7 @@ object HintKeys {
                         if (fired) { fired = false; v.isPressed = false; KeyPopup.dismiss(); true }   // hint typed: no letter click
                         else false
                     }
-                    MotionEvent.ACTION_CANCEL -> { h.removeCallbacks(r); fired = false; false }
+                    MotionEvent.ACTION_CANCEL -> { h.removeCallbacks(r); fired = false; KeyCfg.cancelBuzz(v); false }   // v0.9.1
                     else -> false
                 }
             } catch (_: Throwable) { false }

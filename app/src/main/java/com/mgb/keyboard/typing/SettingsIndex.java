@@ -118,6 +118,8 @@ public final class SettingsIndex {
             case "hint_size_lv": return "Size of the small hint characters (Normal = as before).";
             case "hint_alpha_lv": return "How strong the small hint characters look (Normal = as before).";
             case "hint_hide": return "Hides the small hint letters; long-press still works.";
+            case "fb_down": return "Vibration / sound the moment your finger touches a letter or number key (not when you lift). Backspace, space and Shift keep their own timing.";
+            case "haptic_native": return "Uses the phone's own key-tap vibration (strength level is ignored). OFF = the Vibration strength setting.";
             case "haptic": return "Short vibration on every key press.";
             case "sound": return "Click sound on every key press.";
             case "key_popup": return "Shows a bubble with the letter above the pressed key.";

@@ -3,6 +3,9 @@ package com.mgb.keyboard
 import android.content.Context
 import android.content.SharedPreferences
 import android.os.Vibrator
+import android.view.MotionEvent
+import android.view.View
+import com.mgb.keyboard.typing.FeedbackGate
 import com.mgb.keyboard.typing.TypingLevels
 
 /**
@@ -16,7 +19,8 @@ class KeyCfg(private val ctx: Context) {
 
     class Snap(
         val haptic: Boolean, val hapticMs: Long, val sound: Boolean,
-        val popup: Boolean, val hintOn: Boolean, val lpMs: Int
+        val popup: Boolean, val hintOn: Boolean, val lpMs: Int,
+        val fbDown: Boolean = false, val hapticNative: Boolean = false   // v0.9.1 (R2)
     )
 
     @Volatile private var dirty = true
@@ -46,7 +50,9 @@ class KeyCfg(private val ctx: Context) {
                 sound = sp.getBoolean("sound", false),
                 popup = sp.getBoolean("key_popup", false),
                 hintOn = sp.getBoolean("hint_on", true),
-                lpMs = try { TypingLevels.longPressMs(sp.getInt("lp_delay", TypingLevels.LP_DEFAULT)) } catch (_: Throwable) { 0 }
+                lpMs = try { TypingLevels.longPressMs(sp.getInt("lp_delay", TypingLevels.LP_DEFAULT)) } catch (_: Throwable) { 0 },
+                fbDown = sp.getBoolean("fb_down", false),   // v0.9.1
+                hapticNative = sp.getBoolean("haptic_native", false)   // v0.9.1
             )
             snap = n
             n
@@ -73,6 +79,35 @@ class KeyCfg(private val ctx: Context) {
 
     companion object {
         @Volatile var current: KeyCfg? = null
+
+        /** v0.9.1 (R2): who already gave feedback for a key at finger-down (typing/FeedbackGate.java, tested). */
+        val gate = FeedbackGate()
+        private fun kid(v: View): Int = System.identityHashCode(v)
+
+        /** fb_down (default OFF = feedback at click like v0.9.0). */
+        fun fbDown(p: JabraPrefs): Boolean = try { current?.get()?.fbDown ?: p.bool("fb_down", false) } catch (_: Throwable) { false }
+
+        /** Finger down on a key: true = give feedback now. */
+        fun downBuzz(v: View, p: JabraPrefs): Boolean = try { gate.onDown(kid(v), fbDown(p)) } catch (_: Throwable) { false }
+
+        /** Key click: true = give feedback now (down did not). Any problem = true (old behaviour). */
+        fun clickBuzz(v: View): Boolean = try { gate.onClick(kid(v)) } catch (_: Throwable) { true }
+
+        /** Long-press hint fired: true = give feedback (down did not). Any problem = true (old behaviour). */
+        fun hintBuzz(v: View): Boolean = try { gate.onHint(kid(v)) } catch (_: Throwable) { true }
+
+        fun cancelBuzz(v: View) { try { gate.onCancel(kid(v)) } catch (_: Throwable) { } }
+
+        /** Keys that have no other touch listener (number row without hints): feedback at down when fb_down is ON. Never consumes the touch. */
+        fun attachDown(b: View, p: JabraPrefs, fire: (View) -> Unit) {
+            b.setOnTouchListener { v, e ->
+                try {
+                    if (e.actionMasked == MotionEvent.ACTION_DOWN) { if (downBuzz(v, p)) fire(v) }
+                    else if (e.actionMasked == MotionEvent.ACTION_CANCEL) cancelBuzz(v)
+                } catch (_: Throwable) { }
+                false
+            }
+        }
 
         /** key_popup for KeyPopup.touch (fallback = direct pref read). */
         fun popupOn(p: JabraPrefs): Boolean = try { current?.get()?.popup ?: p.bool("key_popup", false) } catch (_: Throwable) { p.bool("key_popup", false) }
