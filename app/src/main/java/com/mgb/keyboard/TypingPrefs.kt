@@ -249,12 +249,23 @@ class TypingPanel(private val ctx: Context, private val host: JabraHost) {
         root.addView(r3)
 
         try { val r35 = row(); r35.addView(toggleKey("Key popup", "key_popup", false)); r35.addView(toggleKey("Large number row", "numrow_large", false)); root.addView(r35) } catch (_: Throwable) { }   // v0.1.3
+        try {   // v0.5.0: custom character row (extra row above the numbers)
+            val r37 = row()
+            val cur = prefs.str("xrow_chars", "")
+            r37.addView(pk("Char row: " + (if (cur.isEmpty()) "none" else cur), 2f) { b ->
+                val s = com.mgb.keyboard.typing.LangOrder.customRowText(host.fieldText())
+                if (s.isEmpty()) b.text = "Field has no characters" else { prefs.setStr("xrow_chars", s); b.text = "Char row: " + s }
+            })
+            r37.addView(pk("Clear row", 1f) { _ -> prefs.setStr("xrow_chars", ""); host.showPanel("typing") })
+            root.addView(r37)
+        } catch (_: Throwable) { }
         try { val r36 = row(); r36.addView(toggleKey("Long-press characters", "hint_on", true)); r36.addView(toggleKey("Hide long-press hints", "hint_hide", false)); root.addView(r36) } catch (_: Throwable) { }   // v0.1.6
 
         root.addView(note("Double-space: tap space twice = \". \" (Bangla mode: \"\u0964 \"). Tab only when the period does not fit. Not used in password / email / web fields. " +
             "Long-press: System = the phone's own time. Cursor speed: drag on the space key. Globe = next keyboard. Voice = the phone's voice typing (no recording by Jabra). " +
             "Keys appear on the bottom row after ABC (apply). Key popup: a bubble above the pressed letter (works at once). Large number row: ABC (apply). " +
-            "Long-press characters: hold a letter key = types its small corner character (English only; not in Avro / Probhat). Hide hints: hides only the small label (ABC apply), long-press still works."))
+            "Long-press characters: hold a letter key = types its small corner character (English only; not in Avro / Probhat). Hide hints: hides only the small label (ABC apply), long-press still works. " +
+            "Char row: type up to 10 characters (e.g. @ # _ - ) in any text field, tap this button = they become an extra row above the numbers (ABC apply)."))
 
         val rb = row()
         rb.addView(pk("< More settings", 1f) { host.showPanel("more") })

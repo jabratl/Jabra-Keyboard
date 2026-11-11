@@ -203,3 +203,12 @@ X) v0.4.8 Theme Studio (custom theme)
  [ ] Studio > Reset: first tap "Sure? Delete", second deletes; keyboard goes back to Classic, the Custom tile is gone.
  [ ] Data & Backup > Backup now, change the custom theme, Restore: the old custom colours are back.
  [ ] Studio fits at 360 px (scrolls if needed) and in landscape. Typing speed is the same as before.
+
+Y) v0.5.0 language key options + custom character row
+ [ ] Default settings: tap the language key = EN <-> Bangla (same layout as before). Long-press = Avro <-> Probhat. Nothing feels different.
+ [ ] App screen > Languages & layouts > "Language key tap" = Cycle EN > Avro > Probhat: tap 3 times = EN, Avro (বাং), Probhat (প্রভা), back to EN. Try the other cycle order.
+ [ ] "Bangla first" = Probhat: from English, one tap opens Probhat. Back to "Last used": opens the one you used last.
+ [ ] "Avro available" OFF: tap / cycle / long-press never land on Avro. Both OFF: the key stays on EN. Turn them ON again.
+ [ ] Keyboard gear > Typing options: type "@#_-" in a field, tap "Char row: none": it shows "Char row: @#_-". Tap ABC: an extra row of 4 keys above the numbers; tap a key = types it. "Clear row" removes the row.
+ [ ] Char row with Bangla letters (ৎ ঁ ঃ) or an emoji works. Empty field: "Field has no characters", nothing changes.
+ [ ] Letters keyboard height / typing speed are the same as before (with and without the extra row).

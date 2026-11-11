@@ -89,6 +89,10 @@ public final class SettingsIndex {
         if (key == null) return "";
         switch (key) {
             case "bn_layout": return "Which Bangla keyboard the language key uses: Avro (phonetic) or Probhat (fixed).";
+            case "lang_tap": return "Language key tap: EN <-> Bangla (default), or cycle through all languages.";
+            case "lang_fav": return "Which Bangla layout opens first when you tap the language key from English.";
+            case "lang_avro_on": return "OFF hides Avro from the language key (English always stays).";
+            case "lang_probhat_on": return "OFF hides Probhat from the language key (English always stays).";
             case "numrow": return "Shows a row of digits above the letters.";
             case "numpad_auto": return "Opens the number pad by itself in number and phone fields.";
             case "pc_mode": return "Phone = normal keys. PC = extra Esc / Ctrl / F-keys / arrows rows.";

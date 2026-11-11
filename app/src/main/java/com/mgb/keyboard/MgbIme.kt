@@ -79,6 +79,7 @@ class MgbIme : InputMethodService() {
         override fun feedback(v: View) { this@MgbIme.feedback(v) }
         override fun keyHeightDp(): Int = this@MgbIme.keyDp()
         override fun layoutChanged() { this@MgbIme.applyLayoutPref() }
+        override fun fieldText(): String = this@MgbIme.fieldText()   // v0.5.0
     }
 
     override fun onCreateInputView(): View {
@@ -405,6 +406,7 @@ class MgbIme : InputMethodService() {
     /** Long-press on the language key: switch Bangla layout Avro <-> Probhat (and turn Bangla on). */
     private fun switchBnLayout() {
         commitWord()
+        try { applyLang(com.mgb.keyboard.typing.LangOrder.longPress(bangla, probhat, prefs.bool("lang_avro_on", true), prefs.bool("lang_probhat_on", true))); return } catch (_: Throwable) { }   // v0.5.0: rules in typing/LangOrder.java (defaults = old behaviour); any problem = old code below
         probhat = !probhat
         prefs.setStr("bn_layout", if (probhat) "probhat" else "avro")
         bangla = true
@@ -633,8 +635,18 @@ class MgbIme : InputMethodService() {
         }
     }
 
+    /** v0.5.0: apply a LangOrder result {bangla, probhat}: same state + prefs writes as the old code. */
+    private fun applyLang(t: IntArray) {
+        bangla = t[0] == 1
+        probhat = t[1] == 1
+        prefs.setStr("bn_layout", if (probhat) "probhat" else "avro")
+        try { getSharedPreferences("jabra", MODE_PRIVATE).edit().putBoolean("bangla", bangla).apply() } catch (_: Throwable) { }
+        afterLangChange()
+    }
+
     private fun toggleLang() {
         commitWord()
+        try { applyLang(com.mgb.keyboard.typing.LangOrder.tap(bangla, probhat, prefs.bool("lang_avro_on", true), prefs.bool("lang_probhat_on", true), prefs.int("lang_tap", 0), prefs.int("lang_fav", 0))); return } catch (_: Throwable) { }   // v0.5.0 (defaults = old behaviour); any problem = old code below
         bangla = !bangla
         try { getSharedPreferences("jabra", MODE_PRIVATE).edit().putBoolean("bangla", bangla).apply() } catch (_: Throwable) { }
         afterLangChange()   // v0.0.4: sets lang/danda captions and letter labels (was 2 lines here)
@@ -671,6 +683,11 @@ class MgbIme : InputMethodService() {
 
         // v0.1.2: PC rows (only in PC mode)
         try { if (pcState.isPc()) { val pr = PcRows(this, pcState, pcIo); pcRows = pr; val pv = pr.view(); if (pv != null) root.addView(pv) } } catch (_: Throwable) { }
+        // v0.5.0: custom character row (pref xrow_chars, set in Typing options; default empty = no row)
+        try {
+            val cr = com.mgb.keyboard.typing.LangOrder.customRow(prefs.str("xrow_chars", ""))
+            if (cr.isNotEmpty()) { val xr = row(); cr.forEach { c -> xr.addView(key(c, 1f) { commitWord(); typeText(c) }) }; root.addView(xr) }
+        } catch (_: Throwable) { }
         // v0.0.5: number row (setting "numrow", default ON). If it fails the keyboard just has no number row.
         try {
             if (prefs.bool("numrow", true)) {

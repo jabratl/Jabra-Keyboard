@@ -30,6 +30,7 @@ interface JabraHost {
     fun keyHeightDp(): Int
     fun layoutChanged()              // bn_layout pref changed in the settings panel
     fun pickKeyboard() { }           // v0.0.9: open the phone's keyboard picker (default: does nothing)
+    fun fieldText(): String = ""     // v0.5.0: selected text or whole field text ("" in password fields / default)
 }
 
 /** Safe pref reader/writer: every read has a default, nothing ever throws. */

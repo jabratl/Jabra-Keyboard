@@ -255,6 +255,10 @@ object SettingsGroups {
             cycle(g, "Bangla layout", "bn_layout", { arrayOf("Avro (phonetic)", "Probhat") },
                 { if (prefs.str("bn_layout", "avro") == "probhat") 1 else 0 },
                 { prefs.setStr("bn_layout", if (it == 1) "probhat" else "avro") })
+            cycle(g, "Language key tap", "lang_tap", { Array(3) { i -> com.mgb.keyboard.typing.LangOrder.TAP_NAMES[i] } }, { prefs.int("lang_tap", 0).coerceIn(0, 2) }, { prefs.setInt("lang_tap", it) })   // v0.5.0
+            cycle(g, "Bangla first", "lang_fav", { Array(3) { i -> com.mgb.keyboard.typing.LangOrder.FAV_NAMES[i] } }, { prefs.int("lang_fav", 0).coerceIn(0, 2) }, { prefs.setInt("lang_fav", it) })   // v0.5.0
+            toggle(g, "Avro available", "lang_avro_on", true)   // v0.5.0
+            toggle(g, "Probhat available", "lang_probhat_on", true)   // v0.5.0
             toggle(g, "Number row", "numrow", true)
             toggle(g, "Auto numpad (number / phone fields)", "numpad_auto", true)
             cycle(g, "Mode", "pc_mode", { arrayOf("Phone", "PC") }, { if (prefs.bool("pc_mode", false)) 1 else 0 }, { prefs.setBool("pc_mode", it == 1) })
