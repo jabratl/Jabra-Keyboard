@@ -522,3 +522,9 @@ Z39) v0.9.10 Speed meter (V5)
  [ ] Turn the meter OFF, type, Refresh: no new samples. Typing feels the same as v0.9.9.
  [ ] Tell me the numbers (screenshot): they decide which trim comes next.
 
+
+Z40) v0.9.10.1 Keyboard full-screen bug (FIX)
+ [ ] Open any chat, open the keyboard, tap ?123 (symbols), tap ABC (letters): keyboard keeps its normal height, the app / text field above stays visible (before: whole screen green).
+ [ ] Repeat ?123 > ABC 5 times, also after rotate to landscape and back: no full-screen keyboard.
+ [ ] Open emoji / clipboard panel, tap ABC: normal height again.
+ [ ] Turn "Key popup" ON: bubbles still appear above keys (rows 2-4 and top row) as in v0.9.10.

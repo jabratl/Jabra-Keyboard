@@ -1,3 +1,13 @@
+v0.9.10.1 - FIX: keyboard became FULL SCREEN after ?123 > ABC (bug video 2026-11-11 22:17)
+- WHY: video: symbols panel looks normal, but after tapping ABC the green keyboard window covers the whole screen (letters at the top, empty band below, app hidden). Repeats on every ?123 > ABC.
+- Root cause: BubbleOverlay (v0.9.9, V4) is a plain View added as MATCH_PARENT child of the WRAP_CONTENT keyboard FrameLayout. A plain View measures to the full free height (View.getDefaultSize), so the container grew to the screen. showPanel() removes the overlay (symbols = normal), showLetters() adds it back (letters = full screen).
+- What you get: keyboard height is only as tall as its keys again, also after panel > ABC.
+- Code: BubbleOverlay.kt only: onMeasure override (height 0 unless the parent gives an exact height; FrameLayout then re-measures the MATCH_PARENT child with the real keyboard height, so bubble drawing is unchanged). build.gradle.kts version.
+BROKE: nothing intended. Bubble position / drawing code untouched.
+NOT tested: Kotlin compile (GitHub Actions first); phone (CHECKLIST Z40).
+TESTED here: all Java test programs green (no Java file changed); bracket balance of BubbleOverlay.kt.
+Rollback: restore BubbleOverlay.kt from v0.9.10 (or turn "Key popup" OFF: overlay is then never shown, but the view is still added).
+
 v0.9.10 - NEW: speed meter in the Health panel (plan step V5)
 - WHY: the plan needs real numbers instead of "feels smooth". A video cannot show latency.
 - What you get: Settings > Data & Backup > Health: "Speed meter" button (pref perf_meter, default OFF = no cost, no samples), "Refresh numbers", "Reset numbers". When ON it keeps the last 100 samples of: key (finger down to commit), key tap handler, bubble show, language switch, keyboard build. Shows avg / p95 / max in ms.

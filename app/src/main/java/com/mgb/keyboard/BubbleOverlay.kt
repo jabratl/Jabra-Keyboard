@@ -76,5 +76,15 @@ class BubbleOverlay(ctx: Context) : View(ctx) {
         canvas.drawText(text, bl + bw / 2f, cy, textP)
     }
 
+    // v0.9.10.1 FIX: a plain View with MATCH_PARENT inside a WRAP_CONTENT FrameLayout measures to the FULL free height
+    // (View.getDefaultSize returns the spec size for AT_MOST) -> the keyboard window grew to the whole screen after
+    // ?123 > ABC (symbols panel has no overlay = normal, letters have it = full screen). Report height 0 unless the
+    // parent gives an EXACT height: FrameLayout then re-measures this MATCH_PARENT child with the keyboard's real height.
+    override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
+        val w = MeasureSpec.getSize(widthMeasureSpec)
+        val h = if (MeasureSpec.getMode(heightMeasureSpec) == MeasureSpec.EXACTLY) MeasureSpec.getSize(heightMeasureSpec) else 0
+        setMeasuredDimension(w, h)
+    }
+
     override fun onTouchEvent(event: MotionEvent?): Boolean = false
 }
