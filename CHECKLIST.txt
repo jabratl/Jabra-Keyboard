@@ -494,3 +494,13 @@ Z36) v0.9.7 Same keyboard height in every language (V2)
  [ ] Number row: is "Number row" ON (Gear > More settings > Typing)? Tell me: English shows digits yes / no, and was the tall row in Probhat digits or vowels?
  [ ] Rotate to landscape and back; Large number row ON; one-hand mode; Classic + one dark theme: height stays the same on every switch.
  [ ] Password / email / URL field while Probhat is selected: keyboard height does not change compared with a normal text field.
+
+Z37) v0.9.8 Language-swipe feel (V3)
+ [ ] Gear > More settings > Typing (also app screen > Keys & gestures): Space swipe = language ON. New rows: "Tick on swipe" (default ON) and "Swipe distance" (Normal).
+ [ ] Chat app: swipe left / right on space. Language changes at once, calm, name bubble updates without flicker, a soft tick for each step, bubble goes away on lift. A plain tap on space still types a space; a swipe never types a space.
+ [ ] Swipe far (3+ steps) in one go: ends on the right language. Swipe a full circle back to the same language: nothing odd happens.
+ [ ] Swipe to another language, lift, close the keyboard / restart the phone: the last swiped language is still the one in use.
+ [ ] Cancel test: start a swipe, then pull the notification bar down or switch app mid-swipe: keyboard is back on the language you started on.
+ [ ] "Swipe distance": Small = shorter swipe per step, Large = longer. Works on the next touch without ABC.
+ [ ] "Tick on swipe" OFF: no tick. If you feel nothing with ON, check the phone setting Touch vibration / haptic feedback and tell me.
+ [ ] Language key tap and long-press (Avro <-> Probhat) still work and remember after restart. Classic + one dark theme; portrait + landscape.

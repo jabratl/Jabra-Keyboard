@@ -729,19 +729,47 @@ class MgbIme : InputMethodService() {
         }
     }
 
-    /** v0.5.0: apply a LangOrder result {bangla, probhat}: same state + prefs writes as the old code. */
-    private fun applyLang(t: IntArray) {
+    /** v0.5.0: apply a LangOrder result {bangla, probhat}: same state + prefs writes as the old code. v0.9.8: persist = false while a space swipe is going on (saved once at finger up). */
+    private fun applyLang(t: IntArray, persist: Boolean = true) {
         bangla = t[0] == 1
         probhat = t[1] == 1
-        prefs.setStr("bn_layout", if (probhat) "probhat" else "avro")
-        try { getSharedPreferences("jabra", MODE_PRIVATE).edit().putBoolean("bangla", bangla).apply() } catch (_: Throwable) { }
+        if (persist) persistLang()
         afterLangChange()
     }
 
-    /** v0.8.9: space hold + swipe: [n] steps (+ = next language among those switched on). */
+    /** v0.9.8 (V3): the two prefs writes of applyLang, now callable once (swipe end). */
+    private fun persistLang() {
+        prefs.setStr("bn_layout", if (probhat) "probhat" else "avro")
+        try { getSharedPreferences("jabra", MODE_PRIVATE).edit().putBoolean("bangla", bangla).apply() } catch (_: Throwable) { }
+    }
+
+    private val langSess = com.mgb.keyboard.typing.LangSwipe.Session()   // v0.9.8
+
+    /** v0.8.9: space hold + swipe: [n] steps (+ = next language among those switched on). v0.9.8: state only in memory + soft tick; prefs are written at finger up (endLangSwipe). */
     private fun swipeLang(n: Int) {
         commitWord()
-        try { applyLang(com.mgb.keyboard.typing.LangSwipe.step(bangla, probhat, prefs.bool("lang_avro_on", true), prefs.bool("lang_probhat_on", true), n)) } catch (_: Throwable) { }
+        try {
+            val a = prefs.bool("lang_avro_on", true)
+            val p = prefs.bool("lang_probhat_on", true)
+            val nt = com.mgb.keyboard.typing.LangSwipe.step(bangla, probhat, a, p, n)
+            langSess.begin(bangla, probhat)
+            applyLang(nt, false)
+            langSess.move(bangla, probhat)
+            try {
+                if (com.mgb.keyboard.typing.LangSwipe.tickOn(prefs.bool("space_lang", false), prefs.bool("sp_tick", true)))
+                    spaceBtn?.performHapticFeedback(android.view.HapticFeedbackConstants.CLOCK_TICK)
+            } catch (_: Throwable) { }
+        } catch (_: Throwable) {
+            try { applyLang(com.mgb.keyboard.typing.LangSwipe.step(bangla, probhat, prefs.bool("lang_avro_on", true), prefs.bool("lang_probhat_on", true), n)) } catch (_: Throwable) { }   // v0.8.9 behaviour
+        }
+    }
+
+    /** v0.9.8 (V3): finger up = save the language ONCE (only if it changed); cancel = back to the language the swipe started on (nothing was saved). */
+    private fun endLangSwipe(cancelled: Boolean) {
+        try {
+            if (cancelled) { val s = langSess.cancel(); if (s != null) applyLang(s, false) }
+            else { val s = langSess.finish(); if (s != null) persistLang() }
+        } catch (_: Throwable) { }
     }
 
     /** v0.9.2 (R3): bubble above the space key with the ACTIVE language while swiping (setting sp_preview, default ON; only with space_lang ON). */
@@ -867,7 +895,8 @@ class MgbIme : InputMethodService() {
         try {   // v0.1.1: cursor speed (setting cursor_speed); v0.8.9: space_lang ON = swipe at once = language (v0.9.3: no hold)
             val sdh = SpaceDragHelper(resources.displayMetrics.density, { n -> moveCursor(n) }, { spaceAction() }, { v -> feedback(v) }, com.mgb.keyboard.typing.TypingLevels.stepDp(prefs.int("cursor_speed", com.mgb.keyboard.typing.TypingLevels.CS_DEFAULT)))
             if (spaceLangOn) sdh.attachLang(sb, { n -> swipeLang(n) }, { v -> try { v.performHapticFeedback(android.view.HapticFeedbackConstants.LONG_PRESS) } catch (_: Throwable) { } },
-                { v -> langBubble(v) }, { try { KeyPopup.hide() } catch (_: Throwable) { } }) else sdh.attach(sb)   // v0.9.2 (R3): live language bubble
+                { v -> langBubble(v) }, { try { KeyPopup.hide() } catch (_: Throwable) { } },
+                { c -> endLangSwipe(c) }, { try { com.mgb.keyboard.typing.LangSwipe.stepDp(prefs.int("sp_step", com.mgb.keyboard.typing.LangSwipe.STEP_DEFAULT)) } catch (_: Throwable) { com.mgb.keyboard.typing.LangSwipe.STEP_DP } }) else sdh.attach(sb)   // v0.9.8: save once at finger up, sp_step   // v0.9.2 (R3): live language bubble
         } catch (_: Throwable) { }
         r4.addView(sb)
         val db = key(if (bangla) "।" else "?", 1f) { commitWord(); val d = dandaBtn?.text?.toString() ?: "."; typeText(if (latinOnly && d == "।") "?" else d) }

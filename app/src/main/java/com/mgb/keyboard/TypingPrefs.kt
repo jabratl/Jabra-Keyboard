@@ -285,7 +285,11 @@ class TypingPanel(private val ctx: Context, private val host: JabraHost) {
             root.addView(r41)
             val r41b = row()   // v0.9.2 (R3)
             r41b.addView(toggleKey("Language bubble on swipe", "sp_preview", true))
+            r41b.addView(toggleKey("Tick on swipe", "sp_tick", true))   // v0.9.8 (V3)
             root.addView(r41b)
+            val r41c = row()   // v0.9.8 (V3)
+            r41c.addView(levelKey("Swipe distance", "sp_step", com.mgb.keyboard.typing.LangSwipe.STEP_DEFAULT, com.mgb.keyboard.typing.LangSwipe.STEP_NAMES))
+            root.addView(r41c)
         } catch (_: Throwable) { }
         try {   // v0.8.6: hint look (Bangla digits on number row, hint size, hint opacity). ABC (apply) redraws the keys.
             val r40 = row()

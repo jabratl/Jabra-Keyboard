@@ -58,4 +58,61 @@ public final class LangSwipe {
     public static boolean langKeyVisible(boolean keyLang, boolean spaceLang) {
         return keyLang || !spaceLang;
     }
+
+    // ---- v0.9.8 (V3): swipe feel ----
+    public static final String[] STEP_NAMES = { "Small", "Normal", "Large" };
+    public static final int STEP_DEFAULT = 1;
+
+    /** v0.9.8: finger travel (dp) for one language step by level sp_step: 0 = 32, 1 = 44 (as before), 2 = 60. Anything else = 44. */
+    public static float stepDp(int level) {
+        if (level == 0) return 32f;
+        if (level == 2) return 60f;
+        return STEP_DP;
+    }
+
+    /** v0.9.8: the soft tick per language step is felt only while the space swipe is ON and sp_tick is ON. */
+    public static boolean tickOn(boolean spaceLang, boolean spTick) {
+        return spaceLang && spTick;
+    }
+
+    /**
+     * v0.9.8: one swipe = one Session. The language lives in memory while the finger moves (no pref writes);
+     * finish() (finger up) says what to save ONCE (null = nothing changed = no write); cancel() says which language to restore.
+     */
+    public static final class Session {
+        private boolean active;
+        private int sb, sp, cb, cp;
+
+        public boolean active() { return active; }
+
+        /** Call before the FIRST step of a swipe with the language that is on now. Later calls in the same swipe do nothing. */
+        public void begin(boolean bangla, boolean probhat) {
+            if (active) return;
+            active = true;
+            sb = cb = bangla ? 1 : 0;
+            sp = cp = probhat ? 1 : 0;
+        }
+
+        /** Call after each step with the new language. */
+        public void move(boolean bangla, boolean probhat) {
+            if (!active) return;
+            cb = bangla ? 1 : 0;
+            cp = probhat ? 1 : 0;
+        }
+
+        /** Finger up: {bangla, probhat} to save once, or null when no swipe happened or the swipe ended where it began. Ends the session. */
+        public int[] finish() {
+            if (!active) return null;
+            active = false;
+            if (cb == sb && cp == sp) return null;
+            return new int[] { cb, cp };
+        }
+
+        /** Swipe cancelled: {bangla, probhat} of the language the swipe started on (null = no swipe). Ends the session. Nothing was saved, so nothing to undo in prefs. */
+        public int[] cancel() {
+            if (!active) return null;
+            active = false;
+            return new int[] { sb, sp };
+        }
+    }
 }

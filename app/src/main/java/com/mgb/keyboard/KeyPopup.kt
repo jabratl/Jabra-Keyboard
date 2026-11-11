@@ -97,6 +97,7 @@ object KeyPopup {
     private fun showFast(b: View, prefs: JabraPrefs, text: String? = null) {   // v0.9.2: View + optional text (key press passes none = button label)
         hnd.removeCallbacks(idle)
         val label = text ?: ((b as? Button)?.text?.toString() ?: "")
+        if (text != null && owner === b && cpw?.isShowing == true && ct?.visibility == View.VISIBLE && ct?.text?.toString() == label) return   // v0.9.8 (V3): same text, same anchor = nothing to redraw (no flicker, no window call)
         if (label.isEmpty() || b.width <= 0 || b.height <= 0) { dismiss(); return }   // v0.9.6: key not laid out yet = no bubble (never a bubble at a stale / zero position)
         val d = b.resources.displayMetrics.density
         var t = ct

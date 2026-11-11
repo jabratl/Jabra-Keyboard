@@ -72,6 +72,59 @@ public class LangSwipeTest {
         eq("Avro off: EN +1 shows Probhat", LangSwipe.label(LangSwipe.step(false, false, false, true, 1)[0] == 1, LangSwipe.step(false, false, false, true, 1)[1] == 1), "Probhat");
         eq("labels never empty / short", LangSwipe.label(true, true).length() <= 10 && LangSwipe.label(false, false).length() <= 10, true);
         eq("label differs from space caption name", LangSwipe.label(true, false).equals(LangSwipe.name(true, false)), false);
+        // ---- v0.9.8 (V3) ----
+        eq("stepDp small", LangSwipe.stepDp(0), 32f);
+        eq("stepDp normal = old 44", LangSwipe.stepDp(1), 44f);
+        eq("stepDp large", LangSwipe.stepDp(2), 60f);
+        eq("stepDp default = STEP_DP", LangSwipe.stepDp(LangSwipe.STEP_DEFAULT), LangSwipe.STEP_DP);
+        eq("stepDp bad -1 = normal", LangSwipe.stepDp(-1), 44f);
+        eq("stepDp bad 9 = normal", LangSwipe.stepDp(9), 44f);
+        eq("steps ordered", LangSwipe.stepDp(0) < LangSwipe.stepDp(1) && LangSwipe.stepDp(1) < LangSwipe.stepDp(2), true);
+        eq("step names 3", LangSwipe.STEP_NAMES.length, 3);
+        eq("default level in range", LangSwipe.STEP_DEFAULT >= 0 && LangSwipe.STEP_DEFAULT < LangSwipe.STEP_NAMES.length, true);
+        eq("tick on", LangSwipe.tickOn(true, true), true);
+        eq("tick off (pref)", LangSwipe.tickOn(true, false), false);
+        eq("tick off (no space swipe)", LangSwipe.tickOn(false, true), false);
+        eq("tick off both", LangSwipe.tickOn(false, false), false);
+        // Session: persist once at finger up
+        LangSwipe.Session q = new LangSwipe.Session();
+        eq("session idle", q.active(), false);
+        eq("finish w/o swipe = null", q.finish(), null);
+        eq("cancel w/o swipe = null", q.cancel(), null);
+        q.begin(true, true);                       // start Probhat
+        eq("session active", q.active(), true);
+        q.move(false, true);                       // -> EN (probhat flag kept)
+        q.move(true, false);                       // -> Avro
+        q.begin(false, false);                     // second begin in same swipe must NOT overwrite the start
+        eq("finish = last language", s(q.finish()), "1,0");
+        eq("session ended", q.active(), false);
+        eq("finish twice = null (write once)", q.finish(), null);
+        q.begin(true, false);                      // start Avro
+        q.move(false, false);
+        q.move(true, false);                       // back to Avro
+        eq("full circle = no write", q.finish(), null);
+        q.begin(false, false);                     // start EN
+        q.move(true, false);
+        q.move(true, true);
+        eq("cancel = start language", s(q.cancel()), "0,0");
+        eq("cancel ends session", q.active(), false);
+        eq("cancel twice = null", q.cancel(), null);
+        q.move(true, true);                        // move without begin = ignored
+        eq("move w/o begin ignored", q.finish(), null);
+        q.begin(false, true);                      // EN with remembered Probhat flag
+        q.move(true, true);
+        eq("EN(p=1) -> Probhat saves 1,1", s(q.finish()), "1,1");
+        // session follows LangSwipe.step over many moves
+        q.begin(false, false);
+        boolean b = false, pr = false;
+        for (int i = 0; i < 7; i++) { int[] t = LangSwipe.step(b, pr, true, true, 1); b = t[0] == 1; pr = t[1] == 1; q.move(b, pr); }
+        eq("7 steps right from EN = Avro", s(q.finish()), "1,0");
+        q.begin(false, false);
+        b = false; pr = false;
+        for (int i = 0; i < 3; i++) { int[] t = LangSwipe.step(b, pr, true, true, -1); b = t[0] == 1; pr = t[1] == 1; q.move(b, pr); }
+        eq("3 steps left = full circle = no write", q.finish(), null);
+        q.begin(true, false); q.move(false, false);
+        eq("cancel from EN returns Avro", s(q.cancel()), "1,0");
 System.out.println("LangSwipeTest ok=" + ok + " bad=" + bad);
         if (bad > 0) System.exit(1);
     }

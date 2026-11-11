@@ -14,6 +14,7 @@ public final class SpaceGesture {
     private final SpaceDrag lang;
     private boolean armed;
     private boolean langMoved;
+    private int langNet;   // v0.9.8: sum of language steps of this touch (+ = next)
     private float lastX;
     private int kind = NONE;
 
@@ -27,6 +28,7 @@ public final class SpaceGesture {
         lang.down(x);
         armed = false;
         langMoved = false;
+        langNet = 0;
         lastX = x;
         kind = NONE;
     }
@@ -37,7 +39,7 @@ public final class SpaceGesture {
         int n;
         if (armed) {
             n = lang.move(x);
-            if (n != 0) { langMoved = true; kind = LANG; } else kind = NONE;
+            if (n != 0) { langMoved = true; langNet += n; kind = LANG; } else kind = NONE;
         } else {
             n = cursor.move(x);
             kind = n != 0 ? CURSOR : NONE;
@@ -46,6 +48,9 @@ public final class SpaceGesture {
     }
 
     public int kind() { return kind; }
+
+    /** v0.9.8: total language steps since down() (+ = next, - = previous). */
+    public int langNet() { return langNet; }
 
     /** Called by the 0.2 s timer. true = now armed (only when the finger has not started a cursor drag). */
     public boolean arm() {
