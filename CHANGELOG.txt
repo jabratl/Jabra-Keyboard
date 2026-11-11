@@ -1,3 +1,36 @@
+v0.4.5 - NEW: Vault part 2 = Glossary + Quick Notes (S4b). Shipped TOGETHER with v0.4.4 in one zip (build name = 0.4.5)
+- WHY: plan S4b (HANDOFF 3e): personal dictionary + notes inside the SAME store as the snippets. No new file, no new permission.
+- What you get (Vault panel): kind chips under the header line: All / Snippets / Notes / Glossary (each with a count; Snippets also shows Templates). Entry kinds Note and Term.
+  Glossary entry = TERM (the title) + MEANING (the text). Tap the row = paste the term. Small "Meaning" button on the row = paste the meaning.
+  + Add follows the chip: Notes chip = saves the field text as a Note (title = first line); Glossary chip = opens the editor (a term needs its own title; the field text becomes the meaning).
+  Edit screen: the "Kind" button cycles Snippet > Template > Note > Term (changing the kind keeps the id).
+- Code: VaultList.java (pasteText / meaning / countKind / kindLabel / nextKind; term rule: title required), VaultPanel.kt (chips, Meaning button, kind-aware Add), tools/VaultTest.java (v0.4.5 section: 17 checks).
+- DEVIATION from the plan (1 line): plan said "long-press = paste meaning". Long-press stays SELECT mode for every kind (v0.4.4 rule), so the meaning has its own small "Meaning" button.
+BROKE: nothing intended (no old code touched for this part; Glossary / Notes only exist inside the Vault).
+NOT tested: Kotlin compile (GitHub Actions first), chip row + Meaning button at 360 px, Bangla terms on a phone.
+TESTED here: VaultTest 69/69 (both parts), all 19 older Java tests green; bracket balance of VaultPanel.kt OK.
+Rollback: do not use the Notes / Glossary chips (no code change). Code: remove the kind chips + Meaning button from VaultPanel.kt.
+
+v0.4.4 - NEW: Personal Text Vault (S4a): permanent snippets / templates, folders, {variable} fill, "To Vault" in the clipboard
+- WHY: plan S4a (HANDOFF 3e). The clipboard history is auto-trimmed (40 unpinned / expiry). The Vault is a permanent text library that history limits never delete.
+- What you get: a new toolbar item "Text Vault" (OFF until you add it: Edit toolbar > Text Vault ON, or hold any toolbar key 1.5 s > quick add). Vault panel:
+  1) List of entries (title + one-line preview + "3x" use counter). Tap = paste and go back to letters. Long-press or "Manage" = select mode: All / Move / Edit / Delete (two-tap) / Done.
+  2) + Add = saves the selected text (or the whole field) as a snippet; "Already saved" if the same text exists. On an EMPTY field it opens the editor so you can write an entry with mini keys.
+  3) Editor: Cancel | From field | Save (existing entry = two-tap "Sure? Save"). Buttons: Typing Title / Text, Kind, Folder. Mini keys have { and }. Bangla = type in the real field, then "From field".
+  4) Folders page: + New folder, the "Novel Translation" set (Character Names, Glossary, Common Instructions, Translation Prompts; only when you tap it), Delete (two-tap; entries are NEVER deleted, they become Unfiled). Folder chips on the list; Move page.
+  5) Variables: text with {name} fields (e.g. "Translate {from} to {to}:") opens a fill page on tap: one line per field, mini keys or "From field", then Paste. "As is" pastes without filling. Fields left empty stay as {name}. JSON / code braces such as {"a":1} are NOT treated as fields.
+  6) Search (word search in title + text + folder = the "Quick Insert" box, no typing interception), Sort: Newest / A-Z / Used.
+  7) Clipboard > Manage > tick clips > new "To Vault" button: copies them into the Vault (folder = the one last chosen in the Vault), clips stay in the history.
+- Code: NEW vault/VaultList.java (pure: entries, folders, search, sort, JSON with "ver":1, limits 500 entries / 20000 chars / 30 folders), NEW typing/VarFill.java (pure), NEW VaultStore.kt (AtomicFile filesDir/vault_v1.json, lazy load, damaged file is NEVER overwritten), NEW VaultPanel.kt, tools/VaultTest.java, tools/VarFillTest.java.
+  Hooks (marked "v0.4.4"): MgbIme.kt (2 lazy fields, route "vault", toolbarAction "vault", openVault(), capTall list, ClipPanel.toVault), Toolbar.kt (label / title), typing/ToolbarOrder.java (id "vault" appended to DEFAULT + EXTRAS), JabraIcons.kt (icon "vault"), ClipboardFeature.kt (toVault property + button), DataPage.kt (real Vault entry count).
+  tools/ToolbarTest.java: 4 expectations updated for the new id (21 ids / 13 extras / last item = vault); still 44 checks.
+- Backup: vault_v1.json was already in BackupStore.FILES (v0.4.0), so it is in every backup / export / restore. Nothing to add.
+- Prefs NEW: vault_sort(int,0), vault_dest(str,""). Data file NEW: vault_v1.json. No new permission, no manifest change, nothing on the key-press path (file is read only when the panel opens, dropped when you leave it).
+BROKE: nothing intended. The toolbar item is OFF by default. Old toolbar order tests only changed because a new id exists.
+NOT tested: Kotlin compile (GitHub Actions first), the whole panel on a phone: height at 360 px / landscape (list + 3 chip rows; the panel scrolls if taller than the letters keyboard), long-press vs scroll, Bangla paste, backup + restore of a real vault file, 500-entry speed. A full vault bigger than 5 MB makes "Backup now" say "Backup refused" (existing 5 MB rule; 500 x 20000 chars is the extreme case).
+TESTED here: VaultTest 69/69, VarFillTest 23/23 (found + fixed: Bangla vowel signs / hasanta were rejected in {names}), ToolbarTest 44/44, all other Java tests green; bracket balance of the 7 changed Kotlin files OK.
+Rollback: toolbar: Text Vault OFF (no code change). Code: delete vault/VaultList.java, typing/VarFill.java, VaultStore.kt, VaultPanel.kt, tools/VaultTest.java, tools/VarFillTest.java, remove the lines marked "v0.4.4" (and "vault" from ToolbarOrder / icons). vault_v1.json stays on the phone (harmless).
+
 v0.4.3.1 - NEW: Clipboard "Edit" (left over from S3a)
 - WHY: S3a (HANDOFF 3e) also planned editing a saved clip; it was split out of v0.4.3 to keep that step small.
 - What you get: Clipboard > Manage > tick exactly ONE clip > second row "Edit". An edit screen opens: Cancel | Use field text | Save (two taps: "Sure? Save"), a text box with a character counter (n/2000) and mini keys (digits, Latin letters, shift, backspace, . , ? ! - ' space, new line). Bangla text: type it in the real text field first (or select it), then tap "Use field text" (replaces the edit box with the selection / whole field). Save keeps the clip's position, its Pinned star and its paste count. Refused with a message: empty text, longer than 2000, same text as another clip, clip no longer exists.

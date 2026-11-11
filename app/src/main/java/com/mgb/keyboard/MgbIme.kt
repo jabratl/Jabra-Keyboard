@@ -41,7 +41,9 @@ class MgbIme : InputMethodService() {
     private var pwdField = false               // true in password fields: nothing is recorded there
     private var clipListener: ClipboardManager.OnPrimaryClipChangedListener? = null
     private val clipStore by lazy { ClipStore(JabraPrefs(this)) }
-    private val clipPanel by lazy { ClipPanel(this, host, clipStore) { fieldText() } }   // v0.2.5.1: Add button reads the field
+    private val clipPanel by lazy { ClipPanel(this, host, clipStore) { fieldText() }.also { cp -> cp.toVault = { l -> vaultPanel.saveFromClips(l) } } }   // v0.2.5.1: Add button reads the field; v0.4.4: "To Vault" button
+    private val vaultStore by lazy { VaultStore(this) }   // v0.4.4 Personal Text Vault (file vault_v1.json, loaded only when the panel opens)
+    private val vaultPanel by lazy { VaultPanel(this, host, vaultStore) { fieldText() } }   // v0.4.4
     private val prefs by lazy { JabraPrefs(this) }
     private val panels by lazy { JabraPanels(this, host) }
     private val morePanel by lazy { MorePanel(this, host) }   // v0.0.9 "More settings" page
@@ -252,6 +254,12 @@ class MgbIme : InputMethodService() {
         if (pwdField) return
         fmtPanel.reset()
         showPanel("format")
+    }
+
+    /** v0.4.4: opens the Personal Text Vault panel (file is read now, not before). */
+    private fun openVault() {
+        vaultPanel.reset()
+        showPanel("vault")
     }
 
     override fun onStartInputView(info: EditorInfo?, restarting: Boolean) {
@@ -492,6 +500,7 @@ class MgbIme : InputMethodService() {
             "gear" -> showPanel("settings")
             "size" -> showPanel("size")
             "pad" -> showPanel("pad")
+            "vault" -> openVault()   // v0.4.4
             "undo" -> padSend(KeyEvent.KEYCODE_Z, KeyEvent.META_CTRL_ON or KeyEvent.META_CTRL_LEFT_ON)   // v0.2.7: Ctrl+Z (apps that ignore key events: nothing happens)
             "redo" -> padSend(KeyEvent.KEYCODE_Z, KeyEvent.META_CTRL_ON or KeyEvent.META_CTRL_LEFT_ON or KeyEvent.META_SHIFT_ON or KeyEvent.META_SHIFT_LEFT_ON)   // v0.2.7: Ctrl+Shift+Z
             "voice" -> { commitWord(); switcher.voice() }
@@ -545,7 +554,7 @@ class MgbIme : InputMethodService() {
     private fun showPanel(name: String) {
         val c = container ?: return
         commitWord()
-        val v = try { if (name == "clipboard") clipPanel.build() else if (name == "format") fmtPanel.build() else if (name == "more") morePanel.build() else if (name == "emoji") emojiPanel.build() else if (name == "typing") typingPanel.build() else if (name == "size") sizePanel.build() else if (name == "toolbar") toolbarPanel.build() else if (name == "tbquick") toolbarQuick.build() else if (name == "pad") padPanel.build() else if (name == "themes") themePanel.build() else panels.build(name) } catch (_: Throwable) { null }   // v0.0.8: "format"; v0.1.0: "emoji"; v0.1.1: "typing"
+        val v = try { if (name == "clipboard") clipPanel.build() else if (name == "format") fmtPanel.build() else if (name == "more") morePanel.build() else if (name == "emoji") emojiPanel.build() else if (name == "typing") typingPanel.build() else if (name == "size") sizePanel.build() else if (name == "toolbar") toolbarPanel.build() else if (name == "tbquick") toolbarQuick.build() else if (name == "pad") padPanel.build() else if (name == "themes") themePanel.build() else if (name == "vault") vaultPanel.build() else panels.build(name) } catch (_: Throwable) { null }   // v0.0.8: "format"; v0.1.0: "emoji"; v0.1.1: "typing"
         if (v == null) { showLetters(); return }
         try { JabraOneHand.apply(this, prefs, v) } catch (_: Throwable) { }   // v0.1.0
         try { if (!inPanel && c.height > 0) lettersH = c.height } catch (_: Throwable) { }   // v0.3.3: remember the letters-keyboard height
@@ -561,7 +570,7 @@ class MgbIme : InputMethodService() {
     private var inPanel = false
     private var lettersH = 0
     private fun capTall(name: String, v: View, c: FrameLayout): View {
-        if (name != "settings" && name != "more" && name != "typing" && name != "size" && name != "themes") return v
+        if (name != "settings" && name != "more" && name != "typing" && name != "size" && name != "themes" && name != "vault") return v
         val cap = if (lettersH > 0) maxOf(lettersH, dp(keyDp() * 4 + 16)) else dp(38 + 5 * (keyDp() + 4))
         val w = if (c.width > 0) c.width else resources.displayMetrics.widthPixels
         v.measure(View.MeasureSpec.makeMeasureSpec(w, View.MeasureSpec.EXACTLY), View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED))

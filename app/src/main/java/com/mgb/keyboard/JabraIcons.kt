@@ -21,7 +21,7 @@ object JabraIcons {
 
     val NAMES = listOf(
         "clip", "all", "cut", "copy", "paste", "plain", "search", "close",
-        "pin", "pinned", "gear", "shift", "back", "enter", "space", "fmt", "globe", "mic", "emoji", "mode_phone", "mode_pc", "numpad", "sym", "theme", "onehand", "size", "pad"   // v0.1.2; v0.2.2: 5 names; v0.2.3: pad
+        "pin", "pinned", "gear", "shift", "back", "enter", "space", "fmt", "globe", "mic", "emoji", "mode_phone", "mode_pc", "numpad", "sym", "theme", "onehand", "size", "pad", "vault"   // v0.4.4: vault; v0.1.2; v0.2.2: 5 names; v0.2.3: pad
     )
 
     /**
@@ -254,6 +254,11 @@ object JabraIcons {
                     line(c, s, 0.70f, 0.30f, 0.50f, 0.10f)
                     line(c, s, 0.30f, 0.70f, 0.50f, 0.90f)
                     line(c, s, 0.70f, 0.70f, 0.50f, 0.90f)
+                }
+                "vault" -> {   // v0.4.4: a box (safe) with a keyhole dot and a lid line
+                    rr(c, s, 0.08f, 0.12f, 0.92f, 0.90f, 0.10f)
+                    line(c, s, 0.08f, 0.38f, 0.92f, 0.38f)
+                    c.drawCircle(0.5f * s, 0.64f * s, 0.08f * s, f)
                 }
                 "pad" -> {   // v0.2.3: four arrows (cross)
                     line(c, s, 0.50f, 0.08f, 0.50f, 0.92f)

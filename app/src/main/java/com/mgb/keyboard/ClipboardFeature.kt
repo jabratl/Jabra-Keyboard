@@ -82,6 +82,8 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
     private var editText = ""
     private var editCaps = false
     private var confirmSave = false
+    /** v0.4.4: set by MgbIme: saves the given clip texts into the Text Vault and returns a short message. null = no "To Vault" button. */
+    var toVault: ((List<String>) -> String)? = null
 
     /** Call when the panel is opened from outside (fresh start). */
     // v0.3.7: Undo for deleted clips (x, Delete, Clear). Kept until you leave the clipboard or delete something else.
@@ -436,6 +438,17 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
                 host.showLetters()
             }
         })
+        if (toVault != null) {   // v0.4.4: copy the ticked clips into the Text Vault (folder last used there); clips stay in the history
+            val vb = btn("To Vault", 0.8f, 34) {
+                val chosen = sel.selection()
+                if (chosen.isEmpty()) msg = "Nothing selected"
+                else { msg = try { toVault?.invoke(chosen.map { it.text }) ?: "" } catch (_: Throwable) { "Could not save to Vault" }; sel.leave() }
+                confirmDel = false
+                refresh()
+            }
+            vb.textSize = 12f
+            r2.addView(vb)
+        }
         val colAll = LinearLayout(ctx)
         colAll.orientation = LinearLayout.VERTICAL
         colAll.addView(r)

@@ -161,3 +161,24 @@ T) v0.4.3.1 clipboard Edit
  [ ] Type Bangla text in the real field, open Clipboard > Edit > "Use field text": the box shows the field text. Save works.
  [ ] Tick 2 clips and press Edit: message "Select ONE clip to edit". Edit to a text another clip already has: "Another clip has this text".
  [ ] Edit screen fits at 360 px (all key rows visible) and in landscape.
+
+U) v0.4.4 Text Vault (toolbar item is OFF by default)
+ [ ] Keyboard gear > More settings > Edit toolbar (or hold a toolbar key 1.5 s): turn "Text Vault" ON. A new key appears at the end of the toolbar. Tap it: Vault panel opens, says "Vault is empty".
+ [ ] Type some text in a field, tap "+ Add": message "Saved to Unfiled", a row appears. Tap + Add again with the same text: "Already saved".
+ [ ] Tap the row: text is typed into the field and the keyboard goes back to letters. Open the Vault again: the row shows "1x".
+ [ ] Empty field + "+ Add": the editor opens. Type a title + text with mini keys, "Save". Bangla: type Bangla in the field, Vault > + Add (saves directly) - then Edit shows it right.
+ [ ] Folders > "Add the Novel Translation set": 4 folders. Folders > + New folder > type a name > Create. Tap a folder chip: list shows only that folder; + Add now saves into it.
+ [ ] Manage (or long-press a row) > tick 2 rows > Move > pick a folder: rows move. Edit with 2 ticked = "Select ONE entry to edit". Delete: "Sure? delete 2" then deleted.
+ [ ] Folders > Delete a folder with entries (two taps): entries are still there as Unfiled.
+ [ ] Entry text "Translate {from} to {to}:" : tap it > fill page with 2 lines. Type EN / BN (or use "From field" for Bangla) > Paste: filled text is typed. "As is" pastes with the braces.
+ [ ] Search: type 2-3 letters of a title: only matching rows. Sort button: Newest / A-Z / Used.
+ [ ] Clipboard > Manage > tick clips > "To Vault": message "To Vault: N in ...". Open the Vault: they are there. The clips are still in the clipboard.
+ [ ] App screen > Data & Backup: "Vault entries: N". Backup now, delete an entry, Restore: the entry is back.
+ [ ] Panel fits at 360 px (nothing cut off, scrolls if tall) and in landscape. Letters keyboard typing is not slower than before.
+
+V) v0.4.5 Glossary + Notes (inside the Vault)
+ [ ] Chips under the header: All / Snippets / Notes / Glossary with counts. Notes chip + "+ Add" with text in the field: saved as a Note.
+ [ ] Glossary chip + "+ Add": editor opens with "Typing: Title" - type the term (e.g. Jabra), switch to "Typing: Meaning", type / "From field" the meaning, Save.
+ [ ] Glossary row: tap the row = the TERM is typed. Tap "Meaning" on the row = the meaning is typed.
+ [ ] Edit an entry, tap the Kind button: Snippet > Template > Note > Term. A Term without a title: "A term needs a title".
+ [ ] Bangla term + Bangla meaning: both paste correctly. Chip row + Meaning button fit at 360 px.

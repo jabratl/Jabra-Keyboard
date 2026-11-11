@@ -45,7 +45,7 @@ object DataPage {
                 info.addView(line("Clipboard: ${cl.size()} clips, ${try { cl.pinnedCount() } catch (_: Throwable) { 0 }} pinned"))
                 val pc = try { val s = prefs.str("fmt_presets", ""); if (s.isBlank()) 0 else try { org.json.JSONArray(s).length() } catch (_: Throwable) { org.json.JSONObject(s).length() } } catch (_: Throwable) { 0 }
                 info.addView(line("Formatter presets: $pc"))
-                info.addView(line("Custom themes: 0   Vault entries: 0   (come in later versions)"))
+                info.addView(line("Custom themes: 0 (later)   Vault entries: " + (try { VaultStore.countOnDisk(ctx).let { if (it < 0) "file damaged" else it.toString() } } catch (_: Throwable) { "?" })))   // v0.4.4
                 val keys = try { ctx.getSharedPreferences("jabra", Context.MODE_PRIVATE).all.keys.count { !it.startsWith("bk_") && !it.startsWith("upd") } } catch (_: Throwable) { 0 }
                 info.addView(line("Settings keys: $keys"))
                 val used = fileSize(ctx.filesDir) + fileSize(File(ctx.applicationInfo.dataDir, "shared_prefs/jabra.xml"))
