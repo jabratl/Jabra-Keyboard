@@ -1,3 +1,12 @@
+v0.10.4 - FIX: toolbar name tip + "Edit shortcut" bubble were at the bottom of the keyboard; now above the icon
+- WHY: user video: hold a toolbar icon 0.3 s = its name appeared at the very BOTTOM (under the ?123 row); "Edit shortcut" (1.5 s) too. Wanted: just above the icon, like the key bubble.
+- ROOT CAUSE (from the video + code): a PopupWindow of the keyboard window is kept inside / relative to the keyboard window frame, so a bubble that belongs ABOVE the top row (outside the keyboard window) was pushed down to the keyboard's bottom edge. x was right (centred on the icon), only y was wrong. Same cause is the likely reason for the old unexplained V1 note "bubble on the bottom row" (window bubbles of keys without room above).
+- What changed: ToolTip.inScreen(p) (clipping OFF + layout-in-screen ON, set before showAtLocation) used by: ToolTip.show (name tip), ToolbarEdit.show (Edit shortcut), KeyPopup window bubbles (2 places), suggestion grid popup. Timing unchanged: name after 0.3 s, Edit shortcut after 1.5 s.
+- Code: ToolTip.kt (helper + 1 call), ToolbarQuick.kt, KeyPopup.kt, SuggestStrip.kt (1 line each, marked v0.10.4), build.gradle.kts version.
+BROKE: nothing intended. NOT tested: Kotlin compile (GitHub Actions first); phone (CHECKLIST Z48). If a bubble now sits too high / low by the status-bar height, tell me (coordinates are getLocationOnScreen based).
+TESTED here: all 48 Java tests green (no Java change); bracket balance of the changed Kotlin files.
+Rollback: delete the inScreen() lines (5 calls) or restore the 4 Kotlin files from v0.10.3.
+
 v0.10.3 - NEW: Auto-correct (G3.2) - fixes 1-letter English typos on space (OFF by default)
 - WHY: user said "next" = G3.2 of the plan. Auto-correct can change what you write, so it is a switch that is OFF by default.
 - What you get: Settings > Keys (and keyboard > Typing options) > "Auto-correct" (default OFF). ON: when you press space after an English word that is NOT in the word list and NOT a word you learned, and exactly ONE list word is 1 letter away (a letter missing / extra / wrong / two letters swapped, first letter must stay), the word is replaced + space (teh > the, freind > friend, Teh > The). Backspace RIGHT after = your original word comes back (no space) and it is not corrected again. Never touches: Bangla / Avro / Probhat words, words with digits / apostrophe / a capital inside (NASA, iPhone), words under 3 letters, 3-letter words except a swap, anything in password / email / URL / number fields. 2+ possible fixes = no change.

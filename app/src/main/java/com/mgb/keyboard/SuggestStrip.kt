@@ -238,6 +238,7 @@ class SuggestStrip(
         cells = list
         val p = PopupWindow(box, cw * SuggestPlan.COLS, ch * rows)
         p.isTouchable = false; p.isFocusable = false; p.isClippingEnabled = false
+        ToolTip.inScreen(p)   // v0.10.4: screen coordinates (same fix as the toolbar tip)
         pw = p
         gl = loc[0].toFloat(); gt = loc[1].toFloat(); gcw = cw.toFloat(); gch = ch.toFloat(); sel = -1
         p.showAtLocation(anchor, Gravity.NO_GRAVITY, loc[0], loc[1])
