@@ -474,3 +474,13 @@ Z34) v0.9.5 Symbols page 3 (math / Greek / arrows)
  [ ] Same in English, Avro and Probhat (the symbols panel is the same for all). Typing a symbol while an Avro word is half typed: word is committed first, then the symbol (as before).
  [ ] ABC returns to letters, gear opens settings, 123 opens the number pad, comma / space / period / enter work, backspace hold-repeat works on all 3 pages.
  [ ] Letter size %, Bold letters, Classic + one dark theme: the 3 pages look fine and the left key label is not cut off at 360 dp.
+
+Z35) v0.9.6 Reference-style key bubble (V1)
+ [ ] Gear > More settings > Typing (also app screen > Keys & gestures): new row "Reference-style bubble" (default ON) next to "Key popup". Turn "Key popup" ON.
+ [ ] Type letters in row 1, 2, 3 and the number row: a rounded bubble shows ABOVE the pressed key, a bit wider than the key and about 1.35 x as tall, big letter, hides the moment you lift.
+ [ ] q and p (screen edges): the bubble stays fully on screen (no part cut off).
+ [ ] Classic theme: bubble white, dark letter, grey thin line. A dark theme (e.g. Dark / Gloss Black): bubble = key colour a little lighter, letter readable. One light coloured theme + Jabra look + Borderless: letter readable in all.
+ [ ] Type FAST with two fingers (hold one letter, tap another, then lift the first): the bubble of the second key does not vanish when the first finger lifts, and it is never shown on a wrong row. Tell me if you still see a bubble on the bottom row (note which key you pressed).
+ [ ] Turn "Reference-style bubble" OFF: wait 2 s (or tap ABC): bubble looks exactly like before (same size as the key, white / Jabra fill).
+ [ ] Space swipe = language ON: the language name bubble shows above space with the new look and goes away on lift; the next letter bubble shows the letter (not the language).
+ [ ] Rotate the phone, change theme, open a panel and come back (ABC): bubble still correct, nothing stuck on screen.

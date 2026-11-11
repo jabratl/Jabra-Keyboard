@@ -303,6 +303,7 @@ object SettingsGroups {
             toggle(g, "System key tap vibration", "haptic_native", false)   // v0.9.1
             toggle(g, "Sound", "sound", false)
             toggle(g, "Key popup", "key_popup", false)
+            toggle(g, "Reference-style bubble", "pop_ref", true)   // v0.9.6 (V1): bigger rounded bubble in the theme colour; works only while Key popup is ON
             toggle(g, "Globe key", "key_globe", false)
             toggle(g, "Voice key", "key_voice", false)
             toggle(g, "Emoji key", "key_emoji", false)

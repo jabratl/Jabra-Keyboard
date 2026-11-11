@@ -248,7 +248,8 @@ class TypingPanel(private val ctx: Context, private val host: JabraHost) {
         r3.addView(toggleKey("Emoji key", "key_emoji", false))
         root.addView(r3)
 
-        try { val r35 = row(); r35.addView(toggleKey("Key popup", "key_popup", false)); r35.addView(toggleKey("Large number row", "numrow_large", false)); root.addView(r35) } catch (_: Throwable) { }   // v0.1.3
+        try { val r35 = row(); r35.addView(toggleKey("Key popup", "key_popup", false)); r35.addView(toggleKey("Large number row", "numrow_large", false)); root.addView(r35) } catch (_: Throwable) { }
+        try { val r35b = row(); r35b.addView(toggleKey("Reference-style bubble", "pop_ref", true)); root.addView(r35b) } catch (_: Throwable) { }   // v0.9.6 (V1): look of the key bubble (only while Key popup is ON)   // v0.1.3
         try {   // v0.5.0: custom character row (extra row above the numbers)
             val r37 = row()
             val cur = prefs.str("xrow_chars", "")

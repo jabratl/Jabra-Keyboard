@@ -28,9 +28,12 @@ object KeyPopup {
     private var ct: TextView? = null             // v0.9.0 its text view (styled once)
     private val hnd = Handler(Looper.getMainLooper())
     private val idle = Runnable { dropCached() }
+    private var owner: View? = null              // v0.9.6: the key (or anchor) whose bubble is on screen
+    private var refLook = false                  // v0.9.6: cached pop_ref of the bubble that was built last
 
     /** v0.9.0: hide now (cheap). The reusable window stays for the next press and is dropped by the idle timer. */
     fun dismiss() {
+        owner = null   // v0.9.6
         try { pw?.dismiss() } catch (_: Throwable) { }; pw = null
         try {
             ct?.visibility = View.INVISIBLE
@@ -64,7 +67,8 @@ object KeyPopup {
         try {
             when (e.actionMasked) {
                 MotionEvent.ACTION_DOWN -> if (KeyCfg.popupOn(prefs)) show(v as Button, prefs)   // v0.6.0: cached flag (fallback = pref read)
-                MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> dismiss()
+                MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL ->
+                    if (com.mgb.keyboard.typing.PopupStyle.releaseHides(owner, v)) dismiss()   // v0.9.6: finger A lifting must not hide the bubble of finger B
             }
         } catch (_: Throwable) { dismiss() }
     }
@@ -93,30 +97,50 @@ object KeyPopup {
     private fun showFast(b: View, prefs: JabraPrefs, text: String? = null) {   // v0.9.2: View + optional text (key press passes none = button label)
         hnd.removeCallbacks(idle)
         val label = text ?: ((b as? Button)?.text?.toString() ?: "")
-        if (label.isEmpty()) { dismiss(); return }
+        if (label.isEmpty() || b.width <= 0 || b.height <= 0) { dismiss(); return }   // v0.9.6: key not laid out yet = no bubble (never a bubble at a stale / zero position)
         val d = b.resources.displayMetrics.density
-        val w = (b.width + 12 * d).toInt().coerceAtLeast((44 * d).toInt())
-        val h = (b.height * 1.25f).toInt().coerceAtLeast((52 * d).toInt())
         var t = ct
         if (t == null || cpw == null) {   // first press (or after idle / rebuild): build + style ONCE
             dropCached()
             t = TextView(b.context)
-            t.textSize = 26f
             t.gravity = Gravity.CENTER
-            val lookOn = try { JabraLook.on(prefs) } catch (_: Throwable) { false }
-            t.setTextColor(if (lookOn) (try { JabraThemes.iconColor(prefs) } catch (_: Throwable) { Color.parseColor("#222222") }) else Color.parseColor("#222222"))
+            val ref = try { prefs.bool("pop_ref", true) } catch (_: Throwable) { true }   // v0.9.6: reference-style look (OFF = v0.9.5 look exactly)
+            refLook = ref
             val bg = GradientDrawable()
-            bg.setColor(if (lookOn) (try { JabraLook.fill(prefs) } catch (_: Throwable) { Color.parseColor("#FFFFFF") }) else Color.parseColor("#FFFFFF"))
-            bg.setStroke((1 * d).toInt().coerceAtLeast(1), Color.parseColor("#888888"))
-            bg.cornerRadius = (if (lookOn) 16 else 10) * d
+            if (ref) {
+                val th = try { JabraThemes.cur(prefs) } catch (_: Throwable) { null }
+                val key: Int? = th?.key
+                val fill = com.mgb.keyboard.typing.PopupStyle.fill(key)
+                t.setTextColor(com.mgb.keyboard.typing.PopupStyle.text(th?.text, fill))
+                bg.setColor(fill)
+                bg.setStroke((1 * d).toInt().coerceAtLeast(1), com.mgb.keyboard.typing.PopupStyle.stroke(key, fill))
+                bg.cornerRadius = com.mgb.keyboard.typing.PopupStyle.radiusPx(d)
+            } else {
+                t.textSize = 26f
+                val lookOn = try { JabraLook.on(prefs) } catch (_: Throwable) { false }
+                t.setTextColor(if (lookOn) (try { JabraThemes.iconColor(prefs) } catch (_: Throwable) { Color.parseColor("#222222") }) else Color.parseColor("#222222"))
+                bg.setColor(if (lookOn) (try { JabraLook.fill(prefs) } catch (_: Throwable) { Color.parseColor("#FFFFFF") }) else Color.parseColor("#FFFFFF"))
+                bg.setStroke((1 * d).toInt().coerceAtLeast(1), Color.parseColor("#888888"))
+                bg.cornerRadius = (if (lookOn) 16 else 10) * d
+            }
             t.background = bg
             ct = t
         }
         val tv = ct ?: return
+        val w: Int
+        val h: Int
+        if (refLook) {
+            w = com.mgb.keyboard.typing.PopupStyle.width(b.width, d)
+            h = com.mgb.keyboard.typing.PopupStyle.height(b.height, d)
+            tv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, com.mgb.keyboard.typing.PopupStyle.textSp(b.height, d))
+        } else {
+            w = (b.width + 12 * d).toInt().coerceAtLeast((44 * d).toInt())
+            h = (b.height * 1.25f).toInt().coerceAtLeast((52 * d).toInt())
+        }
         tv.text = label
         tv.visibility = View.VISIBLE
         val loc = IntArray(2)
-        b.getLocationOnScreen(loc)
+        b.getLocationOnScreen(loc)   // v0.9.6: fresh position at EVERY press (never reuse the last key's place)
         val sw = b.resources.displayMetrics.widthPixels
         val x = com.mgb.keyboard.typing.TipPlace.x(loc[0], b.width, w, sw)   // centred over the key, kept on screen
         val y = (loc[1] - h - (4 * d).toInt()).coerceAtLeast(0)
@@ -130,6 +154,7 @@ object KeyPopup {
             np.showAtLocation(b, Gravity.NO_GRAVITY, x, y)
             cpw = np
         }
+        owner = b   // v0.9.6
     }
 
     /** v0.8.9 body, unchanged (fallback). */
