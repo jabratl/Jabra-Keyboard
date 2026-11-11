@@ -327,3 +327,9 @@ Z16) v0.6.7 Text Tools + Profiles follow the theme
  [ ] Toolbar editor (gear > Toolbar) and Quick toolbar editor look the same as before (they were already themed).
  [ ] Look = Jabra and Borderless: Text Tools / Profiles buttons follow (rounded / flat). At 360 px the tab rows still fit.
 
+Z17) v0.7.1 Housekeeping
+ [ ] App screen > Clipboard & tools: the row "Vault key (toolbar)" shows a grey help line under it.
+ [ ] App screen search box: type "vault" -> the Vault key row is listed; type "templates" -> same row; clear the box -> all groups come back.
+ [ ] Everything else on the app screen looks and works as before (nothing else changed in this version).
+ [ ] (By hand on GitHub) delete HANDOFF.txt and HANDOFF_Jabra-Keyboard_v0.2.4 ... v0.5.9 (28 files); keep only the newest HANDOFF_Jabra-Keyboard_v0.7.1.txt. The next build must still be green.
+
