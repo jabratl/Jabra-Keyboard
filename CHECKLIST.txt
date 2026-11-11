@@ -484,3 +484,13 @@ Z35) v0.9.6 Reference-style key bubble (V1)
  [ ] Turn "Reference-style bubble" OFF: wait 2 s (or tap ABC): bubble looks exactly like before (same size as the key, white / Jabra fill).
  [ ] Space swipe = language ON: the language name bubble shows above space with the new look and goes away on lift; the next letter bubble shows the letter (not the language).
  [ ] Rotate the phone, change theme, open a panel and come back (ABC): bubble still correct, nothing stuck on screen.
+
+Z36) v0.9.7 Same keyboard height in every language (V2)
+ [ ] Gear > More settings > Typing (also app screen > Keys & gestures): new row "Same keyboard height" (default ON). Tap ABC to apply.
+ [ ] Open a chat app. Swipe on space (or tap the language key): English > Avro > Probhat > English. The TOP EDGE of the keyboard does not move and the chat above does not resize / jump. Empty band above the letters in English / Avro = keyboard background only.
+ [ ] Probhat: vowel row (aa i ii u ...) shows and types as before. English / Avro: tapping the empty band does nothing.
+ [ ] Turn "Same keyboard height" OFF, tap ABC: old behaviour back (keyboard is one row shorter in English / Avro, jumps on switch).
+ [ ] Gear > "Probhat available" OFF: no empty band (Probhat cannot be reached, nothing to reserve).
+ [ ] Number row: is "Number row" ON (Gear > More settings > Typing)? Tell me: English shows digits yes / no, and was the tall row in Probhat digits or vowels?
+ [ ] Rotate to landscape and back; Large number row ON; one-hand mode; Classic + one dark theme: height stays the same on every switch.
+ [ ] Password / email / URL field while Probhat is selected: keyboard height does not change compared with a normal text field.

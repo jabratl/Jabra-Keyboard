@@ -126,6 +126,7 @@ public final class SettingsIndex {
             case "sound": return "Click sound on every key press.";
             case "key_popup": return "Shows a bubble with the letter above the pressed key.";
             case "pop_ref": return "Bigger rounded key bubble in your theme colour (needs Key popup ON). OFF = old look.";   // v0.9.6
+            case "h_lock": return "Keyboard keeps the same height in English, Avro and Probhat (no jump). OFF = old.";   // v0.9.7
             case "key_globe": return "Shows a key to switch to the next keyboard.";
             case "key_voice": return "Shows a key that opens the phone's voice typing.";
             case "key_emoji": return "Shows an emoji key next to the language key.";

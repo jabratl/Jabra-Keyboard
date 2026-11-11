@@ -412,7 +412,7 @@ class MgbIme : InputMethodService() {
             if (!nt.contentEquals(b.text)) b.text = nt   // v0.6.1: no relayout when the label is already right
         }
         relabelNumbers()   // v0.9.4 (R4)
-        extrasRow?.visibility = if (pb) View.VISIBLE else View.GONE
+        extrasRow?.visibility = extrasVis(pb)   // v0.9.7 (V2): h_lock keeps the row's space outside Probhat
         try { shiftVisual() } catch (_: Throwable) { }   // v0.0.9
         refreshHints()   // v0.1.6: hint labels follow the language / layout
     }
@@ -424,10 +424,19 @@ class MgbIme : InputMethodService() {
             (k.layoutParams as LinearLayout.LayoutParams).height = dp(38)
             r.addView(k)
         }
-        r.visibility = if (probhatOn()) View.VISIBLE else View.GONE
+        r.visibility = extrasVis(probhatOn())   // v0.9.7 (V2)
         extrasRow = r
         return r
     }
+
+    /** v0.9.7 (V2): visibility of the Probhat extra row. h_lock ON (default) = INVISIBLE (space kept) while Probhat can be chosen, so the keyboard height is the same in English / Avro / Probhat. OFF = v0.9.5 (GONE). Any problem = v0.9.5 rule. */
+    private fun extrasVis(pb: Boolean): Int = try {
+        when (com.mgb.keyboard.typing.HeightLock.mode(prefs.bool("h_lock", true), pb, prefs.bool("lang_probhat_on", true))) {
+            com.mgb.keyboard.typing.HeightLock.VISIBLE -> View.VISIBLE
+            com.mgb.keyboard.typing.HeightLock.INVISIBLE -> View.INVISIBLE
+            else -> View.GONE
+        }
+    } catch (_: Throwable) { if (pb) View.VISIBLE else View.GONE }
 
     private fun langLabel(): String = if (!bangla) "EN" else if (probhat) "প্রভা" else "বাং"
 

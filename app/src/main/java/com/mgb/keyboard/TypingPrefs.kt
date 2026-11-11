@@ -250,6 +250,7 @@ class TypingPanel(private val ctx: Context, private val host: JabraHost) {
 
         try { val r35 = row(); r35.addView(toggleKey("Key popup", "key_popup", false)); r35.addView(toggleKey("Large number row", "numrow_large", false)); root.addView(r35) } catch (_: Throwable) { }
         try { val r35b = row(); r35b.addView(toggleKey("Reference-style bubble", "pop_ref", true)); root.addView(r35b) } catch (_: Throwable) { }   // v0.9.6 (V1): look of the key bubble (only while Key popup is ON)   // v0.1.3
+        try { val r35c = row(); r35c.addView(toggleKey("Same keyboard height", "h_lock", true)); root.addView(r35c) } catch (_: Throwable) { }   // v0.9.7 (V2): keyboard height stays the same when the language changes
         try {   // v0.5.0: custom character row (extra row above the numbers)
             val r37 = row()
             val cur = prefs.str("xrow_chars", "")
