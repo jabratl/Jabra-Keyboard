@@ -184,6 +184,7 @@ class MgbIme : InputMethodService() {
             if (l != null) (getSystemService(CLIPBOARD_SERVICE) as ClipboardManager).removePrimaryClipChangedListener(l)
         } catch (_: Throwable) { }
         try { fbTone?.release(); fbTone = null } catch (_: Throwable) { }
+        try { keyCfg.release() } catch (_: Throwable) { }   // v0.6.0
         super.onDestroy()
     }
 
@@ -429,7 +430,48 @@ class MgbIme : InputMethodService() {
 
     /** Fix: haptic / sound used to follow the phone's "touch feedback / touch sounds" system switches, so with those OFF nothing happened.
      *  Now: Vibrate uses the Vibrator directly (VIBRATE permission), Sound plays the system click or, if the system click is OFF, a short tone. */
+    private val keyCfg by lazy { KeyCfg(this) }   // v0.6.0
+
+    /** v0.6.0: fast path = cached flags + one Vibrator lookup. Any problem (cache null / throws) = feedbackOld(), the exact v0.5.9 code. */
     private fun feedback(v: View) {
+        val c = try { keyCfg.get() } catch (_: Throwable) { null }
+        if (c == null) { feedbackOld(v); return }
+        try {
+            if (c.haptic) {
+                var done = false
+                try {
+                    val vb = keyCfg.vibrator()
+                    if (vb != null) {
+                        if (android.os.Build.VERSION.SDK_INT >= 26) vb.vibrate(android.os.VibrationEffect.createOneShot(c.hapticMs, android.os.VibrationEffect.DEFAULT_AMPLITUDE))
+                        else @Suppress("DEPRECATION") vb.vibrate(c.hapticMs)
+                        done = true
+                    }
+                } catch (_: Throwable) { }
+                if (!done) {
+                    try {
+                        v.performHapticFeedback(android.view.HapticFeedbackConstants.KEYBOARD_TAP,
+                            android.view.HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING or android.view.HapticFeedbackConstants.FLAG_IGNORE_VIEW_SETTING)
+                    } catch (_: Throwable) { }
+                }
+            }
+            if (c.sound) soundFx()
+        } catch (_: Throwable) { feedbackOld(v) }
+    }
+
+    /** Sound part, same logic as v0.5.9 (only runs when Sound is ON). */
+    private fun soundFx() {
+        try {
+            val am = getSystemService(AUDIO_SERVICE) as android.media.AudioManager
+            val sysOn = try { android.provider.Settings.System.getInt(contentResolver, android.provider.Settings.System.SOUND_EFFECTS_ENABLED, 1) == 1 } catch (_: Throwable) { true }
+            if (sysOn) am.playSoundEffect(android.media.AudioManager.FX_KEYPRESS_STANDARD)
+            else {
+                if (fbTone == null) fbTone = android.media.ToneGenerator(android.media.AudioManager.STREAM_SYSTEM, 60)
+                fbTone?.startTone(android.media.ToneGenerator.TONE_CDMA_PIP, 25)
+            }
+        } catch (_: Throwable) { }
+    }
+
+    private fun feedbackOld(v: View) {   // v0.5.9 body, unchanged
         if (prefs.bool("haptic", true)) {
             var done = false
             val hMs = try { com.mgb.keyboard.typing.TypingLevels.hapticMs(prefs.int("haptic_lv", com.mgb.keyboard.typing.TypingLevels.HAPTIC_DEFAULT)).toLong() } catch (_: Throwable) { 18L }   // v0.5.2: strength (default Medium = 18 ms = old)

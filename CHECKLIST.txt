@@ -264,3 +264,11 @@ Z8) v0.5.8 Old-backup warning
 
 Z9) v0.5.9 Last backup age
  [ ] Data & Backup > Backup now: "Last backup: <stamp>  (today)". Old backups show "(N days ago)". No backup yet = "none yet".
+
+Z10) v0.6.0 Faster key tap
+ [ ] Typing feels the same or snappier (fast typing in Notes / chat).
+ [ ] Haptic: ON vibrates; Off / Light / Medium / Strong (Typing options) change strength at once, without reopening the keyboard.
+ [ ] Haptic OFF = no vibration. Sound ON = click on each key; Sound OFF = silent. Change either from the gear panel, next tap follows.
+ [ ] Key popup ON: bubble above the pressed letter; OFF: none (switch it and tap again).
+ [ ] Long-press "a" -> "@" still works; Long-press characters OFF = no hint typing; Long-press time Fast / Slow still changes the wait.
+

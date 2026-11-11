@@ -55,8 +55,8 @@ object HintKeys {
                     MotionEvent.ACTION_DOWN -> {
                         fired = false
                         h.removeCallbacks(r)
-                        if (prefs.bool("hint_on", true)) {
-                            val ms = TypingLevels.longPressMs(prefs.int("lp_delay", TypingLevels.LP_DEFAULT))
+                        if (KeyCfg.hintOn(prefs)) {   // v0.6.0: cached flags (fallback = pref reads)
+                            val ms = KeyCfg.lpMs(prefs)
                             h.postDelayed(r, (if (ms > 0) ms else ViewConfiguration.getLongPressTimeout()).toLong())
                         }
                         false

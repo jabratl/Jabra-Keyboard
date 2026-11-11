@@ -1,3 +1,10 @@
+v0.6.0 - NEW: PERF-1 faster key tap (cached feedback + flags)
+- WHY: every tap re-looked-up the Vibrator service and re-read 3-6 settings (haptic, haptic strength, sound, popup, long-press). Long-press touch code read 2 more on every key-down. Now they are read once and refreshed only when a setting changes.
+- What you get: same behaviour, slightly less work per tap. Haptic Off / Light / Medium / Strong, Sound, Key popup, Long-press characters and Long-press time still take effect at once (no reopen needed).
+- Code: NEW KeyCfg.kt (immutable Snap rebuilt only after a pref change via SharedPreferences listener; Vibrator looked up once; companion popupOn / hintOn / lpMs fall back to the old direct pref read). Hooks marked "v0.6.0": MgbIme.kt (feedback() = fast path, old body kept as feedbackOld(); soundFx(); keyCfg lazy; release in onDestroy), KeyPopup.kt (1 line), HintKeys.kt (2 lines). No new pref, no permission, no timer / thread.
+BROKE: nothing intended. NOT tested: Kotlin compile (GitHub Actions first), the feel on a phone. TESTED here: no Java file changed; Java tests NOT run (this chat had no javac); bracket balance of the 4 Kotlin files OK.
+Rollback: in MgbIme.kt make feedback() call feedbackOld(v) only (or delete the fast path); KeyPopup / HintKeys lines can stay (they fall back by themselves) or restore the 3 old pref reads.
+
 v0.5.9 - NEW: "Last backup" line shows how old it is
 - WHY: "Last backup: 20261111_1230" is hard to read. Now: "20261111_1230  (today)" / "(yesterday)" / "(5 days ago)".
 - Code: typing/HealthCheck.java ago(days) (pure), tools/HealthTest.java (+1 check: 81), DataPage.kt (1 line, marked "v0.5.9"). No new pref, no permission.

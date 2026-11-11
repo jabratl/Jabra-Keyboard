@@ -24,7 +24,7 @@ object KeyPopup {
     fun touch(v: View, e: MotionEvent, prefs: JabraPrefs) {
         try {
             when (e.actionMasked) {
-                MotionEvent.ACTION_DOWN -> if (prefs.bool("key_popup", false)) show(v as Button, prefs)
+                MotionEvent.ACTION_DOWN -> if (KeyCfg.popupOn(prefs)) show(v as Button, prefs)   // v0.6.0: cached flag (fallback = pref read)
                 MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> dismiss()
             }
         } catch (_: Throwable) { dismiss() }
