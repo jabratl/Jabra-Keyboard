@@ -333,3 +333,8 @@ Z17) v0.7.1 Housekeeping
  [ ] Everything else on the app screen looks and works as before (nothing else changed in this version).
  [ ] (By hand on GitHub) delete HANDOFF.txt and HANDOFF_Jabra-Keyboard_v0.2.4 ... v0.5.9 (28 files); keep only the newest HANDOFF_Jabra-Keyboard_v0.7.1.txt. The next build must still be green.
 
+Z18) v0.8.0 Emoji data engine (E1, nothing visible)
+ [ ] Install / update the app. Keyboard opens, types (English, Avro, Probhat) and the emoji panel (toolbar emoji icon, or long-press ",") looks and works exactly as in v0.7.1: 9 tabs + Recent, tap an emoji = it is typed.
+ [ ] Nothing else changed: no new setting, no new screen, no new permission prompt.
+ [ ] (GitHub) the build of v0.8.0 is GREEN. (Only Java files + docs changed, so a red build would be a surprise: paste the error lines in the next chat.)
+ [ ] (Next chat) send emoji-test.txt so the real data file can be made (v0.8.0.1). Until then the new engine has no data and the app does not use it.

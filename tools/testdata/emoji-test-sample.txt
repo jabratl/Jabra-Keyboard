@@ -1,0 +1,141 @@
+# emoji-test.txt
+# SAMPLE FOR TESTS ONLY - hand made, NOT real Unicode data (Jabra Keyboard tools/testdata)
+# Version: 99.0
+#
+# Status Counts and other comment lines are ignored by the generator
+
+# group: Smileys & Emotion
+
+# subgroup: face-smiling
+1F600                                                 ; fully-qualified    # 😀 E1.0 grinning face
+1F603                                                 ; fully-qualified    # 😃 E0.6 grinning face with big eyes
+263A FE0F                                             ; fully-qualified    # ☺️ E0.6 smiling face
+263A                                                  ; unqualified        # ☺ E0.6 smiling face
+
+# subgroup: face-affection
+1F60D                                                 ; fully-qualified    # 😍 E0.6 smiling face with heart-eyes
+
+# subgroup: heart
+2764 FE0F                                             ; fully-qualified    # ❤️ E0.6 red heart
+2764                                                  ; unqualified        # ❤ E0.6 red heart
+
+# group: People & Body
+
+# subgroup: hand-fingers-open
+1F44B                                                 ; fully-qualified    # 👋 E0.6 waving hand
+1F44B 1F3FB                                           ; fully-qualified    # 👋🏻 E1.0 waving hand: light skin tone
+1F44B 1F3FC                                           ; fully-qualified    # 👋🏼 E1.0 waving hand: medium-light skin tone
+1F44B 1F3FD                                           ; fully-qualified    # 👋🏽 E1.0 waving hand: medium skin tone
+1F44B 1F3FE                                           ; fully-qualified    # 👋🏾 E1.0 waving hand: medium-dark skin tone
+1F44B 1F3FF                                           ; fully-qualified    # 👋🏿 E1.0 waving hand: dark skin tone
+
+# subgroup: hand-single-finger
+261D FE0F                                             ; fully-qualified    # ☝️ E0.6 index pointing up
+261D                                                  ; unqualified        # ☝ E0.6 index pointing up
+261D 1F3FB                                            ; fully-qualified    # ☝🏻 E1.0 index pointing up: light skin tone
+261D 1F3FC                                            ; fully-qualified    # ☝🏼 E1.0 index pointing up: medium-light skin tone
+261D 1F3FD                                            ; fully-qualified    # ☝🏽 E1.0 index pointing up: medium skin tone
+261D 1F3FE                                            ; fully-qualified    # ☝🏾 E1.0 index pointing up: medium-dark skin tone
+261D 1F3FF                                            ; fully-qualified    # ☝🏿 E1.0 index pointing up: dark skin tone
+
+# subgroup: hands
+1F91D                                                 ; fully-qualified    # 🤝 E3.0 handshake
+1F91D 1F3FB                                           ; fully-qualified    # 🤝🏻 E14.0 handshake: light skin tone
+1F91D 1F3FC                                           ; fully-qualified    # 🤝🏼 E14.0 handshake: medium-light skin tone
+1F91D 1F3FD                                           ; fully-qualified    # 🤝🏽 E14.0 handshake: medium skin tone
+1F91D 1F3FE                                           ; fully-qualified    # 🤝🏾 E14.0 handshake: medium-dark skin tone
+1F91D 1F3FF                                           ; fully-qualified    # 🤝🏿 E14.0 handshake: dark skin tone
+1FAF1 1F3FB 200D 1FAF2 1F3FC                          ; fully-qualified    # 🫱🏻‍🫲🏼 E14.0 handshake: light skin tone, medium-light skin tone
+
+# subgroup: person-sport
+1F3C3                                                 ; fully-qualified    # 🏃 E0.6 person running
+1F3C3 1F3FB                                           ; fully-qualified    # 🏃🏻 E1.0 person running: light skin tone
+1F3C3 1F3FC                                           ; fully-qualified    # 🏃🏼 E1.0 person running: medium-light skin tone
+1F3C3 1F3FD                                           ; fully-qualified    # 🏃🏽 E1.0 person running: medium skin tone
+1F3C3 1F3FE                                           ; fully-qualified    # 🏃🏾 E1.0 person running: medium-dark skin tone
+1F3C3 1F3FF                                           ; fully-qualified    # 🏃🏿 E1.0 person running: dark skin tone
+1F3C3 200D 2642 FE0F                                  ; fully-qualified    # 🏃‍♂️ E4.0 man running
+1F3C3 200D 2642                                       ; minimally-qualified# 🏃‍♂ E4.0 man running
+1F3C3 1F3FB 200D 2642 FE0F                            ; fully-qualified    # 🏃🏻‍♂️ E4.0 man running: light skin tone
+1F3C3 1F3FC 200D 2642 FE0F                            ; fully-qualified    # 🏃🏼‍♂️ E4.0 man running: medium-light skin tone
+1F3C3 1F3FD 200D 2642 FE0F                            ; fully-qualified    # 🏃🏽‍♂️ E4.0 man running: medium skin tone
+1F3C3 1F3FE 200D 2642 FE0F                            ; fully-qualified    # 🏃🏾‍♂️ E4.0 man running: medium-dark skin tone
+1F3C3 1F3FF 200D 2642 FE0F                            ; fully-qualified    # 🏃🏿‍♂️ E4.0 man running: dark skin tone
+1F3CB FE0F                                            ; fully-qualified    # 🏋️ E0.7 person lifting weights
+1F3CB                                                 ; unqualified        # 🏋 E0.7 person lifting weights
+1F3CB 1F3FB                                           ; fully-qualified    # 🏋🏻 E4.0 person lifting weights: light skin tone
+1F3CB 1F3FC                                           ; fully-qualified    # 🏋🏼 E4.0 person lifting weights: medium-light skin tone
+1F3CB 1F3FD                                           ; fully-qualified    # 🏋🏽 E4.0 person lifting weights: medium skin tone
+1F3CB 1F3FE                                           ; fully-qualified    # 🏋🏾 E4.0 person lifting weights: medium-dark skin tone
+1F3CB 1F3FF                                           ; fully-qualified    # 🏋🏿 E4.0 person lifting weights: dark skin tone
+
+# subgroup: family
+1F468 200D 1F469 200D 1F467                           ; fully-qualified    # 👨‍👩‍👧 E2.0 family: man, woman, girl
+
+# subgroup: person-symbol
+1F469 200D 2764 FE0F 200D 1F468                       ; fully-qualified    # 👩‍❤️‍👨 E2.0 couple with heart: woman, man
+1F469 1F3FB 200D 2764 FE0F 200D 1F468 1F3FB           ; fully-qualified    # 👩🏻‍❤️‍👨🏻 E13.1 couple with heart: woman, man, light skin tone
+1F469 1F3FC 200D 2764 FE0F 200D 1F468 1F3FC           ; fully-qualified    # 👩🏼‍❤️‍👨🏼 E13.1 couple with heart: woman, man, medium-light skin tone
+1F469 1F3FD 200D 2764 FE0F 200D 1F468 1F3FD           ; fully-qualified    # 👩🏽‍❤️‍👨🏽 E13.1 couple with heart: woman, man, medium skin tone
+1F469 1F3FE 200D 2764 FE0F 200D 1F468 1F3FE           ; fully-qualified    # 👩🏾‍❤️‍👨🏾 E13.1 couple with heart: woman, man, medium-dark skin tone
+1F469 1F3FF 200D 2764 FE0F 200D 1F468 1F3FF           ; fully-qualified    # 👩🏿‍❤️‍👨🏿 E13.1 couple with heart: woman, man, dark skin tone
+1F469 1F3FB 200D 2764 FE0F 200D 1F468 1F3FC           ; fully-qualified    # 👩🏻‍❤️‍👨🏼 E13.1 couple with heart: woman, man, light skin tone, medium-light skin tone
+
+# group: Animals & Nature
+
+# subgroup: animal-mammal
+1F436                                                 ; fully-qualified    # 🐶 E0.6 dog face
+1F415 200D 1F9BA                                      ; fully-qualified    # 🐕‍🦺 E12.0 service dog
+
+# group: Food & Drink
+
+# subgroup: food-fruit
+1F34E                                                 ; fully-qualified    # 🍎 E0.6 red apple
+
+# group: Travel & Places
+
+# subgroup: transport-ground
+1F697                                                 ; fully-qualified    # 🚗 E0.6 automobile
+
+# group: Activities
+
+# subgroup: sport
+26BD                                                  ; fully-qualified    # ⚽ E0.6 soccer ball
+
+# group: Objects
+
+# subgroup: phone
+1F4F1                                                 ; fully-qualified    # 📱 E0.6 mobile phone
+
+# group: Symbols
+
+# subgroup: keycap
+0023 FE0F 20E3                                        ; fully-qualified    # #️⃣ E0.6 keycap: #
+0023 20E3                                             ; unqualified        # #⃣ E0.6 keycap: #
+002A FE0F 20E3                                        ; fully-qualified    # *️⃣ E2.0 keycap: *
+
+# subgroup: alphanum
+2705                                                  ; fully-qualified    # ✅ E0.6 check mark button
+
+# group: Flags
+
+# subgroup: flag
+1F3C1                                                 ; fully-qualified    # 🏁 E0.6 chequered flag
+1F1E7 1F1E9                                           ; fully-qualified    # 🇧🇩 E2.0 flag: Bangladesh
+
+# subgroup: subdivision-flag
+1F3F4 E0067 E0062 E0065 E006E E0067 E007F             ; fully-qualified    # 🏴󠁧󠁢󠁥󠁮󠁧󠁿 E5.0 flag: England
+
+# group: Component
+
+# subgroup: skin-tone
+1F3FB                                                 ; component          # 🏻 E1.0 light skin tone
+1F3FC                                                 ; component          # 🏼 E1.0 medium-light skin tone
+1F3FD                                                 ; component          # 🏽 E1.0 medium skin tone
+1F3FE                                                 ; component          # 🏾 E1.0 medium-dark skin tone
+1F3FF                                                 ; component          # 🏿 E1.0 dark skin tone
+
+# subgroup: hair-style
+1F9B0                                                 ; component          # 🦰 E11.0 red hair
+
+#EOF
