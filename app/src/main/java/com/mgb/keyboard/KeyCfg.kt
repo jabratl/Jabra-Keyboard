@@ -20,7 +20,8 @@ class KeyCfg(private val ctx: Context) {
     class Snap(
         val haptic: Boolean, val hapticMs: Long, val sound: Boolean,
         val popup: Boolean, val hintOn: Boolean, val lpMs: Int,
-        val fbDown: Boolean = false, val hapticNative: Boolean = false   // v0.9.1 (R2)
+        val fbDown: Boolean = false, val hapticNative: Boolean = false,   // v0.9.1 (R2)
+        val popFast: Boolean = true   // v0.9.9 (V4)
     )
 
     @Volatile private var dirty = true
@@ -52,7 +53,8 @@ class KeyCfg(private val ctx: Context) {
                 hintOn = sp.getBoolean("hint_on", true),
                 lpMs = try { TypingLevels.longPressMs(sp.getInt("lp_delay", TypingLevels.LP_DEFAULT)) } catch (_: Throwable) { 0 },
                 fbDown = sp.getBoolean("fb_down", false),   // v0.9.1
-                hapticNative = sp.getBoolean("haptic_native", false)   // v0.9.1
+                hapticNative = sp.getBoolean("haptic_native", false),   // v0.9.1
+                popFast = sp.getBoolean("pop_fast", true)   // v0.9.9
             )
             snap = n
             n
@@ -111,6 +113,9 @@ class KeyCfg(private val ctx: Context) {
 
         /** key_popup for KeyPopup.touch (fallback = direct pref read). */
         fun popupOn(p: JabraPrefs): Boolean = try { current?.get()?.popup ?: p.bool("key_popup", false) } catch (_: Throwable) { p.bool("key_popup", false) }
+
+        /** v0.9.9 (V4): pop_fast (default ON; fallback = direct pref read). */
+        fun popFast(p: JabraPrefs): Boolean = try { current?.get()?.popFast ?: p.bool("pop_fast", true) } catch (_: Throwable) { try { p.bool("pop_fast", true) } catch (_: Throwable) { false } }
 
         /** hint_on for HintKeys (fallback = direct pref read). */
         fun hintOn(p: JabraPrefs): Boolean = try { current?.get()?.hintOn ?: p.bool("hint_on", true) } catch (_: Throwable) { p.bool("hint_on", true) }

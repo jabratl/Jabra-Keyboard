@@ -91,6 +91,7 @@ class MgbIme : InputMethodService() {
             val c = FrameLayout(this)
             c.addView(buildKeyboard())
             container = c
+            try { KeyPopup.attachHost(c) } catch (_: Throwable) { }   // v0.9.9 (V4): overlay bubble view on top of the keyboard
             c
         } catch (e: Throwable) {
             LinearLayout(this) // empty view instead of crashing
@@ -645,6 +646,7 @@ class MgbIme : InputMethodService() {
         } catch (_: Throwable) {
             c.addView(LinearLayout(this))
         }
+        try { KeyPopup.attachHost(c) } catch (_: Throwable) { }   // v0.9.9 (V4): removeAllViews() removed the overlay, put it back on top
     }
 
     private fun showPanel(name: String) {

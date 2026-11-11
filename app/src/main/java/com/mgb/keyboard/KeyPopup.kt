@@ -7,7 +7,9 @@ import android.os.Handler
 import android.os.Looper
 import android.view.MotionEvent
 import android.view.View
+import android.view.ViewGroup
 import android.widget.Button
+import android.widget.FrameLayout
 import android.widget.PopupWindow
 import android.widget.TextView
 
@@ -30,10 +32,17 @@ object KeyPopup {
     private val idle = Runnable { dropCached() }
     private var owner: View? = null              // v0.9.6: the key (or anchor) whose bubble is on screen
     private var refLook = false                  // v0.9.6: cached pop_ref of the bubble that was built last
+    private var host: FrameLayout? = null        // v0.9.9 (V4): the keyboard container that holds the overlay bubble
+    private var ov: BubbleOverlay? = null        // v0.9.9: overlay bubble view (inside the container, no window call)
+    private var ovStyled = false                 // v0.9.9: look set since the last keyboard rebuild
+    private var ovRef = true                     // v0.9.9: pop_ref of the overlay look
+    private val rects = com.mgb.keyboard.typing.BubblePlan.RectCache<View>()   // v0.9.9: container-relative key rects (cleared on any layout change)
+    private var layoutHost: FrameLayout? = null  // v0.9.9: container that already has our layout listener
 
     /** v0.9.0: hide now (cheap). The reusable window stays for the next press and is dropped by the idle timer. */
     fun dismiss() {
         owner = null   // v0.9.6
+        try { ov?.hideNow() } catch (_: Throwable) { }   // v0.9.9 (V4)
         try { pw?.dismiss() } catch (_: Throwable) { }; pw = null
         try {
             ct?.visibility = View.INVISIBLE
@@ -42,7 +51,7 @@ object KeyPopup {
     }
 
     /** v0.9.0: forget the cached bubble (called when the keyboard is rebuilt so colours / look refresh on the next press). */
-    fun invalidate() { dropCached() }
+    fun invalidate() { dropCached(); ovStyled = false; try { rects.clear() } catch (_: Throwable) { } }   // v0.9.9: overlay look + rect cache refresh too
 
     private fun dropCached() {
         try { hnd.removeCallbacks(idle) } catch (_: Throwable) { }
@@ -99,6 +108,8 @@ object KeyPopup {
         val label = text ?: ((b as? Button)?.text?.toString() ?: "")
         if (text != null && owner === b && cpw?.isShowing == true && ct?.visibility == View.VISIBLE && ct?.text?.toString() == label) return   // v0.9.8 (V3): same text, same anchor = nothing to redraw (no flicker, no window call)
         if (label.isEmpty() || b.width <= 0 || b.height <= 0) { dismiss(); return }   // v0.9.6: key not laid out yet = no bubble (never a bubble at a stale / zero position)
+        if (text == null && overlayShow(b, prefs, label)) return   // v0.9.9 (V4): rows with room above = overlay view (no PopupWindow.update); false = the v0.9.6 window path below
+        try { ov?.hideNow() } catch (_: Throwable) { }   // v0.9.9: window path takes over: the overlay bubble must not stay
         val d = b.resources.displayMetrics.density
         var t = ct
         if (t == null || cpw == null) {   // first press (or after idle / rebuild): build + style ONCE
@@ -156,6 +167,98 @@ object KeyPopup {
             cpw = np
         }
         owner = b   // v0.9.6
+    }
+
+    /** v0.9.9 (V4): call after the keyboard / container is set up (onCreateInputView) and after every showLetters(): puts the overlay on top of the container. */
+    fun attachHost(c: FrameLayout) {
+        try {
+            host = c
+            rects.clear()
+            if (layoutHost !== c) {
+                layoutHost = c
+                c.addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ -> try { rects.clear() } catch (_: Throwable) { } }   // rotate / resize / one-hand / extras row = rects are recalculated
+            }
+            var o = ov
+            if (o == null) { o = BubbleOverlay(c.context); ov = o; ovStyled = false }
+            o.hideNow()
+            if (o.parent !== c) {
+                (o.parent as? ViewGroup)?.removeView(o)
+                c.addView(o, FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT))
+            }
+        } catch (_: Throwable) { host = null }
+    }
+
+    /** v0.9.9: key position inside the container (cached; cache cleared on layout change). null = cannot tell = window path. */
+    private fun relRect(b: View, c: View): IntArray? {
+        val cached = rects.get(b)
+        if (com.mgb.keyboard.typing.BubblePlan.rectValid(cached, b.width, b.height)) return cached
+        var x = 0
+        var y = 0
+        var v: View = b
+        var guard = 0
+        while (v !== c) {
+            val p = v.parent as? View ?: return null
+            x += v.left + v.translationX.toInt() - p.scrollX
+            y += v.top + v.translationY.toInt() - p.scrollY
+            v = p
+            if (++guard > 24) return null
+        }
+        rects.put(b, x, y, b.width, b.height)
+        return rects.get(b)
+    }
+
+    /** v0.9.9: true = the bubble was drawn by the overlay. Any problem / no room above the key = false (window path as in v0.9.6). */
+    private fun overlayShow(b: View, prefs: JabraPrefs, label: String): Boolean {
+        try {
+            if (!KeyCfg.popFast(prefs)) return false
+            val c = host ?: return false
+            val o = ov ?: return false
+            if (o.parent !== c || c.width <= 0) return false
+            val d = b.resources.displayMetrics.density
+            if (!ovStyled) { styleOverlay(o, prefs, d); ovStyled = true }
+            val w: Int
+            val h: Int
+            val sp: Float
+            if (ovRef) {
+                w = com.mgb.keyboard.typing.PopupStyle.width(b.width, d)
+                h = com.mgb.keyboard.typing.PopupStyle.height(b.height, d)
+                sp = com.mgb.keyboard.typing.PopupStyle.textSp(b.height, d)
+            } else {
+                w = (b.width + 12 * d).toInt().coerceAtLeast((44 * d).toInt())
+                h = (b.height * 1.25f).toInt().coerceAtLeast((52 * d).toInt())
+                sp = 26f
+            }
+            val r = relRect(b, c) ?: return false
+            val gap = (4 * d).toInt()
+            if (com.mgb.keyboard.typing.BubblePlan.mode(true, true, r[1], h, gap) != com.mgb.keyboard.typing.BubblePlan.OVERLAY) return false
+            val x = com.mgb.keyboard.typing.BubblePlan.x(r[0], b.width, w, c.width)
+            val y = com.mgb.keyboard.typing.BubblePlan.y(r[1], h, gap)
+            try { if (ct?.visibility == View.VISIBLE) { ct?.visibility = View.INVISIBLE; if (cpw != null) { hnd.removeCallbacks(idle); hnd.postDelayed(idle, IDLE_MS) } } } catch (_: Throwable) { }   // a window bubble of the last key goes away
+            o.show(label, x, y, w, h, android.util.TypedValue.applyDimension(android.util.TypedValue.COMPLEX_UNIT_SP, sp, b.resources.displayMetrics))
+            owner = b
+            return true
+        } catch (_: Throwable) {
+            try { ov?.hideNow() } catch (_: Throwable) { }
+            return false
+        }
+    }
+
+    /** v0.9.9: same colours / radius as the window bubble of showFast (pop_ref ON = reference look, OFF = v0.9.5 look). */
+    private fun styleOverlay(o: BubbleOverlay, prefs: JabraPrefs, d: Float) {
+        val ref = try { prefs.bool("pop_ref", true) } catch (_: Throwable) { true }
+        ovRef = ref
+        val sw = (1 * d).toInt().coerceAtLeast(1).toFloat()
+        if (ref) {
+            val th = try { JabraThemes.cur(prefs) } catch (_: Throwable) { null }
+            val key: Int? = th?.key
+            val fill = com.mgb.keyboard.typing.PopupStyle.fill(key)
+            o.setLook(fill, com.mgb.keyboard.typing.PopupStyle.stroke(key, fill), sw, com.mgb.keyboard.typing.PopupStyle.text(th?.text, fill), com.mgb.keyboard.typing.PopupStyle.radiusPx(d))
+        } else {
+            val lookOn = try { JabraLook.on(prefs) } catch (_: Throwable) { false }
+            val tc = if (lookOn) (try { JabraThemes.iconColor(prefs) } catch (_: Throwable) { Color.parseColor("#222222") }) else Color.parseColor("#222222")
+            val fc = if (lookOn) (try { JabraLook.fill(prefs) } catch (_: Throwable) { Color.parseColor("#FFFFFF") }) else Color.parseColor("#FFFFFF")
+            o.setLook(fc, Color.parseColor("#888888"), sw, tc, (if (lookOn) 16 else 10) * d)
+        }
     }
 
     /** v0.8.9 body, unchanged (fallback). */

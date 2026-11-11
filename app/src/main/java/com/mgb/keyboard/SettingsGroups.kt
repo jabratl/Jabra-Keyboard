@@ -306,6 +306,7 @@ object SettingsGroups {
             toggle(g, "Sound", "sound", false)
             toggle(g, "Key popup", "key_popup", false)
             toggle(g, "Reference-style bubble", "pop_ref", true)   // v0.9.6 (V1): bigger rounded bubble in the theme colour; works only while Key popup is ON
+            toggle(g, "Fast bubble", "pop_fast", true)   // v0.9.9 (V4): bubble drawn inside the keyboard (no window call) on rows with room above; works only while Key popup is ON
             toggle(g, "Same keyboard height", "h_lock", true)   // v0.9.7 (V2): no height jump when the language changes (keeps the Probhat row space)
             toggle(g, "Globe key", "key_globe", false)
             toggle(g, "Voice key", "key_voice", false)

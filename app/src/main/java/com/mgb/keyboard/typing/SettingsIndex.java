@@ -126,6 +126,7 @@ public final class SettingsIndex {
             case "sound": return "Click sound on every key press.";
             case "key_popup": return "Shows a bubble with the letter above the pressed key.";
             case "pop_ref": return "Bigger rounded key bubble in your theme colour (needs Key popup ON). OFF = old look.";   // v0.9.6
+            case "pop_fast": return "Draws the key bubble inside the keyboard: smoother (needs Key popup ON). OFF = old.";   // v0.9.9
             case "sp_tick": return "Soft tick for every language step while you swipe on space. Needs Space swipe ON.";   // v0.9.8
             case "sp_step": return "How far to swipe on space for one language step: Small, Normal or Large.";   // v0.9.8
             case "h_lock": return "Keyboard keeps the same height in English, Avro and Probhat (no jump). OFF = old.";   // v0.9.7

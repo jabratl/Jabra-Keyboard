@@ -504,3 +504,13 @@ Z37) v0.9.8 Language-swipe feel (V3)
  [ ] "Swipe distance": Small = shorter swipe per step, Large = longer. Works on the next touch without ABC.
  [ ] "Tick on swipe" OFF: no tick. If you feel nothing with ON, check the phone setting Touch vibration / haptic feedback and tell me.
  [ ] Language key tap and long-press (Avro <-> Probhat) still work and remember after restart. Classic + one dark theme; portrait + landscape.
+
+Z38) v0.9.9 Fast bubble (V4)
+ [ ] Gear > More settings > Typing (also app screen > Keys & gestures): turn Key popup ON. New row "Fast bubble" (default ON).
+ [ ] Type fast on all letter rows: bubble sits above the pressed key, hides at once on release, no bubble stuck on screen, no bubble on a wrong row.
+ [ ] Top letter row: the bubble still shows (window bubble if there is no room above). q and p stay fully on screen.
+ [ ] Rotate the phone, then type: bubbles are still above the right keys. Same after One-hand mode ON / OFF.
+ [ ] Open a panel (emoji / clipboard), go back to letters (ABC): bubbles still work on the first press.
+ [ ] Change theme (Classic + one dark theme): bubble colours follow the theme. "Reference-style bubble" OFF = old white bubble, still fine.
+ [ ] "Fast bubble" OFF: bubbles work as in v0.9.8. Swipe on space (language bubble) still shows the language name.
+ [ ] Tell me: does the bubble feel smoother / quicker than v0.9.8? (no number yet; the speed meter comes in V5)
