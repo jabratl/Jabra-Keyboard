@@ -719,6 +719,14 @@ class MgbIme : InputMethodService() {
         try { applyLang(com.mgb.keyboard.typing.LangSwipe.step(bangla, probhat, prefs.bool("lang_avro_on", true), prefs.bool("lang_probhat_on", true), n)) } catch (_: Throwable) { }
     }
 
+    /** v0.9.2 (R3): bubble above the space key with the ACTIVE language while swiping (setting sp_preview, default ON; only with space_lang ON). */
+    private fun langBubble(v: View) {
+        try {
+            if (com.mgb.keyboard.typing.LangSwipe.previewOn(prefs.bool("space_lang", false), prefs.bool("sp_preview", true)))
+                KeyPopup.showText(v, com.mgb.keyboard.typing.LangSwipe.label(bangla, probhat), prefs)
+        } catch (_: Throwable) { }
+    }
+
     private fun toggleLang() {
         commitWord()
         try { applyLang(com.mgb.keyboard.typing.LangOrder.tap(bangla, probhat, prefs.bool("lang_avro_on", true), prefs.bool("lang_probhat_on", true), prefs.int("lang_tap", 0), prefs.int("lang_fav", 0))); return } catch (_: Throwable) { }   // v0.5.0 (defaults = old behaviour); any problem = old code below
@@ -830,9 +838,10 @@ class MgbIme : InputMethodService() {
         spaceBtn = if (spaceLangOn) sb else null
         if (spaceLangOn) { try { sb.text = com.mgb.keyboard.typing.LangSwipe.spaceLabel(bangla, probhat) } catch (_: Throwable) { } }
         // v0.0.5: drag on space = move cursor. If attaching fails, the normal click above still types a space.
-        try {   // v0.1.1: cursor speed (setting cursor_speed); v0.8.9: space_lang ON = hold 0.2 s + swipe = language
+        try {   // v0.1.1: cursor speed (setting cursor_speed); v0.8.9: space_lang ON = swipe at once = language (v0.9.3: no hold)
             val sdh = SpaceDragHelper(resources.displayMetrics.density, { n -> moveCursor(n) }, { spaceAction() }, { v -> feedback(v) }, com.mgb.keyboard.typing.TypingLevels.stepDp(prefs.int("cursor_speed", com.mgb.keyboard.typing.TypingLevels.CS_DEFAULT)))
-            if (spaceLangOn) sdh.attachLang(sb, { n -> swipeLang(n) }, { v -> try { v.performHapticFeedback(android.view.HapticFeedbackConstants.LONG_PRESS) } catch (_: Throwable) { } }) else sdh.attach(sb)
+            if (spaceLangOn) sdh.attachLang(sb, { n -> swipeLang(n) }, { v -> try { v.performHapticFeedback(android.view.HapticFeedbackConstants.LONG_PRESS) } catch (_: Throwable) { } },
+                { v -> langBubble(v) }, { try { KeyPopup.hide() } catch (_: Throwable) { } }) else sdh.attach(sb)   // v0.9.2 (R3): live language bubble
         } catch (_: Throwable) { }
         r4.addView(sb)
         val db = key(if (bangla) "।" else "?", 1f) { commitWord(); val d = dandaBtn?.text?.toString() ?: "."; typeText(if (latinOnly && d == "।") "?" else d) }

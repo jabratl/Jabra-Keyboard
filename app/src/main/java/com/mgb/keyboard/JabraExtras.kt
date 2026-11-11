@@ -109,13 +109,13 @@ class SpaceDragHelper(
     }
 
     /**
-     * v0.8.9: like attach(), plus: hold the key 0.2 s (finger still), then swipe = [onLang] steps (+ = next language) instead of cursor steps.
+     * v0.8.9: like attach(), plus: v0.9.3: swipe at once (no hold) = [onLang] steps (+ = next language) instead of cursor steps.
      * A quick drag is still the cursor. Armed but not swiped = a normal space. Logic = extras/SpaceGesture.java (tested). Used only when setting space_lang is ON.
      */
-    fun attachLang(v: View, onLang: (Int) -> Unit, onArm: (View) -> Unit) {
+    fun attachLang(v: View, onLang: (Int) -> Unit, onArm: (View) -> Unit, onShow: (View) -> Unit = { }, onHide: () -> Unit = { }) {   // v0.9.2: onShow = live language bubble, onHide = remove it
         val g = SpaceGesture(cursorPx, LangSwipe.STEP_DP * dens)
         val h = android.os.Handler(android.os.Looper.getMainLooper())
-        val arm = Runnable { try { if (g.arm()) { v.isPressed = true; onArm(v) } } catch (_: Throwable) { } }
+        val arm = Runnable { try { if (g.arm()) { v.isPressed = true; onArm(v); try { onShow(v) } catch (_: Throwable) { } } } catch (_: Throwable) { } }   // v0.9.2
         v.setOnTouchListener { view, ev ->
             try {
                 when (ev.actionMasked) {
@@ -123,22 +123,24 @@ class SpaceDragHelper(
                         view.isPressed = true
                         g.down(ev.x)
                         h.removeCallbacks(arm)
-                        h.postDelayed(arm, LangSwipe.ARM_MS)
+                        if (LangSwipe.ARM_MS <= 0L) g.arm() else h.postDelayed(arm, LangSwipe.ARM_MS)   // v0.9.3: armed at once = no 0.2 s hold (bubble shows from the first language step)
                         true
                     }
                     MotionEvent.ACTION_MOVE -> {
                         val n = g.move(ev.x)
-                        if (n != 0) { if (g.kind() == SpaceGesture.LANG) onLang(n) else onStep(n) }
+                        if (n != 0) { if (g.kind() == SpaceGesture.LANG) { onLang(n); try { onShow(view) } catch (_: Throwable) { } } else onStep(n) }   // v0.9.2: bubble follows each language step
                         true
                     }
                     MotionEvent.ACTION_UP -> {
                         h.removeCallbacks(arm)
+                        try { onHide() } catch (_: Throwable) { }   // v0.9.2
                         view.isPressed = false
                         if (g.up()) { onFeedback(view); onTap() }
                         true
                     }
                     MotionEvent.ACTION_CANCEL -> {
                         h.removeCallbacks(arm)
+                        try { onHide() } catch (_: Throwable) { }   // v0.9.2
                         view.isPressed = false
                         true
                     }
@@ -150,7 +152,7 @@ class SpaceDragHelper(
         }
         v.addOnAttachStateChangeListener(object : View.OnAttachStateChangeListener {
             override fun onViewAttachedToWindow(x: View) { }
-            override fun onViewDetachedFromWindow(x: View) { h.removeCallbacks(arm) }
+            override fun onViewDetachedFromWindow(x: View) { h.removeCallbacks(arm); try { onHide() } catch (_: Throwable) { } }   // v0.9.2
         })
     }
 }
