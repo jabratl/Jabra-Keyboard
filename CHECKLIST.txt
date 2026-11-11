@@ -451,3 +451,8 @@ Z31) v0.9.2 Live language bubble on space swipe
  [ ] Turn Language bubble on swipe OFF: swipe still switches the language, no bubble at all. Space swipe OFF: space behaves as before, no bubble.
  [ ] Check the bubble in Classic, in a dark theme and with Jabra look: text readable, not cut off at 360 dp width, not stuck after rotating the phone or changing the theme.
  [ ] Popup on keypress ON: letter bubbles still work as before; after a swipe the next letter bubble shows the letter (not the language name).
+
+Z32) v0.9.3 Space swipe without hold
+ [ ] Space swipe = language ON: swipe left / right on space at once (no waiting): language changes, bubble shows the new language, lift = bubble gone.
+ [ ] Type a normal sentence with space taps: no accidental language change, every tap types a space.
+ [ ] Space swipe OFF: dragging on space moves the cursor again.

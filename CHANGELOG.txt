@@ -1,3 +1,12 @@
+v0.9.3 - FIX: space swipe = language needs no 0.2 s hold any more (user request, after R3)
+- WHY: the 0.2 s hold before swiping felt slow. Now you just swipe on the space key.
+- What you get: with "Space swipe = language" ON, a left / right swipe on space switches the language at once (step = 44 dp of finger travel). The language bubble (R3) appears from the first step and goes away when you lift. A plain tap still types a space. NOTE: cursor drag on the space key is off while this setting is ON (the cursor pad / toolbar still moves the cursor); setting OFF = cursor drag as before.
+- Code: typing/LangSwipe.java (ARM_MS 200 -> 0), JabraExtras.kt (attachLang arms at finger-down when ARM_MS is 0; arm timer kept for a non-zero value), texts in SettingsGroups.kt / typing/SettingsIndex.java / MgbIme.kt comment, tools/LangSwipeTest.java (1 check). Marked v0.9.3.
+BROKE: nothing intended. Space swipe OFF = unchanged v0.9.2 behaviour (cursor drag).
+NOT tested: Kotlin compile; phone: swipe at once, no accidental language change on a normal space tap, tap with a tiny finger slide, bubble from the first step.
+TESTED here: all 39 Java test programs green.
+Rollback: set LangSwipe.ARM_MS back to 200L (and restore the JabraExtras.kt line), or turn Space swipe OFF.
+
 v0.9.2 - NEW: live language bubble while swiping on the space key (plan step R3)
 - WHY: video audit finding M4: swiping on space switched the language with no visual cue, so you could not see which language the swipe had reached. The reference keyboard shows the language name above the space key while you swipe.
 - What you get: 1 new setting "Language bubble on swipe" (sp_preview, default ON, works only while "Space swipe = language" is ON; Space swipe itself is still default OFF, so nothing changes until you turn it on). Hold the space key 0.2 s: a bubble above the key shows the active language ("English" / "Avro" / "Probhat"). Each swipe step changes the bubble text to the language just reached. The bubble goes away when you lift the finger. A plain tap still types a space, a quick drag still moves the cursor, a hold without swiping still types a space.

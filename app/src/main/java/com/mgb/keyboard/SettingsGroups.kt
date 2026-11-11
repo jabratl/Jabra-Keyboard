@@ -259,7 +259,7 @@ object SettingsGroups {
             cycle(g, "Bangla first", "lang_fav", { Array(3) { i -> com.mgb.keyboard.typing.LangOrder.FAV_NAMES[i] } }, { prefs.int("lang_fav", 0).coerceIn(0, 2) }, { prefs.setInt("lang_fav", it) })   // v0.5.0
             toggle(g, "Avro available", "lang_avro_on", true)   // v0.5.0
             toggle(g, "Probhat available", "lang_probhat_on", true)   // v0.5.0
-            toggle(g, "Space swipe = language (hold 0.2 s)", "space_lang", false)   // v0.8.9
+            toggle(g, "Space swipe = language", "space_lang", false)   // v0.8.9
             toggle(g, "Language bubble on swipe", "sp_preview", true)   // v0.9.2 (R3): works only while Space swipe is ON
             toggle(g, "Show language key (EN)", "key_lang", true)   // v0.8.9: hidden only when Space swipe is ON
             toggle(g, "Number row", "numrow", true)

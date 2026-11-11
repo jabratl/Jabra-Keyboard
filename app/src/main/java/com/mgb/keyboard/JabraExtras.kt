@@ -109,7 +109,7 @@ class SpaceDragHelper(
     }
 
     /**
-     * v0.8.9: like attach(), plus: hold the key 0.2 s (finger still), then swipe = [onLang] steps (+ = next language) instead of cursor steps.
+     * v0.8.9: like attach(), plus: v0.9.3: swipe at once (no hold) = [onLang] steps (+ = next language) instead of cursor steps.
      * A quick drag is still the cursor. Armed but not swiped = a normal space. Logic = extras/SpaceGesture.java (tested). Used only when setting space_lang is ON.
      */
     fun attachLang(v: View, onLang: (Int) -> Unit, onArm: (View) -> Unit, onShow: (View) -> Unit = { }, onHide: () -> Unit = { }) {   // v0.9.2: onShow = live language bubble, onHide = remove it
@@ -123,7 +123,7 @@ class SpaceDragHelper(
                         view.isPressed = true
                         g.down(ev.x)
                         h.removeCallbacks(arm)
-                        h.postDelayed(arm, LangSwipe.ARM_MS)
+                        if (LangSwipe.ARM_MS <= 0L) g.arm() else h.postDelayed(arm, LangSwipe.ARM_MS)   // v0.9.3: armed at once = no 0.2 s hold (bubble shows from the first language step)
                         true
                     }
                     MotionEvent.ACTION_MOVE -> {

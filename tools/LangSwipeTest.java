@@ -8,7 +8,7 @@ public class LangSwipeTest {
     }
     static String s(int[] t) { return t[0] + "," + t[1]; }
     public static void main(String[] a) {
-        eq("arm 200", LangSwipe.ARM_MS, 200L);
+        eq("arm 0 = no hold (v0.9.3)", LangSwipe.ARM_MS, 0L);
         eq("step dp > cursor 16", LangSwipe.STEP_DP > 16f, true);
         // cycle sizes
         eq("cycle all", LangSwipe.cycle(false, true, true).length, 3);

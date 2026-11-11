@@ -2,14 +2,14 @@ package com.mgb.keyboard.typing;
 
 /**
  * v0.8.9 space-key language swipe (pure Java, no Android, tested by tools/LangSwipeTest.java).
- * Hold the space key ARM_MS, then swipe left / right = previous / next language among the ones that are switched on.
+ * Swipe left / right on the space key (v0.9.3: no hold needed; ARM_MS = 0) = previous / next language among the ones that are switched on.
  * Order: EN, Avro, Probhat (a layout switched off in "Languages & layouts" is skipped). The list wraps round.
  * State = (bangla, probhat) like LangOrder: EN = bangla false (probhat = remembered last Bangla layout).
  */
 public final class LangSwipe {
     private LangSwipe() { }
 
-    public static final long ARM_MS = 200L;     // user request: press 0.2 s, then swipe
+    public static final long ARM_MS = 0L;       // v0.9.3: user request: NO hold, a swipe on space switches language at once (was 200 ms in v0.8.9 - v0.9.2)
     public static final float STEP_DP = 44f;    // finger travel for one language step (a cursor step is 16 dp)
 
     /** The languages in swipe order: {bangla, probhat} each. EN keeps the remembered probhat flag. */
