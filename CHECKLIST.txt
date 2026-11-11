@@ -338,3 +338,8 @@ Z18) v0.8.0 Emoji data engine (E1, nothing visible)
  [ ] Nothing else changed: no new setting, no new screen, no new permission prompt.
  [ ] (GitHub) the build of v0.8.0 is GREEN. (Only Java files + docs changed, so a red build would be a surprise: paste the error lines in the next chat.)
  [ ] (Next chat) send emoji-test.txt so the real data file can be made (v0.8.0.1). Until then the new engine has no data and the app does not use it.
+
+Z19) v0.8.0.1 Emoji data file (E1 data drop, nothing visible)
+ [ ] Update the app. Keyboard types as before; the emoji panel (toolbar emoji icon, or long-press ",") is still the OLD one: 9 tabs + Recent, tap = types the emoji.
+ [ ] Nothing else changed: no new setting, no new screen, no new permission prompt. The app is about 55 KB bigger.
+ [ ] (GitHub) the build of v0.8.0.1 is GREEN (the new file is in app/src/main/assets/emoji/).

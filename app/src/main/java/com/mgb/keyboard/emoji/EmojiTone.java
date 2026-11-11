@@ -37,12 +37,18 @@ public final class EmojiTone {
             int cp = base.codePointAt(i);
             i += Character.charCount(cp);
             sb.appendCodePoint(cp);
-            if (Arrays.binarySearch(mods, cp) >= 0) {
+            if (Arrays.binarySearch(mods, cp) >= 0 && !zwjBothSides(base, i - Character.charCount(cp), i)) {   // v0.8.0.1
                 if (i < n && base.charAt(i) == '️') i++;
                 sb.appendCodePoint(FIRST + tone);
                 changed = true;
             }
         }
         return changed ? sb.toString() : base;
+    }
+
+    /** v0.8.0.1: true when the code point at [start, end) sits BETWEEN two ZWJ (U+200D), like the handshake in "people holding hands". Unicode gives it no tone. */
+    private static boolean zwjBothSides(String s, int start, int end) {
+        if (start <= 0 || end >= s.length()) return false;
+        return s.charAt(start - 1) == '\u200D' && s.charAt(end) == '\u200D';
     }
 }

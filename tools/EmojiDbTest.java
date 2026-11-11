@@ -106,6 +106,11 @@ public class EmojiDbTest {
         check(EmojiTone.swatch(0).equals(u(0x1F3FB)) && EmojiTone.swatch(4).equals(u(0x1F3FF)) && EmojiTone.swatch(5).equals("") && EmojiTone.swatch(-1).equals(""), "swatch");
         check(EmojiTone.apply(null, 0, new int[] { 1 }) == null && EmojiTone.apply("x", 0, null).equals("x") && EmojiTone.apply("x", 0, new int[0]).equals("x"), "apply null-safe");
 
+        // v0.8.0.1: people holding hands (handshake between two ZWJ gets NO tone, both people do)
+        int[] m3 = { 0x1F91D, 0x1F9D1 };
+        check(EmojiTone.apply(u(0x1F9D1, 0x200D, 0x1F91D, 0x200D, 0x1F9D1), 2, m3).equals(u(0x1F9D1, 0x1F3FD, 0x200D, 0x1F91D, 0x200D, 0x1F9D1, 0x1F3FD)), "people holding hands: tone on both people, not on the handshake");
+        check(EmojiTone.apply(u(0x1F91D), 2, m3).equals(u(0x1F91D, 0x1F3FD)), "lone handshake still gets the tone");
+        check(EmojiTone.apply(u(0x1F9D1, 0x200D, 0x1F91D), 0, m3).equals(u(0x1F9D1, 0x1F3FB, 0x200D, 0x1F91D, 0x1F3FB)), "handshake at the END of a zwj sequence still gets the tone");
         // every uniform tone variant of the sample is reproduced (the build already warns otherwise; check by hand too)
         int uniformSeen = 0;
         for (String line : src.split("\n")) {
