@@ -318,3 +318,12 @@ Z15) v0.6.6 Vault follows the theme
  [ ] Look = Jabra and Borderless: Vault buttons follow (rounded / flat). At 360 px the chips row scrolls and nothing is cut off.
  [ ] Clipboard cards (Cards view) in Ocean: the small count line under each clip is readable.
 
+Z16) v0.6.7 Text Tools + Profiles follow the theme
+ [ ] Classic theme + Classic look: Text Tools (toolbar "tt" icon) and Profiles look the same as in v0.6.6 (grey bg, system buttons, white result box).
+ [ ] Dark theme: Text Tools. Background dark, buttons dark with light text, info line readable, result box dark (key colour) with light text. Try all pages (tabs) and Replace / Copy / Insert.
+ [ ] Ocean and Purple Haze (gradient): Text Tools and Profiles readable.
+ [ ] Profiles in Dark: buttons, the note line and the starter profiles ("(ready)") readable; Save current, apply a profile, Undo apply, delete (asks twice) still work.
+ [ ] Profiles error line (only if a saved-profiles problem is shown): readable in Classic (dark red) and in Dark (light red).
+ [ ] Toolbar editor (gear > Toolbar) and Quick toolbar editor look the same as before (they were already themed).
+ [ ] Look = Jabra and Borderless: Text Tools / Profiles buttons follow (rounded / flat). At 360 px the tab rows still fit.
+

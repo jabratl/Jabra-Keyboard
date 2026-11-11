@@ -100,7 +100,18 @@ class ProfilePanel(private val ctx: Context, private val host: JabraHost, privat
     private fun dp(v: Int): Int = (v * ctx.resources.displayMetrics.density).toInt()
     private fun refresh() { host.showPanel("profiles") }
 
+    private val pf: JabraPrefs by lazy { JabraPrefs(ctx) }   // v0.6.7
+
+    // v0.6.7 theme: buttons = UiKit.btn (12sp, follows theme / Jabra look / Borderless), old body kept as btnOld() = automatic fallback
     private fun btn(label: String, weight: Float, hDp: Int, onClick: (Button) -> Unit): Button {
+        try { return UiKit.btn(ctx, pf, label, weight, hDp, 12f, { v -> host.feedback(v) }, onClick) } catch (_: Throwable) { }
+        return btnOld(label, weight, hDp, onClick)
+    }
+
+    private fun paintBg(v: View) { try { JabraThemes.paint(pf, v) } catch (_: Throwable) { v.setBackgroundColor(Color.parseColor("#DDDDDD")) } }   // v0.6.7
+    private fun dim(): Int = try { JabraTokens.dimText(pf) } catch (_: Throwable) { Color.DKGRAY }   // v0.6.7
+
+    private fun btnOld(label: String, weight: Float, hDp: Int, onClick: (Button) -> Unit): Button {
         val b = Button(ctx)
         b.text = label
         b.isAllCaps = false
@@ -118,6 +129,9 @@ class ProfilePanel(private val ctx: Context, private val host: JabraHost, privat
         return b
     }
 
+    /** v0.6.7: error text: #AA0000 as before, a lighter red on dark themes (dark red is unreadable there). */
+    private fun errColor(): Int = try { if (JabraTokens.isDark(pf)) Color.parseColor("#FF8A80") else Color.parseColor("#AA0000") } catch (_: Throwable) { Color.parseColor("#AA0000") }
+
     private fun row(): LinearLayout { val r = LinearLayout(ctx); r.orientation = LinearLayout.HORIZONTAL; return r }
 
     fun build(): View? = try { make() } catch (_: Throwable) { null }
@@ -130,7 +144,7 @@ class ProfilePanel(private val ctx: Context, private val host: JabraHost, privat
     private fun make(): View {
         val root = LinearLayout(ctx)
         root.orientation = LinearLayout.VERTICAL
-        root.setBackgroundColor(Color.parseColor("#DDDDDD"))
+        paintBg(root)   // v0.6.7
         root.setPadding(dp(2), dp(4), dp(2), dp(4))
 
         val saved = store.get()
@@ -157,7 +171,7 @@ class ProfilePanel(private val ctx: Context, private val host: JabraHost, privat
 
         val note = TextView(ctx)
         note.textSize = 11f
-        note.setTextColor(Color.parseColor("#444444"))
+        note.setTextColor(dim())   // v0.6.7
         note.setPadding(dp(4), dp(2), dp(4), dp(2))
         note.text = if (msg.isNotEmpty()) msg else "Tap a profile = apply. Save current: type a name in the field first (empty = Profile N)."
         root.addView(note)
@@ -169,7 +183,7 @@ class ProfilePanel(private val ctx: Context, private val host: JabraHost, privat
         }
 
         if (saved == null) {
-            val bad = TextView(ctx); bad.textSize = 12f; bad.setTextColor(Color.parseColor("#AA0000")); bad.setPadding(dp(4), dp(4), dp(4), dp(4)); bad.text = store.problem
+            val bad = TextView(ctx); bad.textSize = 12f; bad.setTextColor(errColor())   // v0.6.7; bad.setPadding(dp(4), dp(4), dp(4), dp(4)); bad.text = store.problem
             root.addView(bad)
         } else {
             for ((i, p) in saved.withIndex()) {

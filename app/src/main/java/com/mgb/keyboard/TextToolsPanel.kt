@@ -53,7 +53,16 @@ class TextToolsPanel(private val ctx: Context, private val host: JabraHost, priv
     private fun dp(v: Int): Int = (v * ctx.resources.displayMetrics.density).toInt()
     private fun refresh() { host.showPanel("tt") }
 
+    // v0.6.7 theme: buttons = UiKit.btn (12sp, follows theme / Jabra look / Borderless), old body kept as btnOld() = automatic fallback
     private fun btn(label: String, weight: Float, hDp: Int, onClick: (Button) -> Unit): Button {
+        try { return UiKit.btn(ctx, prefs, label, weight, hDp, 12f, { v -> host.feedback(v) }, onClick) } catch (_: Throwable) { }
+        return btnOld(label, weight, hDp, onClick)
+    }
+
+    private fun paintBg(v: View) { try { JabraThemes.paint(prefs, v) } catch (_: Throwable) { v.setBackgroundColor(Color.parseColor("#DDDDDD")) } }   // v0.6.7
+    private fun dim(): Int = try { JabraTokens.dimText(prefs) } catch (_: Throwable) { Color.DKGRAY }   // v0.6.7
+
+    private fun btnOld(label: String, weight: Float, hDp: Int, onClick: (Button) -> Unit): Button {
         val b = Button(ctx)
         b.text = label
         b.isAllCaps = false
@@ -93,7 +102,7 @@ class TextToolsPanel(private val ctx: Context, private val host: JabraHost, priv
     private fun make(): View {
         val root = LinearLayout(ctx)
         root.orientation = LinearLayout.VERTICAL
-        root.setBackgroundColor(Color.parseColor("#DDDDDD"))
+        paintBg(root)   // v0.6.7
         root.setPadding(dp(2), dp(4), dp(2), dp(4))
 
         // tabs
@@ -140,7 +149,7 @@ class TextToolsPanel(private val ctx: Context, private val host: JabraHost, priv
         val info = TextView(ctx)
         info.text = if (shown.isEmpty()) srcInfo else shown
         info.textSize = 12f
-        info.setTextColor(Color.DKGRAY)
+        info.setTextColor(dim())   // v0.6.7
         info.setPadding(dp(8), dp(2), dp(8), dp(2))
         root.addView(info)
 
@@ -151,8 +160,8 @@ class TextToolsPanel(private val ctx: Context, private val host: JabraHost, priv
         val tv = TextView(ctx)
         tv.text = if (res.length > 600) res.substring(0, 600) + " …" else if (res.isEmpty()) "(nothing)" else res
         tv.textSize = 14f
-        tv.setTextColor(Color.BLACK)
-        tv.setBackgroundColor(Color.WHITE)
+        tv.setTextColor(try { JabraTokens.cardText(prefs) } catch (_: Throwable) { Color.BLACK })   // v0.6.7: result box = key colour surface (Classic = black on white as before)
+        tv.setBackgroundColor(try { if (JabraTokens.isClassic(prefs)) Color.WHITE else (JabraTokens.btnFill(prefs) ?: Color.WHITE) } catch (_: Throwable) { Color.WHITE })
         tv.setPadding(dp(8), dp(4), dp(8), dp(4))
         sv.addView(tv)
         root.addView(sv)
