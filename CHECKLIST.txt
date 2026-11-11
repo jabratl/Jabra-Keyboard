@@ -541,3 +541,9 @@ Z42) v0.9.10.4 Tap in key gap (FIX)
  [ ] Tap exactly inside a key: same letter as before (no change). Long-press hint letters and key popup still work on a key.
  [ ] Tap the gap at the left / right edge of a row and between two rows: a letter types (the nearest key of that row).
  [ ] Backspace hold, space swipe, shift, ?123 still work as before.
+
+Z43) v0.9.10.5 Pinned cards visible (FIX)
+ [ ] Clipboard > View: Cards. Pin a clip (star): the card gets a blue tint, a thicker blue border and a "Pinned" tag by the pin button.
+ [ ] Unpin it: the card goes back to the normal look and moves to the Recent group.
+ [ ] Try Classic and one dark theme: pinned card clear in both, text readable.
+ [ ] Long-press a card (select mode): ticked card look still works, pinned ones still show "★ Pinned". View: List unchanged.

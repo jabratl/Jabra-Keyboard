@@ -101,6 +101,7 @@ object ClipCards {
         box.orientation = LinearLayout.VERTICAL
         val pf = try { JabraPrefs(ctx) } catch (_: Throwable) { null }   // v0.8.7: theme colours (Classic = same as before)
         box.background = try { UiKit.cardBackground(ctx, pf!!, picked, item.pinned) } catch (_: Throwable) { oldCardBg(ctx, picked, item.pinned) }
+        if (item.pinned && !picked) { try { box.background = pinnedBg(ctx, pf!!) } catch (_: Throwable) { } }   // v0.9.10.5: pinned card is clearly visible (tint + 2dp border)
         val lp = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 1f)   // equal width, same height as the other card in the row
         lp.setMargins(dp(ctx, 3), dp(ctx, 3), dp(ctx, 3), dp(ctx, 3))
         box.layoutParams = lp
@@ -169,6 +170,14 @@ object ClipCards {
             }
         } else {
             bar.addView(small(ctx, host, if (item.pinned) "★" else "☆", if (item.pinned) "pinned" else "pin", iconsOn) { onPin(item) })
+            if (item.pinned) {   // v0.9.10.5: visible "Pinned" tag on every pinned card (before: only in select mode)
+                val pt = TextView(ctx)
+                pt.text = "Pinned"
+                pt.textSize = 11f
+                pt.setTypeface(pt.typeface, Typeface.BOLD)
+                pt.setTextColor(try { if (JabraTokens.isDark(pf!!)) JabraTokens.ACCENT_SOFT else JabraTokens.ACCENT } catch (_: Throwable) { Color.parseColor("#2271B1") })
+                bar.addView(pt)
+            }
             val fill = View(ctx)
             fill.layoutParams = LinearLayout.LayoutParams(0, 1, 1f)
             bar.addView(fill)
@@ -176,6 +185,16 @@ object ClipCards {
         }
         box.addView(bar)
         return box
+    }
+
+    /** v0.9.10.5: look of a PINNED card: normal card fill + light blue tint, 2dp accent border (before: 1dp grey-blue border only). */
+    private fun pinnedBg(ctx: Context, p: JabraPrefs): GradientDrawable {
+        val g = GradientDrawable()
+        val base = JabraTokens.cardFill(p, false)
+        g.setColor(androidx.core.graphics.ColorUtils.compositeColors(JabraTokens.withAlpha(JabraTokens.ACCENT, 0x30), base))
+        g.cornerRadius = JabraTokens.dp(ctx, JabraTokens.R_CARD).toFloat()
+        g.setStroke(dp(ctx, 2), JabraTokens.ACCENT)
+        return g
     }
 
     /** v0.8.7: the v0.8.6 card look, kept as the fallback of UiKit.cardBackground. */

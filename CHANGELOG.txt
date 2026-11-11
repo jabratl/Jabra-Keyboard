@@ -1,3 +1,10 @@
+v0.9.10.5 - FIX: pinned clips not visible in Clipboard "Cards" view
+- WHY: user: in card style the pinned clips are not seen. Code check: pinned data goes to the Pinned group correctly; the only cue on a pinned card was a 1dp grey-blue border (#7A9CC6 vs #C8C8C8) and a tiny filled-head pin icon, and the "Pinned" tag existed only in select mode.
+- What you get: a pinned card now has a light blue tint + 2dp accent border + a bold "Pinned" tag next to the pin button (every theme; dark theme uses the soft accent for the tag). Select mode (ticked card look + "★ Pinned" tag), recent cards, List view and the Pinned / Recent headers are unchanged.
+- Code: ClipCards.kt only (pinnedBg() new, 2 hooks marked v0.9.10.5 in card()), build.gradle.kts version.
+BROKE: nothing intended. NOT tested: Kotlin compile (GitHub Actions first); phone (CHECKLIST Z43). Root cause on the phone NOT proven: if the pinned cards were really MISSING (not just hard to see), tell which View/sort/search was on.
+Rollback: restore ClipCards.kt from v0.9.10.4.
+
 v0.9.10.4 - FIX: tap in the gap between keys was lost (fast typing)
 - WHY: user: when typing fast, some presses that clearly land on the keyboard do not type. Cause: the key gap is the key button's margin, so a finger-down in the gap touches no button and Android drops it. Ridmik types the nearest key instead.
 - What you get: a finger-down in the gap goes to the NEAREST key of that row (same finger shift is kept until lift, so move / up stay correct). Touches inside a key are unchanged. Works for any key_gap size; fast multi-finger typing is handled per finger.
