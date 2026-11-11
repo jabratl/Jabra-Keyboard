@@ -38,7 +38,19 @@ class SettingsActivity : Activity() {
         val title = TextView(this)
         title.text = "Jabra Keyboard"
         title.textSize = 22f
-        col.addView(title)
+        try {   // v0.5.6: logo next to the title (own drawing, res/drawable/jabra_logo.xml)
+            val head = LinearLayout(this)
+            head.orientation = LinearLayout.HORIZONTAL
+            head.gravity = android.view.Gravity.CENTER_VERTICAL
+            val logo = android.widget.ImageView(this)
+            logo.setImageResource(R.drawable.jabra_logo)
+            logo.contentDescription = "Jabra Keyboard logo"
+            logo.layoutParams = LinearLayout.LayoutParams(dp(56), dp(56))
+            title.setPadding(dp(12), 0, 0, 0)
+            head.addView(logo)
+            head.addView(title)
+            col.addView(head)
+        } catch (_: Throwable) { if (title.parent == null) col.addView(title) }
 
         val ver = TextView(this)
         ver.text = "Version ${BuildConfig.VERSION_NAME} (build ${BuildConfig.VERSION_CODE})"

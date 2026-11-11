@@ -1,39 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- v0.1.5 logo foreground: a keycap with a stylised Bangla-style letter and a cursor bar (own drawing, no font, no image file) -->
+<!-- v0.5.6 logo foreground: keycap with a J and click sparks (own redraw of the Jabra Keyboard logo; no font, no image file). Content scaled to stay inside the adaptive-icon safe zone. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <!-- keycap depth -->
-    <path
-        android:fillColor="#9CC3E6"
-        android:pathData="M40,34 H76 A10,10 0 0 1 86,44 V72 A10,10 0 0 1 76,82 H40 A10,10 0 0 1 30,72 V44 A10,10 0 0 1 40,34 Z" />
-    <!-- keycap top -->
-    <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M36,28 H72 A10,10 0 0 1 82,38 V66 A10,10 0 0 1 72,76 H36 A10,10 0 0 1 26,66 V38 A10,10 0 0 1 36,28 Z" />
-    <!-- letter: top bar, stem with tail, left loop -->
-    <path
-        android:strokeColor="#2271B1"
-        android:strokeWidth="4"
-        android:strokeLineCap="round"
-        android:strokeLineJoin="round"
-        android:pathData="M34,42 H66" />
-    <path
-        android:strokeColor="#2271B1"
-        android:strokeWidth="4"
-        android:strokeLineCap="round"
-        android:strokeLineJoin="round"
-        android:pathData="M58,42 V64 Q58,69 62,69" />
-    <path
-        android:strokeColor="#2271B1"
-        android:strokeWidth="4"
-        android:strokeLineCap="round"
-        android:strokeLineJoin="round"
-        android:pathData="M58,51 C50,46 38,50 40,58 C42,66 54,64 58,57" />
-    <!-- cursor bar -->
-    <path
-        android:fillColor="#FF9800"
-        android:pathData="M70,48 A2,2 0 0 1 72,50 V66 A2,2 0 0 1 70,68 A2,2 0 0 1 68,66 V50 A2,2 0 0 1 70,48 Z" />
+    <group android:scaleX="0.8" android:scaleY="0.8" android:pivotX="54" android:pivotY="54">
+        <!-- keycap lip (depth) -->
+        <path android:fillColor="#9FB4CC" android:pathData="M26,70 H82 V76 Q82,82 76,82 H32 Q26,82 26,76 Z" />
+        <!-- keycap top -->
+        <path android:fillColor="#FFFFFF" android:pathData="M36,30 H72 Q78,30 79,36 L82,66 Q82.5,72 76,72 H32 Q25.5,72 26,66 L29,36 Q30,30 36,30 Z" />
+        <!-- letter J: top bar + stem with hook -->
+        <path android:strokeColor="#1D9BF0" android:strokeWidth="5.5" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M46,42 H62" />
+        <path android:strokeColor="#1D9BF0" android:strokeWidth="5.5" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M58,42 V57 Q58,64 51,64 Q46,64 44.5,60" />
+        <!-- click sparks -->
+        <path android:strokeColor="#38BDF8" android:strokeWidth="4" android:strokeLineCap="round" android:pathData="M82,24 L86,17" />
+        <path android:strokeColor="#38BDF8" android:strokeWidth="4" android:strokeLineCap="round" android:pathData="M88,31 L95,27" />
+        <path android:strokeColor="#FFB020" android:strokeWidth="4" android:strokeLineCap="round" android:pathData="M89,39 L97,39" />
+    </group>
 </vector>

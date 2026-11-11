@@ -279,6 +279,21 @@ class JabraPanels(private val ctx: Context, private val host: JabraHost) {
 
     private fun settings(): View {
         val root = rootView()
+        try {   // v0.5.6: small logo + name on top of the gear panel
+            val h = LinearLayout(ctx)
+            h.orientation = LinearLayout.HORIZONTAL
+            h.gravity = android.view.Gravity.CENTER_VERTICAL
+            val iv = android.widget.ImageView(ctx)
+            iv.setImageResource(R.drawable.jabra_logo)
+            iv.layoutParams = LinearLayout.LayoutParams(dp(28), dp(28))
+            val tv = android.widget.TextView(ctx)
+            tv.text = "Jabra Keyboard " + BuildConfig.VERSION_NAME
+            tv.textSize = 13f
+            tv.setPadding(dp(8), 0, 0, 0)
+            try { tv.setTextColor(JabraThemes.iconColor(prefs)) } catch (_: Throwable) { }
+            h.addView(iv); h.addView(tv)
+            root.addView(h)
+        } catch (_: Throwable) { }
         val r1 = row()
         r1.addView(toggleKey("Number row", "numrow", true))
         r1.addView(toggleKey("Vibrate", "haptic", true))

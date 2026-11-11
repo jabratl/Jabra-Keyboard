@@ -28,6 +28,7 @@
             android:name=".MgbIme"
             android:exported="true"
             android:label="Jabra Keyboard"
+            android:icon="@mipmap/ic_launcher"
             android:permission="android.permission.BIND_INPUT_METHOD">
             <intent-filter>
                 <action android:name="android.view.InputMethod" />

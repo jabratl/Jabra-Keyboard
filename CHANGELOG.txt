@@ -1,3 +1,10 @@
+v0.5.6 - NEW: Jabra logo in the app icon, the app screen, the keyboard panel and the keyboard picker
+- WHY: you sent your logo (keycap with J + 3 click sparks, black background). Redrawn as OUR OWN version, not a copy: solid white keycap with a light-blue lip, blue J with a top bar, 3 sparks (2 blue, 1 amber), deep navy background. Drawn as Android vector files (no image file, no font, no new permission).
+- What you get: 1) launcher icon (adaptive, content kept inside the safe zone so round / squircle masks do not cut it; old icon replaced). 2) App screen: logo next to the title "Jabra Keyboard". 3) Keyboard gear panel: small logo + "Jabra Keyboard <version>" on top (the panel already scrolls when tall). 4) Keyboard picker / input-method list shows the same icon.
+- Files: res/drawable/ic_launcher_background.xml + ic_launcher_foreground.xml (replaced), NEW res/drawable/jabra_logo.xml (logo on a rounded dark tile), AndroidManifest.xml (service android:icon, 1 line), SettingsActivity.kt (header row, try / catch, falls back to the old plain title), JabraExtras.kt settings() (header row, try / catch). mipmap xml files unchanged (they point at the two drawables).
+BROKE: nothing intended; if the logo cannot load the screens look as before. NOT tested: Android build (GitHub Actions first), the icon on a phone (launcher masks, Android 7 layer-list version), the gear panel height at 360 px (+28 dp, it scrolls), dark + light (the logo tile is dark in both). Preview of the drawing was rendered here as SVG only.
+Rollback: restore the two launcher drawables from v0.5.5, delete jabra_logo.xml and the lines marked "v0.5.6".
+
 v0.5.5 - NEW: "Vault key (toolbar)" ON / OFF row in settings
 - WHY: the Vault key is hidden on the toolbar until you add it (Edit toolbar), so the Vault was easy to miss. Now there is a plain switch.
 - What you get: app screen > Clipboard & tools (same rows as keyboard gear > More settings): "Vault key (toolbar): OFF / ON". ON = the Vault key appears on the toolbar (same as Edit toolbar > Vault ON). It reads / writes the existing pref tb_on, so both places always agree. Works with Reset group / Undo of the settings screen.

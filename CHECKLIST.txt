@@ -246,3 +246,10 @@ Z4) v0.5.4 Most used to front
 Z5) v0.5.5 Vault key switch
  [ ] App screen > Clipboard & tools: row "Vault key (toolbar): OFF". Tap = ON. Open the keyboard: a Vlt key is on the toolbar. Tap it = Vault opens.
  [ ] Edit toolbar panel shows Vault ON too. Switch OFF in either place = key gone; the other place agrees.
+
+
+Z6) v0.5.6 Logo
+ [ ] Home screen / app drawer icon = white keycap, blue J, 3 sparks on navy. Not cut off on your phone's icon shape.
+ [ ] App screen: logo left of the title "Jabra Keyboard".
+ [ ] Keyboard gear panel: logo + "Jabra Keyboard 0.5.6" on top, the rest unchanged (scroll if needed).
+ [ ] Settings > Keyboards / keyboard picker: Jabra Keyboard shows the same icon.

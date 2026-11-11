@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- v0.5.6 logo tile for the app screen + keyboard panels: same mark as the launcher icon on a rounded dark square -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillColor="#0B1220"
+        android:pathData="M24,0 H84 Q108,0 108,24 V84 Q108,108 84,108 H24 Q0,108 0,84 V24 Q0,0 24,0 Z" />
+    <group android:scaleX="0.8" android:scaleY="0.8" android:pivotX="54" android:pivotY="54">
+        <!-- keycap lip (depth) -->
+        <path android:fillColor="#9FB4CC" android:pathData="M26,70 H82 V76 Q82,82 76,82 H32 Q26,82 26,76 Z" />
+        <!-- keycap top -->
+        <path android:fillColor="#FFFFFF" android:pathData="M36,30 H72 Q78,30 79,36 L82,66 Q82.5,72 76,72 H32 Q25.5,72 26,66 L29,36 Q30,30 36,30 Z" />
+        <!-- letter J: top bar + stem with hook -->
+        <path android:strokeColor="#1D9BF0" android:strokeWidth="5.5" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M46,42 H62" />
+        <path android:strokeColor="#1D9BF0" android:strokeWidth="5.5" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M58,42 V57 Q58,64 51,64 Q46,64 44.5,60" />
+        <!-- click sparks -->
+        <path android:strokeColor="#38BDF8" android:strokeWidth="4" android:strokeLineCap="round" android:pathData="M82,24 L86,17" />
+        <path android:strokeColor="#38BDF8" android:strokeWidth="4" android:strokeLineCap="round" android:pathData="M88,31 L95,27" />
+        <path android:strokeColor="#FFB020" android:strokeWidth="4" android:strokeLineCap="round" android:pathData="M89,39 L97,39" />
+    </group>
+</vector>
