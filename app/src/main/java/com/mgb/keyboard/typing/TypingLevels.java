@@ -12,9 +12,16 @@ public final class TypingLevels {
     private static final float[] CS_DP = { 28f, 22f, 16f, 11f, 7f };   // finger distance (dp) for one cursor step; 16 = old value
     public static final int CS_DEFAULT = 2;
 
+    /** v0.5.2 vibration strength (pref haptic_lv): Light / Medium / Strong. Level 1 = 18 ms = exactly the old value. "Off" stays the existing Vibrate switch. */
+    public static final String[] HAPTIC_NAMES = { "Light", "Medium", "Strong" };
+    private static final int[] HAPTIC_MS = { 10, 18, 30 };
+    public static final int HAPTIC_DEFAULT = 1;
+
     private static int clamp(int lv, int n) { return lv < 0 ? 0 : (lv >= n ? n - 1 : lv); }
 
     public static int longPressMs(int level) { return LP_MS[clamp(level, LP_MS.length)]; }
+
+    public static int hapticMs(int level) { return HAPTIC_MS[clamp(level, HAPTIC_MS.length)]; }   // v0.5.2
 
     public static float stepDp(int level) { return CS_DP[clamp(level, CS_DP.length)]; }
 }

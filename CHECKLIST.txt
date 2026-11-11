@@ -212,3 +212,20 @@ Y) v0.5.0 language key options + custom character row
  [ ] Keyboard gear > Typing options: type "@#_-" in a field, tap "Char row: none": it shows "Char row: @#_-". Tap ABC: an extra row of 4 keys above the numbers; tap a key = types it. "Clear row" removes the row.
  [ ] Char row with Bangla letters (ৎ ঁ ঃ) or an emoji works. Empty field: "Field has no characters", nothing changes.
  [ ] Letters keyboard height / typing speed are the same as before (with and without the extra row).
+
+Z) v0.5.1 Profiles (toolbar item is OFF by default)
+ [ ] Keyboard gear > Edit toolbar > Profiles > Show (or hold a toolbar key 1.5 s). A "Pf" / 3-cards key appears on the toolbar.
+ [ ] Tap it: panel with 6 ready profiles (Normal, Novel Writing, PC, Compact, One-Handed, Large). Tap Compact: keyboard goes back to letters and is shorter. Tap Large: taller. Tap Normal: back to the default size.
+ [ ] After an apply, open Profiles again: "Undo apply" is there. Tap it: the settings from before come back.
+ [ ] PC: tap it = PC rows appear. Normal = back to the phone keyboard (PC mode off).
+ [ ] Change something (e.g. theme or height), type a name like "Mine" in a text field, open Profiles, tap Save current: message "Saved: Mine", it shows under the ready ones. Change settings again, tap Mine: your old settings are back.
+ [ ] Empty field + Save current = "Profile 1". Ren: type a new name in the field, tap Ren = renamed. Del: first tap "Sure?", second tap deletes.
+ [ ] Close the keyboard / restart the phone: your saved profile is still there. Data & Backup > Backup now > Restore: the profile comes back too.
+ [ ] Theme / look / language did NOT change when you applied a ready profile.
+
+Z2) v0.5.2 Keyboard extras
+ [ ] Typing options > "Vibration strength": tap = Light > Medium > Strong (Medium = the old feel). Type a few keys: the buzz changes. Vibrate OFF = no buzz.
+ [ ] Type  a=!,s=?  in a text field, then Typing options > "Hint override": it shows the pairs. ABC: the small corner label of A is "!" and S is "?". Long-press A types "!" . Other letters are as before.
+ [ ] Hint override with a Bangla letter or an emoji (k=ক) works. A wrong pair (a=ab) is ignored. "Clear" brings the old corner characters back.
+ [ ] With defaults (Medium, no override) the keyboard feels exactly like v0.5.0.
+

@@ -38,6 +38,10 @@ public class DoubleSpaceTest {
 
         t("lp default = system (0)", TypingLevels.longPressMs(TypingLevels.LP_DEFAULT) == 0);
         t("lp fast", TypingLevels.longPressMs(1) == 250);
+        t("haptic default = Medium = 18 ms (old value)", TypingLevels.HAPTIC_DEFAULT == 1 && TypingLevels.hapticMs(TypingLevels.HAPTIC_DEFAULT) == 18);   // v0.5.2
+        t("haptic light / strong", TypingLevels.hapticMs(0) == 10 && TypingLevels.hapticMs(2) == 30);
+        t("haptic clamp", TypingLevels.hapticMs(-5) == 10 && TypingLevels.hapticMs(99) == 30);
+        t("haptic names", TypingLevels.HAPTIC_NAMES.length == 3 && TypingLevels.HAPTIC_NAMES[1].equals("Medium"));
         t("lp very slow", TypingLevels.longPressMs(4) == 900);
         t("lp clamp low", TypingLevels.longPressMs(-3) == 0);
         t("lp clamp high", TypingLevels.longPressMs(99) == 900);

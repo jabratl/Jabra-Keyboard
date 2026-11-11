@@ -38,6 +38,52 @@ public final class LongPressHints {
         }
     }
 
+    /** v0.5.2 custom override text, e.g. "a=@,s=#": letter a-z = ONE character. Max 26 entries. Empty = nothing changed (old table). */
+    public static final int CUSTOM_MAX = 26;
+
+    private static boolean okValue(String v) {
+        if (v == null || v.isEmpty() || v.length() > 2) return false;
+        int cp = v.codePointAt(0);
+        if (Character.charCount(cp) != v.length()) return false;
+        return !Character.isWhitespace(cp) && !Character.isISOControl(cp) && cp != ',' && cp != '=';
+    }
+
+    /** Clean text: bad / duplicate / over-limit entries dropped, letters lower-cased, order kept. "" when nothing is valid. */
+    public static String normalizeCustom(String text) {
+        if (text == null) return "";
+        StringBuilder out = new StringBuilder();
+        String seen = "";
+        int n = 0;
+        for (String part : text.split(",")) {
+            int e = part.indexOf('=');
+            if (e != 1) continue;
+            char k = Character.toLowerCase(part.charAt(0));
+            String v = part.substring(2);
+            if (k < 'a' || k > 'z' || !okValue(v) || seen.indexOf(k) >= 0 || n >= CUSTOM_MAX) continue;
+            seen += k;
+            if (out.length() > 0) out.append(',');
+            out.append(k).append('=').append(v);
+            n++;
+        }
+        return out.toString();
+    }
+
+    /** The custom character for letter c, or null (no entry / empty text). */
+    public static String customFor(char c, String custom) {
+        if (custom == null || custom.isEmpty()) return null;
+        char k = Character.toLowerCase(c);
+        for (String part : normalizeCustom(custom).split(",")) {
+            if (part.length() >= 3 && part.charAt(0) == k) return part.substring(2);
+        }
+        return null;
+    }
+
+    /** Custom entry first, else the normal table (hintFor). */
+    public static String hintFor(char c, boolean numRowOn, String custom) {
+        String x = customFor(c, custom);
+        return x != null ? x : hintFor(c, numRowOn);
+    }
+
     /** Hints work only in English typing: not in Avro / Probhat (Bangla mode), PC mode with Ctrl / Alt held, or when the setting is OFF. */
     public static boolean active(boolean settingOn, boolean banglaMode, boolean pcMetaHeld) {
         return settingOn && !banglaMode && !pcMetaHeld;

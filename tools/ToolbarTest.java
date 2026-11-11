@@ -8,7 +8,7 @@ public class ToolbarTest {
     static void t(String name, boolean cond) { if (cond) ok++; else { bad++; System.out.println("FAIL: " + name); } }
     static String s(List<String> l) { return ToolbarOrder.serialize(l); }
     static final String CORE = "fmt,clip,mode,all,cut,copy,paste,plain";
-    static final String EXT = "emoji,numpad,sym,gear,voice,globe,theme,onehand,size,pad,undo,redo,vault,tt";   // v0.4.4: + vault
+    static final String EXT = "emoji,numpad,sym,gear,voice,globe,theme,onehand,size,pad,undo,redo,vault,tt,profiles";   // v0.5.1: + profiles; v0.4.4: + vault
     static final String DEF = CORE + "," + EXT;
 
     public static void main(String[] a) {
@@ -18,7 +18,7 @@ public class ToolbarTest {
         t("garbage -> default", s(ToolbarOrder.parse("x,y,,;;")).equals(DEF));
         t("full custom kept", s(ToolbarOrder.parse("plain,paste,copy,cut,all,mode,clip,fmt")).equals("plain,paste,copy,cut,all,mode,clip,fmt," + EXT));
         t("unknown dropped", s(ToolbarOrder.parse("copy,zzz,fmt")).startsWith("copy,fmt,"));
-        t("missing appended (all 22 present)", ToolbarOrder.parse("copy,fmt").size() == 22);
+        t("missing appended (all 23 present)", ToolbarOrder.parse("copy,fmt").size() == 23);
         t("missing appended in default order", s(ToolbarOrder.parse("copy,fmt")).equals("copy,fmt,clip,mode,all,cut,paste,plain," + EXT));
         t("duplicates dropped", s(ToolbarOrder.parse("copy,copy,fmt,copy")).equals("copy,fmt,clip,mode,all,cut,paste,plain," + EXT));
         t("spaces trimmed", s(ToolbarOrder.parse(" copy , fmt ")).startsWith("copy,fmt,"));
@@ -31,7 +31,7 @@ public class ToolbarTest {
         t("up", s(ToolbarOrder.up(d, "clip")).equals("clip,fmt,mode,all,cut,copy,paste,plain," + EXT));
         t("up on first = same", s(ToolbarOrder.up(d, "fmt")).equals(DEF));
         t("down", s(ToolbarOrder.down(d, "fmt")).equals("clip,fmt,mode,all,cut,copy,paste,plain," + EXT));
-        t("down on last = same", s(ToolbarOrder.down(d, "tt")).equals(DEF));
+        t("down on last = same", s(ToolbarOrder.down(d, "profiles")).equals(DEF));
         t("down plain moves below emoji", s(ToolbarOrder.down(d, "plain")).startsWith("fmt,clip,mode,all,cut,copy,paste,emoji,plain,"));
         t("original list not changed", s(d).equals(DEF));
 
@@ -53,7 +53,7 @@ public class ToolbarTest {
         t("known", ToolbarOrder.known("fmt") && !ToolbarOrder.known("x") && !ToolbarOrder.known(null));
 
         // ---- v0.2.2 extras
-        t("extras listed", ToolbarOrder.EXTRAS.length == 14 && ToolbarOrder.isExtra("vault") && ToolbarOrder.isExtra("tt") && ToolbarOrder.isExtra("voice") && !ToolbarOrder.isExtra("copy") && !ToolbarOrder.isExtra(null));
+        t("extras listed", ToolbarOrder.EXTRAS.length == 15 && ToolbarOrder.isExtra("profiles") && ToolbarOrder.isExtra("vault") && ToolbarOrder.isExtra("tt") && ToolbarOrder.isExtra("voice") && !ToolbarOrder.isExtra("copy") && !ToolbarOrder.isExtra(null));
         String on = ToolbarOrder.setOn("", "voice", true);
         t("turn on", on.equals("voice") && !ToolbarOrder.off("", on, "voice"));
         t("turn on twice = once", ToolbarOrder.setOn(on, "voice", true).equals("voice"));

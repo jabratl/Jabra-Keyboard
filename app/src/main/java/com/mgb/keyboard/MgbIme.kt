@@ -46,6 +46,7 @@ class MgbIme : InputMethodService() {
     private val vaultPanel by lazy { VaultPanel(this, host, vaultStore) { fieldText() } }   // v0.4.4
     private val studioPanel by lazy { ThemeStudio(this, host) }   // v0.4.8 custom theme studio
     private val ttPanel by lazy { TextToolsPanel(this, host, ImeFmtIo(this) { pwdField }) }   // v0.4.6 text tools
+    private val profilePanel by lazy { ProfilePanel(this, host, ProfileStore(this)) }   // v0.5.1 workspace profiles (file profiles_v1.json, read only when the panel opens)
     private val prefs by lazy { JabraPrefs(this) }
     private val panels by lazy { JabraPanels(this, host) }
     private val morePanel by lazy { MorePanel(this, host) }   // v0.0.9 "More settings" page
@@ -431,12 +432,13 @@ class MgbIme : InputMethodService() {
     private fun feedback(v: View) {
         if (prefs.bool("haptic", true)) {
             var done = false
+            val hMs = try { com.mgb.keyboard.typing.TypingLevels.hapticMs(prefs.int("haptic_lv", com.mgb.keyboard.typing.TypingLevels.HAPTIC_DEFAULT)).toLong() } catch (_: Throwable) { 18L }   // v0.5.2: strength (default Medium = 18 ms = old)
             try {
                 @Suppress("DEPRECATION")
                 val vb = getSystemService(VIBRATOR_SERVICE) as? android.os.Vibrator
                 if (vb != null && vb.hasVibrator()) {
-                    if (android.os.Build.VERSION.SDK_INT >= 26) vb.vibrate(android.os.VibrationEffect.createOneShot(18L, android.os.VibrationEffect.DEFAULT_AMPLITUDE))
-                    else @Suppress("DEPRECATION") vb.vibrate(18L)
+                    if (android.os.Build.VERSION.SDK_INT >= 26) vb.vibrate(android.os.VibrationEffect.createOneShot(hMs, android.os.VibrationEffect.DEFAULT_AMPLITUDE))
+                    else @Suppress("DEPRECATION") vb.vibrate(hMs)
                     done = true
                 }
             } catch (_: Throwable) { }
@@ -506,6 +508,7 @@ class MgbIme : InputMethodService() {
             "pad" -> showPanel("pad")
             "vault" -> openVault()   // v0.4.4
             "tt" -> { if (!pwdField) { ttPanel.reset(); showPanel("tt") } }   // v0.4.6 (never in password fields)
+            "profiles" -> { profilePanel.reset(); showPanel("profiles") }   // v0.5.1
             "undo" -> padSend(KeyEvent.KEYCODE_Z, KeyEvent.META_CTRL_ON or KeyEvent.META_CTRL_LEFT_ON)   // v0.2.7: Ctrl+Z (apps that ignore key events: nothing happens)
             "redo" -> padSend(KeyEvent.KEYCODE_Z, KeyEvent.META_CTRL_ON or KeyEvent.META_CTRL_LEFT_ON or KeyEvent.META_SHIFT_ON or KeyEvent.META_SHIFT_LEFT_ON)   // v0.2.7: Ctrl+Shift+Z
             "voice" -> { commitWord(); switcher.voice() }
@@ -559,7 +562,7 @@ class MgbIme : InputMethodService() {
     private fun showPanel(name: String) {
         val c = container ?: return
         commitWord()
-        val v = try { if (name == "clipboard") clipPanel.build() else if (name == "format") fmtPanel.build() else if (name == "more") morePanel.build() else if (name == "emoji") emojiPanel.build() else if (name == "typing") typingPanel.build() else if (name == "size") sizePanel.build() else if (name == "toolbar") toolbarPanel.build() else if (name == "tbquick") toolbarQuick.build() else if (name == "pad") padPanel.build() else if (name == "themes") themePanel.build() else if (name == "vault") vaultPanel.build() else if (name == "tt") ttPanel.build() else if (name == "tstudio") studioPanel.build() else panels.build(name) } catch (_: Throwable) { null }   // v0.0.8: "format"; v0.1.0: "emoji"; v0.1.1: "typing"
+        val v = try { if (name == "clipboard") clipPanel.build() else if (name == "format") fmtPanel.build() else if (name == "more") morePanel.build() else if (name == "emoji") emojiPanel.build() else if (name == "typing") typingPanel.build() else if (name == "size") sizePanel.build() else if (name == "toolbar") toolbarPanel.build() else if (name == "tbquick") toolbarQuick.build() else if (name == "pad") padPanel.build() else if (name == "themes") themePanel.build() else if (name == "vault") vaultPanel.build() else if (name == "tt") ttPanel.build() else if (name == "profiles") profilePanel.build() else if (name == "tstudio") studioPanel.build() else panels.build(name) } catch (_: Throwable) { null }   // v0.0.8: "format"; v0.1.0: "emoji"; v0.1.1: "typing"
         if (v == null) { showLetters(); return }
         try { JabraOneHand.apply(this, prefs, v) } catch (_: Throwable) { }   // v0.1.0
         try { if (!inPanel && c.height > 0) lettersH = c.height } catch (_: Throwable) { }   // v0.3.3: remember the letters-keyboard height
@@ -575,7 +578,7 @@ class MgbIme : InputMethodService() {
     private var inPanel = false
     private var lettersH = 0
     private fun capTall(name: String, v: View, c: FrameLayout): View {
-        if (name != "settings" && name != "more" && name != "typing" && name != "size" && name != "themes" && name != "vault" && name != "tt" && name != "tstudio") return v
+        if (name != "settings" && name != "more" && name != "typing" && name != "size" && name != "themes" && name != "vault" && name != "tt" && name != "profiles" && name != "tstudio") return v
         val cap = if (lettersH > 0) maxOf(lettersH, dp(keyDp() * 4 + 16)) else dp(38 + 5 * (keyDp() + 4))
         val w = if (c.width > 0) c.width else resources.displayMetrics.widthPixels
         v.measure(View.MeasureSpec.makeMeasureSpec(w, View.MeasureSpec.EXACTLY), View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED))

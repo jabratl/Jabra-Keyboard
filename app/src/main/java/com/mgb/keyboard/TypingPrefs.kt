@@ -259,13 +259,27 @@ class TypingPanel(private val ctx: Context, private val host: JabraHost) {
             r37.addView(pk("Clear row", 1f) { _ -> prefs.setStr("xrow_chars", ""); host.showPanel("typing") })
             root.addView(r37)
         } catch (_: Throwable) { }
+        try {   // v0.5.2: vibration strength + custom long-press characters
+            val r38 = row()
+            r38.addView(levelKey("Vibration strength", "haptic_lv", TypingLevels.HAPTIC_DEFAULT, TypingLevels.HAPTIC_NAMES))
+            root.addView(r38)
+            val r39 = row()
+            val hc = prefs.str("hint_custom", "")
+            r39.addView(pk("Hint override: " + (if (hc.isEmpty()) "none" else hc), 2f) { b ->
+                val s = com.mgb.keyboard.typing.LongPressHints.normalizeCustom(host.fieldText().replace('\n', ','))
+                if (s.isEmpty()) b.text = "Field has no a=@ pairs" else { prefs.setStr("hint_custom", s); b.text = "Hint override: " + s }
+            })
+            r39.addView(pk("Clear", 1f) { _ -> prefs.setStr("hint_custom", ""); host.showPanel("typing") })
+            root.addView(r39)
+        } catch (_: Throwable) { }
         try { val r36 = row(); r36.addView(toggleKey("Long-press characters", "hint_on", true)); r36.addView(toggleKey("Hide long-press hints", "hint_hide", false)); root.addView(r36) } catch (_: Throwable) { }   // v0.1.6
 
         root.addView(note("Double-space: tap space twice = \". \" (Bangla mode: \"\u0964 \"). Tab only when the period does not fit. Not used in password / email / web fields. " +
             "Long-press: System = the phone's own time. Cursor speed: drag on the space key. Globe = next keyboard. Voice = the phone's voice typing (no recording by Jabra). " +
             "Keys appear on the bottom row after ABC (apply). Key popup: a bubble above the pressed letter (works at once). Large number row: ABC (apply). " +
             "Long-press characters: hold a letter key = types its small corner character (English only; not in Avro / Probhat). Hide hints: hides only the small label (ABC apply), long-press still works. " +
-            "Char row: type up to 10 characters (e.g. @ # _ - ) in any text field, tap this button = they become an extra row above the numbers (ABC apply)."))
+            "Char row: type up to 10 characters (e.g. @ # _ - ) in any text field, tap this button = they become an extra row above the numbers (ABC apply). " +
+            "Vibration strength: Light / Medium (old) / Strong. Hint override: type pairs like a=@,s=# (letter = one character, max 26) in any text field, tap the button = those letters use your character on long-press (ABC apply)."))
 
         val rb = row()
         rb.addView(pk("< More settings", 1f) { host.showPanel("more") })

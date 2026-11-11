@@ -42,7 +42,7 @@ object HintKeys {
             try {
                 if (!host.hintTypingActive() || !prefs.bool("hint_on", true)) return@Runnable
                 val c = letterOf(b) ?: return@Runnable
-                val hint = LongPressHints.hintFor(c, prefs.bool("numrow", true)) ?: return@Runnable
+                val hint = LongPressHints.hintFor(c, prefs.bool("numrow", true), prefs.str("hint_custom", "")) ?: return@Runnable   // v0.5.2 (custom override first)
                 fired = true
                 host.typeHint(hint)
                 host.hintFeedback(b)
@@ -87,7 +87,7 @@ object HintKeys {
             val c = letterOf(b)
             val on = prefs.bool("hint_on", true)
             val show = c != null && LongPressHints.labelVisible(on && host.hintLabelActive(), prefs.bool("hint_hide", false))
-            val t = if (show) LongPressHints.hintFor(c!!, prefs.bool("numrow", true)) else null
+            val t = if (show) LongPressHints.hintFor(c!!, prefs.bool("numrow", true), prefs.str("hint_custom", "")) else null   // v0.5.2
             if (t == null) { if (b.foreground is HintDrawable) b.foreground = null; return }
             val col = try { JabraThemes.iconColor(prefs) } catch (_: Throwable) { Color.parseColor("#222222") }
             val cur = b.foreground
