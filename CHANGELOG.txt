@@ -1,3 +1,13 @@
+v0.9.10 - NEW: speed meter in the Health panel (plan step V5)
+- WHY: the plan needs real numbers instead of "feels smooth". A video cannot show latency.
+- What you get: Settings > Data & Backup > Health: "Speed meter" button (pref perf_meter, default OFF = no cost, no samples), "Refresh numbers", "Reset numbers". When ON it keeps the last 100 samples of: key (finger down to commit), key tap handler, bubble show, language switch, keyboard build. Shows avg / p95 / max in ms.
+- Code: NEW typing/KeyTiming.java (pure ring buffer) + NEW tools/KeyTimingTest.java (37 checks). KeyCfg.kt (cached perf flag + hooks pStart / pEnd / pDown / pCommit), HintKeys.kt (1 line: finger-down stamp), KeyPopup.kt (bubble timing), MgbIme.kt (timing wrappers for tap handler, afterLangChange, buildKeyboard; bodies unchanged), HealthPanel.kt (speed rows). Every hook has try/catch and does nothing when the meter is OFF.
+- Trims: NONE yet. Rule: only trim what the numbers show. fb_down / haptic_native defaults NOT changed (needs a user decision).
+BROKE: nothing intended. Meter OFF = v0.9.9.
+NOT tested: Kotlin compile (GitHub Actions first); phone: numbers appear, Reset works (CHECKLIST Z39).
+TESTED here: all 44 Java test programs green; bracket balance of the 5 changed Kotlin files.
+Rollback: leave the meter OFF, or restore KeyCfg.kt, HintKeys.kt, KeyPopup.kt, MgbIme.kt, HealthPanel.kt and delete typing/KeyTiming.java + tools/KeyTimingTest.java.
+
 v0.9.9 - NEW: key bubble without window calls (plan step V4)
 - WHY: video audit item 2 + finding N1: every key change called PopupWindow.update() (a WindowManager system call), which can lag behind the finger. The reference bubble never lags.
 - What you get: 1 new setting "Fast bubble" (pop_fast, default ON). Only works while "Key popup" is ON. On every key that has room above it INSIDE the keyboard (normally rows 2-4, and the top letter row / number row when the toolbar or the Probhat row sits above them) the bubble is drawn by a transparent view on top of the keyboard: a press only moves it and redraws that small area, no window call, no layout. Keys with no room above (e.g. top row with the toolbar hidden) keep the v0.9.6 window bubble automatically. Look = same as v0.9.6 (Reference-style bubble ON/OFF both work).

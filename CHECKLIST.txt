@@ -514,3 +514,11 @@ Z38) v0.9.9 Fast bubble (V4)
  [ ] Change theme (Classic + one dark theme): bubble colours follow the theme. "Reference-style bubble" OFF = old white bubble, still fine.
  [ ] "Fast bubble" OFF: bubbles work as in v0.9.8. Swipe on space (language bubble) still shows the language name.
  [ ] Tell me: does the bubble feel smoother / quicker than v0.9.8? (no number yet; the speed meter comes in V5)
+
+Z39) v0.9.10 Speed meter (V5)
+ [ ] Settings > Data & Backup > Health: you see "Speed meter: OFF". Tap it: it says ON.
+ [ ] Open any chat, type ~20 letters, switch language with the globe 3 times, then come back and tap "Refresh numbers": the lines show avg / p95 / max ms (not "no samples yet").
+ [ ] Tap "Reset numbers": every line goes back to "no samples yet".
+ [ ] Turn the meter OFF, type, Refresh: no new samples. Typing feels the same as v0.9.9.
+ [ ] Tell me the numbers (screenshot): they decide which trim comes next.
+

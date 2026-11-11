@@ -109,8 +109,10 @@ class MgbIme : InputMethodService() {
         b.setPadding(0, 0, 0, 0)
         try { JabraThemes.style(prefs, b) } catch (_: Throwable) { }   // v0.1.0: theme colours (Classic = no change)
         b.setOnClickListener {
+            val ps = KeyCfg.pStart()   // v0.9.10 (V5): meter (OFF = 0)
             try { if (KeyCfg.clickBuzz(b)) feedback(b) } catch (_: Throwable) { }   // v0.0.5: haptic/sound (own try, never blocks typing); v0.9.1: skipped when fb_down already buzzed at finger-down
             try { onClick() } catch (_: Throwable) { }
+            KeyCfg.pEnd(com.mgb.keyboard.typing.KeyTiming.HANDLER, ps); KeyCfg.pCommit()
         }
         val lp = LinearLayout.LayoutParams(0, dp(keyDp()), weight)   // v0.0.5: 48dp unless user changed height
         val g = try { dp(com.mgb.keyboard.typing.SizePct.gapDp(prefs.int("key_gap", -1))) } catch (_: Throwable) { dp(2) }   // v0.3.0: key gap setting
@@ -442,7 +444,12 @@ class MgbIme : InputMethodService() {
     private fun langLabel(): String = if (!bangla) "EN" else if (probhat) "প্রভা" else "বাং"
 
     /** After the language / layout changed: refresh the key captions and letter labels. */
-    private fun afterLangChange() {
+    private fun afterLangChange() {   // v0.9.10 (V5): timing wrapper, body unchanged below
+        val ps = KeyCfg.pStart()
+        try { afterLangChange0() } finally { KeyCfg.pEnd(com.mgb.keyboard.typing.KeyTiming.LANG, ps) }
+    }
+
+    private fun afterLangChange0() {
         langBtn?.text = langLabel()
         try { if (prefs.bool("space_lang", false)) spaceBtn?.text = com.mgb.keyboard.typing.LangSwipe.spaceLabel(bangla, probhat) } catch (_: Throwable) { }   // v0.8.9
         dandaBtn?.text = if (bangla) "।" else "?"
@@ -790,7 +797,12 @@ class MgbIme : InputMethodService() {
         afterLangChange()   // v0.0.4: sets lang/danda captions and letter labels (was 2 lines here)
     }
 
-    private fun buildKeyboard(): View {
+    private fun buildKeyboard(): View {   // v0.9.10 (V5): timing wrapper, body unchanged below
+        val ps = KeyCfg.pStart()
+        try { return buildKeyboard0() } finally { KeyCfg.pEnd(com.mgb.keyboard.typing.KeyTiming.BUILD, ps) }
+    }
+
+    private fun buildKeyboard0(): View {
         try { KeyPopup.invalidate() } catch (_: Throwable) { }   // v0.9.0: key bubble is rebuilt on the next press (theme / look may have changed)
         val root = LinearLayout(this)
         root.orientation = LinearLayout.VERTICAL

@@ -21,7 +21,8 @@ class KeyCfg(private val ctx: Context) {
         val haptic: Boolean, val hapticMs: Long, val sound: Boolean,
         val popup: Boolean, val hintOn: Boolean, val lpMs: Int,
         val fbDown: Boolean = false, val hapticNative: Boolean = false,   // v0.9.1 (R2)
-        val popFast: Boolean = true   // v0.9.9 (V4)
+        val popFast: Boolean = true,   // v0.9.9 (V4)
+        val perf: Boolean = false   // v0.9.10 (V5): speed meter, default OFF
     )
 
     @Volatile private var dirty = true
@@ -54,7 +55,8 @@ class KeyCfg(private val ctx: Context) {
                 lpMs = try { TypingLevels.longPressMs(sp.getInt("lp_delay", TypingLevels.LP_DEFAULT)) } catch (_: Throwable) { 0 },
                 fbDown = sp.getBoolean("fb_down", false),   // v0.9.1
                 hapticNative = sp.getBoolean("haptic_native", false),   // v0.9.1
-                popFast = sp.getBoolean("pop_fast", true)   // v0.9.9
+                popFast = sp.getBoolean("pop_fast", true),   // v0.9.9
+                perf = sp.getBoolean("perf_meter", false)   // v0.9.10
             )
             snap = n
             n
@@ -116,6 +118,16 @@ class KeyCfg(private val ctx: Context) {
 
         /** v0.9.9 (V4): pop_fast (default ON; fallback = direct pref read). */
         fun popFast(p: JabraPrefs): Boolean = try { current?.get()?.popFast ?: p.bool("pop_fast", true) } catch (_: Throwable) { try { p.bool("pop_fast", true) } catch (_: Throwable) { false } }
+
+        /** v0.9.10 (V5): speed meter. OFF (default) = every hook below is one cached boolean check, no samples. */
+        val timing = com.mgb.keyboard.typing.KeyTiming()
+        @Volatile private var downNs = 0L
+        fun perfOn(): Boolean = try { current?.get()?.perf ?: false } catch (_: Throwable) { false }
+        /** Returns a start stamp (0 = meter OFF). */
+        fun pStart(): Long = try { if (perfOn()) System.nanoTime() else 0L } catch (_: Throwable) { 0L }
+        fun pEnd(kind: Int, start: Long) { try { if (start != 0L) timing.add(kind, System.nanoTime() - start) } catch (_: Throwable) { } }
+        fun pDown() { try { downNs = if (perfOn()) System.nanoTime() else 0L } catch (_: Throwable) { } }
+        fun pCommit() { try { val d = downNs; if (d != 0L) { downNs = 0L; timing.add(com.mgb.keyboard.typing.KeyTiming.KEY, System.nanoTime() - d) } } catch (_: Throwable) { } }
 
         /** hint_on for HintKeys (fallback = direct pref read). */
         fun hintOn(p: JabraPrefs): Boolean = try { current?.get()?.hintOn ?: p.bool("hint_on", true) } catch (_: Throwable) { p.bool("hint_on", true) }

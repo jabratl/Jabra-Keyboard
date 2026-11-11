@@ -62,10 +62,34 @@ object HealthPanel {
             }
         }
 
+        try { addSpeed(ctx, root, ::btn) } catch (_: Throwable) { }   // v0.9.10 (V5)
         root.addView(btn("Jabra Health Check") { msg.text = "Checking..."; check(ctx, act, msg) { l -> show(l) } })
         root.addView(msg)
         root.addView(rows)
         return root
+    }
+
+    /** v0.9.10 (V5): speed meter rows. Pref perf_meter (default OFF = zero cost). Numbers = last 100 samples per kind. */
+    private fun addSpeed(ctx: Context, root: LinearLayout, mk: (String, (Button) -> Unit) -> Button) {
+        val d = ctx.resources.displayMetrics.density
+        val sp = ctx.getSharedPreferences("jabra", Context.MODE_PRIVATE)
+        val head = TextView(ctx); head.setPadding(0, (6 * d).toInt(), 0, (3 * d).toInt()); head.text = "Speed meter"
+        val out = TextView(ctx); out.textSize = 12f
+        fun on(): Boolean = try { sp.getBoolean("perf_meter", false) } catch (_: Throwable) { false }
+        fun fill() {
+            val t = com.mgb.keyboard.KeyCfg.timing
+            val sb = StringBuilder(if (on()) "ON. Type on the keyboard, then tap Refresh.\n" else "OFF (no cost). Turn ON, type a bit, then Refresh.\n")
+            for (k in 0 until com.mgb.keyboard.typing.KeyTiming.KINDS) sb.append(t.line(k)).append('\n')
+            out.text = sb.toString()
+        }
+        val tg = mk("Speed meter") { b -> }
+        fun label() { tg.text = if (on()) "Speed meter: ON (tap = OFF)" else "Speed meter: OFF (tap = ON)" }
+        tg.setOnClickListener { try { sp.edit().putBoolean("perf_meter", !on()).apply(); label(); fill() } catch (_: Throwable) { } }
+        label(); fill()
+        root.addView(head); root.addView(tg)
+        root.addView(mk("Refresh numbers") { fill() })
+        root.addView(mk("Reset numbers") { com.mgb.keyboard.KeyCfg.timing.reset(); fill() })
+        root.addView(out)
     }
 
     private fun check(ctx: Context, act: SettingsActivity?, msg: TextView, show: (List<HealthCheck.Item>) -> Unit) {

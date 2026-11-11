@@ -95,8 +95,10 @@ object KeyPopup {
 
     /** v0.9.0: reusable bubble. Same size / colours / position as showOld(); any failure falls back to showOld(). */
     private fun show(b: Button, prefs: JabraPrefs) {
+        val ps = KeyCfg.pStart()   // v0.9.10 (V5)
         try {
             showFast(b, prefs)
+            KeyCfg.pEnd(com.mgb.keyboard.typing.KeyTiming.BUBBLE, ps)
         } catch (_: Throwable) {
             dropCached()
             try { showOld(b, prefs) } catch (_: Throwable) { dismiss() }

@@ -54,6 +54,7 @@ object HintKeys {
         }
         b.setOnTouchListener { v, e ->
             try { if (e.actionMasked == MotionEvent.ACTION_DOWN && KeyCfg.downBuzz(v, prefs)) host.hintFeedback(v) } catch (_: Throwable) { }   // v0.9.1: fb_down = feedback at finger-down (OFF = nothing here)
+            try { if (e.actionMasked == MotionEvent.ACTION_DOWN) KeyCfg.pDown() } catch (_: Throwable) { }   // v0.9.10 (V5): meter stamp (OFF = nothing)
             try { KeyPopup.touch(v, e, prefs) } catch (_: Throwable) { }   // popup behaviour is the same as v0.1.3
             try {
                 when (e.actionMasked) {
