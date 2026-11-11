@@ -80,6 +80,12 @@ object JabraTokens {
     }
     /** Main text on a card (Classic = black as today). */
     fun cardText(p: JabraPrefs): Int = if (isClassic(p)) Color.BLACK else (btnText(p) ?: panelText(p))
+    /** v0.6.4: secondary text / headers (Classic = Color.DKGRAY as the clipboard uses today). */
+    fun dimText(p: JabraPrefs): Int = try { if (isClassic(p)) Color.DKGRAY else note(p) } catch (_: Throwable) { Color.DKGRAY }
+    /** v0.6.4: highlight of a ticked list row (Classic = #CFE0F5 as today). */
+    fun rowPicked(p: JabraPrefs): Int = try { if (isClassic(p)) 0xFFCFE0F5.toInt() else withAlpha(ACCENT, 0x66) } catch (_: Throwable) { 0xFFCFE0F5.toInt() }
     /** Small grey info text on a card (Classic = grey as today). */
-    fun cardNote(p: JabraPrefs): Int = if (isClassic(p)) Color.GRAY else note(p)
+    fun cardNote(p: JabraPrefs): Int = if (isClassic(p)) Color.GRAY else withAlpha(cardText(p), 0xA6)   // v0.6.6: relative to the card text (the card is key-coloured, so the panel note colour could be too faint, e.g. Ocean)
+    /** v0.6.6: darker secondary text on a card / list row (Classic = Color.DKGRAY as today). */
+    fun onCardDim(p: JabraPrefs): Int = if (isClassic(p)) Color.DKGRAY else withAlpha(cardText(p), 0xCC)
 }

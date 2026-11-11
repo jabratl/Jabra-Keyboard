@@ -307,3 +307,14 @@ Z14) v0.6.5 Formatter follows the theme
  [ ] Replace asks twice ("Sure?" style), Undo brings the old text back, Copy formatted, Rules from clipboard, Presets (apply / save / delete) still work exactly as before.
  [ ] Look = Jabra and Borderless: Formatter buttons follow (rounded / flat). At 360 px the tabs row and the 2-3 buttons per row still fit.
 
+Z15) v0.6.6 Vault follows the theme
+ [ ] Classic theme + Classic look: Vault looks the same as in v0.6.5 (grey bg, white rows, black text, system buttons).
+ [ ] Dark theme: open Vault. Background dark, buttons dark with light text, rows dark (key colour) with light title, grey preview and count readable, folder chips readable.
+ [ ] Try Ocean and Gloss Black and Purple Haze (gradient): rows and buttons readable.
+ [ ] Select mode (long-press a row): ticked rows clearly highlighted in blue in Classic and in Dark; bottom bar buttons readable.
+ [ ] Add / Edit entry: edit screen text, title line, mini keyboard letters, space and back icons readable in Dark; the screen fits inside the keyboard height (scrolls if needed).
+ [ ] Folders screen (move / manage): folder names readable, Delete asks twice. Search: query text readable, mini keyboard works.
+ [ ] Fill screen ({name} template): the active field row is highlighted, other rows readable in Classic and Dark. Paste still fills the text.
+ [ ] Look = Jabra and Borderless: Vault buttons follow (rounded / flat). At 360 px the chips row scrolls and nothing is cut off.
+ [ ] Clipboard cards (Cards view) in Ocean: the small count line under each clip is readable.
+

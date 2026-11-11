@@ -68,7 +68,25 @@ class VaultPanel(private val ctx: Context, private val host: JabraHost, private 
     private fun now(): Long = System.currentTimeMillis()
     private fun refresh() { host.showPanel("vault") }
 
+    // v0.6.6 theme: buttons = UiKit.btn (follows theme / Jabra look / Borderless), old body kept as btnOld() = automatic fallback
     private fun btn(label: String, weight: Float, hDp: Int, onClick: (Button) -> Unit): Button {
+        try { return UiKit.btn(ctx, prefs, label, weight, hDp, 0f, { v -> host.feedback(v) }, onClick) } catch (_: Throwable) { }
+        return btnOld(label, weight, hDp, onClick)
+    }
+
+    // v0.6.6 theme colours (Classic = the same values as before; any problem = old value)
+    private fun paintBg(v: View) { try { JabraThemes.paint(prefs, v) } catch (_: Throwable) { v.setBackgroundColor(Color.parseColor("#DDDDDD")) } }
+    private fun dim(): Int = try { JabraTokens.dimText(prefs) } catch (_: Throwable) { Color.DKGRAY }             // grey text on the panel
+    private fun ink(): Int = try { if (JabraTokens.isClassic(prefs)) Color.BLACK else JabraTokens.panelText(prefs) } catch (_: Throwable) { Color.BLACK }   // main text on the panel
+    private fun rowInk(): Int = try { JabraTokens.cardText(prefs) } catch (_: Throwable) { Color.BLACK }          // main text on a row
+    private fun rowDim(): Int = try { JabraTokens.onCardDim(prefs) } catch (_: Throwable) { Color.DKGRAY }        // grey text on a row
+    private fun rowNote(): Int = try { JabraTokens.cardNote(prefs) } catch (_: Throwable) { Color.GRAY }          // small count on a row
+    private fun rowFill(picked: Boolean): Int = try {
+        if (JabraTokens.isClassic(prefs)) (if (picked) Color.parseColor("#BBDEFB") else Color.WHITE)
+        else if (picked) JabraTokens.withAlpha(JabraTokens.ACCENT, 0x66) else (JabraTokens.btnFill(prefs) ?: Color.WHITE)
+    } catch (_: Throwable) { if (picked) Color.parseColor("#BBDEFB") else Color.WHITE }
+
+    private fun btnOld(label: String, weight: Float, hDp: Int, onClick: (Button) -> Unit): Button {
         val b = Button(ctx)
         b.text = label
         b.isAllCaps = false
@@ -96,7 +114,7 @@ class VaultPanel(private val ctx: Context, private val host: JabraHost, private 
     private fun rootView(): LinearLayout {
         val root = LinearLayout(ctx)
         root.orientation = LinearLayout.VERTICAL
-        root.setBackgroundColor(Color.parseColor("#DDDDDD"))
+        paintBg(root)   // v0.6.6
         root.setPadding(dp(2), dp(4), dp(2), dp(4))
         return root
     }
@@ -105,7 +123,7 @@ class VaultPanel(private val ctx: Context, private val host: JabraHost, private 
         val t = TextView(ctx)
         t.text = text
         t.textSize = 12f
-        t.setTextColor(Color.DKGRAY)
+        t.setTextColor(dim())   // v0.6.6
         t.setPadding(dp(8), dp(2), dp(8), dp(2))
         return t
     }
@@ -229,7 +247,7 @@ class VaultPanel(private val ctx: Context, private val host: JabraHost, private 
         val m = TextView(ctx)
         m.text = if (selOn && shown.isEmpty()) sel.size.toString() + " selected" else shown
         m.textSize = 12f
-        m.setTextColor(Color.DKGRAY)
+        m.setTextColor(dim())   // v0.6.6
         m.setPadding(dp(8), 0, dp(4), 0)
         m.layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
         head.addView(m)
@@ -282,7 +300,7 @@ class VaultPanel(private val ctx: Context, private val host: JabraHost, private 
             val q = TextView(ctx)
             q.text = "🔍 " + query + "▏"
             q.textSize = 15f
-            q.setTextColor(Color.BLACK)
+            q.setTextColor(ink())   // v0.6.6
             q.setPadding(dp(8), dp(2), dp(8), dp(2))
             root.addView(q)
         }
@@ -297,7 +315,7 @@ class VaultPanel(private val ctx: Context, private val host: JabraHost, private 
             val t = TextView(ctx)
             t.text = if (searching) "No match" else if (l.size() == 0) "Vault is empty. Type or select text in a field, then tap + Add. Or tap + Add on an empty field to write one here." else "Nothing here. Change the chips above."
             t.setPadding(dp(8), dp(12), dp(8), dp(12))
-            t.setTextColor(Color.DKGRAY)
+            t.setTextColor(dim())   // v0.6.6
             col.addView(t)
         }
         for (e in items) col.addView(entryRow(e))
@@ -308,8 +326,8 @@ class VaultPanel(private val ctx: Context, private val host: JabraHost, private 
             for (letters in arrayOf("qwertyuiop", "asdfghjkl", "zxcvbnm")) {
                 val r = row()
                 letters.forEach { ch -> r.addView(btn(ch.toString(), 1f, 34) { query += ch; refresh() }) }
-                if (letters == "asdfghjkl") r.addView(JabraIcons.put(ctx, btn("␣", 1f, 34) { query += " "; refresh() }, "space"))
-                if (letters == "zxcvbnm") r.addView(JabraIcons.put(ctx, btn("⌫", 1.5f, 34) { if (query.isNotEmpty()) query = query.dropLast(1); refresh() }, "back"))
+                if (letters == "asdfghjkl") r.addView(JabraIcons.putThemed(ctx, btn("␣", 1f, 34) { query += " "; refresh() }, "space"))
+                if (letters == "zxcvbnm") r.addView(JabraIcons.putThemed(ctx, btn("⌫", 1.5f, 34) { if (query.isNotEmpty()) query = query.dropLast(1); refresh() }, "back"))
                 root.addView(r)
             }
         }
@@ -320,7 +338,7 @@ class VaultPanel(private val ctx: Context, private val host: JabraHost, private 
         val r = row()
         r.gravity = Gravity.CENTER_VERTICAL
         val picked = selOn && sel.contains(e.id)
-        r.setBackgroundColor(if (picked) Color.parseColor("#BBDEFB") else Color.WHITE)
+        r.setBackgroundColor(rowFill(picked))   // v0.6.6
         val lp = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
         lp.setMargins(dp(2), dp(1), dp(2), dp(1))
         r.layoutParams = lp
@@ -334,7 +352,7 @@ class VaultPanel(private val ctx: Context, private val host: JabraHost, private 
         title.text = (if (picked) "✓ " else "") + e.title
         title.textSize = 14f
         title.setTypeface(title.typeface, android.graphics.Typeface.BOLD)
-        title.setTextColor(Color.BLACK)
+        title.setTextColor(rowInk())   // v0.6.6
         title.maxLines = 1
         title.ellipsize = TextUtils.TruncateAt.END
         colL.addView(title)
@@ -342,7 +360,7 @@ class VaultPanel(private val ctx: Context, private val host: JabraHost, private 
         val tag = if (e.kind == VaultList.TEMPLATE) "Template · " else if (e.kind == VaultList.NOTE) "Note · " else ""
         prev.text = tag + e.text.replace("\n", " ")
         prev.textSize = 11f
-        prev.setTextColor(Color.DKGRAY)
+        prev.setTextColor(rowDim())   // v0.6.6
         prev.maxLines = 1
         prev.ellipsize = TextUtils.TruncateAt.END
         colL.addView(prev)
@@ -352,7 +370,7 @@ class VaultPanel(private val ctx: Context, private val host: JabraHost, private 
             val c = TextView(ctx)
             c.text = e.count.toString() + "×"
             c.textSize = 11f
-            c.setTextColor(Color.GRAY)
+            c.setTextColor(rowNote())   // v0.6.6
             c.setPadding(dp(4), 0, dp(6), 0)
             r.addView(c)
         }
@@ -468,7 +486,7 @@ class VaultPanel(private val ctx: Context, private val host: JabraHost, private 
             val t = TextView(ctx)
             t.text = f + "  (" + l.countIn(f) + ")"
             t.textSize = 14f
-            t.setTextColor(Color.BLACK)
+            t.setTextColor(ink())   // v0.6.6
             t.maxLines = 1
             t.ellipsize = TextUtils.TruncateAt.END
             t.setPadding(dp(8), 0, dp(4), 0)
@@ -521,7 +539,7 @@ class VaultPanel(private val ctx: Context, private val host: JabraHost, private 
         val box = TextView(ctx)
         box.text = fName + "▏"
         box.textSize = 16f
-        box.setTextColor(Color.BLACK)
+        box.setTextColor(ink())   // v0.6.6
         box.setPadding(dp(8), dp(4), dp(8), dp(4))
         root.addView(box)
         addKeys(root, { s -> if (fName.length < VaultList.MAX_FOLDER_NAME) fName += s.replace("\n", " ") }, { if (fName.isNotEmpty()) fName = fName.dropLast(1) })
@@ -581,7 +599,7 @@ class VaultPanel(private val ctx: Context, private val host: JabraHost, private 
         val ttl = TextView(ctx)
         ttl.text = (if (isTerm) "Term: " else "Title: ") + eTitle + (if (eField == 0) "▏" else "")
         ttl.textSize = 13f
-        ttl.setTextColor(Color.BLACK)
+        ttl.setTextColor(ink())   // v0.6.6
         ttl.maxLines = 1
         ttl.ellipsize = TextUtils.TruncateAt.START
         ttl.setPadding(dp(8), dp(1), dp(8), dp(1))
@@ -592,7 +610,7 @@ class VaultPanel(private val ctx: Context, private val host: JabraHost, private 
         val tv = TextView(ctx)
         tv.text = eText.replace("\n", " ⏎ ") + (if (eField == 1) "▏" else "")
         tv.textSize = 14f
-        tv.setTextColor(Color.BLACK)
+        tv.setTextColor(ink())   // v0.6.6
         tv.setPadding(dp(8), dp(1), dp(8), dp(1))
         sv.addView(tv)
         root.addView(sv)
@@ -639,9 +657,9 @@ class VaultPanel(private val ctx: Context, private val host: JabraHost, private 
             val t = TextView(ctx)
             t.text = nm + ":  " + (fillVals[nm] ?: "").replace("\n", " ⏎ ") + (if (i == fillIdx) "▏" else "")
             t.textSize = 14f
-            t.setTextColor(Color.BLACK)
+            t.setTextColor(rowInk())   // v0.6.6
             t.setPadding(dp(8), dp(4), dp(8), dp(4))
-            t.setBackgroundColor(if (i == fillIdx) Color.parseColor("#BBDEFB") else Color.WHITE)
+            t.setBackgroundColor(rowFill(i == fillIdx))   // v0.6.6
             val lp = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
             lp.setMargins(dp(2), dp(1), dp(2), dp(1))
             t.layoutParams = lp
