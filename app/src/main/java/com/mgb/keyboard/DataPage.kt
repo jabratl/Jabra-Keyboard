@@ -51,7 +51,7 @@ object DataPage {
                 val used = fileSize(ctx.filesDir) + fileSize(File(ctx.applicationInfo.dataDir, "shared_prefs/jabra.xml"))
                 info.addView(line("Storage used: ${size(used)}"))
                 val last = prefs.str("bk_last", "")
-                info.addView(line("Last backup: " + (if (last.isEmpty()) "none yet" else last)))
+                info.addView(line("Last backup: " + (if (last.isEmpty()) "none yet" else last + (com.mgb.keyboard.typing.HealthCheck.ago(com.mgb.keyboard.typing.HealthCheck.daysSince(last, System.currentTimeMillis())).let { if (it.isEmpty()) "" else "  ($it)" }))))   // v0.5.9: + "(today)"
             } catch (_: Throwable) { }
             try {
                 val files = BackupStore.list(ctx)

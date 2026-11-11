@@ -141,6 +141,7 @@ public class HealthTest {
         t("note none", HealthCheck.backupNote(false, "", nowT).startsWith("No backup yet"));
         t("note fresh", HealthCheck.backupNote(false, "20261110_1200", nowT).isEmpty());
         t("note 6 days ok, 7 stale", HealthCheck.backupNote(false, "20261105_1200", nowT).isEmpty() && HealthCheck.backupNote(false, "20261104_1200", nowT).contains("7 days"));
+        t("ago", HealthCheck.ago(-1).equals("") && HealthCheck.ago(0).equals("today") && HealthCheck.ago(1).equals("yesterday") && HealthCheck.ago(5).equals("5 days ago"));
         System.out.println("HealthTest " + ok + "/" + (ok + bad) + (bad == 0 ? " OK" : " FAILED"));
         if (bad != 0) System.exit(1);
     }

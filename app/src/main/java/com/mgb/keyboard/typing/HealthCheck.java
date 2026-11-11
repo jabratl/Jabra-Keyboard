@@ -137,6 +137,14 @@ public final class HealthCheck {
         } catch (Throwable e) { return -1; }
     }
 
+    /** v0.5.9: "today" / "yesterday" / "N days ago" for the Data & Backup page. "" when days < 0. */
+    public static String ago(int days) {
+        if (days < 0) return "";
+        if (days == 0) return "today";
+        if (days == 1) return "yesterday";
+        return days + " days ago";
+    }
+
     /** Text for the app screen, "" = nothing to say. Only when auto backup is OFF (ON = a backup is made every day) and the last one is missing or older than STALE_DAYS. */
     public static String backupNote(boolean autoOn, String stamp, long now) {
         if (autoOn) return "";

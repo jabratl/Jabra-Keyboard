@@ -1,3 +1,9 @@
+v0.5.9 - NEW: "Last backup" line shows how old it is
+- WHY: "Last backup: 20261111_1230" is hard to read. Now: "20261111_1230  (today)" / "(yesterday)" / "(5 days ago)".
+- Code: typing/HealthCheck.java ago(days) (pure), tools/HealthTest.java (+1 check: 81), DataPage.kt (1 line, marked "v0.5.9"). No new pref, no permission.
+BROKE: nothing intended. NOT tested: Kotlin compile (GitHub Actions first), the line on a phone. TESTED here: HealthTest 81/81.
+Rollback: restore the old "Last backup:" line in DataPage.kt.
+
 v0.5.8 - NEW: "backup is old" warning on the app screen (only when Auto backup is OFF)
 - WHY: Auto backup (daily, default ON) already protects you. If you switch it OFF and forget, nothing reminded you. Now the app screen does.
 - What you get: the orange warning area (v0.5.7) also says "Last backup is N days old and Auto backup is OFF. Open Data & Backup > Backup now." (N >= 7) or "No backup yet and Auto backup is OFF...". Auto backup ON = never shown. A fresh backup (< 7 days) = never shown.

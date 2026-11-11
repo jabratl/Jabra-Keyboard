@@ -261,3 +261,6 @@ Z7) v0.5.7 Warning line
 Z8) v0.5.8 Old-backup warning
  [ ] Auto backup ON (default): no warning on the app screen.
  [ ] Data & Backup: Auto backup OFF + no backup files / last backup older than 7 days: orange line appears after reopening the app screen. Backup now + reopen = line gone.
+
+Z9) v0.5.9 Last backup age
+ [ ] Data & Backup > Backup now: "Last backup: <stamp>  (today)". Old backups show "(N days ago)". No backup yet = "none yet".
