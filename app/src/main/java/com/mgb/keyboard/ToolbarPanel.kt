@@ -87,6 +87,13 @@ class ToolbarPanel(private val ctx: Context, private val host: JabraHost) {
         }
         sw.text = "Toolbar: " + (if (prefs.bool("tb_custom", true)) "Custom" else "Classic")
         top.addView(sw)
+        val au = pk("", 1f, 40) { btn ->   // v0.5.4: default OFF
+            val nv = !prefs.bool("tb_auto", false)
+            prefs.setBool("tb_auto", nv)
+            btn.text = "Most used to front: " + (if (nv) "ON" else "OFF")
+        }
+        au.text = "Most used to front: " + (if (prefs.bool("tb_auto", false)) "ON" else "OFF")
+        top.addView(au)
         root.addView(top)
 
         // list (scrolls, about 5 rows high)

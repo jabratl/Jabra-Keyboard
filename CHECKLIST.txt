@@ -236,3 +236,10 @@ Z3) v0.5.3 Health Check + migration + crash guard
  [ ] Optional: Backup now, then Health Check: Backups: 1 readable (or more).
  [ ] Keyboard behaves exactly as before: clipboard, Vault, Profiles, Text tools, Theme Studio panels all still open.
  [ ] (If you have a damaged Vault / Profiles file or a broken panel, send a screenshot of the Health Check lines.)
+
+Z4) v0.5.4 Most used to front
+ [ ] Edit toolbar panel: top row has 2 buttons: "Toolbar: Custom" and "Most used to front: OFF" (fits at 360 px).
+ [ ] OFF: toolbar order is exactly yours, tapping keys changes nothing.
+ [ ] Tap it = ON. Use Copy 5 times, Paste 3 times, All once, then close / reopen the keyboard: the first key is unchanged, Copy, Paste, All come right behind it.
+ [ ] Tap OFF again: your own order is back.
+

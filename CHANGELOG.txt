@@ -1,3 +1,12 @@
+v0.5.4 - NEW: Dynamic toolbar "Most used to front" (S10, optional, default OFF)
+- WHY: plan S10 (HANDOFF 3e). The keys you use most come closer, you stay in control. Default OFF = the toolbar is exactly as before.
+- What you get: Edit toolbar panel > new button "Most used to front: OFF / ON". ON = every toolbar key tap is counted; the first visible item stays first (your pinned key), the 3 most used keys move right behind it (most used first), all others keep your order. The bar re-sorts the next time it is drawn (never jumps while you tap). Counts fade: when one passes 1000 all are halved. OFF = order is your order again (counts are kept).
+- Code: NEW typing/ToolUsage.java (pure: parse / serialize / count / reorder), NEW tools/ToolUsageTest.java (12 ok). Hooks marked "v0.5.4": MgbIme.kt toolbarAction (1 line), Toolbar.kt (2 lines: reorder), ToolbarPanel.kt (1 button).
+- Prefs NEW: tb_auto(bool,false), tb_use(str,"" = "id:count,..."). Not in profiles (profile whitelist unchanged); both are in backups. No permission. One small pref write per toolbar tap only when ON (not on the key-press path of letters).
+BROKE: nothing intended. NOT tested: Kotlin compile (GitHub Actions first), the panel's top row at 360 px (2 buttons share one row), re-sorting on a phone.
+TESTED here: ToolUsageTest 12/12, all other Java tests green; bracket balance of the 3 changed Kotlin files OK.
+Rollback: Most used to front = OFF (no code change). Code: delete typing/ToolUsage.java, tools/ToolUsageTest.java and the lines marked "v0.5.4".
+
 v0.5.3 - NEW: Jabra Health Check + settings migration + panel crash guard (S9)
 - WHY: plan S9 (HANDOFF 3e). Data safety: see at a glance if clipboard / vault / profiles / theme data is damaged, repair only the safe things, and never let one broken panel make the keyboard unusable. Defaults: nothing changes until you tap the Health Check button.
 - What you get:

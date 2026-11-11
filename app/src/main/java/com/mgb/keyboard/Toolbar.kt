@@ -59,7 +59,8 @@ object Toolbar {
             if (id == "mode" && !prefs.bool("mode_key", true)) continue  // old setting Mode key OFF = item hidden
             ids.add(id)
         }
-        val shown: List<String> = if (prefs.bool("tb_fold", false)) ids.take(1) else ids
+        val ordered: List<String> = try { if (prefs.bool("tb_auto", false)) com.mgb.keyboard.typing.ToolUsage.reorder(ids, prefs.str("tb_use", "")) else ids } catch (_: Throwable) { ids }   // v0.5.4: most used 3 behind the first item
+        val shown: List<String> = if (prefs.bool("tb_fold", false)) ordered.take(1) else ordered
 
         val bar = LinearLayout(ctx)
         bar.orientation = LinearLayout.HORIZONTAL

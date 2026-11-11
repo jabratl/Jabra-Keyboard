@@ -497,6 +497,7 @@ class MgbIme : InputMethodService() {
 
     /** v0.2.2: what a toolbar item does. Only opens things that already exist (panels, switcher, theme / one-hand cycle). */
     private fun toolbarAction(id: String) {
+        try { if (prefs.bool("tb_auto", false)) prefs.setStr("tb_use", com.mgb.keyboard.typing.ToolUsage.count(prefs.str("tb_use", ""), id)) } catch (_: Throwable) { }   // v0.5.4: usage count (only when "Move most used to front" is ON)
         when (id) {
             "clip" -> openClipboard()
             "fmt" -> openFormatter()
