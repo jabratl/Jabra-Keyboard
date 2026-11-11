@@ -3,11 +3,14 @@ package com.mgb.keyboard
 import android.content.Context
 import android.content.res.ColorStateList
 import android.graphics.Color
+import android.view.Gravity
 import android.view.View
 import android.widget.Button
 import android.widget.HorizontalScrollView
 import android.widget.LinearLayout
+import android.widget.TextView
 import com.mgb.keyboard.emoji.EmojiDb
+import com.mgb.keyboard.emoji.EmojiSearch
 import com.mgb.keyboard.emoji.RecentEmoji
 
 /**
@@ -18,6 +21,10 @@ class EmojiGridPanel(private val ctx: Context, private val host: JabraHost, priv
 
     private val prefs = JabraPrefs(ctx)
     private var cat = 0   // 0 = recent, 1.. = tab (cat - 1) in gs
+    private var searching = false   // v0.8.3: search screen on
+    private var query = ""
+    private var toneBase: String? = null   // v0.8.3: base emoji whose tone picker row is showing
+    private var fillTopRef: (() -> Unit)? = null
     private var gs: List<Int> = emptyList()   // v0.8.2: data-file groups that have at least one emoji this phone can draw (a group with none gets no tab)
 
     private fun dp(v: Int): Int = (v * ctx.resources.displayMetrics.density).toInt()
@@ -42,6 +49,7 @@ class EmojiGridPanel(private val ctx: Context, private val host: JabraHost, priv
 
     /** Opens on the recent tab (or the first group if there are no recent emoji yet). */
     fun reset() {
+        searching = false; query = ""; toneBase = null   // v0.8.3
         cat = if (itemsFor(0).isEmpty()) 1 else 0
     }
 
@@ -57,6 +65,8 @@ class EmojiGridPanel(private val ctx: Context, private val host: JabraHost, priv
         return EmojiStore.groupItems(gs[c - 1])   // v0.8.2: filtered list (Paint.hasGlyph)
     }
 
+    private fun tone(): Int = try { prefs.int("emoji_tone", -1).coerceIn(-1, 4) } catch (_: Throwable) { -1 }   // v0.8.3: default skin tone, -1 = none
+
     private fun make(): View {
         val gl = ArrayList<Int>()
         for (g in 0 until db.groupCount()) if (EmojiStore.groupItems(g).isNotEmpty()) gl.add(g)
@@ -69,29 +79,117 @@ class EmojiGridPanel(private val ctx: Context, private val host: JabraHost, priv
         try { JabraThemes.paint(prefs, root) } catch (_: Throwable) { }
         root.setPadding(dp(2), dp(4), dp(2), dp(4))
 
+        val ink = try { JabraThemes.iconColor(prefs) } catch (_: Throwable) { Color.parseColor("#222222") }
         val grid = EmojiGridView(ctx)
         try {
-            val ink = JabraThemes.iconColor(prefs)
             grid.setColors((ink and 0x00FFFFFF) or 0x33000000, JabraThemes.noteColor(prefs))
         } catch (_: Throwable) { grid.setColors(0x33000000, Color.parseColor("#555555")) }
+
+        // v0.8.3: the grid shows the default skin tone; curBase keeps the base emoji of every shown cell (for the tone picker)
+        var curBase: List<String> = emptyList()
+        fun setGrid(bases: List<String>, empty: String, keep: Boolean) {
+            curBase = bases
+            val t = tone()
+            val shown = if (t < 0) bases else bases.map { EmojiStore.toned(it, t) }
+            grid.setItems(shown, empty, keep)
+        }
+        val recentHint = "No recent emoji yet. Pick one from the other tabs."
+        val searchHint = "Type a word, for example: heart, cat, pizza"
+        fun showCat(keep: Boolean) {
+            if (searching) {
+                setGrid(if (query.isBlank()) emptyList() else EmojiStore.search(query, 120), if (query.isBlank()) searchHint else "No match", keep)
+            } else setGrid(itemsFor(cat), if (cat == 0) recentHint else "", keep)
+        }
+
+        val top = LinearLayout(ctx)   // v0.8.3: holds the tab row, the search line or the tone row
+        top.orientation = LinearLayout.VERTICAL
+        val hs = HorizontalScrollView(ctx)
+        hs.isHorizontalScrollBarEnabled = false
+        val tabs = LinearLayout(ctx)
+        tabs.orientation = LinearLayout.HORIZONTAL
+        hs.addView(tabs)
+        val qv = TextView(ctx)
+        qv.textSize = 15f
+        qv.setTextColor(ink)
+        qv.setPadding(dp(8), dp(2), dp(8), dp(2))
+        qv.minHeight = dp(32)
+        qv.gravity = Gravity.CENTER_VERTICAL
+        fun showQuery() { qv.text = (if (JabraPrefs(ctx).bool("icons_on", true)) "" else "\uD83D\uDD0D ") + query + "\u258F" }
+        val toneRow = LinearLayout(ctx)
+        toneRow.orientation = LinearLayout.HORIZONTAL
+
+        fun fillTop() {
+            top.removeAllViews()
+            val tb = toneBase
+            if (tb != null) {
+                toneRow.removeAllViews()
+                val cur = tone()
+                val vs = EmojiStore.toneVariants(tb)
+                fun pickTone(str: String, t: Int) {
+                    host.commitWord()
+                    host.typeText(str)
+                    try { prefs.setStr("emoji_recent", RecentEmoji.add(prefs.str("emoji_recent", ""), str)) } catch (_: Throwable) { }
+                    try { prefs.setInt("emoji_tone", t) } catch (_: Throwable) { }
+                    toneBase = null
+                    fillTopRef?.invoke()
+                    showCat(true)
+                }
+                val b0 = btn(tb, 0, 1f, dp(36)) { pickTone(tb, -1) }
+                b0.textSize = 18f
+                if (cur < 0) b0.backgroundTintList = ColorStateList.valueOf(Color.parseColor("#9CC3E6"))
+                toneRow.addView(b0)
+                for (pr in vs) {
+                    val bt = btn(pr.second, 0, 1f, dp(36)) { pickTone(pr.second, pr.first) }
+                    bt.textSize = 18f
+                    if (pr.first == cur) bt.backgroundTintList = ColorStateList.valueOf(Color.parseColor("#9CC3E6"))
+                    toneRow.addView(bt)
+                }
+                val x = JabraIcons.putThemed(ctx, btn("\u2715", dp(44), 0f, dp(36)) { toneBase = null; fillTopRef?.invoke() }, "close")
+                toneRow.addView(x)
+                top.addView(toneRow)
+            } else if (searching) {
+                showQuery()
+                top.addView(qv)
+            } else top.addView(hs)
+        }
+        fillTopRef = { fillTop() }
+
         grid.onPick = { e, v ->
             try { host.feedback(v) } catch (_: Throwable) { }
             host.commitWord()
             host.typeText(e)
             try { prefs.setStr("emoji_recent", RecentEmoji.add(prefs.str("emoji_recent", ""), e)) } catch (_: Throwable) { }
         }
+        // v0.8.3: long press on an emoji that takes a skin tone = tone picker (only the variants this phone can draw)
+        grid.onLong = { i, v ->
+            try {
+                val base = curBase.getOrNull(i)
+                if (base != null && EmojiStore.toneable(base) && EmojiStore.toneVariants(base).isNotEmpty()) {
+                    try { host.feedback(v) } catch (_: Throwable) { }
+                    toneBase = base
+                    fillTop()
+                }
+            } catch (_: Throwable) { }
+        }
 
-        // tabs: recent + one per group (the icon = the first emoji of the group)
-        val tabs = LinearLayout(ctx)
-        tabs.orientation = LinearLayout.HORIZONTAL
+        // tabs: search + recent + one per group (the icon = the first emoji of the group)
         fun fillTabs() {
             tabs.removeAllViews()
+            val sb = JabraIcons.putThemed(ctx, btn("\uD83D\uDD0D", dp(44), 0f, dp(36)) {
+                searching = true
+                query = ""
+                toneBase = null
+                host.showPanel("emoji")
+            }, "search")
+            sb.textSize = 16f
+            tabs.addView(sb)
             for (i in 0..groups) {
                 val label = if (i == 0) "\uD83D\uDD58" else EmojiStore.groupItems(gl[i - 1])[0]
                 val t = btn(label, dp(44), 0f, dp(36)) {
                     cat = i
+                    toneBase = null
                     fillTabs()
-                    grid.setItems(itemsFor(cat), if (cat == 0) "No recent emoji yet. Pick one from the other tabs." else "")
+                    showCat(false)
                 }
                 t.textSize = 16f
                 if (i == cat) t.backgroundTintList = ColorStateList.valueOf(Color.parseColor("#9CC3E6"))
@@ -99,14 +197,31 @@ class EmojiGridPanel(private val ctx: Context, private val host: JabraHost, priv
             }
         }
         fillTabs()
-        val hs = HorizontalScrollView(ctx)
-        hs.isHorizontalScrollBarEnabled = false
-        hs.addView(tabs)
-        root.addView(hs)
+        fillTop()
+        root.addView(top)
 
-        grid.setItems(itemsFor(cat), if (cat == 0) "No recent emoji yet. Pick one from the other tabs." else "")
-        grid.layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(host.keyHeightDp()) * 4)
+        showCat(false)
+        grid.layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, if (searching) dp(88) else dp(host.keyHeightDp()) * 4)
         root.addView(grid)
+
+        if (searching) {
+            // v0.8.3: tiny search keyboard (Latin letters only, same pattern as the clipboard search)
+            fun upd() { showQuery(); showCat(false) }
+            for (letters in arrayOf("qwertyuiop", "asdfghjkl", "zxcvbnm")) {
+                val r = LinearLayout(ctx)
+                r.orientation = LinearLayout.HORIZONTAL
+                letters.forEach { ch -> r.addView(btn(ch.toString(), 0, 1f, dp(34)) { if (query.length < EmojiSearch.MAX_QUERY) { query += ch; upd() } }) }
+                if (letters == "asdfghjkl") r.addView(JabraIcons.putThemed(ctx, btn("\u2423", 0, 1f, dp(34)) { if (query.isNotEmpty() && query.length < EmojiSearch.MAX_QUERY) { query += " "; upd() } }, "space"))
+                if (letters == "zxcvbnm") r.addView(JabraIcons.putThemed(ctx, btn("\u232B", 0, 1.5f, dp(34)) { if (query.isNotEmpty()) { query = query.dropLast(1); upd() } }, "back"))
+                root.addView(r)
+            }
+            val bot = LinearLayout(ctx)
+            bot.orientation = LinearLayout.HORIZONTAL
+            bot.addView(btn("ABC", 0, 1f, dp(40)) { searching = false; query = ""; host.showLetters() })
+            bot.addView(btn("Back to emoji", 0, 2f, dp(40)) { searching = false; query = ""; toneBase = null; host.showPanel("emoji") })
+            root.addView(bot)
+            return root
+        }
 
         // bottom row (same as the old panel)
         val bot = LinearLayout(ctx)

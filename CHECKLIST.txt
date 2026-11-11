@@ -361,3 +361,16 @@ Z21) v0.8.2 Safe emoji render (E3)
  [ ] Tap an emoji, check the Recent tab: only drawable emoji are listed.
  [ ] Restart the phone (or force-stop the app), open the emoji panel: the new panel opens at once (cache works).
  [ ] Tell me: phone model + Android version, and if you miss a tab (for example Flags) or if emoji you know your phone can draw are missing.
+
+Z22) v0.8.3 Emoji search + skin tone (E4)
+ [ ] (GitHub) the build of v0.8.3 is GREEN. If red: paste the error lines in the next chat (it becomes a FIX).
+ [ ] Emoji panel -> first tab (magnifier): search screen opens with the small keyboard and the grey line "Type a word...".
+ [ ] Type "heart": hearts show, tap one = typed in the field + shows in Recent. Type "cat", "pizza", "bangladesh", "smile": results look right. "zzzz" = "No match".
+ [ ] Space and backspace on the mini keyboard work. [Back to emoji] goes back to the tabs, ABC goes to the letters keyboard.
+ [ ] Long press a hand or face emoji (for example thumbs up) in a normal tab: the tab row becomes [base] [5 tones] [x]. Tap a tone: it is typed, the row goes back to tabs.
+ [ ] Now all hand / face / person emoji in the grid show in that tone. Long press again -> tap the first (yellow) one: back to no tone.
+ [ ] Long press an emoji WITHOUT tones (heart, cat): nothing happens, no crash. Long press must not also type the emoji.
+ [ ] Long press inside search results works the same.
+ [ ] Close the keyboard, open again: the chosen tone is still on. Scroll position stays when you pick a tone.
+ [ ] Dark theme: search line, tone row and mini keys readable. Landscape / wide screen: nothing cut off.
+ [ ] Tell me: phone + Android version, if search feels slow, if the search screen is too tall, if a tone shows as an empty box.

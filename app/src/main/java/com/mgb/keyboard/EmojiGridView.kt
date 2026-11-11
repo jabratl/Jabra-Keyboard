@@ -43,6 +43,21 @@ class EmojiGridView(ctx: Context) : View(ctx) {
     /** Called on a tap: the emoji and this view (for host.feedback). */
     var onPick: ((String, View) -> Unit)? = null
 
+    /** v0.8.3: called on a long press: the item index and this view. A long press never also fires onPick. */
+    var onLong: ((Int, View) -> Unit)? = null
+    private var longFired = false
+    private val longRun = Runnable {
+        try {
+            if (pressed >= 0 && !dragging) {
+                val i = pressed
+                longFired = true
+                pressed = -1
+                invalidate()
+                onLong?.invoke(i, this)
+            }
+        } catch (_: Throwable) { }
+    }
+
     init {
         emojiPaint.textSize = 22f * density
         emojiPaint.textAlign = Paint.Align.CENTER
@@ -62,11 +77,12 @@ class EmojiGridView(ctx: Context) : View(ctx) {
         invalidate()
     }
 
-    fun setItems(list: List<String>, empty: String) {
+    fun setItems(list: List<String>, empty: String, keepScroll: Boolean = false) {   // v0.8.3: keepScroll
+        removeCallbacks(longRun)
         items = list
         emptyText = empty
         scroller.forceFinished(true)
-        off = 0
+        off = if (keepScroll) clampOff(off) else 0
         pressed = -1
         invalidate()
     }
@@ -145,13 +161,16 @@ class EmojiGridView(ctx: Context) : View(ctx) {
                 downY = e.y
                 lastY = e.y
                 dragging = false
+                longFired = false
                 pressed = hit(e.x, e.y)
+                if (pressed >= 0 && onLong != null) postDelayed(longRun, ViewConfiguration.getLongPressTimeout().toLong())   // v0.8.3
                 invalidate()
                 return true
             }
             MotionEvent.ACTION_MOVE -> {
                 vt?.addMovement(e)
                 if (!dragging && Math.abs(e.y - downY) > slop) {
+                    removeCallbacks(longRun)
                     dragging = true
                     pressed = -1
                     lastY = e.y
@@ -165,6 +184,7 @@ class EmojiGridView(ctx: Context) : View(ctx) {
                 return true
             }
             MotionEvent.ACTION_UP -> {
+                removeCallbacks(longRun)
                 vt?.addMovement(e)
                 if (dragging) {
                     val t = vt
@@ -178,7 +198,7 @@ class EmojiGridView(ctx: Context) : View(ctx) {
                     }
                 } else {
                     val i = hit(e.x, e.y)
-                    if (i >= 0 && i == pressed) {
+                    if (!longFired && i >= 0 && i == pressed) {
                         try { onPick?.invoke(items[i], this) } catch (_: Throwable) { }
                     }
                 }
@@ -189,6 +209,7 @@ class EmojiGridView(ctx: Context) : View(ctx) {
                 return true
             }
             MotionEvent.ACTION_CANCEL -> {
+                removeCallbacks(longRun)
                 pressed = -1
                 dragging = false
                 releaseVt()
