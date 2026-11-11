@@ -249,7 +249,19 @@ class FormatterPanel(private val ctx: Context, private val host: JabraHost, priv
     private fun dp(v: Int): Int = (v * ctx.resources.displayMetrics.density).toInt()
 
     // ---------- small view helpers ----------
+    // v0.6.5 theme: buttons = UiKit.btn (follows theme / Jabra look / Borderless); old body kept as btnOld() = automatic fallback
     private fun btn(label: String, weight: Float, hDp: Int, onClick: (Button) -> Unit): Button {
+        try {
+            val b = UiKit.btn(ctx, prefs, label, weight, hDp, 12f, { v -> host.feedback(v) }, onClick)
+            b.setPadding(dp(2), 0, dp(2), 0)   // same side padding as before
+            return b
+        } catch (_: Throwable) { }
+        return btnOld(label, weight, hDp, onClick)
+    }
+
+    private fun paintBg(v: View) { try { JabraThemes.paint(prefs, v) } catch (_: Throwable) { v.setBackgroundColor(Color.parseColor("#DDDDDD")) } }   // v0.6.5
+
+    private fun btnOld(label: String, weight: Float, hDp: Int, onClick: (Button) -> Unit): Button {
         val b = Button(ctx)
         b.text = label
         b.isAllCaps = false
@@ -287,7 +299,7 @@ class FormatterPanel(private val ctx: Context, private val host: JabraHost, priv
         val t = TextView(ctx)
         t.text = text
         t.textSize = 12f
-        t.setTextColor(Color.parseColor(if (bold) "#1D2327" else "#555555"))
+        t.setTextColor(try { if (JabraTokens.isClassic(prefs)) Color.parseColor(if (bold) "#1D2327" else "#555555") else if (bold) JabraTokens.panelText(prefs) else JabraTokens.note(prefs) } catch (_: Throwable) { Color.parseColor(if (bold) "#1D2327" else "#555555") })   // v0.6.5
         t.setPadding(dp(6), dp(3), dp(6), dp(3))
         return t
     }
@@ -299,10 +311,11 @@ class FormatterPanel(private val ctx: Context, private val host: JabraHost, priv
         t.typeface = Typeface.MONOSPACE
         t.maxLines = 5
         t.ellipsize = TextUtils.TruncateAt.END
-        t.setTextColor(Color.parseColor("#B02A63"))
+        val themed = try { !JabraTokens.isClassic(prefs) } catch (_: Throwable) { false }   // v0.6.5: Classic = same colours as before
+        t.setTextColor(try { if (themed && JabraTokens.isDark(prefs)) JabraTokens.panelText(prefs) else Color.parseColor("#B02A63") } catch (_: Throwable) { Color.parseColor("#B02A63") })
         t.setPadding(dp(8), dp(4), dp(8), dp(4))
         val g = GradientDrawable()
-        g.setColor(Color.parseColor("#FFFEFB"))
+        g.setColor(try { if (themed) (JabraTokens.btnFill(prefs) ?: Color.parseColor("#FFFEFB")) else Color.parseColor("#FFFEFB") } catch (_: Throwable) { Color.parseColor("#FFFEFB") })   // v0.6.5
         g.cornerRadius = dp(6).toFloat()
         t.background = g
         val lp = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
@@ -359,7 +372,7 @@ class FormatterPanel(private val ctx: Context, private val host: JabraHost, priv
         o = store.current()
         val root = LinearLayout(ctx)
         root.orientation = LinearLayout.VERTICAL
-        root.setBackgroundColor(Color.parseColor("#DDDDDD"))
+        paintBg(root)   // v0.6.5
         root.setPadding(dp(2), dp(4), dp(2), dp(4))
 
         val top = row()

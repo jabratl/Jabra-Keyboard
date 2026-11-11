@@ -287,3 +287,23 @@ Z12) v0.6.3 Design tokens + UiKit (foundation, NO visible change)
  [ ] GitHub Actions build of v0.6.3 is green (this is the only real test: the new files are not used by any screen yet).
  [ ] Install the APK: keyboard opens, typing, clipboard, formatter, vault, themes look EXACTLY like v0.6.1 (nothing should be different).
 
+
+
+Z13) v0.6.4 Clipboard follows the theme
+ [ ] Classic theme + Classic look: Clipboard panel looks the same as in v0.6.1 (grey bg, system buttons, light cards, black text).
+ [ ] Pick Dark (Themes panel), open Clipboard (List view): dark background, dark keys with light text on ABC / Search / Add / Clear, rows readable, "Pinned" / "Recent" headers and the message line readable.
+ [ ] Same in Cards view (Clipboard > View: Cards): card fill / border / text readable; pin star and x icons visible (not dark-on-dark).
+ [ ] Long-press a clip -> select mode in List and in Cards: ticked row / card is clearly highlighted, check box visible, bottom select bar (All, Pin, Unpin, Delete, Paste, Done, Merge, Edit, Paste in 1 line, To Vault) readable.
+ [ ] Edit a clip (select one, Edit): edit screen follows the theme; letters of the mini keyboard readable; Save asks twice.
+ [ ] Search: mini keyboard letters, space and back icons visible in Dark and in Classic.
+ [ ] Try Gloss Black, Ocean and a gradient theme (Purple Haze): panel readable. Try Look = Jabra and Borderless: clipboard buttons follow (rounded / flat).
+ [ ] At 360 px: 2-column cards still fit; long Bangla text does not break the layout.
+
+Z14) v0.6.5 Formatter follows the theme
+ [ ] Classic theme + Classic look: Formatter (Aa) looks the same as in v0.6.4 (grey bg, system buttons, grey notes, pink preview on near-white).
+ [ ] Dark theme: open Aa. Background dark, buttons dark with light text, note / status lines readable, current page tab blue, ON toggles green.
+ [ ] Go through all pages (tabs at the top): every button readable in Dark, Gloss Black and Ocean; Purple Haze (gradient) readable.
+ [ ] Preview (Run page, tap Preview with text in the field): preview box readable in Classic, Dark, Ocean and a light theme (Blue / Mint).
+ [ ] Replace asks twice ("Sure?" style), Undo brings the old text back, Copy formatted, Rules from clipboard, Presets (apply / save / delete) still work exactly as before.
+ [ ] Look = Jabra and Borderless: Formatter buttons follow (rounded / flat). At 360 px the tabs row and the 2-3 buttons per row still fit.
+
