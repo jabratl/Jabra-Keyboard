@@ -1,3 +1,11 @@
+v0.5.8 - NEW: "backup is old" warning on the app screen (only when Auto backup is OFF)
+- WHY: Auto backup (daily, default ON) already protects you. If you switch it OFF and forget, nothing reminded you. Now the app screen does.
+- What you get: the orange warning area (v0.5.7) also says "Last backup is N days old and Auto backup is OFF. Open Data & Backup > Backup now." (N >= 7) or "No backup yet and Auto backup is OFF...". Auto backup ON = never shown. A fresh backup (< 7 days) = never shown.
+- Code: typing/HealthCheck.java (daysSince, backupNote: pure), tools/HealthTest.java (+8 checks: 72 -> 80), SettingsActivity.kt (the v0.5.7 block now also asks backupNote). No new pref, no permission, nothing on the key-press path.
+BROKE: nothing intended. NOT tested: Kotlin compile (GitHub Actions first), the line on a phone.
+TESTED here: HealthTest 80/80, all other Java tests green.
+Rollback: remove the 2 lines marked "v0.5.8" in SettingsActivity.kt (restore `val w = PanelGuard.note(this)`).
+
 v0.5.7 - NEW: warning line on the app screen when the crash guard switched a panel off
 - WHY: since v0.5.3 a panel that fails twice in a row is switched off for 24 h, but the only hint was a short toast inside the keyboard. Now the app screen says it plainly and where to fix it.
 - What you get: under "Version ..." an orange line: Warning: the keyboard panel "vault" is switched off after repeated crashes. Open Data & Backup > Jabra Health Check to switch it on again. Nothing is shown when all panels are fine (normal case) or the 24 h block is over.

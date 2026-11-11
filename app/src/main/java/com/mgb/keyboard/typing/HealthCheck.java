@@ -122,6 +122,30 @@ public final class HealthCheck {
     /** Same text without the lines ClipList cannot read (order + pins kept). Caller saves a backup first. */
     public static String repairClips(String raw) { return ClipList.parse(raw).serialize(); }
 
+    // ---------- backup age (v0.5.8) ----------
+    public static final int STALE_DAYS = 7;
+
+    /** Whole days between a bk_last stamp "yyyyMMdd_HHmm" (local time) and now. -1 = empty / unreadable stamp. Never negative otherwise. */
+    public static int daysSince(String stamp, long now) {
+        try {
+            if (stamp == null || stamp.length() != 13) return -1;
+            java.text.SimpleDateFormat f = new java.text.SimpleDateFormat("yyyyMMdd_HHmm", Locale.US);
+            f.setLenient(false);
+            long t = f.parse(stamp).getTime();
+            long d = (now - t) / 86400000L;
+            return d < 0 ? 0 : (int) Math.min(d, 99999);
+        } catch (Throwable e) { return -1; }
+    }
+
+    /** Text for the app screen, "" = nothing to say. Only when auto backup is OFF (ON = a backup is made every day) and the last one is missing or older than STALE_DAYS. */
+    public static String backupNote(boolean autoOn, String stamp, long now) {
+        if (autoOn) return "";
+        int d = daysSince(stamp, now);
+        if (d < 0) return "No backup yet and Auto backup is OFF. Open Data & Backup > Backup now.";
+        if (d >= STALE_DAYS) return "Last backup is " + d + " days old and Auto backup is OFF. Open Data & Backup > Backup now.";
+        return "";
+    }
+
     // ---------- crash guard rules ----------
     /** True when the panel failed CRASH_LIMIT times in a row within the last 24 h. */
     public static boolean blocked(String lastPanel, int n, long t, String name, long now) {

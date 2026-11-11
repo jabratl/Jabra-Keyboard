@@ -56,7 +56,9 @@ class SettingsActivity : Activity() {
         ver.text = "Version ${BuildConfig.VERSION_NAME} (build ${BuildConfig.VERSION_CODE})"
         col.addView(ver)
         try {   // v0.5.7: visible warning when the crash guard switched a panel off
-            val w = PanelGuard.note(this)
+            val sp0 = getSharedPreferences("jabra", MODE_PRIVATE)
+            val bn = com.mgb.keyboard.typing.HealthCheck.backupNote(sp0.getBoolean("bk_auto", true), sp0.getString("bk_last", "") ?: "", System.currentTimeMillis())   // v0.5.8
+            val w = listOf(PanelGuard.note(this), bn).filter { it.isNotEmpty() }.joinToString("\n")
             if (w.isNotEmpty()) { val wt = TextView(this); wt.text = w; wt.setTextColor(0xFFD84315.toInt()); wt.setPadding(0, dp(6), 0, dp(6)); col.addView(wt) }
         } catch (_: Throwable) { }
 

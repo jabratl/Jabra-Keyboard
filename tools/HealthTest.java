@@ -130,6 +130,17 @@ public class HealthTest {
         t("garbage from = 1", Migrate.plan(bp, 0).changes() && Migrate.plan(bp, -5).from == 1);
         t("null prefs safe", !Migrate.plan(null, 1).changes());
 
+        // ---- backup age ----
+        long nowT = 0;
+        try { nowT = new java.text.SimpleDateFormat("yyyyMMdd_HHmm", java.util.Locale.US).parse("20261111_1200").getTime(); } catch (Exception e) { }
+        t("days same day", HealthCheck.daysSince("20261111_0800", nowT) == 0);
+        t("days 3", HealthCheck.daysSince("20261108_1200", nowT) == 3);
+        t("days bad stamp", HealthCheck.daysSince("", nowT) == -1 && HealthCheck.daysSince(null, nowT) == -1 && HealthCheck.daysSince("2026-11-08 12:00", nowT) == -1 && HealthCheck.daysSince("20261399_9999", nowT) == -1);
+        t("days future = 0", HealthCheck.daysSince("20271111_1200", nowT) == 0);
+        t("note auto on = empty", HealthCheck.backupNote(true, "", nowT).isEmpty() && HealthCheck.backupNote(true, "20200101_0000", nowT).isEmpty());
+        t("note none", HealthCheck.backupNote(false, "", nowT).startsWith("No backup yet"));
+        t("note fresh", HealthCheck.backupNote(false, "20261110_1200", nowT).isEmpty());
+        t("note 6 days ok, 7 stale", HealthCheck.backupNote(false, "20261105_1200", nowT).isEmpty() && HealthCheck.backupNote(false, "20261104_1200", nowT).contains("7 days"));
         System.out.println("HealthTest " + ok + "/" + (ok + bad) + (bad == 0 ? " OK" : " FAILED"));
         if (bad != 0) System.exit(1);
     }
