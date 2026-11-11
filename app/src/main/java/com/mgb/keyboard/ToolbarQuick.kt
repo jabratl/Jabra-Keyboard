@@ -116,7 +116,6 @@ object ToolbarEdit {
         val p = PopupWindow(t, w, hh, false)
         p.isTouchable = true
         p.isFocusable = false
-        ToolTip.inScreen(p)   // v0.10.4: "Edit shortcut" above the icon, not at the bottom
         val loc = IntArray(2)
         b.getLocationOnScreen(loc)
         val screenW = b.resources.displayMetrics.widthPixels

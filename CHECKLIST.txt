@@ -586,10 +586,3 @@ Z47) v0.10.3 Auto-correct (G3.2)
  [ ] Password / email / URL field: nothing is corrected.
  [ ] Tell me if a CORRECT word gets "fixed" (the word list is small): which word?
  [ ] Turn OFF again: typing as before, no lag.
-
-Z48) v0.10.4 Tip / Edit shortcut above the icon
- [ ] Hold a toolbar icon 0.3 s: its name floats just ABOVE that icon (not at the keyboard bottom). Release: it goes away, the icon does not press.
- [ ] Keep holding to 1.5 s: "Edit shortcut" shows just above the icon too; tap it = the quick add / remove page opens.
- [ ] Key popup ON: hold a key on the top letter row / number row: the bubble is above the key (never on the bottom row).
- [ ] Hold a suggestion slot 0.35 s: the 3-column grid opens over the keys as before.
- [ ] Bubble position: not shifted up / down by the status bar height? Tell me if it is.

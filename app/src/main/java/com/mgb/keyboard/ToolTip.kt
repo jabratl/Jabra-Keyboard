@@ -24,12 +24,6 @@ object ToolTip {
 
     fun dismiss() { try { pw?.dismiss() } catch (_: Throwable) { }; pw = null }
 
-    /** v0.10.4: call BEFORE showAtLocation. A popup of the keyboard window is normally kept INSIDE the keyboard window, so a bubble meant to sit above the top toolbar row was pushed to the bottom of the keyboard. This makes x / y real screen coordinates and lets the bubble sit above the keyboard window. Any problem = old behaviour. */
-    fun inScreen(p: PopupWindow) {
-        try { p.isClippingEnabled = false } catch (_: Throwable) { }
-        try { p.setLayoutInScreenEnabled(true) } catch (_: Throwable) { }
-    }
-
     fun enabled(prefs: JabraPrefs): Boolean = try { prefs.bool("tb_tip", true) } catch (_: Throwable) { false }
 
     fun show(b: View, prefs: JabraPrefs, raw: String?) {
@@ -58,7 +52,6 @@ object ToolTip {
             val p = PopupWindow(t, w, h, false)
             p.isTouchable = false
             p.isFocusable = false
-            inScreen(p)   // v0.10.4: bubble above the icon, not at the bottom of the keyboard
             val loc = IntArray(2)
             b.getLocationOnScreen(loc)
             val screenW = b.resources.displayMetrics.widthPixels
