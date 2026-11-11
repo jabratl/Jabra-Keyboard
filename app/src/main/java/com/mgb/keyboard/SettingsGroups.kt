@@ -259,6 +259,8 @@ object SettingsGroups {
             cycle(g, "Bangla first", "lang_fav", { Array(3) { i -> com.mgb.keyboard.typing.LangOrder.FAV_NAMES[i] } }, { prefs.int("lang_fav", 0).coerceIn(0, 2) }, { prefs.setInt("lang_fav", it) })   // v0.5.0
             toggle(g, "Avro available", "lang_avro_on", true)   // v0.5.0
             toggle(g, "Probhat available", "lang_probhat_on", true)   // v0.5.0
+            toggle(g, "Space swipe = language (hold 0.2 s)", "space_lang", false)   // v0.8.9
+            toggle(g, "Show language key (EN)", "key_lang", true)   // v0.8.9: hidden only when Space swipe is ON
             toggle(g, "Number row", "numrow", true)
             toggle(g, "Auto numpad (number / phone fields)", "numpad_auto", true)
             cycle(g, "Mode", "pc_mode", { arrayOf("Phone", "PC") }, { if (prefs.bool("pc_mode", false)) 1 else 0 }, { prefs.setBool("pc_mode", it == 1) })
@@ -284,6 +286,7 @@ object SettingsGroups {
             toggle(g, "Icons", "icons_on", true)
             toggle(g, "Large number row", "numrow_large", false)
             toggle(g, "Hide long-press hints", "hint_hide", false)
+            toggle(g, "Toolbar name tip (hold icon)", "tb_tip", true)   // v0.8.8
             toggle(g, "Bangla digit hints", "hint_digits", false)   // v0.8.6
             cycle(g, "Hint size", "hint_size_lv", { com.mgb.keyboard.typing.HintStyle.SIZE_NAMES }, { prefs.int("hint_size_lv", 1).coerceIn(0, 3) }, { prefs.setInt("hint_size_lv", it) }, 1)
             cycle(g, "Hint opacity", "hint_alpha_lv", { com.mgb.keyboard.typing.HintStyle.ALPHA_NAMES }, { prefs.int("hint_alpha_lv", 1).coerceIn(0, 3) }, { prefs.setInt("hint_alpha_lv", it) }, 1)

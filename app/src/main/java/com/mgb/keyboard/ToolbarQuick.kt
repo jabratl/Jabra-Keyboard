@@ -36,10 +36,13 @@ object ToolbarEdit {
         pw = null
     }
 
-    fun attach(b: Button, prefs: JabraPrefs, onEdit: () -> Unit) {
+    fun attach(b: Button, prefs: JabraPrefs, tip: String? = null, onEdit: () -> Unit) {   // v0.8.8: tip = name shown after 0.3 s (null = no tip, as before)
         var fired = false
+        var tipFired = false
+        val tr = Runnable { tipFired = true; ToolTip.show(b, prefs, tip) }
         val r = Runnable {
             fired = true
+            ToolTip.dismiss()   // v0.8.8: the Edit bubble replaces the name tip
             try { b.performHapticFeedback(android.view.HapticFeedbackConstants.LONG_PRESS) } catch (_: Throwable) { }
             try { show(b, prefs, onEdit) } catch (_: Throwable) { dismiss() }
         }
@@ -48,21 +51,32 @@ object ToolbarEdit {
                 when (ev.actionMasked) {
                     MotionEvent.ACTION_DOWN -> {
                         fired = false
+                        tipFired = false
                         dismiss()
+                        ToolTip.dismiss()
                         view.removeCallbacks(r)
                         view.postDelayed(r, HOLD_MS)
+                        view.removeCallbacks(tr)
+                        if (tip != null && ToolTip.enabled(prefs)) view.postDelayed(tr, com.mgb.keyboard.typing.TipPlace.HOLD_MS)   // v0.8.8
                         false
                     }
                     MotionEvent.ACTION_MOVE -> {
-                        if (ev.x < 0f || ev.y < 0f || ev.x > view.width || ev.y > view.height) view.removeCallbacks(r)
+                        if (ev.x < 0f || ev.y < 0f || ev.x > view.width || ev.y > view.height) { view.removeCallbacks(r); view.removeCallbacks(tr); ToolTip.dismiss() }
                         false
                     }
                     MotionEvent.ACTION_UP -> {
                         view.removeCallbacks(r)
-                        if (fired) { fired = false; view.isPressed = false; true } else false
+                        view.removeCallbacks(tr)
+                        ToolTip.dismiss()
+                        if (fired) { fired = false; tipFired = false; view.isPressed = false; true }
+                        else if (tipFired) { tipFired = false; view.isPressed = false; true }   // v0.8.8: a held key only shows its name, it does not press
+                        else false
                     }
                     MotionEvent.ACTION_CANCEL -> {
                         view.removeCallbacks(r)
+                        view.removeCallbacks(tr)
+                        ToolTip.dismiss()
+                        tipFired = false
                         false
                     }
                     else -> false
@@ -73,7 +87,7 @@ object ToolbarEdit {
         }
         b.addOnAttachStateChangeListener(object : View.OnAttachStateChangeListener {
             override fun onViewAttachedToWindow(v: View) { }
-            override fun onViewDetachedFromWindow(v: View) { try { v.removeCallbacks(r) } catch (_: Throwable) { }; dismiss() }
+            override fun onViewDetachedFromWindow(v: View) { try { v.removeCallbacks(r); v.removeCallbacks(tr) } catch (_: Throwable) { }; dismiss(); ToolTip.dismiss() }
         })
     }
 

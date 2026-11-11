@@ -111,6 +111,9 @@ public final class SettingsIndex {
             case "onehand": return "Moves the keyboard to the left or right side.";
             case "icons_on": return "Own drawn icons on function keys. OFF = text labels.";
             case "numrow_large": return "Makes the number row a bit taller.";
+            case "space_lang": return "Hold the space key 0.2 s, then swipe left / right to switch language. A quick drag still moves the cursor.";
+            case "key_lang": return "Hide the language (EN) key. Works only while Space swipe is ON (else the key stays).";
+            case "tb_tip": return "Hold a toolbar icon for 0.3 s to see its name above it.";
             case "hint_digits": return "Number row shows a small Bangla digit; hold the key to type it.";
             case "hint_size_lv": return "Size of the small hint characters (Normal = as before).";
             case "hint_alpha_lv": return "How strong the small hint characters look (Normal = as before).";

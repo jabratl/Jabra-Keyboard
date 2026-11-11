@@ -95,6 +95,17 @@ class ToolbarPanel(private val ctx: Context, private val host: JabraHost) {
         au.text = "Most used to front: " + (if (prefs.bool("tb_auto", false)) "ON" else "OFF")
         top.addView(au)
         root.addView(top)
+        try {   // v0.8.8: name tip (hold an icon 0.3 s = its name floats above it)
+            val top2 = row()
+            val tp = pk("", 1f, 40) { btn ->
+                val nv = !prefs.bool("tb_tip", true)
+                prefs.setBool("tb_tip", nv)
+                btn.text = "Name tip (hold icon): " + (if (nv) "ON" else "OFF")
+            }
+            tp.text = "Name tip (hold icon): " + (if (prefs.bool("tb_tip", true)) "ON" else "OFF")
+            top2.addView(tp)
+            root.addView(top2)
+        } catch (_: Throwable) { }
 
         // list (scrolls, about 5 rows high)
         val sv = ScrollView(ctx)

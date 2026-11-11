@@ -272,6 +272,12 @@ class TypingPanel(private val ctx: Context, private val host: JabraHost) {
             r39.addView(pk("Clear", 1f) { _ -> prefs.setStr("hint_custom", ""); host.showPanel("typing") })
             root.addView(r39)
         } catch (_: Throwable) { }
+        try {   // v0.8.9: space swipe language + optional EN key (ABC apply)
+            val r41 = row()
+            r41.addView(toggleKey("Space swipe = language", "space_lang", false))
+            r41.addView(toggleKey("Show language key (EN)", "key_lang", true))
+            root.addView(r41)
+        } catch (_: Throwable) { }
         try {   // v0.8.6: hint look (Bangla digits on number row, hint size, hint opacity). ABC (apply) redraws the keys.
             val r40 = row()
             r40.addView(toggleKey("Bangla digit hints", "hint_digits", false))

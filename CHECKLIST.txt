@@ -407,3 +407,19 @@ Z26) v0.8.7 Clipboard follows the theme
  [ ] Search (mini keyboard), Edit screen, select bar (All / Pin / Unpin / Delete / Paste / Merge): all readable in a dark and a light theme.
  [ ] Classic theme + Classic look: looks like before (grey background, light cards). Custom theme from Theme Studio: clipboard uses its colours.
 
+Z27) v0.8.8 Toolbar name tip
+ [ ] Hold any toolbar icon (clipboard, Aa, 123, gear...) for about 0.3 s: a small dim bubble with its name appears above it. Let go: bubble gone and the key did NOT run.
+ [ ] A quick normal tap still runs the key (paste, cut, panel opens).
+ [ ] Hold the fold arrow (« / ») 0.3 s: "Fold toolbar" or "Unfold toolbar".
+ [ ] Keep holding to 1.5 s: the name tip is replaced by the "Edit shortcut" bubble (tap it = quick edit page).
+ [ ] First and last icon: bubble stays fully on screen. Slide the finger off the key: no bubble, nothing runs.
+ [ ] Dark and light theme: bubble readable. Gear > Toolbar page: "Name tip (hold icon)" ON / OFF works (OFF = no bubble).
+
+Z28) v0.8.9 Space swipe language + optional EN key
+ [ ] Gear > More settings > Typing: row "Space swipe = language / Show language key (EN)". Turn Space swipe ON, ABC (apply): the space key now shows "◂ English ▸".
+ [ ] Hold the space key about 0.2 s without moving (short vibration), then swipe right: language changes (English > Avro > Probhat), the space label follows. Swipe left goes back. A long swipe jumps 2 languages.
+ [ ] Quick drag on space (no hold) still moves the cursor. A tap types a space. Hold 0.2 s + let go without swiping types a space.
+ [ ] App screen > Languages & layouts: switch Avro or Probhat OFF: the swipe skips it.
+ [ ] Turn Show language key (EN) OFF + ABC (apply): the EN key is gone from the bottom row, space is wider, swipe still switches. Turn Space swipe OFF: the EN key comes back by itself (after apply).
+ [ ] Typing works in each language after a swipe (Avro words, Probhat letters). Dark + light theme: space label readable and not cut at 360 dp.
+

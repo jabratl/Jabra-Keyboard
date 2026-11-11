@@ -8,6 +8,8 @@ import android.view.View
 import android.widget.Button
 import android.widget.LinearLayout
 import com.mgb.keyboard.extras.SpaceDrag
+import com.mgb.keyboard.extras.SpaceGesture
+import com.mgb.keyboard.typing.LangSwipe
 
 /*
  * v0.0.5 extras (symbols panel, number pad, in-keyboard quick settings, space-drag cursor, prefs helper).
@@ -69,6 +71,8 @@ class SpaceDragHelper(
     stepDp: Float = 16f   // v0.1.1: setting "cursor_speed" (16 = old value)
 ) {
     private val drag = SpaceDrag(stepDp * density)
+    private val dens = density
+    private val cursorPx = stepDp * density
 
     fun attach(v: View) {
         v.setOnTouchListener { view, ev ->
@@ -102,6 +106,52 @@ class SpaceDragHelper(
                 false
             }
         }
+    }
+
+    /**
+     * v0.8.9: like attach(), plus: hold the key 0.2 s (finger still), then swipe = [onLang] steps (+ = next language) instead of cursor steps.
+     * A quick drag is still the cursor. Armed but not swiped = a normal space. Logic = extras/SpaceGesture.java (tested). Used only when setting space_lang is ON.
+     */
+    fun attachLang(v: View, onLang: (Int) -> Unit, onArm: (View) -> Unit) {
+        val g = SpaceGesture(cursorPx, LangSwipe.STEP_DP * dens)
+        val h = android.os.Handler(android.os.Looper.getMainLooper())
+        val arm = Runnable { try { if (g.arm()) { v.isPressed = true; onArm(v) } } catch (_: Throwable) { } }
+        v.setOnTouchListener { view, ev ->
+            try {
+                when (ev.actionMasked) {
+                    MotionEvent.ACTION_DOWN -> {
+                        view.isPressed = true
+                        g.down(ev.x)
+                        h.removeCallbacks(arm)
+                        h.postDelayed(arm, LangSwipe.ARM_MS)
+                        true
+                    }
+                    MotionEvent.ACTION_MOVE -> {
+                        val n = g.move(ev.x)
+                        if (n != 0) { if (g.kind() == SpaceGesture.LANG) onLang(n) else onStep(n) }
+                        true
+                    }
+                    MotionEvent.ACTION_UP -> {
+                        h.removeCallbacks(arm)
+                        view.isPressed = false
+                        if (g.up()) { onFeedback(view); onTap() }
+                        true
+                    }
+                    MotionEvent.ACTION_CANCEL -> {
+                        h.removeCallbacks(arm)
+                        view.isPressed = false
+                        true
+                    }
+                    else -> false
+                }
+            } catch (_: Throwable) {
+                false
+            }
+        }
+        v.addOnAttachStateChangeListener(object : View.OnAttachStateChangeListener {
+            override fun onViewAttachedToWindow(x: View) { }
+            override fun onViewDetachedFromWindow(x: View) { h.removeCallbacks(arm) }
+        })
     }
 }
 

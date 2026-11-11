@@ -31,6 +31,7 @@ class MgbIme : InputMethodService() {
     private var latinOnly = false              // password / email / URL / number fields: always English
     private val buf = StringBuilder()          // roman letters of the word being typed
     private var langBtn: Button? = null
+    private var spaceBtn: Button? = null   // v0.8.9: space key (shows the language name when space_lang is ON)
     private var dandaBtn: Button? = null
 
     // v0.0.4 Probhat + v0.0.5 extras state (all new; old fields untouched)
@@ -417,6 +418,7 @@ class MgbIme : InputMethodService() {
     /** After the language / layout changed: refresh the key captions and letter labels. */
     private fun afterLangChange() {
         langBtn?.text = langLabel()
+        try { if (prefs.bool("space_lang", false)) spaceBtn?.text = com.mgb.keyboard.typing.LangSwipe.spaceLabel(bangla, probhat) } catch (_: Throwable) { }   // v0.8.9
         dandaBtn?.text = if (bangla) "।" else "?"
         refreshLetters()
     }
@@ -584,18 +586,19 @@ class MgbIme : InputMethodService() {
             val folded = prefs.bool("tb_fold", false)
             val f = key(if (folded) "\u00BB" else "\u00AB", 1f) { prefs.setBool("tb_fold", !prefs.bool("tb_fold", false)); showLetters() }
             f.textSize = 14f
+            try { ToolTip.attach(f, prefs) { if (prefs.bool("tb_fold", false)) "Unfold toolbar" else "Fold toolbar" } } catch (_: Throwable) { }   // v0.8.8: name tip
             return f
         }
-        if (id == "mode") { val mk = modeKey(36); attachEdit(mk); return mk }   // v0.2.7
+        if (id == "mode") { val mk = modeKey(36); attachEdit(mk, Toolbar.title("mode")); return mk }   // v0.2.7
         val k = key(Toolbar.label(id), 1f) { toolbarAction(id) }   // v0.2.2
         JabraIcons.putThemed(this, k, Toolbar.icon(id))
         k.textSize = 12f
-        attachEdit(k)   // v0.2.7: hold 1.5 s = Edit shortcut
+        attachEdit(k, Toolbar.title(id))   // v0.2.7: hold 1.5 s = Edit shortcut; v0.8.8: hold 0.3 s = name tip
         return k
     }
 
     /** v0.2.7: hold a toolbar key 1.5 s -> "Edit shortcut" bubble -> quick add / remove page. */
-    private fun attachEdit(b: Button) { try { ToolbarEdit.attach(b, prefs) { showPanel("tbquick") } } catch (_: Throwable) { } }
+    private fun attachEdit(b: Button, tip: String? = null) { try { ToolbarEdit.attach(b, prefs, tip) { showPanel("tbquick") } } catch (_: Throwable) { } }
 
     private fun modeKey(heightDp: Int?): Button {
         val on = pcState.isPc()
@@ -709,6 +712,12 @@ class MgbIme : InputMethodService() {
         afterLangChange()
     }
 
+    /** v0.8.9: space hold + swipe: [n] steps (+ = next language among those switched on). */
+    private fun swipeLang(n: Int) {
+        commitWord()
+        try { applyLang(com.mgb.keyboard.typing.LangSwipe.step(bangla, probhat, prefs.bool("lang_avro_on", true), prefs.bool("lang_probhat_on", true), n)) } catch (_: Throwable) { }
+    }
+
     private fun toggleLang() {
         commitWord()
         try { applyLang(com.mgb.keyboard.typing.LangOrder.tap(bangla, probhat, prefs.bool("lang_avro_on", true), prefs.bool("lang_probhat_on", true), prefs.int("lang_tap", 0), prefs.int("lang_fav", 0))); return } catch (_: Throwable) { }   // v0.5.0 (defaults = old behaviour); any problem = old code below
@@ -795,8 +804,9 @@ class MgbIme : InputMethodService() {
         r4.addView(fn(symKey))   // v0.1.5
         val lb = key(langLabel(), 1.3f) { toggleLang() }
         try { JabraLongPress.attach(lb, prefs) { switchBnLayout() } } catch (_: Throwable) { }   // v0.0.4: long-press = Avro <-> Probhat
-        langBtn = lb
-        r4.addView(fn(lb))   // v0.1.5
+        val showLang = try { com.mgb.keyboard.typing.LangSwipe.langKeyVisible(prefs.bool("key_lang", true), prefs.bool("space_lang", false)) } catch (_: Throwable) { true }   // v0.8.9: EN key optional (only with space swipe ON)
+        langBtn = if (showLang) lb else null
+        if (showLang) r4.addView(fn(lb))   // v0.1.5
         try { if (prefs.bool("mode_key", true) && !prefs.bool("edit_bar", true)) r4.addView(modeKey(null)) } catch (_: Throwable) { }   // v0.1.2: edit bar OFF -> mode key here
         // v0.1.1: optional Globe / Voice / Emoji keys (settings key_globe / key_voice / key_emoji, all default OFF = same row as before)
         try {
@@ -810,8 +820,14 @@ class MgbIme : InputMethodService() {
         val spaceAction = { commitWord(); spaceKey() }   // v0.1.1: double space
         val sb = key("space", 4f) { spaceAction() }
         try { JabraLook.shape(prefs, sb, JabraLook.PILL) } catch (_: Throwable) { }   // v0.1.5: pill space key
+        val spaceLangOn = try { prefs.bool("space_lang", false) } catch (_: Throwable) { false }   // v0.8.9
+        spaceBtn = if (spaceLangOn) sb else null
+        if (spaceLangOn) { try { sb.text = com.mgb.keyboard.typing.LangSwipe.spaceLabel(bangla, probhat) } catch (_: Throwable) { } }
         // v0.0.5: drag on space = move cursor. If attaching fails, the normal click above still types a space.
-        try { SpaceDragHelper(resources.displayMetrics.density, { n -> moveCursor(n) }, { spaceAction() }, { v -> feedback(v) }, com.mgb.keyboard.typing.TypingLevels.stepDp(prefs.int("cursor_speed", com.mgb.keyboard.typing.TypingLevels.CS_DEFAULT))).attach(sb) } catch (_: Throwable) { }   // v0.1.1: cursor speed (setting cursor_speed)
+        try {   // v0.1.1: cursor speed (setting cursor_speed); v0.8.9: space_lang ON = hold 0.2 s + swipe = language
+            val sdh = SpaceDragHelper(resources.displayMetrics.density, { n -> moveCursor(n) }, { spaceAction() }, { v -> feedback(v) }, com.mgb.keyboard.typing.TypingLevels.stepDp(prefs.int("cursor_speed", com.mgb.keyboard.typing.TypingLevels.CS_DEFAULT)))
+            if (spaceLangOn) sdh.attachLang(sb, { n -> swipeLang(n) }, { v -> try { v.performHapticFeedback(android.view.HapticFeedbackConstants.LONG_PRESS) } catch (_: Throwable) { } }) else sdh.attach(sb)
+        } catch (_: Throwable) { }
         r4.addView(sb)
         val db = key(if (bangla) "।" else "?", 1f) { commitWord(); val d = dandaBtn?.text?.toString() ?: "."; typeText(if (latinOnly && d == "।") "?" else d) }
         dandaBtn = db
