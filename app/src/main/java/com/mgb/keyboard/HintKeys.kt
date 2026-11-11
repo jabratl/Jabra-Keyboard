@@ -82,12 +82,12 @@ object HintKeys {
     }
 
     /** Shows or hides the small label on one letter key. */
-    fun refresh(b: Button, prefs: JabraPrefs, host: HintHost) {
+    fun refresh(b: Button, prefs: JabraPrefs, host: HintHost, numrow: Boolean? = null, custom: String? = null, hide: Boolean? = null) {   // v0.6.1: optional pre-read prefs (null = read here, as before)
         try {
             val c = letterOf(b)
-            val on = prefs.bool("hint_on", true)
-            val show = c != null && LongPressHints.labelVisible(on && host.hintLabelActive(), prefs.bool("hint_hide", false))
-            val t = if (show) LongPressHints.hintFor(c!!, prefs.bool("numrow", true), prefs.str("hint_custom", "")) else null   // v0.5.2
+            val on = KeyCfg.hintOn(prefs)   // v0.6.1: cached
+            val show = c != null && LongPressHints.labelVisible(on && host.hintLabelActive(), hide ?: prefs.bool("hint_hide", false))
+            val t = if (show) LongPressHints.hintFor(c!!, numrow ?: prefs.bool("numrow", true), custom ?: prefs.str("hint_custom", "")) else null   // v0.5.2
             if (t == null) { if (b.foreground is HintDrawable) b.foreground = null; return }
             val col = try { JabraThemes.iconColor(prefs) } catch (_: Throwable) { Color.parseColor("#222222") }
             val cur = b.foreground

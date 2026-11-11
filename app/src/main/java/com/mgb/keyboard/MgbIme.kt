@@ -131,7 +131,10 @@ class MgbIme : InputMethodService() {
         if (!done) typeText(" ")
     }
 
+    private var pendingKind = com.mgb.keyboard.typing.AutoCapGate.E_JUMP   // v0.6.1: what WE just typed; consumed by the next onUpdateSelection (default JUMP = ask)
+
     private fun typeText(s: String) {
+        try { pendingKind = com.mgb.keyboard.typing.AutoCapGate.kindOf(s) } catch (_: Throwable) { pendingKind = com.mgb.keyboard.typing.AutoCapGate.E_JUMP }   // v0.6.1
         currentInputConnection?.commitText(s, 1)
     }
 
@@ -153,7 +156,13 @@ class MgbIme : InputMethodService() {
         override fun typeHint(s: String) { commitWord(); typeText(s) }
         override fun hintFeedback(v: View) { feedback(v) }
     }
-    private fun refreshHints() { try { letterKeys.forEach { HintKeys.refresh(it, prefs, hintHost) } } catch (_: Throwable) { } }
+    private fun refreshHints() {
+        try {
+            // v0.6.1: read the 3 prefs ONCE for all 26 keys (was 3 reads per key on every Shift tap)
+            val nr = prefs.bool("numrow", true); val cu = prefs.str("hint_custom", ""); val hh = prefs.bool("hint_hide", false)
+            letterKeys.forEach { HintKeys.refresh(it, prefs, hintHost, nr, cu, hh) }
+        } catch (_: Throwable) { try { letterKeys.forEach { HintKeys.refresh(it, prefs, hintHost) } } catch (_: Throwable) { } }
+    }
 
     private fun refreshLetters() {
         try { relabelLetters(); return } catch (_: Throwable) { }   // v0.0.4: handles Latin AND Probhat labels
@@ -319,7 +328,8 @@ class MgbIme : InputMethodService() {
                 currentInputConnection?.finishComposingText()
             }
         } catch (_: Throwable) { }
-        autoCapUpdate()   // v0.0.9 (has its own try/catch)
+        val kind = pendingKind; pendingKind = com.mgb.keyboard.typing.AutoCapGate.E_JUMP   // v0.6.1: consume once; anything we did not type = JUMP
+        autoCapUpdate(kind)   // v0.0.9 (has its own try/catch)
     }
 
     // ---------- v0.0.9: typing basics ----------
@@ -341,12 +351,14 @@ class MgbIme : InputMethodService() {
     }
 
     /** Sentence-start capital for English typing (setting "autocap"). The field decides (inputType flags). Not used for Avro/Probhat (Avro uses capitals on purpose). */
-    private fun autoCapUpdate() {
+    private fun autoCapUpdate(kind: Int = com.mgb.keyboard.typing.AutoCapGate.E_START) {
         try {
             if (!prefs.bool("autocap", true)) return
             if (phoneticOn() || probhatOn()) return
             val ic = currentInputConnection ?: return
             val inType = currentInputEditorInfo?.inputType ?: 0
+            // v0.6.1: a plain letter we just typed cannot start a sentence -> skip the cross-process call (all other events still ask)
+            try { if (!com.mgb.keyboard.typing.AutoCapGate.shouldCheck(kind, (inType and InputType.TYPE_TEXT_FLAG_CAP_CHARACTERS) != 0)) return } catch (_: Throwable) { }
             val want = ic.getCursorCapsMode(inType) != 0
             if (shiftSt.autoCap(want)) refreshLetters()
         } catch (_: Throwable) { }
@@ -376,8 +388,9 @@ class MgbIme : InputMethodService() {
         val pb = probhatOn()
         letterKeys.forEach { b ->
             val c = (b.tag as? Char) ?: return@forEach
-            b.text = if (pb) ProbhatLayout.label(if (shift) c.uppercaseChar() else c)
+            val nt = if (pb) ProbhatLayout.label(if (shift) c.uppercaseChar() else c)
                      else if (shift) c.uppercase() else c.toString()
+            if (!nt.contentEquals(b.text)) b.text = nt   // v0.6.1: no relayout when the label is already right
         }
         extrasRow?.visibility = if (pb) View.VISIBLE else View.GONE
         try { shiftVisual() } catch (_: Throwable) { }   // v0.0.9
@@ -675,6 +688,7 @@ class MgbIme : InputMethodService() {
     }
 
     private fun onBackspace() {
+        pendingKind = com.mgb.keyboard.typing.AutoCapGate.E_BACKSPACE   // v0.6.1
         if (buf.isNotEmpty()) {
             buf.setLength(buf.length - 1)
             if (buf.isEmpty()) currentInputConnection?.setComposingText("", 1) else renderWord()

@@ -272,3 +272,14 @@ Z10) v0.6.0 Faster key tap
  [ ] Key popup ON: bubble above the pressed letter; OFF: none (switch it and tap again).
  [ ] Long-press "a" -> "@" still works; Long-press characters OFF = no hint typing; Long-press time Fast / Slow still changes the wait.
 
+
+
+Z11) v0.6.1 Auto capital without lag
+ [ ] New empty Notes / chat box: first letter is capital. Type letters: they stay small (no stuck capital).
+ [ ] After ". " then "? " then "! " the next letter is capital; after a comma it is small. New line (Enter) = capital again.
+ [ ] Type a digit at the start of a sentence ("1 apple"): next letter is small (not capital).
+ [ ] Shift tap = one capital then back; double tap Shift = CAPS (blue) stays through letters. Auto caps OFF (More settings) = no automatic capital.
+ [ ] Move the cursor by tapping inside old text, then after a ". " mid-text: capital follows the new position.
+ [ ] Paste text, then type: capital follows the pasted text end (e.g. paste "Hello." then space -> capital).
+ [ ] Typing feels same or faster in a slow app (Chrome text field / big notes). Avro / Probhat unchanged.
+
