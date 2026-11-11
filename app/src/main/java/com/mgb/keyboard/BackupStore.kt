@@ -1,11 +1,14 @@
 package com.mgb.keyboard
 
 import android.content.Context
+import android.net.Uri
 import android.os.Handler
 import android.os.Looper
+import android.provider.DocumentsContract
 import android.util.AtomicFile
 import android.widget.Toast
 import com.mgb.keyboard.typing.BackupCodec
+import com.mgb.keyboard.typing.BackupPlan
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -20,7 +23,7 @@ import java.util.Locale
  */
 object BackupStore {
     /** Extra data files (filesDir) included in a backup when they exist. New stores add their name here. */
-    private val FILES = arrayOf("vault_v1.json", "profiles_v1.json")
+    private val FILES = BackupPlan.FILES   // v0.10.7: vault_v1.json, profiles_v1.json, learn_v1.txt (list lives in typing/BackupPlan.java)
     private const val DIR = "backups"
 
     private fun isSkipped(k: String): Boolean = k.startsWith("bk_") || k.startsWith("upd_") || k.startsWith("update")
@@ -160,8 +163,96 @@ object BackupStore {
             Thread {
                 val msg = try { backupNow(app) } catch (_: Throwable) { "Backup failed" }
                 if (!msg.startsWith("Backup saved")) toast(app, msg)   // a failed save is never silent
+                try {   // v0.10.7: same Thread, then the copy outside the app (only when a folder is set and today's copy is missing)
+                    if (extUri(app) != null && BackupPlan.isDue(true, sp(app).getString("bk_ext_last", "") ?: "", System.currentTimeMillis())) {
+                        val m2 = copyExternal(app)
+                        if (!m2.startsWith("External backup saved")) toast(app, m2)
+                    }
+                } catch (_: Throwable) { }
             }.start()
         } catch (_: Throwable) { }
+    }
+
+    // ---- v0.10.7 (W2): copy outside the app, survives uninstall. Folder = Storage Access Framework tree URI (no permission). ----
+    private fun extUri(ctx: Context): Uri? = try {
+        val s = sp(ctx).getString("bk_ext_uri", "") ?: ""
+        if (s.isEmpty()) null else Uri.parse(s)
+    } catch (_: Throwable) { null }
+
+    /** True while the app still holds read + write permission for the chosen folder. */
+    fun extAccessOk(ctx: Context): Boolean {
+        try {
+            val u = extUri(ctx) ?: return false
+            return ctx.contentResolver.persistedUriPermissions.any { it.uri == u && it.isReadPermission && it.isWritePermission }
+        } catch (_: Throwable) { return false }
+    }
+
+    /** "Download/Jabra" or "not set". */
+    fun extLabel(ctx: Context): String {
+        try {
+            val u = extUri(ctx) ?: return "not set"
+            return BackupPlan.label(DocumentsContract.getTreeDocumentId(u))
+        } catch (_: Throwable) { return "set" }
+    }
+
+    /** Saves the folder the user picked (caller already called takePersistableUriPermission). */
+    fun setExtFolder(ctx: Context, uri: Uri) {
+        try {
+            val old = extUri(ctx)
+            sp(ctx).edit().putString("bk_ext_uri", uri.toString()).putString("bk_ext_last", "").apply()
+            if (old != null && old != uri) try { ctx.contentResolver.releasePersistableUriPermission(old, android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION or android.content.Intent.FLAG_GRANT_WRITE_URI_PERMISSION) } catch (_: Throwable) { }
+        } catch (_: Throwable) { }
+    }
+
+    /** Turns the external copy OFF. Files already in the folder are NOT touched. */
+    fun clearExtFolder(ctx: Context) {
+        try {
+            val old = extUri(ctx)
+            sp(ctx).edit().putString("bk_ext_uri", "").apply()
+            if (old != null) try { ctx.contentResolver.releasePersistableUriPermission(old, android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION or android.content.Intent.FLAG_GRANT_WRITE_URI_PERMISSION) } catch (_: Throwable) { }
+        } catch (_: Throwable) { }
+    }
+
+    private fun extChildren(ctx: Context, tree: Uri, treeId: String): Map<String, String> {
+        val out = LinkedHashMap<String, String>()
+        val q = DocumentsContract.buildChildDocumentsUriUsingTree(tree, treeId)
+        ctx.contentResolver.query(q, arrayOf(DocumentsContract.Document.COLUMN_DOCUMENT_ID, DocumentsContract.Document.COLUMN_DISPLAY_NAME), null, null, null)?.use { c ->
+            while (c.moveToNext()) { val id = c.getString(0); val n = c.getString(1); if (id != null && n != null) out[n] = id }
+        }
+        return out
+    }
+
+    /**
+     * Writes jabra_YYYYMMDD.json into the chosen folder (same day = overwritten), checks it by reading it back, then keeps only the newest
+     * bk_keep of OUR files there (other files in the folder are never touched). Background Thread only. Never throws. Message starts with "External backup saved" on success.
+     */
+    fun copyExternal(ctx: Context): String {
+        try {
+            val tree = extUri(ctx) ?: return "Choose a backup folder first"
+            if (!extAccessOk(ctx)) return "External backup folder is not reachable. Choose the folder again."
+            val text = collect(ctx) ?: return "External backup failed (could not read data)"
+            val bytes = text.toByteArray(Charsets.UTF_8)
+            if (bytes.size > BackupCodec.MAX_BYTES) return "External backup refused: data is bigger than 5 MB"
+            val cr = ctx.contentResolver
+            val treeId = DocumentsContract.getTreeDocumentId(tree)
+            val name = BackupPlan.externalName(System.currentTimeMillis())
+            var target: Uri? = extChildren(ctx, tree, treeId)[name]?.let { DocumentsContract.buildDocumentUriUsingTree(tree, it) }
+            if (target == null) target = DocumentsContract.createDocument(cr, DocumentsContract.buildDocumentUriUsingTree(tree, treeId), "application/json", name)
+            if (target == null) return "External backup failed (could not create the file)"
+            cr.openOutputStream(target, "wt")!!.use { it.write(bytes) }
+            val back = cr.openInputStream(target)!!.use { it.readBytes() }
+            if (BackupCodec.validate(String(back, Charsets.UTF_8)) != BackupCodec.OK) return "External backup failed (file check). Older copies are untouched."
+            sp(ctx).edit().putString("bk_ext_last", stamp()).apply()
+            try {
+                val kids = extChildren(ctx, tree, treeId)
+                val keep = sp(ctx).getInt("bk_keep", 5)
+                for (n in BackupPlan.pruneList(kids.keys.toList(), keep)) {
+                    val id = kids[n] ?: continue
+                    try { DocumentsContract.deleteDocument(cr, DocumentsContract.buildDocumentUriUsingTree(tree, id)) } catch (_: Throwable) { }
+                }
+            } catch (_: Throwable) { }
+            return "External backup saved"
+        } catch (_: Throwable) { return "External backup failed" }
     }
 
     fun toast(ctx: Context, msg: String) {

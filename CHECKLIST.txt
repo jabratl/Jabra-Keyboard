@@ -604,3 +604,15 @@ Z50) v0.10.6 No extra space before punctuation after a suggestion
  [ ] Tap a suggestion, then type a letter / space / backspace first, then ",": nothing is removed (normal typing).
  [ ] Avro and Probhat: tap a Bangla suggestion, then danda or comma: no space before it.
  [ ] Settings > Keys > "Space before , . ! ?" OFF: "hello ," as before.
+
+Z51) v0.10.7 Backup that survives uninstall
+ [ ] Settings app > Data & Backup > "Choose external backup folder" > pick e.g. Downloads/JabraBackup (make a new folder) > "Folder set. Saving the first copy..." then "External backup saved".
+ [ ] Files app > that folder: jabra_YYYYMMDD.json exists (a few KB). Page shows "External backup folder: Download/JabraBackup" and "Last external backup: ... (today)".
+ [ ] Tap "Backup to folder now" twice the same day: still ONE file for today (overwritten), no "(1)" copy.
+ [ ] Put an unrelated file (photo.jpg) in that folder, make a backup: the photo is untouched.
+ [ ] Vault > add an entry; Typing > "Learn my words" ON, type a few words twice. Backup now. Open Backups > Restore preview shows "data files" count 3 (vault, profiles, learned words).
+ [ ] Real test: Export is not needed. Android Settings > Apps > Jabra > Storage > Clear data (or uninstall + reinstall the same APK). Open app > Data & Backup > Import from file > pick jabra_YYYYMMDD.json from the folder > Restore > Sure? > close + reopen keyboard: vault entries + learned words are back.
+ [ ] Health Check (Data & Backup > Check): folder set + fresh copy = "OK External backup: today".
+ [ ] Android Settings > Apps > Jabra > Permissions (or Files app) revoke the folder, or delete the folder: Health shows WARN "folder is not reachable", page shows "(NOT reachable)", keyboard still types, no crash.
+ [ ] "Turn off external backup": line shows "not set"; files already in the folder stay.
+ [ ] Folder never chosen + Vault has entries: Health shows WARN "No external backup ...".

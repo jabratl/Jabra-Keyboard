@@ -111,10 +111,36 @@ class SettingsActivity : Activity() {
         } catch (_: Throwable) { dataMsg?.invoke("Could not open the file picker") }
     }
 
+    // v0.10.7 (W2): pick the folder for the copy that survives uninstall (system folder picker, request code 4103, no storage permission)
+    fun chooseBackupFolder() {
+        try {
+            val i = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE)
+            i.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION or Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION)
+            startActivityForResult(i, 4103)
+        } catch (_: Throwable) { dataMsg?.invoke("Could not open the folder picker") }
+    }
+
+    private fun onFolderPicked(resultCode: Int, data: Intent?) {   // v0.10.7
+        try {
+            if (resultCode != RESULT_OK) return
+            val uri = data?.data ?: return
+            val app = applicationContext
+            try { contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION) }
+            catch (_: Throwable) { dataMsg?.invoke("This folder cannot be kept. Choose another folder (not the top of the storage)."); return }
+            BackupStore.setExtFolder(app, uri)
+            dataMsg?.invoke("Folder set. Saving the first copy...")
+            Thread {
+                val m = try { BackupStore.copyExternal(app) } catch (_: Throwable) { "External backup failed" }
+                runOnUiThread { try { dataMsg?.invoke(m); refreshData?.invoke() } catch (_: Throwable) { } }
+            }.start()
+        } catch (_: Throwable) { }
+    }
+
     @Deprecated("Deprecated in Java")
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         try {
+            if (requestCode == 4103) { onFolderPicked(resultCode, data); return }   // v0.10.7
             if ((requestCode != 4101 && requestCode != 4102) || resultCode != RESULT_OK) return
             val uri = data?.data ?: return
             val app = applicationContext

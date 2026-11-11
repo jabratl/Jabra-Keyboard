@@ -47,6 +47,10 @@ public final class HealthCheck {
         public int crashN = 0;           // pref crash_n
         public long crashT = 0;          // pref crash_t
         public long now = 0;
+        public boolean extSet = false;      // v0.10.7: pref bk_ext_uri not empty
+        public boolean extAccessOk = false; // v0.10.7: app still holds the permission for that folder
+        public String extLast = "";         // v0.10.7: pref bk_ext_last
+        public int vaultCount = 0;          // v0.10.7: Vault entries on disk (<= 0 = none / unreadable)
     }
 
     public static List<Item> run(Input in) {
@@ -93,6 +97,12 @@ public final class HealthCheck {
         if (in.backups == 0) out.add(new Item("backups", WARN, "Backups: none yet (tap Backup now)", ""));
         else if (in.badBackups > 0) out.add(new Item("backups", WARN, "Backups: " + in.badBackups + " of " + in.backups + " damaged (delete them in the list)", ""));
         else out.add(new Item("backups", OK, "Backups: " + in.backups + " readable", ""));
+        // external backup (v0.10.7)
+        try {
+            String w = BackupPlan.healthWarn(in.extSet, in.extAccessOk, in.extLast, in.now, in.vaultCount);
+            if (!w.isEmpty()) out.add(new Item("extbackup", WARN, w, ""));
+            else if (BackupPlan.externalOk(in.extSet, in.extAccessOk, in.extLast, in.now)) out.add(new Item("extbackup", OK, "External backup: " + ago(BackupPlan.daysSinceExternal(in.extLast, in.now)), ""));
+        } catch (Throwable t) { }
         // storage
         out.add(new Item("storage", in.storageBytes > STORAGE_WARN ? WARN : OK,
             "Storage: " + size(in.storageBytes) + (in.storageBytes > STORAGE_WARN ? " (big: lower \"Keep newest copies\")" : ""), ""));

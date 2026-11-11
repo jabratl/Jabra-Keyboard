@@ -137,6 +137,10 @@ object HealthRun {
         i.crashPanel = str("crash_p"); i.crashN = int("crash_n", 0)
         i.crashT = try { s.getLong("crash_t", 0L) } catch (_: Throwable) { 0L }
         i.now = System.currentTimeMillis()
+        try {   // v0.10.7: external backup state
+            i.extSet = str("bk_ext_uri").isNotEmpty(); i.extAccessOk = BackupStore.extAccessOk(ctx); i.extLast = str("bk_ext_last")
+            i.vaultCount = VaultStore.countOnDisk(ctx)
+        } catch (_: Throwable) { }
         return i
     }
 

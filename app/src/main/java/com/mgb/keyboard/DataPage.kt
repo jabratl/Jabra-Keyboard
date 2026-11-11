@@ -51,6 +51,9 @@ object DataPage {
                 val used = fileSize(ctx.filesDir) + fileSize(File(ctx.applicationInfo.dataDir, "shared_prefs/jabra.xml"))
                 info.addView(line("Storage used: ${size(used)}"))
                 val last = prefs.str("bk_last", "")
+                info.addView(line("External backup folder: " + BackupStore.extLabel(ctx) + (if (prefs.str("bk_ext_uri", "").isNotEmpty() && !BackupStore.extAccessOk(ctx)) "  (NOT reachable)" else "")))   // v0.10.7
+                val extLast = prefs.str("bk_ext_last", "")
+                info.addView(line("Last external backup: " + (if (extLast.isEmpty()) "none yet" else extLast + (com.mgb.keyboard.typing.HealthCheck.ago(com.mgb.keyboard.typing.HealthCheck.daysSince(extLast, System.currentTimeMillis())).let { if (it.isEmpty()) "" else "  ($it)" }))))   // v0.10.7
                 info.addView(line("Last backup: " + (if (last.isEmpty()) "none yet" else last + (com.mgb.keyboard.typing.HealthCheck.ago(com.mgb.keyboard.typing.HealthCheck.daysSince(last, System.currentTimeMillis())).let { if (it.isEmpty()) "" else "  ($it)" }))))   // v0.5.9: + "(today)"
             } catch (_: Throwable) { }
             try {
@@ -98,6 +101,16 @@ object DataPage {
         })
         root.addView(btn("Export to file") { act?.exportBackup() ?: run { msg.text = "Not available here" } })
         root.addView(btn("Import from file") { act?.importBackup() ?: run { msg.text = "Not available here" } })
+        // v0.10.7 (W2): copy outside the app = survives uninstall. After a reinstall: Import from file > pick jabra_YYYYMMDD.json from this folder > Restore.
+        root.addView(btn("Choose external backup folder") { act?.chooseBackupFolder() ?: run { msg.text = "Not available here" } })
+        root.addView(btn("Backup to folder now") {
+            msg.text = "Saving to the folder..."
+            Thread {
+                val r = try { BackupStore.copyExternal(ctx) } catch (_: Throwable) { "External backup failed" }
+                act?.runOnUiThread { try { msg.text = r; fill() } catch (_: Throwable) { } }
+            }.start()
+        })
+        root.addView(btn("Turn off external backup") { BackupStore.clearExtFolder(ctx); msg.text = "External backup is OFF. Files already in the folder were not touched."; fill() })
         fun toggleAuto(b: Button) { val nv = !prefs.bool("bk_auto", true); prefs.setBool("bk_auto", nv); b.text = "Auto backup (daily): " + if (nv) "ON" else "OFF" }
         val ab = btn("") { toggleAuto(it) }; ab.text = "Auto backup (daily): " + if (prefs.bool("bk_auto", true)) "ON" else "OFF"; root.addView(ab)
         val choices = intArrayOf(3, 5, 10)
@@ -111,7 +124,7 @@ object DataPage {
         root.addView(line("Backups"))
         root.addView(list)
         root.addView(line("Privacy"))
-        root.addView(line("Everything is saved only on this phone (settings, clips, presets, backups). Nothing is sent anywhere. The only internet use is \"Check for updates\" and \"Update emoji list\" (only when you tap them). Permissions: Internet (update check, emoji list), Install packages (update), Vibrate. Export / Import use the system file picker, no storage permission."))
+        root.addView(line("Everything is saved only on this phone (settings, clips, presets, backups). Nothing is sent anywhere. The only internet use is \"Check for updates\" and \"Update emoji list\" (only when you tap them). Permissions: Internet (update check, emoji list), Install packages (update), Vibrate. Export / Import and the external backup folder use the system pickers, no storage permission. The external copy goes only to the folder you choose."))
         act?.refreshData = { try { fill() } catch (_: Throwable) { } }
         act?.dataMsg = { m -> try { msg.text = m } catch (_: Throwable) { } }
         fill()
