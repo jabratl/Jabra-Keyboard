@@ -1,3 +1,10 @@
+v0.9.10.4 - FIX: tap in the gap between keys was lost (fast typing)
+- WHY: user: when typing fast, some presses that clearly land on the keyboard do not type. Cause: the key gap is the key button's margin, so a finger-down in the gap touches no button and Android drops it. Ridmik types the nearest key instead.
+- What you get: a finger-down in the gap goes to the NEAREST key of that row (same finger shift is kept until lift, so move / up stay correct). Touches inside a key are unchanged. Works for any key_gap size; fast multi-finger typing is handled per finger.
+- Code: GapRow.kt (new, LinearLayout subclass, dispatchTouchEvent), MgbIme.kt row() now returns GapRow (1 line), build.gradle.kts version.
+BROKE: nothing intended. NOT tested: Kotlin compile (GitHub Actions first); phone test fast typing with a big key_gap.
+Rollback: row() back to LinearLayout(this); delete GapRow.kt.
+
 v0.9.10.3 - FIX: no blank row under the number row; Probhat fits in the 3 letter rows
 - WHY: v0.9.7 kept the Probhat vowel row (38 dp) as an INVISIBLE blank band in English / Avro so the height would not jump. User wants the older look: Probhat Bangla alphabet inside the 3 letter rows, no extra row.
 - What you get: English and Avro have NO blank row (number row, then q-row, a-row, z-row). Probhat uses the same 3 rows: row 1 = 12 keys (q..p + ে ো), row 2 = 10 keys (a..l + ৃ/ঞ), row 3 = shift + 7 letters + 2 extra keys (্ / ZWNJ and ঁ / ৎ) + backspace. Vowels আ ই ঈ উ ঊ এ ঐ ও ঔ and ং ঃ are on the letters / shift layer. Keyboard height is the same in all languages without the old lock.

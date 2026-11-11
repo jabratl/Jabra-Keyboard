@@ -126,7 +126,7 @@ class MgbIme : InputMethodService() {
     private fun fn(b: Button): Button { try { JabraLook.shape(prefs, b, JabraLook.FUNC) } catch (_: Throwable) { }; return b }
 
     private fun row(): LinearLayout {
-        val r = LinearLayout(this)
+        val r = GapRow(this)   // v0.9.10.4: a tap in the key gap goes to the nearest key (was lost)
         r.orientation = LinearLayout.HORIZONTAL
         return r
     }

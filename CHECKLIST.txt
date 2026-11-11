@@ -534,3 +534,10 @@ Z41) v0.9.10.2 Space swipe = max 1 language
  [ ] Swipe left a long way: ONE step to the previous language.
  [ ] Swipe right, then bring the finger back to where it started: you are back on the start language.
  [ ] Short drag still moves the cursor; plain tap still types a space; nothing types a space after a swipe.
+
+Z42) v0.9.10.4 Tap in key gap (FIX)
+ [ ] Settings: set Key gap to a big value. Type fast with 1 finger, tapping the gap between letters: the nearest letter types, nothing is lost.
+ [ ] Type fast with 2 thumbs (two fingers down at once): every press types.
+ [ ] Tap exactly inside a key: same letter as before (no change). Long-press hint letters and key popup still work on a key.
+ [ ] Tap the gap at the left / right edge of a row and between two rows: a letter types (the nearest key of that row).
+ [ ] Backspace hold, space swipe, shift, ?123 still work as before.
