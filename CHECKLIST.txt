@@ -528,3 +528,9 @@ Z40) v0.9.10.1 Keyboard full-screen bug (FIX)
  [ ] Repeat ?123 > ABC 5 times, also after rotate to landscape and back: no full-screen keyboard.
  [ ] Open emoji / clipboard panel, tap ABC: normal height again.
  [ ] Turn "Key popup" ON: bubbles still appear above keys (rows 2-4 and top row) as in v0.9.10.
+
+Z41) v0.9.10.2 Space swipe = max 1 language
+ [ ] Swipe right a long way on space: language moves ONE step only (e.g. English > Avro), not more.
+ [ ] Swipe left a long way: ONE step to the previous language.
+ [ ] Swipe right, then bring the finger back to where it started: you are back on the start language.
+ [ ] Short drag still moves the cursor; plain tap still types a space; nothing types a space after a swipe.

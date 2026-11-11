@@ -1,3 +1,12 @@
+v0.9.10.2 - CHANGE: space-bar swipe = max 1 language per swipe (user request)
+- WHY: user wants one swipe to move only one language (like a simple swipe), not 2-3 languages on a long swipe.
+- What you get: swipe on space right = next language, left = previous, never more than 1 step away from the language you started on, however far the finger goes. Moving the finger back to the start point gives the start language again. Cursor drag (short drag) and tap = space are unchanged.
+- Code: extras/SpaceGesture.java only: LANG_MAX = 1, language steps are now the finger's absolute distance since arm (clamped -1..+1) instead of a running step counter. tools/SpaceGestureTest.java: 3 expectations updated (net now clamps at +1). Step size (sp_step) still decides how far the finger must move for the 1 step.
+BROKE: nothing intended. Language list / wrap / skip-off-layouts logic (LangSwipe) untouched.
+NOT tested: Kotlin compile (GitHub Actions first); phone (CHECKLIST Z41).
+TESTED here: all 44 Java test programs green (SpaceGestureTest 35 checks, LangSwipeTest 76).
+Rollback: restore extras/SpaceGesture.java + tools/SpaceGestureTest.java from v0.9.10.1.
+
 v0.9.10.1 - FIX: keyboard became FULL SCREEN after ?123 > ABC (bug video 2026-11-11 22:17)
 - WHY: video: symbols panel looks normal, but after tapping ABC the green keyboard window covers the whole screen (letters at the top, empty band below, app hidden). Repeats on every ?123 > ABC.
 - Root cause: BubbleOverlay (v0.9.9, V4) is a plain View added as MATCH_PARENT child of the WRAP_CONTENT keyboard FrameLayout. A plain View measures to the full free height (View.getDefaultSize), so the container grew to the screen. showPanel() removes the overlay (symbols = normal), showLetters() adds it back (letters = full screen).

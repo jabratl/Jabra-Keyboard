@@ -9,9 +9,13 @@ package com.mgb.keyboard.extras;
  */
 public final class SpaceGesture {
     public static final int NONE = 0, CURSOR = 1, LANG = 2;
+    /** v0.9.11: one swipe changes the language by at most this many steps (user request: max 1 language per swipe). */
+    public static final int LANG_MAX = 1;
 
     private final SpaceDrag cursor;
     private final SpaceDrag lang;
+    private final float langStepPx;   // v0.9.11
+    private float armX;               // v0.9.11
     private boolean armed;
     private boolean langMoved;
     private int langNet;   // v0.9.8: sum of language steps of this touch (+ = next)
@@ -21,6 +25,7 @@ public final class SpaceGesture {
     public SpaceGesture(float cursorStepPx, float langStepPx) {
         cursor = new SpaceDrag(cursorStepPx);
         lang = new SpaceDrag(langStepPx);
+        this.langStepPx = langStepPx > 0f ? langStepPx : 1f;
     }
 
     public void down(float x) {
@@ -38,7 +43,11 @@ public final class SpaceGesture {
         lastX = x;
         int n;
         if (armed) {
-            n = lang.move(x);
+            // v0.9.11: language = ABSOLUTE position since arm (not a step counter): net is clamped to -LANG_MAX..+LANG_MAX,
+            // so a long swipe never goes past 1 language and coming back to the start point gives the start language again.
+            int total = (int) ((x - armX) / langStepPx);
+            total = Math.max(-LANG_MAX, Math.min(LANG_MAX, total));
+            n = total - langNet;
             if (n != 0) { langMoved = true; langNet += n; kind = LANG; } else kind = NONE;
         } else {
             n = cursor.move(x);
@@ -57,6 +66,7 @@ public final class SpaceGesture {
         if (armed || cursor.wasDragged()) return false;
         armed = true;
         lang.down(lastX);
+        armX = lastX;
         return true;
     }
 

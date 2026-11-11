@@ -56,7 +56,7 @@ public class SpaceGestureTest {
         g.arm();
         g.move(150f);
         g.move(200f);
-        eq("still lang", g.kind(), SpaceGesture.LANG);
+        eq("still lang (max 1 step per swipe)", g.langNet(), 1);
         // wiggle before arm that stays under one cursor step does not block arming
         g = new SpaceGesture(16f, 40f);
         g.down(100f);
@@ -70,9 +70,9 @@ public class SpaceGestureTest {
         g.move(250f);
         eq("net +1", g.langNet(), 1);
         g.move(330f);
-        eq("net +3 after two more", g.langNet(), 3);
+        eq("net stays +1 (v0.9.11 max 1 language)", g.langNet(), 1);
         g.move(250f);
-        eq("net back to +2", g.langNet(), 2);
+        eq("net still +1 at 250", g.langNet(), 1);
         g.move(130f);
         eq("net -1 after big left", g.langNet(), -1);
         eq("lang swipe = no space", g.up(), false);
