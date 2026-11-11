@@ -10,6 +10,8 @@ import org.json.JSONObject
 import java.io.File
 import java.net.HttpURLConnection
 import java.net.URL
+import java.security.MessageDigest
+import com.mgb.keyboard.typing.ShaCheck
 
 /**
  * In-app update from GitHub Releases (public repo).
@@ -19,7 +21,7 @@ import java.net.URL
  */
 object Updater {
 
-    data class Info(val tag: String, val build: Int, val apkUrl: String?, val pageUrl: String, val notes: String)
+    data class Info(val tag: String, val build: Int, val apkUrl: String?, val pageUrl: String, val notes: String, val sha: String? = null)   // v0.10.8: sha = asset "digest" (sha256:<hex>) when GitHub gives it
 
     enum class InstallResult { STARTED, NEED_PERMISSION }
 
@@ -37,14 +39,15 @@ object Updater {
             val tag = j.optString("tag_name")
             val build = Regex("-b(\\d+)$").find(tag)?.groupValues?.get(1)?.toIntOrNull() ?: 0
             var apk: String? = null
+            var dig: String? = null   // v0.10.8
             val assets = j.optJSONArray("assets")
             if (assets != null) {
                 for (i in 0 until assets.length()) {
                     val a = assets.getJSONObject(i)
-                    if (a.optString("name").endsWith(".apk")) { apk = a.optString("browser_download_url"); break }
+                    if (a.optString("name").endsWith(".apk")) { apk = a.optString("browser_download_url"); dig = a.optString("digest").ifEmpty { null }; break }
                 }
             }
-            return Info(tag, build, apk, j.optString("html_url"), j.optString("body"))
+            return Info(tag, build, apk, j.optString("html_url"), j.optString("body"), dig)
         } finally {
             c.disconnect()
         }
@@ -68,6 +71,17 @@ object Updater {
         }
         if (out.length() < 100_000) throw RuntimeException("file too small")
         return out
+    }
+
+    /** v0.10.8: SHA-256 of the downloaded file vs the published hash. OK / MISMATCH / UNKNOWN (no hash published = UNKNOWN = allowed). Background Thread only. */
+    fun verify(apk: File, info: Info): Int {
+        val exp0: String? = try { ShaCheck.expected(info.sha, info.notes) } catch (_: Throwable) { null }
+        val exp: String = exp0 ?: return ShaCheck.UNKNOWN
+        return try {
+            val md = MessageDigest.getInstance("SHA-256")
+            apk.inputStream().use { i -> val buf = ByteArray(65536); while (true) { val n = i.read(buf); if (n < 0) break; md.update(buf, 0, n) } }
+            ShaCheck.compare(exp, ShaCheck.toHex(md.digest()))
+        } catch (_: Throwable) { ShaCheck.MISMATCH }   // a hash exists but the file could not be read: do not install
     }
 
     fun install(ctx: Context, apk: File): InstallResult {

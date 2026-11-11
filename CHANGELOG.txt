@@ -1,3 +1,14 @@
+v0.10.8 - NEW: safe updates (SHA-256 check, backup before update, test-key warning)
+- WHY: an update could be refused ("App not installed") and force an uninstall = data lost; a damaged download was never detected.
+- ROOT CAUSE (code reading): Updater.kt had no hash check. CORRECTION to the plan: the release notes do NOT contain the SHA-256 row. build.yml writes notes.txt from the first block of CHANGELOG.txt; the SHA table goes only to the job summary ($GITHUB_STEP_SUMMARY). So the expected hash is read from the GitHub release ASSET field "digest" ("sha256:<hex>", given by the GitHub API), with a fallback to a "SHA-256 <hex>" row in the notes if one is ever added. The workflow was NOT edited.
+- What you get: (1) Download & install: the APK is hashed (SHA-256, streamed, background Thread); mismatch = file deleted, message "Download damaged, nothing installed", installer NOT opened, no browser fallback. No hash published = allowed + a note line (old releases keep working). (2) Before the installer opens, a normal backup is made (and the external-folder copy when W2 folder is set); the result is shown in the status line. (3) Data & Backup top: orange warning when the APK is the DEBUG-key build (ApplicationInfo.FLAG_DEBUGGABLE; the workflow builds assembleDebug only when no keystore secret exists) with the one-time fix (add the 4 secrets).
+- Code: typing/ShaCheck.java (NEW, pure), Updater.kt (Info.sha, fetchLatest reads asset digest, verify()), SettingsActivity.kt (doUpdate: verify, backup, messages), DataPage.kt (warning), tools/ShaCheckTest.java (NEW, 39 checks). Hooks marked v0.10.8.
+- Prefs (new): none. No new permission.
+BROKE: nothing intended. Behaviour change: doUpdate now takes a few seconds longer (hash + backup) before the installer opens.
+NOT tested: Kotlin compile (GitHub Actions first); phone (CHECKLIST Z52). NOT proven: that the GitHub API really returns "digest" for this repo's assets (if it does not, the result is UNKNOWN = update still works, only the check is skipped). NOT testable here: a real install.
+TESTED here: all 50 Java tests green (ShaCheckTest 39 NEW); bracket balance of the 3 changed Kotlin files.
+Rollback: restore Updater.kt / SettingsActivity.kt / DataPage.kt from v0.10.7 and delete ShaCheck.java + ShaCheckTest.java.
+
 v0.10.7 - NEW: backup that survives uninstall (external folder copy) + learned words inside the backup
 - WHY: backups lived only in the app's private folder, so "uninstall and reinstall" (e.g. after an "App not installed" update) deleted the data AND every backup with it. Also the learned-words file (learn_v1.txt) was never in a backup.
 - ROOT CAUSE (code reading): BackupStore.FILES listed only vault_v1.json + profiles_v1.json; backups went only to filesDir/backups. BackupCodec accepts any file name in "files" (no change needed); only BackupStore.restore / fileFromBackup / replaceFile filter by FILES.

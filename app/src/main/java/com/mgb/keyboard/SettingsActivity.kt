@@ -218,15 +218,32 @@ class SettingsActivity : Activity() {
             } catch (e: Throwable) {
                 android.util.Log.w("MGB", "update stage 1 failed: " + e.message)
             }
+            var bk = ""
+            var sha = com.mgb.keyboard.typing.ShaCheck.UNKNOWN   // v0.10.8: check the download, then back up, then open the installer
+            try {
+                val f0 = file
+                if (f0 != null) {
+                    sha = Updater.verify(f0, info)
+                    if (sha == com.mgb.keyboard.typing.ShaCheck.MISMATCH) { try { f0.delete() } catch (_: Throwable) { }; file = null }
+                    else try {
+                        val app = applicationContext
+                        bk = BackupStore.backupNow(app)
+                        if (BackupStore.extAccessOk(app)) bk += ". " + BackupStore.copyExternal(app)
+                    } catch (_: Throwable) { }
+                }
+            } catch (_: Throwable) { }
+            val shaR = sha
+            val bkR = bk
             val f = file
             runOnUiThread {
+                if (shaR == com.mgb.keyboard.typing.ShaCheck.MISMATCH) { status.text = com.mgb.keyboard.typing.ShaCheck.message(shaR); return@runOnUiThread }   // v0.10.8: nothing installed, no fallback
                 var done = false
                 try {
                     if (f != null) {
                         val r = Updater.install(this, f)
                         status.text = if (r == Updater.InstallResult.NEED_PERMISSION)
                             "Allow 'Install unknown apps' for Jabra Keyboard, come back and tap Download & install again."
-                        else "Installer opened. Tap Install."
+                        else "Backup before update: " + bkR + ".\nInstaller opened. Tap Install." + (if (shaR == com.mgb.keyboard.typing.ShaCheck.UNKNOWN) "\n" + com.mgb.keyboard.typing.ShaCheck.message(shaR) else "")
                         done = true
                     }
                 } catch (e: Throwable) {

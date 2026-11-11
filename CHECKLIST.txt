@@ -616,3 +616,12 @@ Z51) v0.10.7 Backup that survives uninstall
  [ ] Android Settings > Apps > Jabra > Permissions (or Files app) revoke the folder, or delete the folder: Health shows WARN "folder is not reachable", page shows "(NOT reachable)", keyboard still types, no crash.
  [ ] "Turn off external backup": line shows "not set"; files already in the folder stay.
  [ ] Folder never chosen + Vault has entries: Health shows WARN "No external backup ...".
+
+Z52) v0.10.8 Safe updates
+ [ ] App screen > Data & Backup: if the build is the DEBUG-key one, an orange "signed with a TEST key" warning is at the top; with your own key it is NOT there.
+ [ ] Check for updates (when a newer release exists) > Download & install: status shows "Backup before update: Backup saved ..." then "Installer opened". Data & Backup list has a new copy.
+ [ ] Same, with an external folder set (Z51): the status also says "External backup saved". A new jabra_YYYYMMDD.json is in the folder.
+ [ ] Release with no published hash: the status adds "Download could not be checked (no hash published ...)" and the installer still opens.
+ [ ] Release WITH a hash (digest): no "could not be checked" line (this proves GitHub gives the digest). If the line shows on a new release, tell me: digest field missing.
+ [ ] Offline / "up to date": nothing changes compared with v0.10.7.
+
