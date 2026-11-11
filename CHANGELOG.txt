@@ -1,3 +1,20 @@
+v0.4.6 - NEW: Text tools (S7a): Count / Case / Clean / Repeat / Date
+- WHY: plan S7a (HANDOFF 3e). Small everyday text jobs without leaving the keyboard. Nothing is auto-run; all tools work only when you tap.
+- What you get: a new toolbar item "Text tools" (OFF until you add it: Edit toolbar > Text tools ON, or hold a toolbar key 1.5 s). Panel with 5 tabs. Source = the selected text, else the whole field (shown in the info line).
+  1) Count: words, characters (and without spaces), sentences (. ! ? and the Bangla danda), lines, paragraphs.
+  2) Case: UPPER / lower / Title / Sentence. Bangla text is left as it is.
+  3) Clean: switches Extra spaces / Blank lines (many in a row become one) / Line ends (spaces at the end of lines). Line breaks are kept.
+  4) Repeat: 1-50 times, between = New line / Space / Blank line / None. Result never longer than 50000 characters.
+  5) Date: 6 formats (11/11/2026, 2026-11-11, 11 Nov 2026, Wednesday 11 November 2026, 12:09, 2026-11-11 12:09), tap the sample or the arrows to change. Insert types it at the cursor.
+  Buttons: Replace (selection = 1 tap; WHOLE field = "Sure? Replace all" 2 taps, then "Undo"), Copy. Count / Date show Insert + Copy instead of Replace. Never opens in password fields.
+- Code: NEW typing/TextTools.java (pure) + tools/TextToolsTest.java (44 ok), NEW TextToolsPanel.kt (reuses FmtIo / ImeFmtIo of the Formatter for reading, replacing, undo and copy). Hooks marked "v0.4.6": MgbIme.kt (lazy field, route "tt", toolbarAction "tt", capTall list), Toolbar.kt (label "Tt" / title), ToolbarOrder.java (id "tt" appended to DEFAULT + EXTRAS), JabraIcons.kt (icon "tt"), tools/ToolbarTest.java (4 expectations for the new id; still 44 checks).
+- DEVIATION from the plan (1 line): plan had [Replace] [Insert] [Copy] on every page; Insert on a text page would replace the selection anyway, so text pages show Replace + Copy and Count / Date show Insert + Copy.
+- Prefs NEW: none (tool settings live only while the panel is open). No new permission, no manifest change, nothing on the key-press path (the field is read when the panel opens and after Replace / Undo).
+BROKE: nothing intended. Toolbar item OFF by default.
+NOT tested: Kotlin compile (GitHub Actions first), the panel on a phone (height at 360 px / landscape, 5 tabs width), Replace on the whole field in different apps (same reader as the Formatter: apps that hide their text give "No text" / "Could not replace" and Copy still works), Undo.
+TESTED here: TextToolsTest 44/44, ToolbarTest 44/44, all other Java tests green; bracket balance of the 4 changed Kotlin files OK.
+Rollback: toolbar: Text tools OFF (no code change). Code: delete typing/TextTools.java, TextToolsPanel.kt, tools/TextToolsTest.java and the lines marked "v0.4.6".
+
 v0.4.5 - NEW: Vault part 2 = Glossary + Quick Notes (S4b). Shipped TOGETHER with v0.4.4 in one zip (build name = 0.4.5)
 - WHY: plan S4b (HANDOFF 3e): personal dictionary + notes inside the SAME store as the snippets. No new file, no new permission.
 - What you get (Vault panel): kind chips under the header line: All / Snippets / Notes / Glossary (each with a count; Snippets also shows Templates). Entry kinds Note and Term.
