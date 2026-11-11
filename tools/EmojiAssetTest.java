@@ -50,6 +50,15 @@ public class EmojiAssetTest {
         check(fam >= 0 && !db.toneable(fam), "family has no tones");
         check(find(db, u(0x1F1E7, 0x1F1E9)) >= 0, "flag Bangladesh present");
         check(find(db, u(0x1F3FB)) < 0, "tone swatch is not an emoji entry");
+        // v0.8.1: the grid panel reads groupStart(g)..groupEnd(g) and uses the first emoji of each group as the tab icon
+        int prevEnd = 0;
+        for (int gi = 0; gi < db.groupCount(); gi++) {
+            check(db.groupStart(gi) == prevEnd && db.groupEnd(gi) > db.groupStart(gi), "group " + gi + " range is contiguous and not empty");
+            check(db.group(db.groupStart(gi)) == gi && db.group(db.groupEnd(gi) - 1) == gi, "group " + gi + " first / last emoji belong to it");
+            check(db.emoji(db.groupStart(gi)).length() > 0, "group " + gi + " tab icon");
+            prevEnd = db.groupEnd(gi);
+        }
+        check(prevEnd == db.size(), "groups cover all emoji");
         System.out.println("EmojiAssetTest: " + ok + " ok, " + bad + " FAIL (" + db.size() + " emoji, " + tones + " toneable, Unicode " + db.unicodeVersion() + ")");
         if (bad > 0) System.exit(1);
     }

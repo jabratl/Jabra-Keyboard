@@ -343,3 +343,13 @@ Z19) v0.8.0.1 Emoji data file (E1 data drop, nothing visible)
  [ ] Update the app. Keyboard types as before; the emoji panel (toolbar emoji icon, or long-press ",") is still the OLD one: 9 tabs + Recent, tap = types the emoji.
  [ ] Nothing else changed: no new setting, no new screen, no new permission prompt. The app is about 55 KB bigger.
  [ ] (GitHub) the build of v0.8.0.1 is GREEN (the new file is in app/src/main/assets/emoji/).
+
+Z20) v0.8.1 Fast emoji panel (E2)
+ [ ] (GitHub) the build of v0.8.1 is GREEN. If red: paste the error lines in the next chat (it becomes a FIX).
+ [ ] Open the keyboard, wait a few seconds, then open the emoji panel (toolbar emoji icon or long-press ","): tabs = clock + 9 groups. Scroll the grid: smooth, follows the finger, keeps gliding after a flick.
+ [ ] Tap an emoji: it is typed in the field, you feel the same vibration / sound as on keys, and it appears in the clock (Recent) tab next time.
+ [ ] Recent tab with no recent emoji: the grey line "No recent emoji yet..." shows. Backspace (hold = repeats), space, enter, ABC all work.
+ [ ] Very first open right after installing (file may still load): the OLD panel can show once; close and open again = new panel.
+ [ ] Dark theme (Dark or Gloss Black): panel background dark, tab buttons dark, tap highlight visible, grey line readable.
+ [ ] Rotate to landscape / wide screen: more emoji per row, nothing cut off, still scrolls.
+ [ ] Say what you see if some emoji are empty boxes (E3 will hide them), or if scrolling feels slow.

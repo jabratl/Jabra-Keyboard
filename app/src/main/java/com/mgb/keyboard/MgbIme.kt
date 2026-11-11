@@ -50,7 +50,7 @@ class MgbIme : InputMethodService() {
     private val prefs by lazy { JabraPrefs(this) }
     private val panels by lazy { JabraPanels(this, host) }
     private val morePanel by lazy { MorePanel(this, host) }   // v0.0.9 "More settings" page
-    private val emojiPanel by lazy { EmojiPanel(this, host) }   // v0.1.0 emoji panel
+    private val emojiPanel by lazy { EmojiPanelSwitch(this, host) }   // v0.1.0 emoji panel; v0.8.1: new grid panel when the data file is loaded, else the old EmojiPanel
     private val sizePanel by lazy { SizePanel(this, host) }   // v0.1.4 "Size" page
     private val toolbarPanel by lazy { ToolbarPanel(this, host) }   // v0.2.1 "Edit toolbar" page
     private val toolbarQuick by lazy { ToolbarQuickPanel(this, host) }   // v0.2.7 quick add / remove page
@@ -178,6 +178,7 @@ class MgbIme : InputMethodService() {
         super.onCreate()
         try { bangla = getSharedPreferences("jabra", MODE_PRIVATE).getBoolean("bangla", false) } catch (_: Throwable) { }
         try { probhat = prefs.str("bn_layout", "avro") == "probhat" } catch (_: Throwable) { probhat = false }
+        try { EmojiStore.preload(this) } catch (_: Throwable) { }   // v0.8.1: load the emoji file once, in the background
         // v0.0.6: listen to copy events (only text, only while this keyboard service lives)
         try {
             val cm = getSystemService(CLIPBOARD_SERVICE) as ClipboardManager
