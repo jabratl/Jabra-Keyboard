@@ -165,6 +165,7 @@ object KeyPopup {
             val np = PopupWindow(tv, w, h, false)
             np.isTouchable = false
             np.isFocusable = false
+            ToolTip.inScreen(np)   // v0.10.4
             np.showAtLocation(b, Gravity.NO_GRAVITY, x, y)
             cpw = np
         }
@@ -285,6 +286,7 @@ object KeyPopup {
         val p = PopupWindow(t, w, h, false)
         p.isTouchable = false
         p.isFocusable = false
+        ToolTip.inScreen(p)   // v0.10.4
         val loc = IntArray(2)
         b.getLocationOnScreen(loc)
         val x = loc[0] + b.width / 2 - w / 2
