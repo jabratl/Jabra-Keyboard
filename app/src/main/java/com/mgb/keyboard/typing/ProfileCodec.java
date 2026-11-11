@@ -49,6 +49,9 @@ public final class ProfileCodec {
 
     public static boolean allowed(String key) { return idx(key) >= 0; }
 
+    /** v0.5.3: type of a whitelisted key: 'b' boolean, 'i' int, 's' string; ' ' when the key is not whitelisted. */
+    public static char typeOf(String key) { int i = idx(key); return i < 0 ? ' ' : TYPE[i]; }
+
     /** Checks one value for one key. Returns the clean value, or INVALID when it must be dropped. */
     private static final Object INVALID = new Object();
 

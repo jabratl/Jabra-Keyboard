@@ -60,7 +60,7 @@ object BackupStore {
             if (!write(f, text)) return "Backup failed (could not save the file)"
             if (BackupCodec.validate(read(f) ?: "") != BackupCodec.OK) { try { f.delete() } catch (_: Throwable) { }; return "Backup failed (file check)" }
             val e = sp(ctx).edit()
-            e.putString("bk_last", stamp()); e.putInt("schema_v", 1); e.apply()
+            e.putString("bk_last", stamp()); if (!sp(ctx).contains("schema_v")) e.putInt("schema_v", 1); e.apply()   // v0.5.3: a backup never lowers schema_v
             prune(ctx)
             return "Backup saved"
         } catch (_: Throwable) { return "Backup failed" }
@@ -81,6 +81,30 @@ object BackupStore {
             val pre = all.filter { it.name.startsWith("before_restore_") }.sortedByDescending { it.name }
             for (f in pre.drop(3)) try { f.delete() } catch (_: Throwable) { }
         } catch (_: Throwable) { }
+    }
+
+    /** v0.5.3: text of data file `name` (one of FILES) from the newest VALID backup where accept(text) is true, or null. Used by the Health Check. */
+    fun fileFromBackup(ctx: Context, name: String, accept: (String) -> Boolean): String? {
+        try {
+            if (name !in FILES) return null
+            for (f in list(ctx)) {
+                val text = read(f) ?: continue
+                if (BackupCodec.validate(text) != BackupCodec.OK) continue
+                val t = BackupCodec.files(text)[name] ?: continue
+                if (t.isNotBlank() && accept(t)) return t
+            }
+        } catch (_: Throwable) { }
+        return null
+    }
+
+    /** v0.5.3: replaces data file `name` (one of FILES). The old file is first copied to <name>.damaged (one copy). */
+    fun replaceFile(ctx: Context, name: String, text: String): Boolean {
+        try {
+            if (name !in FILES) return false
+            val f = File(ctx.filesDir, name)
+            if (f.exists()) try { f.copyTo(File(ctx.filesDir, "$name.damaged"), true) } catch (_: Throwable) { }
+            return write(f, text)
+        } catch (_: Throwable) { return false }
     }
 
     /** Preview counts for the restore screen (v0.4.1): {prefs, files, timeMillis} or {-1,-1,0}. */

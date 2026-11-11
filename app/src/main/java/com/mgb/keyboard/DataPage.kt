@@ -106,6 +106,7 @@ object DataPage {
             prefs.setInt("bk_keep", nv); b.text = "Keep newest copies: $nv"
         }
         kb.text = "Keep newest copies: " + prefs.int("bk_keep", 5); root.addView(kb)
+        try { root.addView(HealthPanel.build(ctx)) } catch (_: Throwable) { }   // v0.5.3 Jabra Health Check
         root.addView(msg)
         root.addView(line("Backups"))
         root.addView(list)

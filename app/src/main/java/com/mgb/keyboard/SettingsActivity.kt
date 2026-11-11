@@ -56,6 +56,7 @@ class SettingsActivity : Activity() {
         col.addView(test)
 
         try { col.addView(SettingsGroups.build(this)) } catch (_: Throwable) { }   // v0.1.7: settings in 5 groups
+        try { HealthRun.migrate(this) } catch (_: Throwable) { }   // v0.5.3: settings migration (background Thread, backup first)
         try { BackupStore.autoIfDue(this) } catch (_: Throwable) { }   // v0.4.0: auto backup once per day (background Thread)
 
         col.addView(btn("Check for updates") { checkUpdate() })

@@ -229,3 +229,10 @@ Z2) v0.5.2 Keyboard extras
  [ ] Hint override with a Bangla letter or an emoji (k=ক) works. A wrong pair (a=ab) is ignored. "Clear" brings the old corner characters back.
  [ ] With defaults (Medium, no override) the keyboard feels exactly like v0.5.0.
 
+Z3) v0.5.3 Health Check + migration + crash guard
+ [ ] App screen > Data & Backup: a button "Jabra Health Check" is there. Tap it: lines appear (Clipboard, Formatter, Vault, Profiles, Custom theme, Backups, Storage, Settings version, Panels). All fine = "All fine." and no repair buttons.
+ [ ] Settings version says 2 (first start after the update may show "pending" for a second: close and reopen the app screen).
+ [ ] Check does not change anything: Backups list / clips / vault look the same before and after.
+ [ ] Optional: Backup now, then Health Check: Backups: 1 readable (or more).
+ [ ] Keyboard behaves exactly as before: clipboard, Vault, Profiles, Text tools, Theme Studio panels all still open.
+ [ ] (If you have a damaged Vault / Profiles file or a broken panel, send a screenshot of the Health Check lines.)
