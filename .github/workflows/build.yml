@@ -1,7 +1,14 @@
 name: Build APK
-# v2 (hardened): always works on the NEWEST main, retries the push when main moved,
-# applies every waiting zip in version order, skips old / duplicate work,
-# and writes a plain-English report (see the "Summary" page of every run).
+# v3 (smart): everything from v2 (always builds the NEWEST main, push retry, zips applied in version order,
+# old / duplicate zips skipped, plain-English report) PLUS:
+#  - zip is checked BEFORE main is touched (must contain app/build.gradle.kts with appVersionName)
+#  - pre-build "heads-up" checks (wrong version number, CHANGELOG not matching, debug-key warning)
+#  - network hiccup (Gradle download / timeout) = ONE automatic retry, and main is NOT reverted for a hiccup
+#  - re-run safe: if the release of this run already exists it is not created twice
+#  - report table (version, APK size, SHA-256, signed or debug, build time, update type)
+#  - tells you if the small "ext-only" hot update is possible (only assets/ext changed)
+#  - the build log is saved as a download on the run page when the build fails
+# Output names: Jabra-Keyboard-v<ver>-b<run>.apk, MGB-ext-b<run>-n<hash>.zip, tag v<ver>-b<run> (tag and ext zip names are used by the in-app updater).
 on:
   push:
     branches: [main]
@@ -28,11 +35,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: main          # ALWAYS the newest main, never the old commit that started this run (fixes "non-fast-forward" + stale re-runs)
+          ref: main          # ALWAYS the newest main, never the old commit that started this run
           fetch-depth: 0     # full history + tags, needed to revert to an older release
 
       - name: Prepare helpers
         run: |
+          : > "$RUNNER_TEMP/warn.md"      # heads-up lines are collected here, shown in the final report
           cat > "$RUNNER_TEMP/helpers.sh" <<'EOF'
           # push the current commit to main; if GitHub says "main moved", take the newest main and try again (4 tries)
           push_main() {
@@ -45,6 +53,8 @@ jobs:
             done
             return 1
           }
+          # newest release tag by build number, e.g. v0.0.402-b410 (empty when there is none)
+          newest_tag() { git tag -l 'v*-b*' | sed -E 's/^.*-b([0-9]+)$/\1 &/' | sort -rn | head -n1 | cut -d' ' -f2; }
           EOF
 
       - name: Revert source to an older release (only when revert_to is filled)
@@ -155,6 +165,12 @@ jobs:
               APPLIED="$APPLIED $Z"
             done <<< "$LIST"
             rm -rf _tmp
+            # 3) sanity check of the RESULT, still before anything is committed: a zip without the build file or
+            #    version line would make a broken main (nothing is pushed yet, so main stays good)
+            if [ -n "$APPLIED" ]; then
+              [ -f app/build.gradle.kts ] || fail "After applying$APPLIED the file app/build.gradle.kts is missing. The zip root folder is probably wrong." "Make sure the zip has the root folder Jabra-Keyboard-main/ and contains app/build.gradle.kts, then upload it again."
+              grep -q 'appVersionName = "' app/build.gradle.kts || fail "After applying$APPLIED the line appVersionName = \"...\" is missing in app/build.gradle.kts." "Ask in the chat for a corrected zip (the version line must stay in app/build.gradle.kts)."
+            fi
             git config user.name "mgb-bot"
             git config user.email "mgb-bot@users.noreply.github.com"
             git add -A
@@ -177,9 +193,10 @@ jobs:
         if: ${{ github.event_name == 'push' }}
         run: |
           set -euo pipefail
+          source "$RUNNER_TEMP/helpers.sh"
           # Skip when the source is IDENTICAL to the newest release (stale re-run, old zip skipped, only the workflow file changed).
           # Manual "Run workflow" always builds.
-          T=$(git tag -l 'v*-b*' | sed -E 's/^.*-b([0-9]+)$/\1 &/' | sort -rn | head -n1 | cut -d' ' -f2)
+          T=$(newest_tag)
           if [ -n "$T" ] && git diff --quiet "$T" HEAD -- . ':(exclude).github' ':(exclude)*.zip'; then
             echo "SKIP_BUILD=1" >> "$GITHUB_ENV"
             {
@@ -190,6 +207,32 @@ jobs:
             } >> "$GITHUB_STEP_SUMMARY"
           fi
 
+      - name: Heads-up checks (warnings only, never stops the build)
+        if: ${{ env.SKIP_BUILD != '1' && github.event.inputs.revert_to == '' }}
+        run: |
+          set -uo pipefail
+          source "$RUNNER_TEMP/helpers.sh"
+          W="$RUNNER_TEMP/warn.md"
+          VER=$(grep -oP 'appVersionName = "\K[^"]+' app/build.gradle.kts || true)
+          if ! echo "$VER" | grep -qE '^[0-9]+(\.[0-9]+)+$'; then
+            echo "- The version number \"$VER\" in app/build.gradle.kts looks unusual (expected like 0.0.404). The updater and the revert list may not sort it correctly." >> "$W"
+          fi
+          TOP=$(head -n1 CHANGELOG.txt 2>/dev/null | tr -d '\r' || true)
+          case "$TOP" in
+            "$VER"*) ;;
+            *) echo "- The first line of CHANGELOG.txt does not start with $VER, so the release notes shown in the app may describe the wrong version." >> "$W" ;;
+          esac
+          T=$(newest_tag)
+          if [ -n "$T" ]; then
+            LAST=${T#v}; LAST=${LAST%-b*}
+            if [ "$VER" = "$LAST" ] && ! git diff --quiet "$T" HEAD -- . ':(exclude).github' ':(exclude)*.zip'; then
+              echo "- The code changed but the version number is still $VER, same as the previous release ($T). Add +1 to appVersionName so you can tell the builds apart." >> "$W"
+            elif [ "$VER" != "$LAST" ] && [ "$(printf '%s\n%s\n' "$VER" "$LAST" | sort -V | tail -n1)" = "$LAST" ]; then
+              echo "- The version $VER is LOWER than the previous release ($LAST). Installing still works (the build number always goes up) but the number looks like a step back." >> "$W"
+            fi
+          fi
+          cat "$W" || true
+
       - uses: actions/setup-java@v4
         if: ${{ env.SKIP_BUILD != '1' }}
         with:
@@ -199,12 +242,14 @@ jobs:
         if: ${{ env.SKIP_BUILD != '1' }}
         with:
           gradle-version: '8.7'
+
       - name: Native fingerprint (S16, for ext-only hot updates)
         if: ${{ env.SKIP_BUILD != '1' }}
         run: |
           H=$( { find app -type f ! -path 'app/build/*' ! -path 'app/src/main/assets/ext/*' ! -path 'app/build.gradle.kts' | LC_ALL=C sort | xargs -r -d '\n' sha256sum; grep -v 'appVersionName = ' app/build.gradle.kts | sha256sum; for F in settings.gradle.kts settings.gradle build.gradle.kts build.gradle gradle.properties; do if [ -f "$F" ]; then sha256sum "$F"; fi; done; } | sha256sum | cut -c1-16 )
           echo "Native hash: $H"
           echo "MGB_NATIVE_HASH=$H" >> "$GITHUB_ENV"
+
       - name: Prepare signing (only if secrets exist)
         if: ${{ env.SKIP_BUILD != '1' }}
         env:
@@ -214,10 +259,14 @@ jobs:
             echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/mgb.jks"
             echo "KEYSTORE_PATH=$RUNNER_TEMP/mgb.jks" >> "$GITHUB_ENV"
             echo "TASK=assembleRelease" >> "$GITHUB_ENV"
+            echo "MGB_SIGNED=your own key" >> "$GITHUB_ENV"
           else
             echo "No keystore secret: building DEBUG apk"
             echo "TASK=assembleDebug" >> "$GITHUB_ENV"
+            echo "MGB_SIGNED=DEBUG key (no keystore secret)" >> "$GITHUB_ENV"
+            echo "- No keystore secret is set in this repo, so the APK is signed with a throw-away DEBUG key. GitHub gives a different debug key on many runs, and then the phone can refuse to install it over the old app (\"App not installed\"). Fix once: Settings > Secrets and variables > Actions > add KEYSTORE_B64, KEYSTORE_PASSWORD, KEY_ALIAS, KEY_PASSWORD." >> "$RUNNER_TEMP/warn.md"
           fi
+
       - name: Build
         id: build
         if: ${{ env.SKIP_BUILD != '1' }}
@@ -227,16 +276,38 @@ jobs:
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: |
           set -o pipefail
-          gradle "$TASK" --no-daemon --stacktrace 2>&1 | tee "$RUNNER_TEMP/build.log"
+          LOG="$RUNNER_TEMP/build.log"
+          START=$(date +%s)
+          run_gradle() { gradle "$TASK" --no-daemon --stacktrace 2>&1 | tee "$LOG"; return "${PIPESTATUS[0]}"; }
+          # "network hiccup" = no compiler error in the log, but a download / timeout problem
+          is_net() {
+            ! grep -qE '^e: |\.java:[0-9]+: error: ' "$LOG" &&
+            grep -qiE 'Could not resolve|Could not GET|Could not HEAD|Read timed out|Connect timed out|Connection reset|Received status code 5[0-9][0-9]|SSLHandshake|Premature end of Content-Length|Unable to tunnel|Remote host terminated' "$LOG"
+          }
+          set +e
+          run_gradle; RC=$?
+          if [ "$RC" -ne 0 ] && is_net; then
+            echo "::warning::Looks like a network hiccup (not a code error). Trying the build ONE more time in 20 seconds..."
+            echo "MGB_RETRIED=1" >> "$GITHUB_ENV"
+            sleep 20
+            run_gradle; RC=$?
+          fi
+          echo "MGB_BUILD_SECS=$(( $(date +%s) - START ))" >> "$GITHUB_ENV"
+          if [ "$RC" -ne 0 ]; then
+            if is_net; then echo "MGB_NET_FAIL=1" >> "$GITHUB_ENV"; fi
+            exit 1
+          fi
+
       - name: Auto-revert main if the build failed
-        if: ${{ failure() && steps.build.outcome == 'failure' }}
+        if: ${{ failure() && steps.build.outcome == 'failure' && env.MGB_NET_FAIL != '1' }}
         run: |
           set -euo pipefail
           source "$RUNNER_TEMP/helpers.sh"
           # Build (compile) failed: put main back to the source of the newest GOOD release.
           # The failed commit stays in git history, nothing is lost.
+          # (Not done for a pure network failure: the code is fine then, a re-run is enough.)
           git fetch --tags --force
-          T=$(git tag -l 'v*-b*' | sed -E 's/^.*-b([0-9]+)$/\1 &/' | sort -rn | head -n1 | cut -d' ' -f2)
+          T=$(newest_tag)
           if [ -z "$T" ]; then echo "::warning::No release to restore, main left as it is"; exit 0; fi
           SHA=$(git rev-parse "${T}^{commit}")
           FAILED=$(git rev-parse --short HEAD)
@@ -257,30 +328,71 @@ jobs:
           MSG="Build FAILED. main was restored to the source of $T. The failed change is still in history as commit $FAILED (to bring it back: Run workflow with revert_to = $FAILED)."
           echo "::error::$MSG"
           echo "$MSG" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Save the build log (only when the build failed)
+        if: ${{ failure() && steps.build.outcome == 'failure' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-log
+          path: ${{ runner.temp }}/build.log
+          retention-days: 14
+          if-no-files-found: ignore
+
       - uses: actions/upload-artifact@v4
         if: ${{ env.SKIP_BUILD != '1' }}
         with:
           name: Jabra-Keyboard-apk
           path: app/build/outputs/apk/**/*.apk
+          retention-days: 30
+          if-no-files-found: error
+
       - name: Publish release
         id: publish
         if: ${{ env.SKIP_BUILD != '1' }}
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          source "$RUNNER_TEMP/helpers.sh"
           VER=$(grep -oP 'appVersionName = "\K[^"]+' app/build.gradle.kts)
           TAG="v${VER}-b${GITHUB_RUN_NUMBER}"
+          # tag of the release before this one (to compare the native fingerprint)
+          PREV_TAG=$(newest_tag)
+
+          # re-run safety: the release of this run may already exist (a re-run after a hiccup in the last step)
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            {
+              echo "### Release already exists - nothing to do"
+              echo
+              echo "Release **$TAG** was already published by an earlier attempt of this run, so it was not created twice."
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
           APK=$(ls app/build/outputs/apk/*/*.apk | head -n1)
-          cp "$APK" "Jabra-Keyboard-${TAG}.apk"
-          EXT=""
+          APKNAME="Jabra-Keyboard-${TAG}.apk"
+          cp "$APK" "$APKNAME"
+          APKSIZE=$(stat -c%s "$APKNAME"); APKSHA=$(sha256sum "$APKNAME" | cut -d' ' -f1)
+          EXT=""; EXTSIZE=0
           if [ -d app/src/main/assets/ext ]; then
             EXT="MGB-ext-b${GITHUB_RUN_NUMBER}-n${MGB_NATIVE_HASH}.zip"
             rm -rf extpkg; mkdir extpkg
             cp -a app/src/main/assets/ext/. extpkg/
             printf '{"build":%s,"native":"%s"}' "$GITHUB_RUN_NUMBER" "$MGB_NATIVE_HASH" > extpkg/_bundle.json
             (cd extpkg && zip -qr "../$EXT" .)
+            EXTSIZE=$(stat -c%s "$EXT")
           fi
-          awk 'NR==1{next} /^[[:space:]]*$/{exit} {print}' CHANGELOG.txt > notes.txt || true
+
+          # can phones with the previous release take the small ext-only update?
+          PREV_HASH=""
+          if [ -n "$PREV_TAG" ]; then
+            PREV_HASH=$(gh release view "$PREV_TAG" --json assets --jq '.assets[].name' 2>/dev/null | grep -oP -- '-ext-b[0-9]+-n\K[0-9a-f]+' | head -n1 || true)
+          fi
+          if [ -z "$EXT" ]; then UPD="full APK only (no ext folder in this build)"
+          elif [ -z "$PREV_HASH" ]; then UPD="full APK (no earlier ext package to compare with)"
+          elif [ "$PREV_HASH" = "$MGB_NATIVE_HASH" ]; then UPD="only the extension part changed: the small ext-only update ($(numfmt --to=iec "$EXTSIZE")) works too, not only the full APK"
+          else UPD="app code changed: the full APK update is needed"; fi
+
+          awk 'NR==1{next} /^[[:space:]]*$/{exit} {print}' CHANGELOG.txt | head -c 100000 > notes.txt || true
           [ -s notes.txt ] || echo "Build ${GITHUB_RUN_NUMBER}" > notes.txt
           TITLE="Jabra Keyboard ${VER} (build ${GITHUB_RUN_NUMBER})"
           if [ -n "${MGB_REVERTED_FROM:-}" ]; then
@@ -288,14 +400,30 @@ jobs:
             { echo "REVERT: this build has the source of ${MGB_REVERTED_FROM}"; cat notes.txt; } > notes2.txt && mv notes2.txt notes.txt
             TITLE="${TITLE} - revert to ${MGB_REVERTED_FROM}"
           fi
-          gh release create "$TAG" "Jabra-Keyboard-${TAG}.apk" $EXT \
+          gh release create "$TAG" "$APKNAME" $EXT \
             --title "$TITLE" \
             --notes-file notes.txt \
-            --target "$(git rev-parse HEAD)"
+            --target "$(git rev-parse HEAD)" || exit 1
           {
             echo "### SUCCESS - build is GREEN"
             echo
-            echo "Release **$TAG** is published. Open the app > Check for updates, or download the APK from the Releases page."
+            echo "| | |"
+            echo "|---|---|"
+            echo "| Release | **$TAG** ([open](https://github.com/${GITHUB_REPOSITORY}/releases/tag/${TAG})) |"
+            echo "| App version | $VER (build $GITHUB_RUN_NUMBER) |"
+            echo "| APK | $APKNAME - $(numfmt --to=iec "$APKSIZE") |"
+            echo "| Signed with | ${MGB_SIGNED:-unknown} |"
+            echo "| Build time | $(( ${MGB_BUILD_SECS:-0} / 60 )) min $(( ${MGB_BUILD_SECS:-0} % 60 )) s${MGB_RETRIED:+ (needed 1 automatic retry after a network hiccup)} |"
+            echo "| Update type | $UPD |"
+            echo "| SHA-256 of the APK | $APKSHA |"
+            echo
+            echo "On the phone: open the app > Check for updates > Update > Install (or download the APK from the Releases page)."
+            if [ -s "$RUNNER_TEMP/warn.md" ]; then
+              echo
+              echo "### Heads-up (the build worked, but please read)"
+              echo
+              cat "$RUNNER_TEMP/warn.md"
+            fi
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Explain what went wrong (plain English)
@@ -305,6 +433,14 @@ jobs:
           LOG="$RUNNER_TEMP/build.log"
           if [ "${{ steps.apply.outcome }}" = "failure" ]; then
             exit 0   # the upload step already wrote its own plain-English report
+          elif [ "${{ steps.build.outcome }}" = "failure" ] && [ "${MGB_NET_FAIL:-}" = "1" ]; then
+            {
+              echo "### BUILD STOPPED - a download / network problem (not your code)"
+              echo
+              echo "**What happened:** Gradle could not download something (or GitHub's network timed out), even after one automatic retry. The compiler found NO code error, so main was NOT reverted and your change is still on main."
+              echo
+              echo "**What to do:** open this run and click **Re-run failed jobs** (or Re-run all jobs). Do NOT upload the zip again. If it fails the same way 2-3 times, copy the red lines of the Build step into the chat."
+            } >> "$S"
           elif [ "${{ steps.build.outcome }}" = "failure" ]; then
             {
               echo "### BUILD FAILED - the app code has an error"
@@ -327,7 +463,7 @@ jobs:
               echo '```'
               echo
               echo "**What to do:**"
-              echo "1. Copy the lines above (or the red error lines from the Build step) and paste them in the next chat, in the kickoff line: GitHub build = ERRORS: (paste). The next step will become a FIX first."
+              echo "1. Copy the lines above (or the red error lines from the Build step) and paste them in the next chat, in the kickoff line: GitHub build = ERRORS: (paste). The next step will become a FIX first. The full log is also at the bottom of this page under Artifacts > build-log."
               echo "2. Do NOT click Re-run on this run. The failed upload was already taken out and main was put back to the last good version (see the Auto-revert step)."
               echo "3. If you uploaded a NEWER zip on top of this one, that zip needs this one, so it may fail too. Wait for the fix zip and upload ONLY that."
             } >> "$S"
@@ -335,9 +471,9 @@ jobs:
             {
               echo "### BUILD OK, but the RELEASE could not be published"
               echo
-              echo "**What happened:** The app compiled, but GitHub could not create the release (for example the release name already exists, or GitHub had a short problem)."
+              echo "**What happened:** The app compiled, but GitHub could not create the release (for example a short GitHub problem)."
               echo
-              echo "**What to do:** open this run and click \"Re-run failed jobs\" once. If it fails again, copy the red lines of the \"Publish release\" step into the chat."
+              echo "**What to do:** open this run and click \"Re-run failed jobs\" once. It is safe: if the release already exists it will not be created twice. If it fails again, copy the red lines of the \"Publish release\" step into the chat."
             } >> "$S"
           elif [ "${{ steps.revert.outcome }}" = "failure" ]; then
             exit 0
