@@ -1,3 +1,12 @@
+v0.10.5 - FIX: pinned clip not visible in Cards view (the "Pinned" title showed, the card did not)
+- WHY: user screenshots: List view shows the pinned clip, Cards view shows the "Pinned" title and NO card under it (Recent cards are fine). v0.9.10.5 only changed the card colour, it did not find the cause.
+- ROOT CAUSE (code reading, NOT run on a phone): ClipCards.addGrid puts cards 2 per row. With an ODD count (one pinned clip) the empty half was a 1 px high spacer View (weight 1). That row ended up with no real height, so the lone card was squeezed to nothing (a pinned list is usually 1 clip = always odd; Recent with an even count was fine). Same hidden bug hits any odd last row.
+- What changed: the row uses weightSum 2 so a lone card keeps half width without any spacer view; every card also has minimumHeight 72 dp (normal cards are taller, so no look change) as a second guard.
+- Code: ClipCards.kt only (2 lines, marked v0.10.5; spacer() is now unused but kept), build.gradle.kts version.
+BROKE: nothing intended. NOT tested: Kotlin compile (GitHub Actions first); phone (CHECKLIST Z49). If the pinned card is STILL missing, tell me: how many pinned clips, Sort (Newest / ...), and whether Search is empty.
+TESTED here: all 48 Java tests green (no Java change); bracket balance of ClipCards.kt.
+Rollback: restore ClipCards.kt from v0.10.4.
+
 v0.10.4 - FIX: toolbar name tip + "Edit shortcut" bubble were at the bottom of the keyboard; now above the icon
 - WHY: user video: hold a toolbar icon 0.3 s = its name appeared at the very BOTTOM (under the ?123 row); "Edit shortcut" (1.5 s) too. Wanted: just above the icon, like the key bubble.
 - ROOT CAUSE (from the video + code): a PopupWindow of the keyboard window is kept inside / relative to the keyboard window frame, so a bubble that belongs ABOVE the top row (outside the keyboard window) was pushed down to the keyboard's bottom edge. x was right (centred on the icon), only y was wrong. Same cause is the likely reason for the old unexplained V1 note "bubble on the bottom row" (window bubbles of keys without room above).

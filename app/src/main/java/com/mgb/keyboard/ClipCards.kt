@@ -75,9 +75,9 @@ object ClipCards {
         while (i < items.size) {
             val r = LinearLayout(ctx)
             r.orientation = LinearLayout.HORIZONTAL
+            r.weightSum = 2f   // v0.10.5: a lone card (odd count, e.g. ONE pinned clip) keeps half width WITHOUT the old 1 px spacer view (that row collapsed to no height = pinned card invisible)
             r.addView(card(ctx, host, items[i], lv, onPin, onDel, sm))
             if (i + 1 < items.size) r.addView(card(ctx, host, items[i + 1], lv, onPin, onDel, sm))
-            else r.addView(spacer(ctx))   // odd count: empty slot keeps the card width
             col.addView(r)
             i += 2
         }
@@ -105,6 +105,7 @@ object ClipCards {
         val lp = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 1f)   // equal width, same height as the other card in the row
         lp.setMargins(dp(ctx, 3), dp(ctx, 3), dp(ctx, 3), dp(ctx, 3))
         box.layoutParams = lp
+        box.minimumHeight = dp(ctx, 72)   // v0.10.5: a card can never collapse to zero height (normal cards are taller than this, so no visible change)
 
         // body = the clip text; tap = paste + back to letters (same 3 lines as the List view)
         val t = TextView(ctx)

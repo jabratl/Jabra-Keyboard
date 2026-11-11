@@ -593,3 +593,8 @@ Z48) v0.10.4 Tip / Edit shortcut above the icon
  [ ] Key popup ON: hold a key on the top letter row / number row: the bubble is above the key (never on the bottom row).
  [ ] Hold a suggestion slot 0.35 s: the 3-column grid opens over the keys as before.
  [ ] Bubble position: not shifted up / down by the status bar height? Tell me if it is.
+
+Z49) v0.10.5 Pinned clip visible in Cards view
+ [ ] Clipboard > View: Cards. Pin ONE clip: under "Pinned" a half-width card shows (blue tint, "Pinned" tag), Recent cards below as before.
+ [ ] Pin 2 and 3 clips: 2 cards in a row, the 3rd alone on the next row at half width. Nothing is missing.
+ [ ] Recent with an odd count: the last card is half width and visible. List view unchanged.
