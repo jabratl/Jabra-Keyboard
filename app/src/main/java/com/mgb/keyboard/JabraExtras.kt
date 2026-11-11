@@ -241,10 +241,12 @@ class JabraPanels(private val ctx: Context, private val host: JabraHost) {
 
     private fun symbols(): View {
         val root = rootView()
-        val pages = if (symPage == 0)
-            arrayOf("1234567890", "@#৳%&-+()/", "*\"':;!?")
-        else
-            arrayOf("~`|•°^=_{}", "\\[]<>£€¥₹\$", "…©®™§")
+        val pages: Array<String> = try { com.mgb.keyboard.typing.SymbolPages.page(symPage) } catch (_: Throwable) {   // v0.9.5: 3 pages from SymbolPages; old 2 pages = fallback
+            if (symPage == 0)
+                arrayOf("1234567890", "@#৳%&-+()/", "*\"':;!?")
+            else
+                arrayOf("~`|•°^=_{}", "\\[]<>£€¥₹\$", "…©®™§")
+        }
 
         for (i in 0..1) {
             val r = row()
@@ -252,8 +254,8 @@ class JabraPanels(private val ctx: Context, private val host: JabraHost) {
             root.addView(r)
         }
         val r3 = row()
-        r3.addView(pk(if (symPage == 0) "=<" else "?123", 1.5f) {
-            symPage = 1 - symPage
+        r3.addView(pk(try { com.mgb.keyboard.typing.SymbolPages.switchLabel(symPage) } catch (_: Throwable) { if (symPage == 0) "=<" else "?123" }, 1.5f) {   // v0.9.5: label = next page
+            symPage = try { com.mgb.keyboard.typing.SymbolPages.next(symPage) } catch (_: Throwable) { 1 - (symPage and 1) }   // v0.9.5: 0 -> 1 -> 2 -> 0
             host.showPanel("symbols")
         })
         pages[2].forEach { ch -> r3.addView(cs(pk(ch.toString(), 1f) { sym(ch.toString()) })) }

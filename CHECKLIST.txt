@@ -465,3 +465,12 @@ Z33) v0.9.4 Bangla digits on the number row
  [ ] "Bangla digit hints" ON + this ON: in Bangla layouts the hint is the Latin digit; in English the small Bangla digit hint works as before.
  [ ] Letter size %, Bold letters, Large number row: Bangla digits look fine and are not cut off. Classic + one dark theme.
  [ ] Feedback at touch-down ON: number row still buzzes once per tap. Number row OFF: nothing breaks. Setting OFF: back to Latin digits.
+
+Z34) v0.9.5 Symbols page 3 (math / Greek / arrows)
+ [ ] Open the symbols panel (?123 key on the letters keyboard). Page 1 looks as before (digits, @ # taka % & - + ( ) /, * " ' : ; ! ?). Left key of row 3 says "=<".
+ [ ] Tap it: page 2 (~ ` | bullet degree ^ = _ { } / \ [ ] < > pound euro yen rupee $ / ellipsis (c) (R) TM section). Left key now says "pi+root".
+ [ ] Tap it again: NEW page 3: row 1 pi root divide times pilcrow Delta plus-minus not-equal approx infinity; row 2 <= >= arrows (left right up down both) sum integral; row 3 alpha beta gamma theta lambda mu Omega. Left key says "?123".
+ [ ] Tap it once more: back on page 1. Tap every key of page 3 in a text box: each types its own character (none empty, none shown as a box). Tell me which character is shown as a box on your phone, if any.
+ [ ] Same in English, Avro and Probhat (the symbols panel is the same for all). Typing a symbol while an Avro word is half typed: word is committed first, then the symbol (as before).
+ [ ] ABC returns to letters, gear opens settings, 123 opens the number pad, comma / space / period / enter work, backspace hold-repeat works on all 3 pages.
+ [ ] Letter size %, Bold letters, Classic + one dark theme: the 3 pages look fine and the left key label is not cut off at 360 dp.
