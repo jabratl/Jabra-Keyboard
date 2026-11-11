@@ -30,6 +30,19 @@ class MgbIme : InputMethodService() {
     private var bangla = false                 // saved in prefs key "bangla"
     private var latinOnly = false              // password / email / URL / number fields: always English
     private val buf = StringBuilder()          // roman letters of the word being typed
+    private var sgTools = false                   // v0.10.1 (G2): toolbar page opened from the suggestion row (shown instead of the row)
+    private val sg by lazy {   // v0.10.1 (G2): suggestion strip glue
+        SuggestController(this, prefs,
+            { try { if (buf.isNotEmpty()) toBangla(buf.toString()) else "" } catch (_: Throwable) { "" } },
+            { try { currentInputConnection?.getTextBeforeCursor(com.mgb.keyboard.typing.SuggestPlan.LOOKBACK, 0)?.toString() ?: "" } catch (_: Throwable) { "" } },
+            { bangla && !latinOnly },
+            { latinOnly || pwdField },
+            { text, del, fromAvro -> sgApply(text, del, fromAvro) },
+            { openClipboard() },
+            { prefs.bool("edit_bar", true) },
+            { sgTools = true; showLetters() },
+            { try { commitWord(); switcher.voice() } catch (_: Throwable) { } })
+    }
     private var langBtn: Button? = null
     private var spaceBtn: Button? = null   // v0.8.9: space key (shows the language name when space_lang is ON)
     private var dandaBtn: Button? = null
@@ -139,7 +152,15 @@ class MgbIme : InputMethodService() {
 
     private var pendingKind = com.mgb.keyboard.typing.AutoCapGate.E_JUMP   // v0.6.1: what WE just typed; consumed by the next onUpdateSelection (default JUMP = ask)
 
+    /** v0.10.1 (G2): a tap on a suggestion: replace the word being typed by [text] (word + space). */
+    private fun sgApply(text: String, del: Int, fromAvro: Boolean) {
+        if (fromAvro) buf.setLength(0)   // typeText() below replaces the composing text
+        else if (del > 0) currentInputConnection?.deleteSurroundingText(del, 0)
+        typeText(text)
+    }
+
     private fun typeText(s: String) {
+        try { sg.schedule() } catch (_: Throwable) { }   // v0.10.1 (G2): only restarts a 50 ms timer
         try { pendingKind = com.mgb.keyboard.typing.AutoCapGate.kindOf(s) } catch (_: Throwable) { pendingKind = com.mgb.keyboard.typing.AutoCapGate.E_JUMP }   // v0.6.1
         currentInputConnection?.commitText(s, 1)
     }
@@ -304,6 +325,7 @@ class MgbIme : InputMethodService() {
             pwdField = v == InputType.TYPE_TEXT_VARIATION_PASSWORD || v == InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD ||
                 v == InputType.TYPE_TEXT_VARIATION_WEB_PASSWORD ||
                 (cls == InputType.TYPE_CLASS_NUMBER && v == InputType.TYPE_NUMBER_VARIATION_PASSWORD)   // v0.0.6
+            if (sgTools) { sgTools = false; showLetters() }   // v0.10.1 (G2): a new field starts with the suggestion row again
             captureClip()   // v0.0.6: catch text copied while we were not listening
             // v0.0.5: number / phone field -> number pad automatically (setting "numpad_auto"); other field -> back to letters
             try {
@@ -337,6 +359,7 @@ class MgbIme : InputMethodService() {
                 currentInputConnection?.finishComposingText()
             }
         } catch (_: Throwable) { }
+        try { sg.schedule() } catch (_: Throwable) { }   // v0.10.1 (G2): cursor moved / deleted
         val kind = pendingKind; pendingKind = com.mgb.keyboard.typing.AutoCapGate.E_JUMP   // v0.6.1: consume once; anything we did not type = JUMP
         autoCapUpdate(kind)   // v0.0.9 (has its own try/catch)
     }
@@ -479,6 +502,7 @@ class MgbIme : InputMethodService() {
     }
 
     private fun afterLangChange0() {
+        try { sg.schedule() } catch (_: Throwable) { }   // v0.10.1 (G2): other language = other word list
         langBtn?.text = langLabel()
         try { if (prefs.bool("space_lang", false)) spaceBtn?.text = com.mgb.keyboard.typing.LangSwipe.spaceLabel(bangla, probhat) } catch (_: Throwable) { }   // v0.8.9
         dandaBtn?.text = if (bangla) "।" else "?"
@@ -645,6 +669,12 @@ class MgbIme : InputMethodService() {
 
     /** v0.2.1: one key of the custom toolbar (id from typing/ToolbarOrder.java, or "fold"). */
     private fun toolbarKey(id: String): Button? {
+        if (id == "fold" && prefs.bool("sg_on", true)) {   // v0.10.1 (G2): with the suggestion row ON this first toolbar key brings the suggestions back
+            val bk = key("\u00AB", 1f) { sgTools = false; showLetters() }
+            bk.textSize = 14f
+            try { ToolTip.attach(bk, prefs) { "Suggestions" } } catch (_: Throwable) { }
+            return bk
+        }
         if (id == "fold") {
             val folded = prefs.bool("tb_fold", false)
             val f = key(if (folded) "\u00BB" else "\u00AB", 1f) { prefs.setBool("tb_fold", !prefs.bool("tb_fold", false)); showLetters() }
@@ -740,6 +770,7 @@ class MgbIme : InputMethodService() {
     private fun renderWord() {
         val ic = currentInputConnection ?: return
         ic.setComposingText(toBangla(buf.toString()), 1)
+        try { sg.schedule() } catch (_: Throwable) { }   // v0.10.1 (G2)
     }
 
     /** Finish the word being typed (called before space, punctuation, enter, language switch). */
@@ -842,7 +873,7 @@ class MgbIme : InputMethodService() {
         try { pcState.setPc(prefs.bool("pc_mode", false)) } catch (_: Throwable) { }   // v0.1.2: pref pc_mode is the one truth
         // v0.0.6: edit bar (setting "edit_bar", default ON): clipboard / select all / cut / copy / paste / paste plain
         try {
-            if (prefs.bool("edit_bar", true)) {
+            if (prefs.bool("edit_bar", true) && !sg.wants(sgTools)) {   // v0.10.1 (G2): the suggestion row takes the toolbar's place
                 val tb = try { if (prefs.bool("tb_custom", true)) Toolbar.build(this, prefs, tbHost) else null } catch (_: Throwable) { null }   // v0.2.1
                 if (tb != null) root.addView(tb) else {   // v0.2.1: custom toolbar, else the old bar below
                 val eb = row()
@@ -861,6 +892,7 @@ class MgbIme : InputMethodService() {
             }
         } catch (_: Throwable) { }
 
+        try { sg.attach(root, sgTools) } catch (_: Throwable) { }   // v0.10.1 (G2): suggestion row at the top of the keyboard (pref sg_on; replaces the toolbar; its left icon opens the toolbar)
         // v0.1.2: PC rows (only in PC mode)
         try { if (pcState.isPc()) { val pr = PcRows(this, pcState, pcIo); pcRows = pr; val pv = pr.view(); if (pv != null) root.addView(pv) } } catch (_: Throwable) { }
         // v0.5.0: custom character row (pref xrow_chars, set in Typing options; default empty = no row)

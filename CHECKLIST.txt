@@ -552,3 +552,18 @@ Z44) v0.10.0 Word index engine (G1)
  [ ] Install the new APK. Type in any chat in English, Avro, Probhat: everything works exactly as before (G1 has no screen change).
  [ ] Settings > Data & Backup > Health: still opens, no error.
  [ ] Nothing else to see: the suggestion strip comes in G2.
+
+Z45) v0.10.1 Suggestion row at the top (G2)
+ [ ] Open a chat: the TOP row of the keyboard (where the toolbar was) is now: tools icon (4 small squares) on the left, 3 word slots, mic on the right.
+ [ ] English: type "skin": left + right slots show suggestions, the MIDDLE slot shows what you typed with "..." dots under it. Tap a side word: your word is replaced + a space. Type "He": suggestions start with a capital.
+ [ ] Tap the middle word: your word stays + a space.
+ [ ] Hold a word (about 0.35 s) or pull it down: a 3-column grid of words covers the keys. Slide the finger over a word (it turns blue), lift: that word is typed. Lift outside the grid: nothing typed, grid closes.
+ [ ] Avro: type "ami" / "amar": Bangla suggestions; tap one: Bangla word replaced + space, no leftover Latin letters.
+ [ ] Probhat: type 2 Bangla letters: suggestions show; tap one: letters replaced, no double text.
+ [ ] After a space / full stop the slots go blank. Backspace updates the slots.
+ [ ] Tools icon: the old toolbar appears in the same row. Its first key (<<) brings the suggestions back. Open another app / field: the suggestions are back by themselves.
+ [ ] Mic opens voice typing.
+ [ ] Password / email / URL field: slots stay blank, tapping does nothing; keyboard height does not jump.
+ [ ] Settings > Typing options > "Suggestion row" OFF: the toolbar is back in the top row, keyboard as v0.10.0. ON again: suggestions back.
+ [ ] Type fast: typing feels the same as before. Tell me if it lags.
+ [ ] Classic + one dark theme: words and icons readable; grid colours follow the theme. Does it look like the video? Tell me what differs (colour, size, icon).

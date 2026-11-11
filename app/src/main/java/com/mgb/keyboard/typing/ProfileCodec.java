@@ -37,7 +37,8 @@ public final class ProfileCodec {
         "pop_ref:b",   // v0.9.6
         "h_lock:b",   // v0.9.7
         "sp_tick:b", "sp_step:i",   // v0.9.8
-        "pop_fast:b"   // v0.9.9
+        "pop_fast:b",   // v0.9.9
+        "sg_on:b"   // v0.10.1
     };
     public static final String[] KEYS = new String[SPEC.length];
     private static final char[] TYPE = new char[SPEC.length];

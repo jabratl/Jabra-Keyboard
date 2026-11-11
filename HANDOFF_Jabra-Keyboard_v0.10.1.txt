@@ -1,0 +1,278 @@
+JABRA KEYBOARD - HANDOFF   code = v0.10.1 (R0-R5 + V1-V5 + G1 + G2 done; V6/V7 DROPPED by user)   file = HANDOFF_Jabra-Keyboard_v0.10.1.txt
+PLAN "V" = MATCH-THE-REFERENCE-KEYBOARD FEEL (popup, language swipe, smoothness). Written in a 2nd PLANNING chat (2026-11-11). This file REPLACES the older file of the same name.
+Paste this file at the start of EVERY chat together with Jabra-Keyboard-context.zip. Self-contained (old plans S0-S11, E1-E6, H1/T1/L1, R0-R5 = DONE in code, see section 9).
+Plan V = V1..V7 (V6 = old R6, V7 = old R7, both kept with their old spec). G1-G3 (suggestion strip) stay GATED.
+==========================================================================================
+
+0) HOW TO WORK WITH THIS USER (follow)
+  - Reply in BANGLISH (Bangla in English letters). User is NOT a coder: short, simple, step-by-step. If the latest user message is full English, answer in English.
+  - Start of chat: ~5 lines "what I understood", name the step, assumptions in ONE line, NO questions unless truly blocking. Plan max 5 lines, then build.
+  - End of chat: final reply max 10 lines + Banglish checklist ("which screen, do what, see what").
+  - Never say "works" for what was not run on a phone. Write "NOT tested". Kotlin has no compiler here (GitHub Actions = first compile check). Pure Java + tools/*Test.java CAN be run here: run ALL.
+  - ONE step per chat. Other ideas go under NEXT, never built in the same chat.
+
+1) PROJECT SUMMARY
+  Jabra Keyboard = personal Android keyboard (Ridmik-inspired, own code). Kotlin app + pure Java logic classes.
+  Package com.mgb.keyboard (never change: breaks updates/signing). Prefs file "jabra". minSdk 24, target/compile 34,
+  only dependency androidx.core-ktx. Build = push to GitHub main -> Actions builds APK -> Releases -> in-app updater.
+  No res/values at all: ALL UI is built in Kotlin code. res has only drawable (vector logo/icons), mipmap, xml(method, file_paths).
+  Permissions: INTERNET (only "Check for updates"), REQUEST_INSTALL_PACKAGES, VIBRATE. NO new permission without ASKING.
+  Core identity (user): Personalization + Productivity + Data Ownership. Offline-first, no account, no cloud.
+  Languages: English, Avro phonetic, Probhat. Panels: clipboard, formatter, vault, text tools, profiles, theme picker/studio,
+  emoji, numpad, symbols, cursor pad, PC mode, size, settings, health check, backup.
+  DROPPED BY USER (do NOT build unless user asks again): auto-correct / suggestions / next-word, Store, tutorial, cloud/sync,
+  floating overlay tools, clipboard images, volume-key cursor, split keyboard, GIF / stickers / WhatsApp-style internet emoji.
+  SKIPPED BY USER 2026-11-11: v0.4.7 Calculator, v0.4.9 Photo background + theme export/import/favorites. Not in this plan.
+
+
+
+1b) NEW REQUEST (user, 2026-11-11, 2nd plan chat) + ASSUMPTIONS
+  Request (Banglish): "Reference video = very smooth, popups perfect. Make Jabra the same: language swipe, keyboard smoothness, key popups, all of it. Quick plan only."
+  Videos (480x800, 24 frames each read at 2 fps; the grey dots in both videos are Android "show touches", NOT part of any keyboard):
+    REF   = Screenrecorder-2026-11-11-20-45-11-303.mp4 (12 s): reference keyboard (green theme) typing in a search box.
+    JABRA = Screenrecorder-2026-11-11-20-32-39-853.mp4 (13 s): Jabra in a chat app: swipes space Probhat > English > Avro > Probhat, then types.
+  ASSUMPTION (1 line): the phone runs v0.9.5; smoothness / latency cannot be measured from a video, so this plan compares what is visible (look, size, jumps) + code facts, and V5 adds a real speed meter.
+
+2) VIDEO AUDIT v2 (REF vs JABRA) -> decision
+  # | REF (video)                                                        | JABRA (video + code evidence)                                                                 | Step
+  1 | Key bubble above EVERY pressed key: rounded, ~key width, ~1.3x key   | KeyPopup.kt: pref key_popup default OFF; bubble = white box, grey 1dp line, 26sp, same size as| V1
+    | height, key-coloured fill, big letter, instant, hides on release    | key. One JABRA frame ("s") shows the bubble on the BOTTOM row instead of above the S key =    |
+    |                                                                      | wrong / stale position (cause NOT proven: verify first in V1)                                 |
+  2 | Bubble never lags: no visible delay between finger and bubble        | showFast() calls PopupWindow.update() (WindowManager call) on every key change; rows 2-4 could| V4
+    |                                                                      | be drawn inside the keyboard view with no window call                                         |
+  3 | Language swipe: space shows "<English>", name pill on swipe, layout  | R3/R0.9.3 work (pill "Probhat"/"Avro"/"English", no hold). BUT in the JABRA video the        | V2, V3
+    | changes live and keyboard HEIGHT STAYS THE SAME in every language    | keyboard height jumps on each switch (Probhat view is one row taller: Probhat extra row 38dp |
+    |                                                                      | is View.GONE/VISIBLE in MgbIme.refreshLetters L415) and the chat above resizes. Also each swipe|
+    |                                                                      | step writes prefs (setStr bn_layout + edit().putBoolean(bangla).apply()) on the UI thread.   |
+  4 | English keyboard has a number row                                    | In the JABRA video the English/Avro view has NO number row while Probhat shows one. Reason NOT| V2
+    |                                                                      | known (pref numrow? Probhat layout?) -> find root cause first in V2, do not guess              |
+  5 | Haptic / sound at finger-down                                        | prefs fb_down + haptic_native exist (R2) but default OFF; commit stays at finger-up (safe)   | V5 (measure)
+  6 | Small "..." dots under globe / comma / period / enter / ?123         | not built (old R6)                                                                            | V6
+  7 | Suggestion strip + mic                                               | DROPPED BY USER (G1-G3 gated, needs a user "yes")                                             | gated
+  8 | Toolbar icons                                                        | Jabra toolbar is already ahead                                                                | nothing
+
+3) SENIOR-ENGINEER FINDINGS v2 (code facts; effect on phone = NOT measured)
+  N1 KeyPopup.showFast(): reusable PopupWindow (R1) but PopupWindow.update(x,y,w,h) runs on every key change = system call. Look is fixed: white / JabraLook.fill, #222 text, 26sp, radius 10 (Classic) / 16 (Jabra look).
+  N2 MgbIme.extrasRowView() + refreshLetters(): extras row GONE vs VISIBLE changes the keyboard height by ~38dp + margins on every Probhat <-> English switch = host app relayout = the visible "jump".
+  N3 Language switch does NOT rebuild keys: afterLangChange() = langBtn/spaceBtn/dandaBtn text + refreshLetters() (relabel ~30 buttons). Good. Full rebuild (buildKeyboard) only for theme/size/layout pref change.
+  N4 swipeLang() -> applyLang() -> prefs.setStr("bn_layout") + getSharedPreferences("jabra").edit().putBoolean("bangla").apply() on EVERY swipe step + commitWord(). Persist once on finger-up instead.
+  N5 Touch chain per letter key (ONE OnTouchListener, see 5b): HintKeys.attach -> fb_down buzz, KeyPopup.touch, long-press timer postDelayed. Commit + click feedback = Button click at finger-up.
+  N6 Keyboard root = LinearLayout; container = FrameLayout (MgbIme.container); showPanel()/showLetters() call c.removeAllViews() -> any overlay view added to the container must be re-added there (V4).
+  OLD findings M1-M5 (R1-R7 era) of the v0.9.5 handoff are DONE or folded into the steps below (M1 = R1 done, M2 = R2 done, M4 = R3 done, M5 = V7).
+
+4) DESIGN RULES (existing style; new UI must match; Classic theme must look EXACTLY as today)
+  Colour system
+   - Themes = JabraThemes.ALL list of T(name, bg, key, text, bg2?) in ThemeEmojiExtras.kt. Index 0-19 fixed, NEVER reorder/append-in-middle.
+     Slot 20 = custom theme from pref ct_json (Theme Studio). 0 Classic (bg #DDDDDD, key=null=system button, text=null).
+     Examples: 1 Blue bg D6E6F5/key FFFFFF/text 1B3A57; 4 Dark bg 1E1F22/key 3A3C42/text F2F2F2; 8 Gloss Black; 12 Ocean 1C6BC0;
+     18 Purple Haze + 19 Coral Sunset have bg2 = gradient TL->BR.
+   - Helpers: JabraThemes.cur(p).bg/key/text/bg2, iconColor(p) = text ?: #222222, noteColor(p) = luminance(bg)<0.4 ? #B8B8B8 : #555555,
+     funcFill(p) (function-key colour), keyTint(p), borderless(p) (pref key_border=1), JabraLook.on(p) (pref look=1 "Jabra").
+   - Fixed accents: caps lock #2271B1, one-shot shift #9CC3E6, sticky Ctrl light blue #BBDEFB, warning orange #D84315, danger #AA0000,
+     logo: navy #0B1220, white keycap, J #1D9BF0, sparks #38BDF8 + #FFB020. Popup bubble border #888888.
+  Typography: system font only (no custom font). textSize in code: 12sp (37 uses, panel buttons/labels), 11sp (15, small notes),
+     14sp (letters default; letter_pct 80-220 scales it; 9 uses), 13/15/16/18, 22sp only for app-screen title.
+  Spacing / size: key height 48dp default (kh %: 40/48/56/64 legacy or percent), key gap = pref key_gap 0-6dp (default 2),
+     keyboard root padding 2dp sides / 4dp top-bottom, edit-bar keys 36dp tall, Probhat extra row 38dp, number row +12dp when large,
+     app screen padding 16dp, logo 56dp.
+  Shape: Jabra look = rounded keys 9dp radius, function keys own fill (JabraThemes.funcFill), space key pill (200dp radius),
+     popup bubble 16dp (Classic 10dp), Borderless = flat 8dp with soft press highlight, custom theme radius = round*0.2dp,
+     key alpha 40-100. Pressed state = same colour darkened 0.18 (LookColors.darken).
+  Components (all built in code): key() Button with weight + margin gap; fn() function key; JabraIcons.putThemed(ctx, btn, name)
+     = own vector line icons (no emoji; Icons OFF = text); panel buttons pk()/btn() (private per file); "mini keys" (Latin+digits only,
+     used for search / edit / hex entry); chips (kind/folder rows); cards (2 columns, ClipCards.kt); select bar; [-][n][+] steppers;
+     two-tap confirm for destructive actions ("Sure?" on second tap); toast via BackupStore.toast.
+  Dark / light: ONLY through the theme (keyboard). App screen = light only (Theme.DeviceDefault.Light).
+  Breakpoints / widths: none formal. Test at 360 px portrait and 1280 px wide; landscape has own keys (kh_l, oh_w_l ...).
+     Tall panels are capped to letters-keyboard height and scroll (MgbIme.capTall(): settings, more, typing, size, themes, vault, tt,
+     profiles, tstudio) - a new tall panel must be added to that name list.
+  Rules for new UI: Kotlin code, same look as SizePanel / ThemePanel, fits 360 px, theme-aware (from S4 on use JabraTokens/UiKit),
+     Classic theme = unchanged colours, every panel has a back route (showLetters), no new permission, no blocking work on UI thread.
+
+
+5) FILE MAP (app/src/main/java/com/mgb/keyboard/ ... K = Kotlin, J = pure Java, no Android classes, tested in tools/)
+  MgbIme.kt (K, 765 lines) the keyboard service. key()/letter()/fn()/row(); buildKeyboard(); onLetter/commitWord/renderWord (Avro buffer buf);
+     feedback(v); onStartInputView; onUpdateSelection; autoCapUpdate; showPanel(name)/showLetters()/capTall(); toolbarAction(id); toggleLang/applyLang.
+  JabraExtras.kt: JabraPrefs (bool/int/str/setBool/setInt/setStr on prefs "jabra"; keyHeightDp(land)), JabraHost interface (sendKey,
+     edit, typeText, commitWord, backspace, enter, showPanel, showLetters, feedback, keyHeightDp, layoutChanged, fieldText), SpaceDragHelper, panels more/settings.
+  ThemeEmojiExtras.kt: JabraThemes (ALL, cur, custom/customActive, paint, style, iconColor, noteColor, borderless, keyTint, funcFill), JabraOneHand, EmojiPanel.
+  JabraLook.kt: shape(p, btn, kind NORMAL/FUNC/PILL) builds GradientDrawable + StateListDrawable. KeyPopup.kt: PopupWindow bubble on press (pref key_popup).
+  HintKeys.kt: long-press hint letters + touch listener (calls KeyPopup.touch). JabraIcons.kt: vector icons by name (NAMES list).
+  Toolbar.kt / ToolbarPanel.kt (+ToolbarQuick.kt): custom toolbar. ClipboardFeature.kt: ClipStore + ClipPanel (+ClipCards.kt cards/select mode).
+  FormatterFeature.kt: Novel formatter panel + FmtStore + ImeFmtIo (field reader / Replace / Undo). VaultPanel.kt + VaultStore.kt: vault UI + AtomicFile store.
+  TextToolsPanel.kt (route tt), ProfilePanel.kt (route profiles), ThemePanel.kt (route themes), ThemeStudio.kt (route tstudio), SizePrefs.kt (route size),
+  TypingPrefs.kt (route typing), TypingExtras.kt, PcMode.kt, PadPanel.kt, InputSafe.kt (key events with fallback), HealthPanel.kt (PanelGuard + health UI),
+  DataPage.kt (Data & Backup), BackupStore.kt, SettingsActivity.kt (app screen, SAF export/import, onActivityResult 4101/4102), SettingsGroups.kt (settings rows registry,
+  search, recent, undo, reset group), Updater.kt.
+  Java (typing/ clip/ vault/ emoji/ extras/ formatter/ phonetic/ probhat/): ShiftState, SizePct, TypingLevels (hapticMs, longPressMs, stepDp), LongPressHints, LangOrder,
+     ToolbarOrder (DEFAULT/EXTRAS id lists), ToolUsage, ProfileCodec, CustomTheme, LookColors, SettingsIndex, HealthCheck, Migrate, BackupCodec, TextTools,
+     VarFill, ClipList/ClipMeta/ClipSelect, VaultList, NovelFormatter, AvroPhonetic, ProbhatLayout, DoubleSpace, WordDelete, SpaceDrag.
+  tools/*Test.java: 29 test programs (plain javac/java, e.g. HintTest 196 checks, HealthTest 81, ToolbarTest 44, EmojiDbTest 241). Run ALL each step (they must stay green).
+  emoji/ (v0.8.0, pure Java; v0.8.3 adds EmojiSearch = keyword search index over name + subgroup, tools/EmojiSearchTest.java 35 checks): EmojiData + RecentEmoji = OLD panel data (391 emoji, still used by EmojiPanel until E2), NEW: EmojiDb (reader of the data file), EmojiTone (skin tone rule),
+     EmojiBuild (generator: emoji-test.txt -> data file). tools/build_emoji.sh runs the generator; tools/EmojiDbTest.java + tools/testdata/emoji-test-sample.txt (hand made, test only, NOT real Unicode data).
+     EmojiPanel (Kotlin, ThemeEmojiExtras.kt ~L122-225) = the current panel, details in 8b REALITY CHECK.
+  Old detailed notes (per-version 'HOW IT WORKS'): docs/ARCHIVE_HANDOFF_v0.5.9_FULL.txt inside the context zip = grep-only reference (section 5 there), never read fully.
+  Docs in repo root: CHANGELOG.txt (116 KB, newest on top), CHECKLIST.txt (phone tests, sections ... Z9), README.txt, REVERT.txt, old HANDOFF files (30 stale copies).
+
+
+5b) FILES THAT EXIST SINCE THE MAP ABOVE WAS WRITTEN (all in app/src/main/java/com/mgb/keyboard/)
+  KeyCfg.kt (v0.6.0: cached feedback flags; Snap + companion popupOn/hintOn/lpMs, listener on prefs) | JabraTokens.kt + UiKit.kt (v0.6.3 tokens / panel kit) | EmojiGridPanel.kt + EmojiGridView.kt + EmojiStore.kt + EmojiUpdater.kt (emoji v0.8.x)
+  ToolTip.kt (v0.8.8 name bubble, soft fade) | typing/TipPlace.java (bubble x/y clamp) | typing/HintStyle.java (v0.8.6 hint size/alpha + Bangla digit hint) | typing/LangSwipe.java + extras/SpaceGesture.java (v0.8.9 space swipe) | typing/AutoCapGate.java (v0.6.1)
+  JabraLongPress object lives in TypingPrefs.kt (comma long-press = emoji). SpaceDragHelper (attach / attachLang) + JabraPanels (symbols(), numpad, bottomRow) live in JabraExtras.kt. RepeatKeyHelper (backspace hold) lives in TypingExtras.kt.
+  Touch-listener rule: ONE OnTouchListener per View. Letter keys: KeyPopup.attach then HintKeys.attach (replaces it, forwards to KeyPopup.touch). Backspace = RepeatKeyHelper, space = SpaceDragHelper. Never stack a second listener.
+
+6) KEY IDS / DATA SHAPES (never change meaning; new data = new keys/files, new JSON gets {"ver":1,...})
+  Panel routes (MgbIme.showPanel): clipboard, format, more, emoji, settings, typing, size, themes, tstudio, vault, tt, profiles, numpad, symbols, tbquick, (letters = showLetters()).
+  Toolbar ids (ToolbarOrder.DEFAULT): fmt clip mode all cut copy paste plain | extras: emoji numpad sym gear voice globe theme onehand size pad undo redo vault tt profiles.
+     Adding an id = update ToolbarOrder.java DEFAULT + EXTRAS, Toolbar.kt label/make, JabraIcons NAMES, MgbIme.toolbarAction branch + lazy panel, AND tools/ToolbarTest.java (hard-codes the id lists: 4 spots + EXT string + down() check).
+  Prefs (file "jabra"): autocap bk_auto bk_day bk_keep bk_last bn_layout bs_repeat bs_word clip_count clip_expire clip_lines clip_meta_v1 clip_on clip_sort clip_view clips_v1
+     crash_n crash_p ct_json cursor_speed ds_period ds_tab edit_bar emoji_recent enter_action fmt_cur fmt_on fmt_presets fmt_prev fmt_src fs_extract haptic haptic_lv hint_custom hint_hide
+     hint_on icons_on key_border key_emoji key_gap key_globe key_popup key_voice lang_avro_on lang_fav lang_probhat_on lang_tap letter_bold letter_pct look lp_delay mode_key numpad_auto
+     numrow numrow_large onehand pc_mode pc_remember schema_v set_last set_recent sound tb_auto tb_custom tb_fold tb_hidden tb_on tb_order tb_use theme vault_dest vault_sort xrow_chars
+     (+ size keys kh_p/kh_l, oh_w_p/oh_w_l via SizeKeys). bk_* and upd* are not saved in backups. Profiles whitelist = ProfileCodec.KEYS.
+  Files in filesDir: vault_v1.json {"ver":1,"next","folders","entries"[{id,kind,folder,title,text,made,used,count}]}, profiles_v1.json, backups/jabra_YYYYMMDD_HHmm.json
+     {"ver":1,app,time,sha256,prefs{key:{t,v}},files{name:text}} (+ before_restore_*), all via AtomicFile.
+  clips_v1 = lines "<0|1 pinned>,<urlencoded text>" (limits 40 unpinned / 30 pinned / 2000 chars); clip_meta_v1 = lines "key,made,used,count"; ct_json = {"ver":1,"bg","bg2","key","text","func","round","alpha"}.
+  Shift state = typing/ShiftState (tap / typed / autoCap / reset). Avro buffer = MgbIme.buf (StringBuilder) rendered with setComposingText.
+  Emoji data file (v0.8.0 format 1; REAL file in the repo since v0.8.0.1, Unicode 18.0): app/src/main/assets/emoji/emoji_v1.txt (assets/ is a NEW folder; assets/ext belongs to the workflow's ext hot-update zip, do not use it).
+     UTF-8 text, LF lines: "#JABRA-EMOJI 1" / "#unicode 17.0" / "#count N" / "#mods <hex code points that accept a skin tone>" then "@G<TAB>group name" (tab order = file order, groups contiguous),
+     "@S<TAB>subgroup" and ONE line per BASE emoji: emoji<TAB>name<TAB>t or -<TAB>Unicode version (t = has the 5 skin tones; variants are made by EmojiTone, never stored).
+     9 groups kept: Smileys & Emotion, People & Body, Animals & Nature, Food & Drink, Travel & Places, Activities, Objects, Symbols, Flags (Unicode group Component is dropped).
+     Search keywords (E4) = words of the name + subgroup name; CLDR annotations are NOT used. Reader = EmojiDb.parseOrNull(text or stream): null on ANY problem = keep the old panel.
+     Never edit the file by hand: sh tools/build_emoji.sh emoji-test.txt   (needs a JDK; compiles the 3 emoji classes and runs EmojiBuild).
+  Emoji prefs: emoji_recent (exists: space separated, max 32, KEEP the key and the meaning). emoji_tone (int -1..4, default skin tone, -1 = none; DONE v0.8.3, set by the tone picker, no settings row). emoji_flags was NOT built: E3 already hides Flags when the phone cannot draw them.
+  Workflow note: the "Native fingerprint" step hashes every file under app/ except assets/ext, so a changed emoji data file counts as a native change (full APK update). That is fine.
+
+
+7) VERSION + CHANGELOG CONVENTION
+  - Version = ONE line: val appVersionName in app/build.gradle.kts (the workflow reads it). One step = one version = one topic.
+  - New version numbers for this plan: S1 v0.6.0, S2 v0.6.1, S3 v0.6.2, S4 v0.6.3, S5 v0.6.4, S6 v0.6.5, S7 v0.6.6, S8 v0.6.7, S9 v0.6.8, S10 v0.7.0, S11 v0.7.1 (S0 = fix, version v0.5.9.1 only if code changes).
+    If a step is skipped, keep the numbers of the others (gaps are fine).
+  - Emoji plan numbers: E1 v0.8.0 (real data file = data drop v0.8.0.1), E2 v0.8.1, E3 v0.8.2, E4 v0.8.3, E5 v0.8.4, E6 v0.8.5 (section 8b).
+  - CHANGELOG.txt entry on TOP, format: "vX.Y.Z - NEW|FIX: title / - WHY: / - What you get: / - Code: files + hooks marked "vX.Y.Z" / BROKE: nothing intended | list / NOT tested: ... / TESTED here: test counts / Rollback: ..."
+  - Every hook in old code is a tiny line marked with a comment "// vX.Y.Z"; new code goes in a NEW file where possible.
+  - CHECKLIST.txt: new section Z10, Z11, ... one per step (last existing = Z9): "[ ] which screen -> do what -> see what".
+  - HANDOFF: tick the step [x], update section 9 status line, rename this file to the new version (HANDOFF_Jabra-Keyboard_vX.Y.Z.txt).
+  - Repo root cleanup (user does by hand on GitHub, listed once in S11): delete HANDOFF.txt (stale v0.2.3) and every old HANDOFF_Jabra-Keyboard_v0.2.4 ... v0.5.8 file; keep only the newest.
+  - R plan numbering: R1 v0.9.0, R2 v0.9.1, R3 v0.9.2, R4 v0.9.3, R5 v0.9.4, R6 v0.9.5, R7 v0.9.6 (optional), G1 v0.10.0, G2 v0.10.1, G3 v0.10.2+. R0 = v0.8.9.1 only if code changes. The S-number list above is HISTORY (done).
+  - CHECKLIST: new sections Z29, Z30, ... one per R step. CHANGELOG entry format unchanged (WHY / What you get / Code / BROKE / NOT tested / TESTED here / Rollback).
+
+  - V plan numbering (this file): V1 v0.9.6, V2 v0.9.7, V3 v0.9.8, V4 v0.9.9, V5 v0.9.10, V6 v0.9.11 (= old R6), V7 v0.9.12 (= old R7). CHECKLIST sections Z35 (V1 = done), Z36, ... one per V step.
+
+
+8) STEP PLAN "V"  (size: S ~<=30% of a chat, M ~30-60%, L = must be split. Each step leaves the project working; old behaviour = fallback; every new behaviour = pref with ON/OFF.)
+  Order = V1, V2, V3, V4, V5, V6, (V7 optional), G1-G3 only after the user says YES. Versions: V1 v0.9.6, V2 v0.9.7, V3 v0.9.8, V4 v0.9.9, V5 v0.9.10, V6 v0.9.11, V7 v0.9.12 (gaps fine if skipped).
+  Prefs rule: each new pref also needs: TypingPrefs.kt / SettingsGroups.kt row, typing/SettingsIndex.java help line + tools/SettingsIndexTest.java key count, typing/ProfileCodec.java KEYS + tools/ProfileTest.java count (now 51 keys), CHECKLIST (first new section = Z35), CHANGELOG entry.
+  Prefs reserved (do not re-use; pop_ref is USED by V1, h_lock is USED by V2, sp_tick + sp_step are USED by V3, pop_fast is USED by V4): perf_meter + old planned lp_bottom lp_dots punct_chars.
+
+  [x] V1  REFERENCE-STYLE KEY BUBBLE + CORRECT POSITION   (v0.9.6)   mode MODIFY   size S
+      Goal: key_popup bubble looks like REF (rounded ~14dp, width = key + 14dp, height ~1.35 x key, big letter, themed fill) and always sits above the pressed key; find and fix the wrong-row case.
+      Root cause first (1-2 lines): reproduce "bubble on bottom row" by reading showFast() / HintKeys touch order (DOWN of key B before UP/CANCEL of key A? update() on a stale window?).
+      Add: typing/PopupStyle.java (pure: width / height / radius / text size from key size + density; fill + text colour from theme key colour with LookColors contrast; reuse TipPlace for x/y) + tools/PopupStyleTest.java (>= 30 checks: sizes, clamp at q / p / edge, Classic stays white).
+      Modify: KeyPopup.kt (showFast + showOld untouched as fallback; new style behind pref), TypingPrefs.kt + SettingsGroups.kt + typing/SettingsIndex.java + typing/ProfileCodec.java + tests.
+      Pref (new): pop_ref (bool, default true; only changes the LOOK when key_popup is ON; key_popup itself stays default OFF). pop_ref OFF = v0.9.5 look exactly.
+      Read-only: HintKeys.kt, KeyCfg.kt, JabraLook.kt, ThemeEmojiExtras.kt (JabraThemes.cur / iconColor), typing/TipPlace.java, typing/LookColors.java.
+      Design note: Classic theme = white bubble + dark text (colours as today), only shape/size change; themed = key colour (+ lighter by 0.10) with theme text colour; custom theme (slot 20) works the same; 360 dp + 1280 px ok.
+      Checks: all tools tests green + PopupStyleTest; phone: bubble above keys of all 3 letter rows, q / p stay on screen, fast typing = no bubble on a wrong row, release hides at once, Classic + one dark theme.
+  [x] V2  SAME KEYBOARD HEIGHT IN EVERY LANGUAGE   (v0.9.7, DONE: typing/HeightLock.java + tools/HeightLockTest.java 26 checks, h_lock default ON, MgbIme.extrasVis())   mode FIX   size S
+      Goal: switching English / Avro / Probhat never changes keyboard height (no jump, host app does not resize).
+      Root cause first: extras row GONE vs VISIBLE (N2) AND why English shows no number row in the JABRA video (pref numrow? ProbhatLayout? numrow_bn?) - report in 2 lines before coding.
+      Add: typing/HeightLock.java (pure: decide VISIBLE / INVISIBLE / GONE for the extras row from lock pref + probhatOn) + tools/HeightLockTest.java (>= 20 checks).
+      Modify: MgbIme.kt (extrasRowView L420, refreshLetters L415 only), TypingPrefs.kt / SettingsGroups.kt / SettingsIndex.java / ProfileCodec.java + tests.
+      Pref (new): h_lock (bool, default ON = extras row keeps its space as INVISIBLE in non-Probhat; OFF = v0.9.5 GONE).
+      Read-only: SizePrefs.kt, JabraExtras.kt (JabraPrefs.keyHeightDp).
+      Design note: reserved space shows keyboard background only; if the empty band looks bad, DO NOT redesign here: write it under NEXT (user decides: fill with custom row xrow_chars or a Bangla-digit row).
+      Checks: HeightLockTest + all tests; phone: swipe English > Avro > Probhat > English = top edge of keyboard never moves, number row state unchanged from before, portrait + landscape.
+  [x] V3  LANGUAGE-SWIPE FEEL = REFERENCE   (v0.9.8, DONE: LangSwipe.Session persist-once, sp_tick + sp_step, KeyPopup showText early return; 76 + 35 checks)   mode MODIFY   size M (if past 85%: split V3.1 no-writes-while-swiping + haptic tick, V3.2 step-size + pill fade)
+      Goal: swipe on space is instant and calm: state kept in memory while the finger moves, prefs written ONCE at finger-up (N4), soft light tick per language step, pill (language name) updates without flicker, space label always "<Lang>" with arrows.
+      Add: new cases in tools/LangSwipeTest.java + tools/SpaceGestureTest.java (step math, "persist once", direction, cancel = restore start language).
+      Modify: JabraExtras.kt (SpaceDragHelper.attachLang), MgbIme.kt (swipeLang / applyLang / afterLangChange, new persistLang()), typing/LangSwipe.java, extras/SpaceGesture.java, KeyPopup.kt (showText: no re-layout when the text is unchanged), TypingPrefs.kt / SettingsGroups.kt / SettingsIndex.java / ProfileCodec.java + tests.
+      Prefs (new): sp_tick (bool, default ON: tick per step), sp_step (int 0 small 32dp / 1 normal 44dp / 2 large 60dp, default 1 = today). Existing: space_lang, sp_preview (keep meaning).
+      Read-only: ToolTip.kt (soft fade look), TypingExtras.kt, typing/TipPlace.java, typing/LangOrder.java.
+      Deps: V2 (no height jump), R3 (bubble). Checks: LangSwipeTest + SpaceGestureTest + all; phone: tap on space still types a space, swipe never types a space, cancel mid-swipe restores language, last swiped language is the one after restart.
+  [x] V4  BUBBLE WITHOUT WINDOW CALLS (rows 2-4)   (v0.9.9, DONE: BubbleOverlay.kt + typing/BubblePlan.java + tools/BubblePlanTest.java 46 checks, pop_fast default ON, KeyPopup.attachHost)   mode MODIFY   size M (if past 85%: split V4.1 rect cache + overlay rows 2-3, V4.2 row 4 + one-hand + rotate)
+      Goal: bubble for rows 2, 3, 4 is a view inside the keyboard container (setTranslation only, no PopupWindow.update); top letter row + number row keep the PopupWindow (no room above them).
+      Add: typing/BubblePlan.java (pure: row -> overlay or window; rect cache math; clamp) + tools/BubblePlanTest.java (>= 30 checks).
+      Modify: KeyPopup.kt (overlay path + fallback to V1 path), MgbIme.kt (add overlay to container in onCreateInputView, re-add after showLetters()/showPanel() removeAllViews N6, clear rect cache on rebuild / rotate / one-hand), HintKeys.kt (only if touch order needs a hook), prefs files + tests.
+      Pref (new): pop_fast (bool, default ON; OFF = V1 path). Any exception = automatic V1 path.
+      Read-only: JabraExtras.kt (JabraOneHand), ThemeEmojiExtras.kt, KeyCfg.kt.
+      Checks: BubblePlanTest + all; phone: bubble correct after rotate, one-hand mode, panel > back to letters, theme change; no bubble stuck on screen.
+  [x] V5  SPEED METER + HOT-PATH TRIMS   (v0.9.10)   mode BUILD   size M
+      Goal: real numbers instead of "feels": Health panel shows avg / worst ms for key (down > commit), bubble show, language switch, keyboard build (last 100 samples) + Reset. Then trim only what the numbers show.
+      Add: typing/KeyTiming.java (pure ring buffer, avg / p95 / max) + tools/KeyTimingTest.java (>= 25 checks).
+      Modify: KeyCfg.kt (cached perf flag), MgbIme.kt (nanoTime hooks wrapped in try/catch, only when perf_meter ON), HealthPanel.kt (speed rows, UiKit style), prefs files + tests.
+      Pref (new): perf_meter (bool, default OFF = zero cost, no samples).
+      Read-only: JabraTokens.kt, UiKit.kt, typing/HealthCheck.java, typing/AutoCapGate.java, phonetic/AvroPhonetic.java.
+      Trims allowed in this step (only if the numbers prove them): duplicate refreshLetters calls, pref reads inside onLetter path, fb_down / haptic_native default decision (ASK user in the reply, do not flip silently).
+      Checks: KeyTimingTest + all; phone: meter OFF = no change; ON = numbers appear in Health panel and reset works.
+  [-] V6 DROPPED BY USER 2026-11-12 (not built, do not build unless asked)  BOTTOM-ROW LONG-PRESS + DOTS (= old R6, REF item 6; spec below is the old R6 text, unchanged)   (v0.9.11)   mode MODIFY   size M (split V6.1 dots + ?123/globe/enter, V6.2 period strip if past 85%)
+      Goal: (a) tiny "..." dot under keys that have a long-press action (setting lp_dots), (b) long-press period = small strip of punctuation (slide + release types), (c) long-press ?123 = number pad, long-press globe = system keyboard picker, long-press enter = quick action (existing enter_action target; default = nothing new).
+      Add: typing/PunctStrip.java (pure: default list ". , ? ! ; : ' \" - ( ) ...", custom list from pref, max 12, dedupe, slide index from x) + tools/PunctStripTest.java (>= 25 checks, Bangla danda included when Bangla).
+      Modify: TypingPrefs.kt (JabraLongPress: add actions, keep comma = emoji exactly), MgbIme.kt (attach on period / ?123 / globe / enter keys, dot overlay via HintStyle), JabraExtras.kt (bottomRow of symbols / numpad panels, only dots), KeyPopup.kt (strip bubble reuse), typing/HintStyle.java (dot style), SettingsGroups.kt, typing/SettingsIndex.java, typing/ProfileCodec.java + tests.
+      Prefs (new): lp_bottom (bool false), lp_dots (bool false), punct_chars (str, default list). OFF = v0.9.5.
+      Read-only: TypingExtras.kt, ToolTip.kt, typing/LongPressHints.java, JabraIcons.kt, typing/EnterAction.java, typing/TipPlace.java.
+      Deps: V4 if the strip reuses the overlay (else R1 bubble). Checks: PunctStripTest + HintTest + HintStyleTest + ToolbarTest green; phone: comma long-press = emoji still, period strip never types twice, dots only on keys that have an action, globe long-press opens picker, nothing changes with both prefs OFF.
+  [-] V7 DROPPED BY USER 2026-11-12  BUILD COST (= old R7, OPTIONAL: only if V5 shows keyboard build / rotate slow (> ~60 ms avg) or the phone still feels slow)   (v0.9.12)   mode MODIFY   size M
+      Goal: one BuildCfg snapshot of the ~15 prefs read per buildKeyboard() instead of per key; JabraLook.shape()/flat() share one drawable ConstantState per kind per build (newDrawable().mutate() copies).
+      Modify: KeyCfg.kt (BuildCfg), MgbIme.kt (key(), letter(), number row), JabraLook.kt, ThemeEmojiExtras.kt (JabraThemes.style). Read-only: SizePrefs.kt, typing/SizePct.java, typing/CustomTheme.java, typing/LookColors.java.
+      Deps: V5 (numbers). Design note: pixel-identical output; compare Classic, Jabra look, Borderless, Custom(20), gradient theme before / after. Rollback: snapshot "off" = old direct reads.
+  GATED: G1 was approved by the user (2026-11-12). G2 + G3 still need the user to name them (he asked 'G koro' = G plan; next = G2). G3 needs its own ASK for storing typed words:
+  [x] G1 (v0.10.0, DONE: WordIndex.java + assets/words/en.txt 569 + bn.txt 191 + WordIndexTest 73 checks; user said YES 2026-11-12)  SUGGESTION ENGINE (pure Java, bundled word list asset, offline, no permission)   size M   (v0.10.0): typing/WordIndex.java (prefix lookup, frequency order, Latin + Bangla), assets/words/*.txt, tools/WordIndexTest.java. No UI.
+  [x] G2 (v0.10.1, DONE: SuggestPlan.java 50 checks + SuggestStrip.kt + SuggestController.kt, pref sg_on default ON)  SUGGESTION STRIP UI (top row, grid like the reference video) (3 slots + clipboard icon left + mic right; toggled with the toolbar fold)   size M   (v0.10.1): MgbIme.kt, new SuggestStrip.kt, Toolbar.kt, settings rows. Deps: G1.
+  [ ] G3  LEARNING + AUTO-CORRECT OFF-BY-DEFAULT (local only; Avro buffer aware)   size L = split before building   (v0.10.2+). Deps: G2. Needs its own ASK for any storage of typed words.
+  NEXT (ideas, not in plan): V2 blank band decision (fill the reserved row), fb_down default ON decision, glide typing (needs G1).
+
+
+9) STATUS
+  v0.10.1 (G2): suggestion row = TOP row of the keyboard, REPLACES the toolbar row (as in the user's reference video 2026-11-12): [tools icon][suggestion 1][typed word + "..." dots][suggestion 2][mic], 40 dp fixed, pref sg_on (default ON). Left icon = opens the toolbar page (MgbIme.sgTools = true, showLetters); the toolbar's first key (toolbarKey "fold" while sg_on) = back to suggestions (tb_fold fold / unfold unreachable while sg_on). New field resets sgTools. edit_bar OFF = left icon opens the clipboard. Hold a slot 350 ms or pull down = 3-column grid popup (up to 18 words, PopupWindow over the keys, slide + release picks). Files: typing/SuggestPlan.java (currentWord / show / lang / slots / layout / grid / gridIndex / toType), SuggestStrip.kt (view + touch + grid), SuggestController.kt (word lists loaded once from assets/words on a thread, 50 ms debounce, tap = replace word + space: Avro = buf cleared + commitText over the composing text; English / Probhat = deleteSurroundingText(len) + commitText). MgbIme hooks marked v0.10.1. Blank + inactive in latinOnly / password fields. 46 Java tests green, Kotlin NOT compiled, phone NOT tested (CHECKLIST Z45). No learning / auto-correct yet = G3 (needs its own ASK before storing any typed word). Word lists are small starter lists: a later data drop can replace assets/words/*.txt (same format).
+  v0.10.0 (G1): typing/WordIndex.java (prefix lookup in frequency order, Latin case-insensitive, Bangla exact, matchCase helper, parseOrNull refuses bad / cut-off files), assets/words/en.txt (569 words) + bn.txt (191 words) = HAND-WRITTEN STARTER lists (approximate order; replace with bigger lists in the same format later). No UI, no Kotlin change, nothing uses it yet. 45 Java tests green. CHECKLIST Z44. Codebase base = the user's repo v0.9.10.5 (FIX releases v0.9.10.1-v0.9.10.5 exist: key gap GapRow.kt, Probhat 3 rows, space swipe max 1 language, pinned cards). V6 was started then DROPPED: nothing of it is in the repo. NEXT STEP = check the GitHub build of v0.10.1 (FIX if errors), then G3 only on the user's YES. Kotlin of v0.9.x was never compiled here: ask GREEN / errors first.
+  Code = v0.9.10 (build number unknown to this chat). Done: V5 (v0.9.10: typing/KeyTiming.java ring buffer 100 samples x 5 kinds, pref perf_meter default OFF, Health panel rows Speed meter / Refresh / Reset; hooks in KeyCfg / HintKeys / KeyPopup / MgbIme; NO trims done: waiting for the user numbers; fb_down default NOT changed); V4 (v0.9.9: key bubble for keys with room above INSIDE the keyboard = transparent BubbleOverlay view on top of the container, no PopupWindow.update; keys without room (top row, no toolbar) keep the window bubble; pop_fast ON/OFF; space-swipe language bubble still window); old plans S0-S2, S4-S8, S11; emoji E1-E6; H1, T1, L1; R0-R5; V1 (v0.9.6 bubble); V3 (v0.9.8: language swipe keeps state in memory, prefs written once at finger up, cancel restores, sp_tick soft tick, sp_step 32/44/60 dp, bubble not redrawn when unchanged); V2 (v0.9.7: h_lock = Probhat extra row keeps its space as INVISIBLE outside Probhat while lang_probhat_on is ON, so keyboard height never changes on a language switch; OFF = v0.9.6).
+  V1 NOTE: the cause of the single "bubble on the bottom row" frame is NOT proven (owner rule + zero-size guard added). If the user still sees it, ask which key + whether two fingers were down, then investigate getLocationOnScreen vs PopupWindow offsets in a FIX step.
+  V2 NOTE (video audit item 4, number row): code shows the number row depends ONLY on pref "numrow" (built once in buildKeyboard, no language code touches it). Likely the user's "numrow" is OFF and the tall Probhat row was the vowel extras row. NOT proven: CHECKLIST Z36 asks the user. If numrow is ON and English still has no digit row, investigate in a FIX step (HintKeys / SizePrefs / profile applied?).
+  V2 NOTE 2: with h_lock ON the empty band above the letters in English / Avro shows keyboard background only. If it looks bad, ask the user (NEXT: fill it with xrow_chars row or Bangla-digit row); not built.
+  V2 NOTE 3: HeightLock.mode has a 3rd input vs the plan (probhatAvail = pref lang_probhat_on): when Probhat is switched off in the language cycle no space is reserved.
+  Phone tests = CHECKLIST Z20-Z38 are open. Kotlin v0.5.0-v0.9.9 was never compiled here: GitHub Actions result of the newest build is UNKNOWN -> next chat must ask for GREEN / pasted errors (errors = FIX first).
+  43 Java test programs ALL GREEN on the v0.9.9 source (BubblePlanTest 46, ProfileTest with 52 keys, SettingsIndexTest incl. pop_fast). Last CHECKLIST section = Z39, first new = Z40. Last CHANGELOG entry = v0.9.9 (on top).
+  V3 NOTE: tick = HapticFeedbackConstants.CLOCK_TICK on the space key (follows the phone's touch-vibration setting; NOT tested on phone). Swipe cancel = ACTION_CANCEL or key detach restores the start language. Space-label arrows already existed (spaceLabel).
+  V4 NOTE: overlay is a MATCH_PARENT view added LAST in MgbIme.container by KeyPopup.attachHost(c) (onCreateInputView + end of showLetters, because removeAllViews() removes it; showPanel does not re-add it). Never added during a touch. Mode is decided by geometry (key top - bubble height - gap >= 0 inside the container), not by row number: with the toolbar visible the top letter row usually also fits. Key rects cached per key, cleared on every container layout change + KeyPopup.invalidate(). Cause of the V1 "bubble on bottom row" frame still NOT proven.
+  V5 NOTE: 44 Java tests green incl. KeyTimingTest 37. Kotlin NOT compiled. perf_meter is NOT in ProfileCodec / SettingsIndex on purpose (diagnostic only). Trims (duplicate refreshLetters, pref reads in onLetter) only after the user sends numbers. Ask the user: fb_down default ON? (not flipped).
+  (old note) V6 / V7 dropped by the user; a V5 trim step only if the user sends speed-meter numbers.
+  Repo root has ~30 stale HANDOFF_Jabra-Keyboard_v0.2.4 ... v0.9.x files + HANDOFF.txt (v0.2.3): user deletes them by hand on GitHub; keep ONLY the newest handoff (this file, renamed after each step).
+
+[ ] = open, [x] = done. Tick a step ONLY after its version is delivered; update this section + rename this file to the new version after every step.
+
+10) STANDING RULES (every chat)
+  - RULE 0: never break / rename / slow any existing feature, setting, storage key, build flow. No "clean up / refactor" unless the step says so.
+    If a new change breaks something old, it is a bug: fix it in the same step.
+  - PATCH ONLY: use small replacements, never rewrite a file. grep first; do NOT read big files fully (MgbIme.kt, ClipboardFeature.kt, FormatterFeature.kt,
+    VaultPanel.kt, CHANGELOG.txt, old HANDOFF): grep / sed -n ranges only.
+  - ONE STEP PER CHAT. Do only the first unchecked step (or the step the user names). Do not start the next one.
+  - DELIVER CHANGED FILES ONLY: a zip with only changed / new files at exact repo paths (check nothing else changed vs the context zip). Zip name: jabra_v0_6_0.zip style
+    (digits after "_v" separated by "_"). Also deliver the updated HANDOFF (renamed to the new version).
+  - SESSION GUARD: plan so the step ends before ~85% of the session; after 85% no new sub-task; at 90% hard stop: give files + HANDOFF + one line "done / left".
+    If a step is too big, split it as ".1 / .2" and say so.
+  - RUN TESTS (javac is not on PATH but works): mkdir /tmp/cls; java --add-modules jdk.compiler -m jdk.compiler/com.sun.tools.javac.Main -encoding UTF-8 -d /tmp/cls $(find app -name '*.java') tools/*Test.java ; then for each tools/*Test.java: java -Dfile.encoding=UTF-8 -cp /tmp/cls <TestName>. Shell is sh: no brace expansion in zip commands, list paths. Keep grep output ASCII-safe (| iconv -c -t ascii).
+  - ZIP NAME + ROOT: jabra_v0_8_0.zip style. Zip root = repo paths (no wrapper folder needed). build.yml (seen, not re-run) applies every *_vX_Y_Z.zip found in the repo root: unzip over main, strips one top folder,
+    deletes .github from the zip, honours a DELETE.txt (list of paths). Put the zip in the repo root OR copy the files by hand; do not add DELETE.txt unless the user asks.
+  - JAVA 21 here: the single-file launcher (java X.java) cannot see sibling classes, so run tools via javac + java -cp (tools/build_emoji.sh does it). java.nio.file is Android API 26: do NOT use it in app code (minSdk 24).
+  - Speed rules (P1-P9 kept): nothing new on the key-press path except what S1-S3 remove; new work only when a panel opens / button tapped / background Thread;
+    no timers, services, WorkManager, libraries; big data = AtomicFile in filesDir; load lazily; old formats and pref meanings never change; new JSON has "ver";
+    every new hook = try/catch + old behaviour as automatic fallback + ON/OFF where possible; new logic = pure Java + tools/*Test.java and RUN all tests.
+  - New permission / network / tracking: STOP and ASK. No secrets in code. Confirm before deleting user data.
+  - Each step writes: version bump, CHANGELOG entry, CHECKLIST section, HANDOFF update, rollback line. Never claim phone behaviour that was not tested.
+
+
+
+11) KICKOFF for the next chat. Attach THIS handoff + Jabra-Keyboard-context.zip (+ pasted GitHub error lines if the build failed).
+  EXACT NEXT KICKOFF LINE (copy-paste; fill the GitHub result: GREEN or the pasted error lines). If the build has errors: FIX first. Else G3 only after the user says YES to storing words (G3 is L = split first):
+  PROJECT: Jabra Keyboard. Step: G3.1 (or FIX). Mode: BUILD. Prev version: v0.10.1. Attached: HANDOFF_Jabra-Keyboard_v0.10.1.txt + Jabra-Keyboard-main.zip. Goal: per plan; GitHub build of v0.10.1: [GREEN | ERRORS: <paste>]; one step only.
+  NOTE: the context zip is v0.9.5 source (only the files the whole plan needs, original paths, see FILES.txt inside). Copy changed files over your repo; version numbers: V1 = v0.9.6 ... V7 = v0.9.12.
+  TEMPLATE for every later chat:
+  PROJECT: Jabra Keyboard. Step: [V1..V7]. Mode: [BUILD|MODIFY|FIX]. Prev version: [vX.Y.Z]. Attached: HANDOFF_Jabra-Keyboard_v[X.Y.Z].txt + Jabra-Keyboard-context.zip (+ the files the last step changed).
+  Goal: [1 line from the step]. Context: Done: [steps]. Next: [step]. GitHub build of the previous version: [GREEN | ERRORS: <paste> -> becomes a FIX first].
+  RULES: patch only, no rewrite; grep then view ranges, never read whole big files; plan max 5 lines then build; no questions, assumptions in 1 line; one step only (other issues -> NEXT);
+         new UI must match DESIGN RULES (section 4, Classic theme unchanged + one dark theme); FIX = root cause first (1-2 lines), smallest fix, what could break.
+  CHECKS: all tools/*Test.java green (+ the new one), bracket balance of changed Kotlin, no duplicate pref keys, new UI at 360 dp and 1280 px, Classic + one dark theme.
+  OUTPUT: ONE zip with ONLY added / modified files at exact repo paths (name jabra_v0_9_6.zip style) + version bump (app/build.gradle.kts) + CHANGELOG entry + CHECKLIST section + updated HANDOFF
+          (file name HANDOFF_Jabra-Keyboard_v<new version>.txt). Reply under 10 lines: Done + version / Changes / Checks / NOT tested / Next step. User language: Banglish.
+  SESSION GUARD: plan so the step ends before ~85%; after 85% no new sub-task; at ~90% STOP and deliver zip + HANDOFF + one line "done / left".
