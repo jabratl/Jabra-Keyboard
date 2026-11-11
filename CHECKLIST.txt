@@ -598,3 +598,9 @@ Z49) v0.10.5 Pinned clip visible in Cards view
  [ ] Clipboard > View: Cards. Pin ONE clip: under "Pinned" a half-width card shows (blue tint, "Pinned" tag), Recent cards below as before.
  [ ] Pin 2 and 3 clips: 2 cards in a row, the 3rd alone on the next row at half width. Nothing is missing.
  [ ] Recent with an odd count: the last card is half width and visible. List view unchanged.
+
+Z50) v0.10.6 No extra space before punctuation after a suggestion
+ [ ] Type "hel", tap "hello" (becomes "hello "), then press "," : result "hello," (no space before the comma). Same for "." "!" "?".
+ [ ] Tap a suggestion, then type a letter / space / backspace first, then ",": nothing is removed (normal typing).
+ [ ] Avro and Probhat: tap a Bangla suggestion, then danda or comma: no space before it.
+ [ ] Settings > Keys > "Space before , . ! ?" OFF: "hello ," as before.

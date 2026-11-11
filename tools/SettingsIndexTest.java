@@ -56,10 +56,10 @@ public class SettingsIndexTest {
         check("parse trailing bar", SettingsIndex.parseLast("haptic|") == null);
         check("encode bad key", SettingsIndex.encodeLast("a|b", 1).isEmpty());
 
-        String[] keys = { "ac_on","learn_on","lang_tap","lang_fav","lang_avro_on","lang_probhat_on","bn_layout","numrow","numpad_auto","pc_mode","mode_key","pc_remember","bs_repeat","bs_word","autocap","enter_action","ds_period","ds_tab","hint_on","theme","look","key_border","onehand","icons_on","numrow_large","hint_hide","haptic","sound","key_popup","key_globe","key_voice","key_emoji","lp_delay","cursor_speed","edit_bar","clip_on","fmt_on","clip_lines","clip_view","clip_sort","clip_count","clip_expire","tb_vault","sp_preview","numrow_bn","pop_ref","h_lock","sp_tick","sp_step","pop_fast","sg_on" };
+        String[] keys = { "sp_punct","ac_on","learn_on","lang_tap","lang_fav","lang_avro_on","lang_probhat_on","bn_layout","numrow","numpad_auto","pc_mode","mode_key","pc_remember","bs_repeat","bs_word","autocap","enter_action","ds_period","ds_tab","hint_on","theme","look","key_border","onehand","icons_on","numrow_large","hint_hide","haptic","sound","key_popup","key_globe","key_voice","key_emoji","lp_delay","cursor_speed","edit_bar","clip_on","fmt_on","clip_lines","clip_view","clip_sort","clip_count","clip_expire","tb_vault","sp_preview","numrow_bn","pop_ref","h_lock","sp_tick","sp_step","pop_fast","sg_on" };
         boolean all33 = true;
         for (String k : keys) { String h = SettingsIndex.help(k); if (h.isEmpty() || h.length() > 90) { all33 = false; System.out.println("help issue: " + k + " len " + h.length()); } }
-        check("48 help lines exist and are one short line", all33);   // v0.7.1: +tb_vault
+        check("49 help lines exist and are one short line", all33);   // v0.7.1: +tb_vault
         // v0.7.1: the Vault toolbar row is found by search (by title, help and key words)
         List<Entry> v = new ArrayList<>();
         v.add(new Entry("tb_vault", "Vault key (toolbar)", SettingsIndex.help("tb_vault"), "Clipboard & tools"));

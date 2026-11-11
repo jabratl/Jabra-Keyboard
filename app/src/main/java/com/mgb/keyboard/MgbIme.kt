@@ -161,6 +161,7 @@ class MgbIme : InputMethodService() {
     }
 
     private fun typeText(s: String) {
+        try { sg.punctFix(s) } catch (_: Throwable) { }   // v0.10.6: "hello ," > "hello," right after a tapped suggestion (pref sp_punct, default ON)
         try { sg.noteTyped(s) } catch (_: Throwable) { }   // v0.10.2 (G3.1): learn the finished word (only when learn_on is ON; a pref read otherwise)
         try { sg.schedule() } catch (_: Throwable) { }   // v0.10.1 (G2): only restarts a 50 ms timer
         try { pendingKind = com.mgb.keyboard.typing.AutoCapGate.kindOf(s) } catch (_: Throwable) { pendingKind = com.mgb.keyboard.typing.AutoCapGate.E_JUMP }   // v0.6.1

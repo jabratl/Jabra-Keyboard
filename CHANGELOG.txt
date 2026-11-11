@@ -1,3 +1,12 @@
+v0.10.6 - NEW: no extra space before , . ! ? after a tapped suggestion
+- WHY: user asked for "your best light and effective improvement". Every suggestion tap adds a space, so "hello" + "," gave "hello ,": the most common small annoyance of a suggestion row. Tiny change, no storage, no list needed.
+- What you get: right after you tap a suggestion, typing , . ! ? ; : ) or the danda removes the space the suggestion added ("hello," not "hello ,"). Only that one space, only right after a tap: anything else typed first (a letter, space, backspace, cursor move) ends the chance, so normal typing never changes. Works for English, Avro, Probhat. Not in password / email / URL / number fields. Setting "Space before , . ! ?" (Settings > Keys and keyboard > Typing options), default ON; OFF = old behaviour.
+- Code: SuggestController.kt (punctFix + pickSpace flag), MgbIme.kt (1 hook in typeText, marked v0.10.6), TypingPrefs.kt + SettingsGroups.kt (switch), typing/SettingsIndex.java (help), tools/SettingsIndexTest.java (+sp_punct), build.gradle.kts version.
+- Pref (new): sp_punct (bool, default ON). NOT in ProfileCodec (same as learn_on / ac_on).
+BROKE: nothing intended. NOT tested: Kotlin compile (GitHub Actions first); phone (CHECKLIST Z50). Not proven: deleteSurroundingText of the space works in every app.
+TESTED here: all 48 Java tests green (SettingsIndexTest 38); bracket balance of the changed Kotlin files.
+Rollback: Settings "Space before , . ! ?" OFF, or remove the one hook line in MgbIme.typeText and restore SuggestController.kt from v0.10.5.
+
 v0.10.5 - FIX: pinned clip not visible in Cards view (the "Pinned" title showed, the card did not)
 - WHY: user screenshots: List view shows the pinned clip, Cards view shows the "Pinned" title and NO card under it (Recent cards are fine). v0.9.10.5 only changed the card colour, it did not find the cause.
 - ROOT CAUSE (code reading, NOT run on a phone): ClipCards.addGrid puts cards 2 per row. With an ODD count (one pinned clip) the empty half was a 1 px high spacer View (weight 1). That row ended up with no real height, so the lone card was squeezed to nothing (a pinned list is usually 1 clip = always odd; Recent with an even count was fine). Same hidden bug hits any odd last row.

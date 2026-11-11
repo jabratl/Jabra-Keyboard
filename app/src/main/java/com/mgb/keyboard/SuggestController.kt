@@ -113,6 +113,19 @@ class SuggestController(
     private var acFixed = ""          // the correction just made ("" = nothing to undo)
     private val acRejected = HashSet<String>()   // words whose correction was undone: not corrected again (until the keyboard service restarts)
 
+    private var pickSpace = false   // v0.10.6: the last thing typed was the space that a tapped suggestion added
+
+    /** v0.10.6: called first for every text the keyboard types. Right after a tapped suggestion (word + space), typing , . ! ? ; : ) or the danda removes that space: "hello ," becomes "hello,". Pref sp_punct (default ON). Any other typing ends the chance. */
+    fun punctFix(s: String) {
+        try {
+            val p = pickSpace
+            pickSpace = false
+            if (!p || s.length != 1 || ",.!?;:)\u0964".indexOf(s[0]) < 0) return
+            if (!prefs.bool("sp_punct", true) || blocked()) return
+            if (textBefore().endsWith(" ")) onApply("", 1, false)   // deletes the one space before the cursor
+        } catch (_: Throwable) { }
+    }
+
     /** v0.10.3 (G3.2): called when space is pressed (after the Avro word is committed). Pref ac_on (default OFF). English plain words only. True = the word was replaced by its correction + a space (the space key then does nothing more). */
     fun autoCorrectOnSpace(): Boolean {
         try {
@@ -154,6 +167,7 @@ class SuggestController(
             if (t.isEmpty()) return
             try { if (prefs.bool("learn_on", false) && !blocked()) LearnStore.learn(w) } catch (_: Throwable) { }   // v0.10.2 (G3.1): a picked word counts as used
             onApply(t, if (curAvro) 0 else curWord.length, curAvro)
+            pickSpace = true   // v0.10.6 (set AFTER onApply: typing text clears it)
             strip?.set(emptyList())
         } catch (_: Throwable) { }
     }
