@@ -30,7 +30,6 @@ class SettingsActivity : Activity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        try { if (AppUi.isDark(this)) setTheme(android.R.style.Theme_DeviceDefault) } catch (_: Throwable) { }   // v0.10.9: dark app screen (base theme in the manifest stays Light)
         super.onCreate(savedInstanceState)
         val col = LinearLayout(this)
         col.orientation = LinearLayout.VERTICAL
@@ -60,17 +59,7 @@ class SettingsActivity : Activity() {
             val sp0 = getSharedPreferences("jabra", MODE_PRIVATE)
             val bn = com.mgb.keyboard.typing.HealthCheck.backupNote(sp0.getBoolean("bk_auto", true), sp0.getString("bk_last", "") ?: "", System.currentTimeMillis())   // v0.5.8
             val w = listOf(PanelGuard.note(this), bn).filter { it.isNotEmpty() }.joinToString("\n")
-            if (w.isNotEmpty()) { val wt = TextView(this); wt.text = w; wt.setTextColor(AppUi.warn(this)); wt.setPadding(0, dp(6), 0, dp(6)); col.addView(wt) }
-        } catch (_: Throwable) { }
-
-        try { buildSetupCard()?.let { col.addView(it) } } catch (_: Throwable) { }   // v0.10.9: setup status card (hidden when both steps are done)
-        try {   // v0.10.9: App theme Light / Dark / Auto
-            val tb = btn("") { b ->
-                AppUi.setMode(this, com.mgb.keyboard.typing.AppPalette.next(AppUi.mode(this)))
-                recreate()
-            }
-            tb.text = "App theme: " + com.mgb.keyboard.typing.AppPalette.name(AppUi.mode(this)) + " (tap to change)"
-            col.addView(tb)
+            if (w.isNotEmpty()) { val wt = TextView(this); wt.text = w; wt.setTextColor(0xFFD84315.toInt()); wt.setPadding(0, dp(6), 0, dp(6)); col.addView(wt) }
         } catch (_: Throwable) { }
 
         col.addView(btn("1. Enable keyboard") {
@@ -101,48 +90,7 @@ class SettingsActivity : Activity() {
 
         val sv = ScrollView(this)
         sv.addView(col)
-        try { if (AppUi.isDark(this)) sv.setBackgroundColor(AppUi.bg(this)) } catch (_: Throwable) { }   // v0.10.9
         setContentView(sv)
-    }
-
-    // ---- v0.10.9 (D1): setup status card. Read-only checks, no permission; any problem = card hidden. ----
-    private var setupRefresh: (() -> Unit)? = null
-
-    private fun buildSetupCard(): android.view.View? {
-        try {
-            val imm = getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager
-            val card = LinearLayout(this)
-            card.orientation = LinearLayout.VERTICAL
-            card.setPadding(dp(12), dp(12), dp(12), dp(12))
-            card.background = AppUi.cardBg(this, 12)
-            val lp = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
-            lp.topMargin = dp(12); lp.bottomMargin = dp(12)
-            card.layoutParams = lp
-            val head = TextView(this); head.text = "Setup"; head.textSize = 16f; head.setTypeface(null, android.graphics.Typeface.BOLD)
-            head.setTextColor(AppUi.text(this)); card.addView(head)
-            val t1 = TextView(this); t1.setPadding(0, dp(8), 0, 0); card.addView(t1)
-            val b1 = btn("Open keyboard settings") { startActivity(Intent(Settings.ACTION_INPUT_METHOD_SETTINGS)) }; card.addView(b1)
-            val t2 = TextView(this); t2.setPadding(0, dp(8), 0, 0); card.addView(t2)
-            val b2 = btn("Choose Jabra Keyboard") { imm.showInputMethodPicker() }; card.addView(b2)
-            setupRefresh = {
-                try {
-                    val en = imm.enabledInputMethodList.any { it.packageName == packageName }
-                    val sel = (Settings.Secure.getString(contentResolver, Settings.Secure.DEFAULT_INPUT_METHOD) ?: "").startsWith("$packageName/")
-                    t1.text = if (en) "\u2713  1. Jabra is enabled" else "!  1. Jabra is not enabled yet"
-                    t1.setTextColor(if (en) AppUi.ok(this) else AppUi.warn(this)); b1.visibility = if (en) android.view.View.GONE else android.view.View.VISIBLE
-                    t2.text = if (sel) "\u2713  2. Jabra is the current keyboard" else "!  2. Jabra is not the current keyboard yet"
-                    t2.setTextColor(if (sel) AppUi.ok(this) else AppUi.warn(this)); b2.visibility = if (sel) android.view.View.GONE else android.view.View.VISIBLE
-                    card.visibility = if (en && sel) android.view.View.GONE else android.view.View.VISIBLE
-                } catch (_: Throwable) { card.visibility = android.view.View.GONE }
-            }
-            setupRefresh?.invoke()
-            return card
-        } catch (_: Throwable) { return null }
-    }
-
-    override fun onResume() {
-        super.onResume()
-        try { setupRefresh?.invoke() } catch (_: Throwable) { }   // v0.10.9: ticks update after coming back from the system screens
     }
 
     // ---- v0.4.1: Data & Backup file picker (system picker, no storage permission) ----

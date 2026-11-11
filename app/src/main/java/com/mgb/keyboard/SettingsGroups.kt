@@ -49,7 +49,6 @@ object SettingsGroups {
                   val refresh: () -> Unit, val setIdx: (Int) -> Unit, val cur: () -> Int, val def: Int)
         class Grp(val name: String, val head: Button, val body: LinearLayout) {
             var isOpen = false
-            var sub = ""   // v0.10.9: "  (n)" = number of settings in the group
             val rows = ArrayList<Row>()
             var resetBtn: Button? = null
         }
@@ -126,7 +125,7 @@ object SettingsGroups {
                 val t = TextView(ctx)
                 t.text = h
                 t.textSize = 12f
-                t.setTextColor(AppUi.dim(ctx))   // v0.10.9: was 0xFF888888 (contrast 3.5); light #6B6B6B, dark #B8B8B8
+                t.setTextColor(0xFF888888.toInt())
                 t.setPadding(dp(8), 0, dp(8), dp(4))
                 wrap.addView(t)
             }
@@ -149,12 +148,12 @@ object SettingsGroups {
                 if (!on) {
                     g.head.visibility = View.VISIBLE
                     g.body.visibility = if (g.isOpen) View.VISIBLE else View.GONE
-                    g.head.text = (if (g.isOpen) "\u25BC  " else "\u25B6  ") + g.name + g.sub
+                    g.head.text = (if (g.isOpen) "\u25BC  " else "\u25B6  ") + g.name
                     g.resetBtn?.visibility = View.VISIBLE
                 } else {
                     g.head.visibility = if (any) View.VISIBLE else View.GONE
                     g.body.visibility = if (any) View.VISIBLE else View.GONE
-                    if (any) g.head.text = "\u25BC  " + g.name + g.sub
+                    if (any) g.head.text = "\u25BC  " + g.name
                     g.resetBtn?.visibility = View.GONE
                 }
             }
@@ -212,13 +211,11 @@ object SettingsGroups {
             val head = Button(ctx)   // v0.4.2: head built first (Grp needs it); click listener set below
             head.text = "\u25B6  " + title
             head.isAllCaps = false
-            AppUi.styleHead(ctx, head)   // v0.10.9: card look in dark mode only
             val g = Grp(title, head, body)   // v0.4.2
             groups.add(g)
             curGrp = g
             try { fill(body) } catch (_: Throwable) { }
             curGrp = null
-            if (g.rows.isNotEmpty()) { g.sub = "  (" + g.rows.size + ")"; head.text = "\u25B6  " + title + g.sub }   // v0.10.9
             if (g.rows.isNotEmpty()) {   // v0.4.2: Reset this group (two taps)
                 var armed = false
                 val rb = Button(ctx)
@@ -247,7 +244,7 @@ object SettingsGroups {
                     val open = body.visibility != View.VISIBLE
                     g.isOpen = open
                     body.visibility = if (open) View.VISIBLE else View.GONE
-                    head.text = (if (open) "\u25BC  " else "\u25B6  ") + title + g.sub
+                    head.text = (if (open) "\u25BC  " else "\u25B6  ") + title
                 } catch (_: Throwable) { }
             }
             root.addView(head)

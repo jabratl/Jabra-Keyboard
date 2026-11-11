@@ -29,7 +29,7 @@ object DataPage {
         val act = ctx as? SettingsActivity
         try {   // v0.10.8 (W3): the build is signed with the throw-away DEBUG key (no keystore secret): an update may be refused and then the app must be uninstalled = data lost
             if ((ctx.applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) != 0) {
-                val w = TextView(ctx); w.setTextColor(AppUi.warn(ctx)); w.setPadding(0, dp(6), 0, dp(6))
+                val w = TextView(ctx); w.setTextColor(0xFFD84315.toInt()); w.setPadding(0, dp(6), 0, dp(6))
                 w.text = "This APK is signed with a TEST key: an update may fail with \"App not installed\". Before any uninstall tap Export to file. One-time fix: add KEYSTORE_B64, KEYSTORE_PASSWORD, KEY_ALIAS, KEY_PASSWORD under GitHub > Settings > Secrets and variables > Actions."
                 root.addView(w)
             }
