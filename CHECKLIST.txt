@@ -625,3 +625,13 @@ Z52) v0.10.8 Safe updates
  [ ] Release WITH a hash (digest): no "could not be checked" line (this proves GitHub gives the digest). If the line shows on a new release, tell me: digest field missing.
  [ ] Offline / "up to date": nothing changes compared with v0.10.7.
 
+Z53) v0.10.9 App screen redesign
+ [ ] App screen (Light, default): looks like before plus a "Setup" card (only if Jabra is not enabled / not selected) and the "App theme" button. Group titles show a count, e.g. "Typing (9)". Help text under settings is a bit darker grey.
+ [ ] Setup card: with Jabra enabled and selected the card is GONE. Disable Jabra in Android settings > open the app: card shows "!  1. Jabra is not enabled yet" + button that opens the keyboard settings; come back after enabling: the tick appears without restarting the app.
+ [ ] "Choose Jabra Keyboard" button opens the system keyboard picker; after choosing, the tick turns green.
+ [ ] Tap "App theme" once = Dark: whole screen near-black, text light, group headers are rounded cards. Scroll the whole page: Data & Backup rows, Health Check lines, backup list buttons, update row, status text are all readable.
+ [ ] Tap again = Auto (follow phone): switch the phone dark / light mode: the app follows. Tap again = Light.
+ [ ] Rotate the phone in Dark: choice stays, scroll position may reset (ok).
+ [ ] Open a group, search "theme": results appear, group header text keeps its "(n)". Reset group, Undo still work.
+ [ ] Data & Backup > Export to file / Import from file still work (request codes unchanged). Keyboard itself looks identical to v0.10.8.
+
