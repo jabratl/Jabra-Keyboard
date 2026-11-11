@@ -111,6 +111,9 @@ public final class SettingsIndex {
             case "onehand": return "Moves the keyboard to the left or right side.";
             case "icons_on": return "Own drawn icons on function keys. OFF = text labels.";
             case "numrow_large": return "Makes the number row a bit taller.";
+            case "hint_digits": return "Number row shows a small Bangla digit; hold the key to type it.";
+            case "hint_size_lv": return "Size of the small hint characters (Normal = as before).";
+            case "hint_alpha_lv": return "How strong the small hint characters look (Normal = as before).";
             case "hint_hide": return "Hides the small hint letters; long-press still works.";
             case "haptic": return "Short vibration on every key press.";
             case "sound": return "Click sound on every key press.";

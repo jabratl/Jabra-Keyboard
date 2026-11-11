@@ -391,3 +391,12 @@ Z24) v0.8.5 Update emoji list (E6)
  [ ] "Use built-in emoji list" with no downloaded list: "Already using the built-in emoji list."
  [ ] Emoji panel still opens after both buttons (search, tone, kaomoji tab still there).
  [ ] Data & Backup page: the privacy line now mentions "Update emoji list".
+
+Z25) v0.8.6 Hint label look
+ [ ] Gear > More settings > Typing: row "Bangla digit hints / Hint size / Hint opacity" is there; all three change when tapped.
+ [ ] Turn Bangla digit hints ON, ABC (apply): number row shows a small ১ ২ ... ০ in each key corner. OFF + apply: they disappear.
+ [ ] Hold key 5 = types ৫. A normal tap = types 5. Same in Avro and Probhat mode.
+ [ ] Hint size Small / Large / Extra and Hint opacity Faint / Strong / Full change the corner characters on letters AND digits. Normal = same as before.
+ [ ] Dark theme + light theme: corner characters readable, do not cover the main character at Extra.
+ [ ] "Hide long-press hints" ON hides the digit hints too; holding still types. Save a profile, change hints, load the profile: hints come back.
+

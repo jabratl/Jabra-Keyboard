@@ -24,6 +24,7 @@ class MgbIme : InputMethodService() {
         set(v) { shiftSt.setShift(v) }
     private var shiftBtn: Button? = null                         // v0.0.9: to show caps-lock state
     private val letterKeys = mutableListOf<Button>()
+    private val numKeys = mutableListOf<Button>()   // v0.8.6: number-row keys that carry a Bangla digit hint
 
     // v0.0.3: Avro phonetic state
     private var bangla = false                 // saved in prefs key "bangla"
@@ -85,7 +86,7 @@ class MgbIme : InputMethodService() {
 
     override fun onCreateInputView(): View {
         return try {
-            letterKeys.clear()
+            letterKeys.clear(); numKeys.clear()
             val c = FrameLayout(this)
             c.addView(buildKeyboard())
             container = c
@@ -161,6 +162,7 @@ class MgbIme : InputMethodService() {
             // v0.6.1: read the 3 prefs ONCE for all 26 keys (was 3 reads per key on every Shift tap)
             val nr = prefs.bool("numrow", true); val cu = prefs.str("hint_custom", ""); val hh = prefs.bool("hint_hide", false)
             letterKeys.forEach { HintKeys.refresh(it, prefs, hintHost, nr, cu, hh) }
+            numKeys.forEach { HintKeys.refresh(it, prefs, hintHost, nr, cu, hh) }   // v0.8.6
         } catch (_: Throwable) { try { letterKeys.forEach { HintKeys.refresh(it, prefs, hintHost) } } catch (_: Throwable) { } }
     }
 
@@ -609,7 +611,7 @@ class MgbIme : InputMethodService() {
         inPanel = false   // v0.3.3
         c.removeAllViews()
         try {
-            letterKeys.clear()
+            letterKeys.clear(); numKeys.clear()
             c.addView(buildKeyboard())
         } catch (_: Throwable) {
             c.addView(LinearLayout(this))
@@ -756,6 +758,9 @@ class MgbIme : InputMethodService() {
             if (prefs.bool("numrow", true)) {
                 val nr = row()
                 "1234567890".forEach { d -> nr.addView(key(d.toString(), 1f) { commitWord(); typeText(d.toString()) }) }
+                try {   // v0.8.6: Bangla digit hint on the number row (setting hint_digits, default OFF = nothing attached, old behaviour)
+                    if (prefs.bool("hint_digits", false)) for (i in 0 until nr.childCount) { val nb = nr.getChildAt(i) as Button; nb.tag = "1234567890"[i]; numKeys.add(nb); HintKeys.attach(nb, prefs, hintHost); HintKeys.refresh(nb, prefs, hintHost) }
+                } catch (_: Throwable) { }
                 try { val lp = prefs.int("letter_pct", -1); if (com.mgb.keyboard.typing.SizePct.letterValid(lp)) for (i in 0 until nr.childCount) (nr.getChildAt(i) as Button).textSize = com.mgb.keyboard.typing.SizePct.letterSp(lp) } catch (_: Throwable) { }   // v0.3.4: number row follows Letter size %
                 try { if (prefs.bool("letter_bold", false)) for (i in 0 until nr.childCount) { val nb = nr.getChildAt(i) as Button; nb.setTypeface(nb.typeface, android.graphics.Typeface.BOLD) } } catch (_: Throwable) { }   // v0.3.4: and Bold letters
                 try { if (prefs.bool("numrow_large", false)) for (i in 0 until nr.childCount) { (nr.getChildAt(i).layoutParams as LinearLayout.LayoutParams).height = dp(keyDp() + 12); (nr.getChildAt(i) as Button).textSize = 18f * (try { val lq = prefs.int("letter_pct", -1); if (com.mgb.keyboard.typing.SizePct.letterValid(lq)) lq / 100f else 1f } catch (_: Throwable) { 1f }) } } catch (_: Throwable) { }   // v0.1.3: Large number row (setting numrow_large)

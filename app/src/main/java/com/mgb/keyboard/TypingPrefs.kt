@@ -272,6 +272,13 @@ class TypingPanel(private val ctx: Context, private val host: JabraHost) {
             r39.addView(pk("Clear", 1f) { _ -> prefs.setStr("hint_custom", ""); host.showPanel("typing") })
             root.addView(r39)
         } catch (_: Throwable) { }
+        try {   // v0.8.6: hint look (Bangla digits on number row, hint size, hint opacity). ABC (apply) redraws the keys.
+            val r40 = row()
+            r40.addView(toggleKey("Bangla digit hints", "hint_digits", false))
+            r40.addView(levelKey("Hint size", "hint_size_lv", com.mgb.keyboard.typing.HintStyle.LV_DEFAULT, com.mgb.keyboard.typing.HintStyle.SIZE_NAMES))
+            r40.addView(levelKey("Hint opacity", "hint_alpha_lv", com.mgb.keyboard.typing.HintStyle.LV_DEFAULT, com.mgb.keyboard.typing.HintStyle.ALPHA_NAMES))
+            root.addView(r40)
+        } catch (_: Throwable) { }
         try { val r36 = row(); r36.addView(toggleKey("Long-press characters", "hint_on", true)); r36.addView(toggleKey("Hide long-press hints", "hint_hide", false)); root.addView(r36) } catch (_: Throwable) { }   // v0.1.6
 
         root.addView(note("Double-space: tap space twice = \". \" (Bangla mode: \"\u0964 \"). Tab only when the period does not fit. Not used in password / email / web fields. " +

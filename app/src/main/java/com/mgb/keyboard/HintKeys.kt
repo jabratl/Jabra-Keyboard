@@ -12,6 +12,7 @@ import android.view.MotionEvent
 import android.view.View
 import android.view.ViewConfiguration
 import android.widget.Button
+import com.mgb.keyboard.typing.HintStyle
 import com.mgb.keyboard.typing.LongPressHints
 import com.mgb.keyboard.typing.TypingLevels
 
@@ -40,9 +41,10 @@ object HintKeys {
         var fired = false
         val r = Runnable {
             try {
-                if (!host.hintTypingActive() || !prefs.bool("hint_on", true)) return@Runnable
                 val c = letterOf(b) ?: return@Runnable
-                val hint = LongPressHints.hintFor(c, prefs.bool("numrow", true), prefs.str("hint_custom", "")) ?: return@Runnable   // v0.5.2 (custom override first)
+                val isNum = HintStyle.isDigit(c)   // v0.8.6: number-row key (Bangla digit hint); language does not matter
+                if ((!isNum && !host.hintTypingActive()) || !prefs.bool("hint_on", true)) return@Runnable
+                val hint = (if (isNum) HintStyle.digitHint(c, prefs.bool("hint_digits", false)) else LongPressHints.hintFor(c, prefs.bool("numrow", true), prefs.str("hint_custom", ""))) ?: return@Runnable   // v0.5.2 (custom override first)
                 fired = true
                 host.typeHint(hint)
                 host.hintFeedback(b)
@@ -86,23 +88,26 @@ object HintKeys {
         try {
             val c = letterOf(b)
             val on = KeyCfg.hintOn(prefs)   // v0.6.1: cached
-            val show = c != null && LongPressHints.labelVisible(on && host.hintLabelActive(), hide ?: prefs.bool("hint_hide", false))
-            val t = if (show) LongPressHints.hintFor(c!!, numrow ?: prefs.bool("numrow", true), custom ?: prefs.str("hint_custom", "")) else null   // v0.5.2
+            val isNum = c != null && HintStyle.isDigit(c)   // v0.8.6
+            val show = c != null && LongPressHints.labelVisible(on && (isNum || host.hintLabelActive()), hide ?: prefs.bool("hint_hide", false))
+            val t = if (!show) null else if (isNum) HintStyle.digitHint(c!!, prefs.bool("hint_digits", false)) else LongPressHints.hintFor(c!!, numrow ?: prefs.bool("numrow", true), custom ?: prefs.str("hint_custom", ""))   // v0.5.2
             if (t == null) { if (b.foreground is HintDrawable) b.foreground = null; return }
             val col = try { JabraThemes.iconColor(prefs) } catch (_: Throwable) { Color.parseColor("#222222") }
             val cur = b.foreground
-            if (cur is HintDrawable) cur.set(t, col) else b.foreground = HintDrawable(t, col)
+            val al = try { HintStyle.alpha(prefs.int("hint_alpha_lv", HintStyle.LV_DEFAULT)) } catch (_: Throwable) { 170 }   // v0.8.6
+            val sz = try { prefs.int("hint_size_lv", HintStyle.LV_DEFAULT) } catch (_: Throwable) { HintStyle.LV_DEFAULT }
+            if (cur is HintDrawable) cur.set(t, col, al, sz) else b.foreground = HintDrawable(t, col, al, sz)
         } catch (_: Throwable) { }
     }
 
     /** Small grey character in the top-right corner; scales with the key size. */
-    class HintDrawable(private var text: String, color: Int) : Drawable() {
+    class HintDrawable(private var text: String, color: Int, private var a: Int = 170, private var sizeLv: Int = HintStyle.LV_DEFAULT) : Drawable() {
         private val p = Paint(Paint.ANTI_ALIAS_FLAG)
-        init { p.textAlign = Paint.Align.RIGHT; p.color = color; p.alpha = 170 }
-        fun set(t: String, color: Int) { text = t; p.color = color; p.alpha = 170; invalidateSelf() }
+        init { p.textAlign = Paint.Align.RIGHT; p.color = color; p.alpha = a }
+        fun set(t: String, color: Int, alpha: Int = 170, lv: Int = HintStyle.LV_DEFAULT) { text = t; p.color = color; a = alpha; sizeLv = lv; p.alpha = alpha; invalidateSelf() }
         override fun draw(canvas: Canvas) {
             val r = bounds
-            p.textSize = (r.height() * 0.27f).coerceIn(9f, 40f)
+            p.textSize = HintStyle.textSize(r.height().toFloat(), sizeLv)   // level 1 = the old 0.27 x height rule
             canvas.drawText(text, r.right - r.width() * 0.10f, r.top + r.height() * 0.08f + p.textSize * 0.85f, p)
         }
         override fun setAlpha(alpha: Int) { }
