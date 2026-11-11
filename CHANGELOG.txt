@@ -1,3 +1,10 @@
+v0.5.5 - NEW: "Vault key (toolbar)" ON / OFF row in settings
+- WHY: the Vault key is hidden on the toolbar until you add it (Edit toolbar), so the Vault was easy to miss. Now there is a plain switch.
+- What you get: app screen > Clipboard & tools (same rows as keyboard gear > More settings): "Vault key (toolbar): OFF / ON". ON = the Vault key appears on the toolbar (same as Edit toolbar > Vault ON). It reads / writes the existing pref tb_on, so both places always agree. Works with Reset group / Undo of the settings screen.
+- Code: SettingsGroups.kt (1 cycle row marked "v0.5.5"). No new pref, no new file, no permission.
+BROKE: nothing intended. NOT tested: Kotlin compile (GitHub Actions first), the row on a phone, that the key shows after reopening the keyboard. NOT added to settings search (SettingsIndex unchanged, same as v0.5.1 / v0.5.2 rows).
+Rollback: delete the 3 lines marked "v0.5.5" in SettingsGroups.kt.
+
 v0.5.4 - NEW: Dynamic toolbar "Most used to front" (S10, optional, default OFF)
 - WHY: plan S10 (HANDOFF 3e). The keys you use most come closer, you stay in control. Default OFF = the toolbar is exactly as before.
 - What you get: Edit toolbar panel > new button "Most used to front: OFF / ON". ON = every toolbar key tap is counted; the first visible item stays first (your pinned key), the 3 most used keys move right behind it (most used first), all others keep your order. The bar re-sorts the next time it is drawn (never jumps while you tap). Counts fade: when one passes 1000 all are halved. OFF = order is your order again (counts are kept).

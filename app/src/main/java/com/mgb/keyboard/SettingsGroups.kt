@@ -304,6 +304,10 @@ object SettingsGroups {
             toggle(g, "Edit bar", "edit_bar", true)
             toggle(g, "Clip history", "clip_on", true)
             toggle(g, "Formatter (Aa button)", "fmt_on", true)
+            // v0.5.5: switch for the Vault key on the toolbar (same data as Edit toolbar > Vault; pseudo row key "tb_vault", no new pref)
+            cycle(g, "Vault key (toolbar)", "tb_vault", { arrayOf("OFF", "ON") },
+                { if (com.mgb.keyboard.typing.ToolbarOrder.off(prefs.str("tb_hidden", ""), prefs.str("tb_on", ""), "vault")) 0 else 1 },
+                { i -> prefs.setStr("tb_on", com.mgb.keyboard.typing.ToolbarOrder.setOn(prefs.str("tb_on", ""), "vault", i == 1)) }, 0)
             level(g, "Clip lines", "clip_lines", 0, arrayOf("2 lines", "4 lines", "6 lines"))   // v0.2.5.1
             level(g, "Clipboard view", "clip_view", 0, arrayOf("List", "Cards"))   // v0.2.5.2
             level(g, "Clip sort", "clip_sort", 0, com.mgb.keyboard.clip.ClipMeta.SORT_NAMES)   // v0.4.3

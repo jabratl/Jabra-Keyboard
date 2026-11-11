@@ -243,3 +243,6 @@ Z4) v0.5.4 Most used to front
  [ ] Tap it = ON. Use Copy 5 times, Paste 3 times, All once, then close / reopen the keyboard: the first key is unchanged, Copy, Paste, All come right behind it.
  [ ] Tap OFF again: your own order is back.
 
+Z5) v0.5.5 Vault key switch
+ [ ] App screen > Clipboard & tools: row "Vault key (toolbar): OFF". Tap = ON. Open the keyboard: a Vlt key is on the toolbar. Tap it = Vault opens.
+ [ ] Edit toolbar panel shows Vault ON too. Switch OFF in either place = key gone; the other place agrees.
