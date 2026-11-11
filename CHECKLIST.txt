@@ -577,3 +577,12 @@ Z46) v0.10.2 Learn my words (G3.1)
  [ ] Close the keyboard / switch app, wait, come back: the learned word is still there. Restart the phone: still there.
  [ ] "Forget learned words": first tap = "Sure? Tap again", second tap = "Forgot N words"; "zo" gives no learned word any more.
  [ ] Turn "Learn my words" OFF again: learned words stop showing; typing feels the same as before (tell me if it lags).
+
+Z47) v0.10.3 Auto-correct (G3.2)
+ [ ] Settings > Keys > "Auto-correct" is OFF by default. OFF: type "teh " - stays "teh ".
+ [ ] Turn ON. Type "teh " > becomes "the ". "Teh " > "The ". "freind " > "friend ".
+ [ ] Right after a correction press Backspace once: "teh" is back (no space). Press space: it stays "teh" (not corrected again).
+ [ ] A normal word ("hello ") and a name / acronym ("NASA ", "iPhone ") are never changed. Bangla (Avro / Probhat) words are never changed.
+ [ ] Password / email / URL field: nothing is corrected.
+ [ ] Tell me if a CORRECT word gets "fixed" (the word list is small): which word?
+ [ ] Turn OFF again: typing as before, no lag.

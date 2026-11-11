@@ -146,6 +146,7 @@ class MgbIme : InputMethodService() {
 
     /** v0.1.1: space key = normal space, or double-space period / tab (settings ds_period / ds_tab, default OFF). Not in password / email / URL / number fields. */
     private fun spaceKey() {
+        if (try { sg.autoCorrectOnSpace() } catch (_: Throwable) { false }) return   // v0.10.3 (G3.2): typo fixed on space (pref ac_on, default OFF)
         val done = try { !latinOnly && !pwdField && spaceHelper.handle(currentInputConnection, android.os.SystemClock.uptimeMillis(), bangla) } catch (_: Throwable) { false }
         if (!done) typeText(" ")
     }
@@ -792,6 +793,7 @@ class MgbIme : InputMethodService() {
 
     private fun onBackspace() {
         pendingKind = com.mgb.keyboard.typing.AutoCapGate.E_BACKSPACE   // v0.6.1
+        if (buf.isEmpty() && (try { sg.undoAutoCorrect() } catch (_: Throwable) { false })) return   // v0.10.3 (G3.2): backspace right after an auto-correct = undo
         if (buf.isNotEmpty()) {
             buf.setLength(buf.length - 1)
             if (buf.isEmpty()) currentInputConnection?.setComposingText("", 1) else renderWord()

@@ -4,6 +4,7 @@ import android.content.Context
 import android.os.Handler
 import android.os.Looper
 import android.widget.LinearLayout
+import com.mgb.keyboard.typing.AutoCorrect
 import com.mgb.keyboard.typing.SuggestPlan
 import com.mgb.keyboard.typing.UserWords
 import com.mgb.keyboard.typing.WordIndex
@@ -98,6 +99,7 @@ class SuggestController(
 
     /** v0.10.2 (G3.1): called for every text the keyboard types. When it ends a word (space / punctuation / newline) the finished word is learned. Only with learn_on ON; never in password / email / URL / number fields. */
     fun noteTyped(s: String) {
+        acFixed = ""   // v0.10.3 (G3.2): any other typing ends the "backspace = undo" chance
         try {
             if (!UserWords.isBoundary(s)) return   // letters / digits: nothing to do (no pref read on the key path)
             if (!prefs.bool("learn_on", false) || blocked()) return
@@ -105,6 +107,42 @@ class SuggestController(
             val w = SuggestPlan.currentWord(textBefore())
             if (w.isNotEmpty()) LearnStore.learn(w)
         } catch (_: Throwable) { }
+    }
+
+    private var acTyped = ""          // v0.10.3 (G3.2): the word as typed, before auto-correct changed it
+    private var acFixed = ""          // the correction just made ("" = nothing to undo)
+    private val acRejected = HashSet<String>()   // words whose correction was undone: not corrected again (until the keyboard service restarts)
+
+    /** v0.10.3 (G3.2): called when space is pressed (after the Avro word is committed). Pref ac_on (default OFF). English plain words only. True = the word was replaced by its correction + a space (the space key then does nothing more). */
+    fun autoCorrectOnSpace(): Boolean {
+        try {
+            acFixed = ""
+            if (!prefs.bool("ac_on", false) || blocked()) return false
+            val e = en
+            if (e == null) { load(); return false }
+            val word = SuggestPlan.currentWord(textBefore())
+            if (word.isEmpty() || acRejected.contains(word.lowercase())) return false
+            val mine = if (prefs.bool("learn_on", false)) LearnStore.words() else null
+            val fix = AutoCorrect.fix(word, AutoCorrect.Known { w -> e.contains(w) }, if (mine == null) null else AutoCorrect.Known { w -> mine.count(w) > 0 })
+            if (fix.isEmpty()) return false
+            onApply(fix + " ", word.length, false)
+            acTyped = word; acFixed = fix   // set AFTER onApply (typing text clears it)
+            return true
+        } catch (_: Throwable) { return false }
+    }
+
+    /** v0.10.3 (G3.2): Backspace right after an auto-correct = the word you typed comes back (no space), and it is not corrected again. True = handled. */
+    fun undoAutoCorrect(): Boolean {
+        try {
+            val f = acFixed
+            if (f.isEmpty()) return false
+            acFixed = ""
+            if (!AutoCorrect.canUndo(textBefore(), f)) return false
+            acRejected.add(acTyped.lowercase())
+            onApply(acTyped, f.length + 1, false)
+            acFixed = ""
+            return true
+        } catch (_: Throwable) { return false }
     }
 
     /** v0.10.2 (G3.1): keyboard closed = write the learned words to the file (only when something changed). */

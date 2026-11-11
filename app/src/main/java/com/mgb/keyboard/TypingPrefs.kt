@@ -260,7 +260,8 @@ class TypingPanel(private val ctx: Context, private val host: JabraHost) {
                 else { sure = false; val n = LearnStore.clearAll(ctx); btn.text = "Forgot " + n + " words" }
             })
             root.addView(r35l)
-        } catch (_: Throwable) { }   // v0.10.1 (G2): 3 word suggestions + clipboard + mic row (hidden while the toolbar is folded)
+        } catch (_: Throwable) { }
+        try { val r35a = row(); r35a.addView(toggleKey("Auto-correct", "ac_on", false)); root.addView(r35a) } catch (_: Throwable) { }   // v0.10.3 (G3.2): fixes 1-letter English typos on space (default OFF)   // v0.10.1 (G2): 3 word suggestions + clipboard + mic row (hidden while the toolbar is folded)
         try { val r35d = row(); r35d.addView(toggleKey("Fast bubble", "pop_fast", true)); root.addView(r35d) } catch (_: Throwable) { }   // v0.9.9 (V4): bubble inside the keyboard view (only while Key popup is ON)
         try { val r35c = row(); r35c.addView(toggleKey("Same keyboard height", "h_lock", true)); root.addView(r35c) } catch (_: Throwable) { }   // v0.9.7 (V2): keyboard height stays the same when the language changes
         try {   // v0.5.0: custom character row (extra row above the numbers)
