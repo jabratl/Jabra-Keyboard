@@ -1,3 +1,13 @@
+v0.8.5 - NEW: "Update emoji list" button (E6)
+- WHY: new Unicode versions add emoji. Now you can get them without waiting for a new app version. (You said go ahead for E6, so this uses the internet ONLY when you tap the button.)
+- What you get: app screen (not the keyboard), under "Check for updates": [Update emoji list] downloads Unicode's emoji-test.txt, builds the list ON the phone and checks it. Only if it is a NEWER Unicode version, has at least 1000 emoji (and not more than 10% fewer than now), has 8+ groups and passes the same reader as the built-in file, it is saved as filesDir/emoji_user_v1.txt. Messages: "Already up to date", "looks too small", "Could not download", "updated". [Use built-in emoji list] deletes the downloaded one and goes back. Any failure = nothing changes.
+- Order the keyboard uses: downloaded list > built-in list (assets) > old panel. After an update the new list is ready in a few seconds (old panel shows meanwhile); the glyph check (E3) runs again for the new version automatically.
+- Internet: no new permission (INTERNET already exists). Only on tap, never in the background, download capped at 3 MB, https only. Data & Backup text updated to say so. The downloaded list is not part of backups (you can download it again).
+- Code: NEW emoji/EmojiUpdateCheck.java (pure: version compare + verdict), NEW tools/EmojiUpdateCheckTest.java (41 checks), NEW EmojiUpdater.kt (download + build + check + save), MODIFY EmojiStore.kt (user file first, reload(), userFile()), SettingsActivity.kt (2 buttons + 2 small methods, background Thread), DataPage.kt (1 text line). app/build.gradle.kts 0.8.5.
+BROKE: nothing intended.
+NOT tested: Kotlin compile, the real download on a phone (unicode.org may refuse some clients: then you see "Could not download"), EmojiBuild speed on a phone, the reload while the keyboard is open. TESTED here: all 34 Java test programs green (new EmojiUpdateCheckTest 41).
+Rollback: restore EmojiStore.kt, SettingsActivity.kt, DataPage.kt from v0.8.4; delete EmojiUpdater.kt, emoji/EmojiUpdateCheck.java, tools/EmojiUpdateCheckTest.java; version back to 0.8.4. A saved emoji_user_v1.txt can stay or be deleted (nothing reads it then).
+
 v0.8.4 - NEW: kaomoji tab in the emoji panel (E5)
 - WHY: text faces like the shrug and the table flip are popular and not emoji.
 - What you get: the LAST tab of the emoji panel (label ^_^) shows about 30 text emoticons, 2 per row, scrolls. Tap = types it (no Recent entry: kaomoji contain spaces and emoji_recent splits on spaces). Examples: shrug, table flip, lenny, (^_^), (T_T), orz, <3, :D.

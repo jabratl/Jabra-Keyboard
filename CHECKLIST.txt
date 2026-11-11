@@ -382,3 +382,12 @@ Z23) v0.8.4 Kaomoji tab (E5)
  [ ] No empty boxes / question marks in any face. (If your phone font misses a symbol, that face is simply not listed.)
  [ ] Kaomoji are NOT added to the Recent tab. Back to a normal tab: grid + tone + search still work.
  [ ] Dark theme: buttons readable. Landscape: still fits.
+
+Z24) v0.8.5 Update emoji list (E6)
+ [ ] (GitHub) the build of v0.8.5 is GREEN. If red: paste the error lines.
+ [ ] App screen -> scroll to "Check for updates": two new buttons below it: "Update emoji list" and "Use built-in emoji list".
+ [ ] Tap "Update emoji list" (with internet on): the grey line shows "Downloading..." then one message. Expected today: "Already up to date (Unicode 18.0, 1923 emoji)" unless Unicode has a newer list. Tell me the exact message.
+ [ ] Same with internet OFF (flight mode): "Could not download... Nothing changed." and the keyboard still works.
+ [ ] "Use built-in emoji list" with no downloaded list: "Already using the built-in emoji list."
+ [ ] Emoji panel still opens after both buttons (search, tone, kaomoji tab still there).
+ [ ] Data & Backup page: the privacy line now mentions "Update emoji list".

@@ -111,7 +111,7 @@ object DataPage {
         root.addView(line("Backups"))
         root.addView(list)
         root.addView(line("Privacy"))
-        root.addView(line("Everything is saved only on this phone (settings, clips, presets, backups). Nothing is sent anywhere. The only internet use is \"Check for updates\". Permissions: Internet (update check), Install packages (update), Vibrate. Export / Import use the system file picker, no storage permission."))
+        root.addView(line("Everything is saved only on this phone (settings, clips, presets, backups). Nothing is sent anywhere. The only internet use is \"Check for updates\" and \"Update emoji list\" (only when you tap them). Permissions: Internet (update check, emoji list), Install packages (update), Vibrate. Export / Import use the system file picker, no storage permission."))
         act?.refreshData = { try { fill() } catch (_: Throwable) { } }
         act?.dataMsg = { m -> try { msg.text = m } catch (_: Throwable) { } }
         fill()

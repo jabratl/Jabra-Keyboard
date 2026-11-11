@@ -15,6 +15,7 @@ import java.io.File
  * The answer is cached in filesDir/emoji_ok_v1.txt (key = phone build + data Unicode version + count), so the next start is instant.
  * get() = null until the file is parsed AND the glyph check is done, or for good if loading failed: then the OLD emoji panel is used (never blank).
  * v0.8.3 (E4): also builds the search index (EmojiSearch) and an emoji -> item map on the same thread; search(q) and toned(e, t) / toneVariants(e) use them.
+ * v0.8.5 (E6): a downloaded list (filesDir/emoji_user_v1.txt, made by EmojiUpdater) is used first, else the asset; reload() starts over after an update.
  * No timer, no service. Nothing here ever throws.
  */
 object EmojiStore {
@@ -29,6 +30,16 @@ object EmojiStore {
     private var started = false
 
     fun get(): EmojiDb? = db
+
+    /** v0.8.5: where the downloaded emoji list is saved. */
+    fun userFile(ctx: Context): File = File(ctx.filesDir, "emoji_user_v1.txt")
+
+    /** v0.8.5: load again (after "Update emoji list" or "Use built-in"). get() is null until the new list is ready, so the OLD panel shows meanwhile. */
+    fun reload(ctx: Context) {
+        synchronized(this) { started = false }
+        db = null
+        preload(ctx)
+    }
 
     /** Emoji of group g that this phone can draw, in file order. Empty if not ready / bad index. */
     fun groupItems(g: Int): List<String> {
@@ -108,9 +119,15 @@ object EmojiStore {
             val app = ctx.applicationContext ?: ctx
             val t = Thread(Runnable {
                 try {
-                    val s = app.assets.open("emoji/emoji_v1.txt")
                     var parsed: EmojiDb? = null
-                    try { parsed = EmojiDb.parseOrNull(s) } finally { try { s.close() } catch (_: Throwable) { } }
+                    try {   // v0.8.5: the downloaded list first (any problem with it = the built-in asset)
+                        val uf = userFile(app)
+                        if (uf.exists() && uf.length() <= EmojiDb.MAX_BYTES) parsed = EmojiDb.parseOrNull(String(AtomicFile(uf).readFully(), Charsets.UTF_8))
+                    } catch (_: Throwable) { parsed = null }
+                    if (parsed == null) {
+                        val s = app.assets.open("emoji/emoji_v1.txt")
+                        try { parsed = EmojiDb.parseOrNull(s) } finally { try { s.close() } catch (_: Throwable) { } }
+                    }
                     if (parsed != null) publish(app, parsed)
                 } catch (_: Throwable) { db = null }
             }, "jabra-emoji")

@@ -78,6 +78,8 @@ class SettingsActivity : Activity() {
         try { BackupStore.autoIfDue(this) } catch (_: Throwable) { }   // v0.4.0: auto backup once per day (background Thread)
 
         col.addView(btn("Check for updates") { checkUpdate() })
+        col.addView(btn("Update emoji list") { updateEmoji() })   // v0.8.5: only on tap
+        col.addView(btn("Use built-in emoji list") { builtInEmoji() })   // v0.8.5
 
         updBtn = btn("Download & install") { doUpdate() }
         updBtn.visibility = android.view.View.GONE
@@ -136,6 +138,25 @@ class SettingsActivity : Activity() {
                 runOnUiThread { try { dataMsg?.invoke(m); refreshData?.invoke() } catch (_: Throwable) { } }
             }.start()
         } catch (_: Throwable) { }
+    }
+
+    // v0.8.5 (E6): download a newer Unicode emoji list. Only when tapped. Everything runs on a background Thread.
+    private fun updateEmoji() {
+        status.text = "Downloading the emoji list..."
+        updBtn.visibility = android.view.View.GONE
+        Thread {
+            var m = "Emoji update failed. Nothing changed."
+            try { m = EmojiUpdater.run(applicationContext) } catch (_: Throwable) { }
+            runOnUiThread { try { status.text = m } catch (_: Throwable) { } }
+        }.start()
+    }
+
+    private fun builtInEmoji() {
+        Thread {
+            var m = "Could not switch the emoji list."
+            try { m = EmojiUpdater.useBuiltIn(applicationContext) } catch (_: Throwable) { }
+            runOnUiThread { try { status.text = m } catch (_: Throwable) { } }
+        }.start()
     }
 
     private fun checkUpdate() {
