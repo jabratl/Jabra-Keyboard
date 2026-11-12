@@ -1,3 +1,12 @@
+v0.16.10 - MODIFY: Vault panel redesign, "New" style (plan X, step X10)
+- WHY: easier browsing of snippets / notes / glossary. Same pref as the clipboard: App > Clipboard & tools > "Look of clips" > "Panel style" [Classic | New].
+- What you get (Panel style = New): sticky top bar ABC | Search | Add | Folders (select mode: ABC | Search | Done); folder chips with counts (All, Unfiled, your folders); kind chips; info line "12 items" + Sort; card list (bold title = title or line 1, 1-line preview, tag Note / Template / Term, use count); tap = insert; long-press = actions sheet Edit | Move | Delete (two taps) | Select; select mode = bottom bar All | Move | Edit (one picked) | Delete | Done. The list keeps its scroll position (X1).
+- Not changed: Edit / Add / Fill / Move / Folders screens, VaultList.java, VaultStore.kt, data format (no migration). Classic = old list, untouched.
+- Code: NEW typing/VaultView.java (pure) + tools/VaultViewTest.java (57 checks, green). VaultPanel.kt: ONE hook in makeList() (marked "// v0.16.10") + makeListNew / cardNew / sheetNew / selectBarNew. SettingsIndex help line text. Version 0.16.10.
+- NOT tested: phone. Kotlin NOT compiled (no kotlinc / github.com in this chat; bracket balance checked). If GitHub shows errors they are in the block "v0.16.10 (X10)" of VaultPanel.kt.
+- Known limits: info line hidden while searching; the list area is a fixed 140 dp (64 dp while searching), not yet stretched to the letters-keyboard height like the clipboard.
+- Rollback: App > Panel style = Classic. Code: delete VaultView.java + VaultViewTest.java, remove the hook lines marked "// v0.16.10" and the X10 block in VaultPanel.kt, version back to 0.16.9.
+
 v0.16.9 - MODIFY: Clipboard panel redesign, "New" style (plan X, step X9)
 - WHY: you asked for panels that are better looking, easier to browse and smarter. The clipboard comes first.
 - What you get: App > Clipboard & tools > "Look of clips" > new row "Panel style" [Classic | New]. DEFAULT = Classic = exactly the clipboard of v0.16.8 (the first build of a redesign stays OFF until you phone-tested it; X14 flips the default if you say OK). Style New (open the clipboard in the keyboard):

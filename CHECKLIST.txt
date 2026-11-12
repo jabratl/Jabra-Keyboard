@@ -649,3 +649,14 @@ Z92) v0.16.9 Clipboard panel redesign, style New (X9)
  [ ] Select mode: tap another chip = selection cleared. Clear (info line): "Delete all unpinned clips?" [Cancel] [Yes, clear]; pinned clips stay.
  [ ] Search in New style: type letters, chips still work, results follow the chip; Search again closes it. Landscape, dark theme, Classic theme, clip_fit OFF (App > "Clipboard follows keyboard height"): panel fine, nothing cut off.
  [ ] Back to Classic: the old panel returns at once. Backup / profile export + import keeps the style (Panel style is a normal setting).
+
+Z93) v0.16.10 Vault panel redesign, style New (X10)
+ [ ] Panel style = Classic (App > Clipboard & tools > Look of clips). Open the Vault: exactly the old list (kind chips, folder chips, Manage, Sort).
+ [ ] Panel style = New. Vault: top bar ABC | Search | Add | Folders, folder chips with counts (All, Unfiled, your folders), kind chips, info line "N items" + Sort, cards with bold title + 1-line preview + tag (Note / Template / Term).
+ [ ] Make 20 items in 3 folders. Tap a folder chip: only its items, count matches. Chip "Unfiled" shows entries without a folder.
+ [ ] Tap a card = text is inserted (entry with {name} opens Fill first). Term card: "Meaning" button pastes the meaning.
+ [ ] Long-press a card: sheet Edit | Move | Delete | Select | X. Delete needs 2 taps ("Sure? delete"). Edit / Move open the old screens and come back.
+ [ ] Sheet > Select (or Done / ABC): select mode, top bar shows Done, bottom bar All | Move | Edit (only with 1 picked) | Delete | Done. "3 selected" in the info line. All = only the visible items. Delete 3 -> "Deleted 3".
+ [ ] Scroll to the bottom of a long list, tap a card in select mode, long-press, change sort: the list stays where it was (sort / chips go to top on purpose).
+ [ ] Search in New style: type letters, results follow the kind chip, folder chips hidden, info line hidden. Search again closes it.
+ [ ] Landscape, dark theme, Classic theme. Back to Classic: old list returns at once. No data lost either way (data format untouched).

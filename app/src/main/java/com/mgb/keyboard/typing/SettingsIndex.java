@@ -168,7 +168,7 @@ public final class SettingsIndex {
             case "clip_count": return "Shows the number of characters (and paste count) on each clip.";
             case "clip_expire": return "Deletes unpinned clips after this time. Pinned clips are never deleted.";
             case "clip_fit": return "Clipboard opens as tall as the keyboard (no shrink). OFF = old fixed size.";   // v0.15.1
-            case "panel_ui": return "Redesigned panels (now Clipboard): Classic = old look, New = filter chips + bottom bar.";   // v0.16.9
+            case "panel_ui": return "Redesigned panels (now Clipboard + Vault): Classic = old look, New = chips + bottom bar.";   // v0.16.10
             case "clip_sens": return "Removes copied one-time codes (4-8 digits, short codes) after 2 minutes.";   // v0.10.10
             case "tb_vault": return "Shows the Vault key on the toolbar (saved texts, terms and templates).";   // v0.7.1
             case "kh_pct_l": return "Key height in landscape (sideways). Unset = the old level.";   // v0.15.4

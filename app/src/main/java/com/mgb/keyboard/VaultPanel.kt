@@ -10,7 +10,9 @@ import android.widget.HorizontalScrollView
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
+import com.mgb.keyboard.typing.PanelLayout
 import com.mgb.keyboard.typing.VarFill
+import com.mgb.keyboard.typing.VaultView
 import com.mgb.keyboard.vault.VaultList
 
 /*
@@ -37,6 +39,7 @@ class VaultPanel(private val ctx: Context, private val host: JabraHost, private 
     private val sel = LinkedHashSet<Int>()
     private var confirmDel = false
     private var confirmFolder = ""         // folder name waiting for the 2nd tap (delete)
+    private var sheetId = 0                // v0.16.10 (X10): entry whose long-press actions sheet is open (0 = none), New style only
 
     // edit screen
     private var editId = 0                 // 0 = new entry
@@ -62,6 +65,7 @@ class VaultPanel(private val ctx: Context, private val host: JabraHost, private 
         scr = Scr.LIST; searching = false; query = ""; msg = ""; selOn = false; sel.clear(); confirmDel = false; confirmFolder = ""
         eConfirm = false; eCaps = false; fName = ""; fillVals.clear()
         keepY = -1; fromRefresh = false   // v0.16.1 (X1)
+        sheetId = 0   // v0.16.10 (X10)
         store.unload()   // always read the file fresh (a backup may have been restored)
     }
 
@@ -241,6 +245,9 @@ class VaultPanel(private val ctx: Context, private val host: JabraHost, private 
         val restoreY = if (fromRefresh) keepY else -1   // v0.16.1 (X1)
         fromRefresh = false
         if (restoreY < 0) keepY = -1
+        // v0.16.10 (X10): pref panel_ui = 1 -> the NEW list (makeListNew below). Default 0 / any problem = the classic list that follows, untouched.
+        val newUi = try { PanelLayout.isNewStyle(prefs.int("panel_ui", 0)) } catch (_: Throwable) { false }
+        if (newUi) { try { return makeListNew(restoreY) } catch (_: Throwable) { sheetId = 0 } }
         val root = rootView()
         val l = store.get()
 
@@ -365,6 +372,263 @@ class VaultPanel(private val ctx: Context, private val host: JabraHost, private 
             }
         }
         return root
+    }
+
+    // ===================== v0.16.10 (X10): NEW Vault list (pref panel_ui = 1) =====================
+    // Sticky top bar + folder chips (with counts) + kind chips + info line, card list (title + 1-line preview), tap = insert,
+    // long-press = actions sheet (Edit / Move / Delete / Select), select mode = bottom bar. Edit / Add / Move / Folders screens are the old ones.
+    private fun makeListNew(restoreY: Int): View {
+        val root = rootView()
+        val l = store.get()
+
+        val top = row()
+        top.addView(btn("ABC", 1f, 40) { leaveSel(); sheetId = 0; store.unload(); host.showLetters() })
+        top.addView(btn(if (searching) "\u2715 Search" else "\uD83D\uDD0D Search", 1.6f, 40) { searching = !searching; query = ""; sheetId = 0; refreshTop() })
+        if (!selOn) {
+            top.addView(btn("+ Add", 1f, 40) { sheetId = 0; addFromField() })
+            top.addView(btn("Folders", 1.3f, 40) { leaveSel(); sheetId = 0; scr = Scr.FOLDERS; msg = ""; refreshTop() })
+        } else {
+            top.addView(btn("Done", 1f, 40) { leaveSel(); sheetId = 0; refresh() })
+        }
+        root.addView(top)
+
+        if (l == null) {
+            root.addView(info(if (store.problem.isEmpty()) "Vault not available" else store.problem))
+            return root
+        }
+        // forget selected / sheet ids that no longer exist (after delete / move)
+        val all = l.view(null, null, "", 0)
+        try { val live = VaultView.liveIds(ArrayList(sel), all); sel.retainAll(live.toSet()) } catch (_: Throwable) { sel.clear() }
+        if (sheetId != 0 && l.find(sheetId) == null) sheetId = 0
+
+        // folder chips with counts (scroll sideways)
+        if (!searching) {
+            val hs = HorizontalScrollView(ctx)
+            hs.isHorizontalScrollBarEnabled = false
+            val fr = row()
+            fun chip(label: String, count: Int, value: String?) {
+                val on = folderF == value
+                fr.addView(small(btn(VaultView.chipLabel(label, count, on), 0f, 34) {
+                    folderF = value
+                    if (value != null) { try { prefs.setStr("vault_dest", value) } catch (_: Throwable) { } }
+                    leaveSel(); sheetId = 0
+                    refreshTop()
+                }).also { it.setPadding(dp(10), 0, dp(10), 0) })
+            }
+            chip("All", l.size(), null)
+            chip("", l.countIn(""), "")
+            for (f in l.folders()) chip(f, l.countIn(f), f)
+            hs.addView(fr)
+            root.addView(hs)
+        }
+
+        // kind chips (same filter as the classic list)
+        val chips = row()
+        val names = arrayOf("All", "Snippets", "Notes", "Glossary")
+        val kinds = arrayOf<String?>(null, VaultList.SNIPPET, VaultList.NOTE, VaultList.TERM)
+        for (i in 0..3) {
+            chips.addView(small(btn((if (kindF == i) "\u2713 " else "") + names[i] + " " + l.countKind(kinds[i]), 1f, 32) { kindF = i; leaveSel(); sheetId = 0; refreshTop() }))
+        }
+        root.addView(chips)
+
+        if (searching) {
+            val q = TextView(ctx)
+            q.text = "\uD83D\uDD0D " + query + "\u258F"
+            q.textSize = 15f
+            q.setTextColor(ink())
+            q.setPadding(dp(8), dp(2), dp(8), dp(2))
+            root.addView(q)
+        }
+
+        val sortLv = try { prefs.int("vault_sort", 0).coerceIn(0, 2) } catch (_: Throwable) { 0 }
+        val items = l.view(kindFilter(), if (searching) null else folderF, query, sortLv)
+
+        // info line: message / "N selected" / "12 items" + Sort (hidden while searching: the tiny keyboard needs the room)
+        val shown = msg
+        msg = ""
+        if (!searching) {
+            val head = row()
+            head.gravity = Gravity.CENTER_VERTICAL
+            val m = TextView(ctx)
+            m.text = if (shown.isNotEmpty()) shown else if (selOn) VaultView.selectSummary(sel.size) else VaultView.countLine(items.size)
+            m.textSize = 12f
+            m.setTextColor(dim())
+            m.setPadding(dp(8), 0, dp(4), 0)
+            m.layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+            head.addView(m)
+            if (!selOn) {
+                val sortBtn = small(btn("\u2195 " + arrayOf("Newest", "A-Z", "Used")[sortLv], 0f, 30) {
+                    try { prefs.setInt("vault_sort", (sortLv + 1) % 3) } catch (_: Throwable) { }
+                    refreshTop()
+                })
+                sortBtn.setPadding(dp(10), 0, dp(10), 0)
+                head.addView(sortBtn)
+            }
+            root.addView(head)
+        }
+
+        // long-press actions sheet (one entry), not in select mode
+        val sheetE = if (!selOn && sheetId != 0) l.find(sheetId) else null
+        if (sheetE != null) root.addView(sheetNew(l, sheetE))
+
+        // card list
+        val sv = ScrollView(ctx)
+        sv.layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(if (searching) 64 else 140))
+        val col = LinearLayout(ctx)
+        col.orientation = LinearLayout.VERTICAL
+        if (items.isEmpty()) {
+            val t = TextView(ctx)
+            t.text = if (searching) "No match" else if (l.size() == 0) "Vault is empty. Type or select text in a field, then tap + Add. Or tap + Add on an empty field to write one here." else "Nothing here. Change the chips above."
+            t.setPadding(dp(8), dp(12), dp(8), dp(12))
+            t.setTextColor(dim())
+            col.addView(t)
+        }
+        for (e in items) col.addView(cardNew(e))
+        sv.addView(col)
+        root.addView(sv)
+        try {   // keep the list position after a rebuild (same as the classic list, X1)
+            curSv = sv
+            if (com.mgb.keyboard.typing.ScrollKeep.wants(restoreY)) {
+                keepY = -1
+                sv.viewTreeObserver.addOnGlobalLayoutListener(object : android.view.ViewTreeObserver.OnGlobalLayoutListener {
+                    override fun onGlobalLayout() {
+                        try {
+                            if (sv.viewTreeObserver.isAlive) sv.viewTreeObserver.removeOnGlobalLayoutListener(this)
+                            val ch = col.height
+                            if (ch > 0) sv.scrollTo(0, com.mgb.keyboard.typing.ScrollKeep.clamp(restoreY, ch, sv.height))
+                        } catch (_: Throwable) { }
+                    }
+                })
+            }
+        } catch (_: Throwable) { }
+
+        if (searching) {
+            for (letters in arrayOf("qwertyuiop", "asdfghjkl", "zxcvbnm")) {
+                val r = row()
+                letters.forEach { ch -> r.addView(btn(ch.toString(), 1f, 34) { query += ch; refreshTop() }) }
+                if (letters == "asdfghjkl") r.addView(JabraIcons.putThemed(ctx, btn("\u2423", 1f, 34) { query += " "; refreshTop() }, "space"))
+                if (letters == "zxcvbnm") r.addView(JabraIcons.putThemed(ctx, btn("\u232B", 1.5f, 34) { if (query.isNotEmpty()) query = query.dropLast(1); refreshTop() }, "back"))
+                root.addView(r)
+            }
+        } else if (selOn) {
+            root.addView(selectBarNew(l, items))
+        }
+        return root
+    }
+
+    /** One card: title (bold) + 1-line preview with tag. Tap = insert (or toggle in select mode), long-press = actions sheet. */
+    private fun cardNew(e: VaultList.Entry): View {
+        val r = row()
+        r.gravity = Gravity.CENTER_VERTICAL
+        val picked = selOn && sel.contains(e.id)
+        r.setBackgroundColor(rowFill(picked))
+        val lp = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
+        lp.setMargins(dp(3), dp(2), dp(3), dp(2))
+        r.layoutParams = lp
+        r.minimumHeight = dp(48)
+
+        val colL = LinearLayout(ctx)
+        colL.orientation = LinearLayout.VERTICAL
+        colL.setPadding(dp(10), dp(4), dp(4), dp(4))
+        colL.layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+        val title = TextView(ctx)
+        title.text = (if (picked) "\u2713 " else "") + VaultView.title(e)
+        title.textSize = 15f
+        title.setTypeface(title.typeface, android.graphics.Typeface.BOLD)
+        title.setTextColor(rowInk())
+        title.maxLines = 1
+        title.ellipsize = TextUtils.TruncateAt.END
+        colL.addView(title)
+        val l2 = VaultView.line2(e, VaultView.PREVIEW_DEFAULT)
+        if (l2.isNotEmpty()) {
+            val prev = TextView(ctx)
+            prev.text = l2
+            prev.textSize = 11f
+            prev.setTextColor(rowDim())
+            prev.maxLines = 1
+            prev.ellipsize = TextUtils.TruncateAt.END
+            colL.addView(prev)
+        }
+        r.addView(colL)
+        if (e.count > 0) {
+            val c = TextView(ctx)
+            c.text = e.count.toString() + "\u00D7"
+            c.textSize = 11f
+            c.setTextColor(rowNote())
+            c.setPadding(dp(4), 0, dp(6), 0)
+            r.addView(c)
+        }
+        if (e.kind == VaultList.TERM && !selOn) {
+            val mb = small(btn("Meaning", 0f, 34) { sheetId = 0; paste(e, VaultList.meaning(e)) })
+            mb.setPadding(dp(8), 0, dp(8), 0)
+            r.addView(mb)
+        }
+        r.setOnClickListener {
+            try { host.feedback(r) } catch (_: Throwable) { }
+            try {
+                if (selOn) { if (!sel.remove(e.id)) sel.add(e.id); confirmDel = false; refresh() }
+                else { sheetId = 0; useEntry(e) }
+            } catch (_: Throwable) { }
+        }
+        r.setOnLongClickListener {
+            try { if (!selOn) { sheetId = e.id; confirmDel = false; refresh() } } catch (_: Throwable) { }
+            true
+        }
+        return r
+    }
+
+    /** Long-press sheet for one entry: Edit | Move | Delete (two taps) | Select | Close. */
+    private fun sheetNew(l: VaultList, e: VaultList.Entry): View {
+        val box = LinearLayout(ctx)
+        box.orientation = LinearLayout.VERTICAL
+        paintBg(box)
+        box.addView(info(VaultView.title(e)))
+        val r = row()
+        for (a in VaultView.sheetActions(e, selOn)) {
+            when (a) {
+                "Edit" -> r.addView(small(btn("Edit", 1f, 36) { sheetId = 0; openEdit(e.id, e.kind, e.folder, e.title, e.text) }))
+                "Move" -> r.addView(small(btn("Move", 1f, 36) { sheetId = 0; sel.clear(); sel.add(e.id); scr = Scr.MOVE; msg = ""; confirmDel = false; refreshTop() }))
+                "Delete" -> r.addView(small(btn(if (confirmDel) "Sure? delete" else "Delete", if (confirmDel) 2f else 1.2f, 36) {
+                    if (confirmDel) {
+                        val gone = l.removeAll(arrayListOf(e.id))
+                        if (saved()) msg = "Deleted " + gone
+                        sheetId = 0; confirmDel = false
+                    } else confirmDel = true
+                    refresh()
+                }))
+                "Select" -> r.addView(small(btn("Select", 1f, 36) { sheetId = 0; selOn = true; sel.clear(); sel.add(e.id); confirmDel = false; refresh() }))
+            }
+        }
+        r.addView(small(btn("\u2715", 0.6f, 36) { sheetId = 0; confirmDel = false; refresh() }))
+        box.addView(r)
+        return box
+    }
+
+    /** Select mode bottom bar: All (only if not all picked) | Move + Edit(one) + Delete (only if something picked) | Done. */
+    private fun selectBarNew(l: VaultList, shownItems: List<VaultList.Entry>): View {
+        val acts = ArrayList<Pair<String, () -> Unit>>()
+        fun act(label: String, f: () -> Unit): Pair<String, () -> Unit> = Pair(label, f)
+        val n = sel.size
+        for (a in VaultView.barActions(n, shownItems.size)) {
+            when (a) {
+                "All" -> acts.add(act("All") { sel.clear(); for (e in shownItems) sel.add(e.id); confirmDel = false; refresh() })
+                "Move" -> acts.add(act("Move") { scr = Scr.MOVE; msg = ""; confirmDel = false; refreshTop() })
+                "Edit" -> acts.add(act("Edit") {
+                    val e = if (sel.size == 1) l.find(sel.first()) else null
+                    if (e == null) { msg = "Select ONE entry to edit"; confirmDel = false; refresh() } else openEdit(e.id, e.kind, e.folder, e.title, e.text)
+                })
+                "Delete" -> acts.add(act(if (confirmDel) "Sure? delete " + n else "Delete") {
+                    if (confirmDel) {
+                        val gone = l.removeAll(ArrayList(sel))
+                        if (saved()) msg = "Deleted " + gone
+                        sel.clear(); confirmDel = false
+                    } else confirmDel = true
+                    refresh()
+                })
+                "Done" -> acts.add(act("Done") { leaveSel(); refresh() })
+            }
+        }
+        return PanelKit.stickyBar(ctx, prefs, host, acts)
     }
 
     private fun entryRow(e: VaultList.Entry): View {
