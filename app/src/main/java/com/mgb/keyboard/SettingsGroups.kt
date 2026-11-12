@@ -111,8 +111,10 @@ object SettingsGroups {
             } catch (_: Throwable) { }
         }
 
+        var themeGrid: AppThemeGrid.Handle? = null   // v0.15.6 (N6): theme grid (new app screen only)
         var tbEditor: AppToolbarEditor.Handle? = null   // v0.15.5 (N5): inline toolbar editor (new app screen only)
         fun noteChange(key: String, old: Int) {
+            if (key == "theme") { try { themeGrid?.refresh?.invoke() } catch (_: Throwable) { } }   // v0.15.6: Theme row -> grid frame
             if (key == "tb_vault") { try { tbEditor?.refresh?.invoke() } catch (_: Throwable) { } }   // v0.15.5: Vault key row <-> editor list stay in sync
             try { dotUpdaters[key]?.invoke() } catch (_: Throwable) { }   // v0.12.0 (M2)
             try {
@@ -454,6 +456,13 @@ object SettingsGroups {
 
         group("Look") { g ->
             cycle(g, "Theme", "theme", { Array(JabraThemes.ALL.size) { i -> JabraThemes.ALL[i].name } }, { JabraThemes.index(prefs) }, { prefs.setInt("theme", it) })
+            if (sink != null) {   // v0.15.6 (N6): theme grid + Look presets under the Theme row; any problem = no grid, the row above stays
+                try {
+                    val gr = AppThemeGrid.build(ctx, prefs, { old -> noteChange("theme", old) }) { try { link?.refreshRows?.invoke() } catch (_: Throwable) { }; try { link?.changed?.invoke() } catch (_: Throwable) { } }
+                    themeGrid = gr
+                    (secBoxes["Theme & style"] ?: g).addView(gr.view)
+                } catch (_: Throwable) { }
+            }
             cycle(g, "Look", "look", { arrayOf("Classic", "Jabra") }, { if (prefs.int("look", 0) == 1) 1 else 0 }, { prefs.setInt("look", it) })
             cycle(g, "Key border", "key_border", { arrayOf("Border", "Borderless") }, { if (prefs.int("key_border", 0) == 1) 1 else 0 }, { prefs.setInt("key_border", it) })   // v0.2.6
             cycle(g, "One-hand", "onehand", { arrayOf("Off", "Left", "Right") }, { JabraOneHand.mode(prefs) }, { prefs.setInt("onehand", it) })

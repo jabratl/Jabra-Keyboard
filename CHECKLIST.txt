@@ -542,3 +542,13 @@ Z81) v0.15.5 Toolbar editor in the app (N5)
  [ ] Reset toolbar: first tap changes the text (warning colour), second tap within 3 s resets: default order, nothing hidden, extras OFF. A single tap alone does nothing.
  [ ] Page scrolls normally, buttons are easy to hit at 360 dp width, dark mode readable. Rotate the phone: still works.
  [ ] Toolbar style Classic: the list can still be edited (it applies when Custom is on).
+
+Z82) v0.15.6 Theme grid in the app (N6)
+ [ ] Home > Look & Theme: under the "Theme" row you see a grid of theme tiles (3 per row), Classic first. The current theme has a frame (blue / light-blue accent).
+ [ ] Tap "Dark": the frame moves, the preview card at the top turns dark, the "Theme" row shows Dark. Open the keyboard: it uses Dark.
+ [ ] Tap the "Theme" row (cycle): the frame in the grid follows. Page Undo after a tile tap: goes back to the old theme and the frame follows.
+ [ ] Tiles are easy to hit at 360 dp; names readable on light and dark themes; app dark mode OK.
+ [ ] No custom theme saved: 20 tiles, no "Custom" tile. Save one in the keyboard (Themes > Custom theme): after reopening the page a "Custom" tile is there and works.
+ [ ] Look presets row (AMOLED / Reading / Professional / Cyber): tap one: theme + look change, a toast says Applied; the grid frame and rows follow; the keyboard uses it. Tap your old theme tile to go back.
+ [ ] The little theme strip inside the preview card still works as before (blue frame).
+ [ ] Global search "theme" still finds the Theme row; long-press it = reset to Classic and the grid follows.

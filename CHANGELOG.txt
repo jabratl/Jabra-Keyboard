@@ -1,3 +1,11 @@
+v0.15.6 - BUILD: theme picker with swatches inside the app (plan N, step N6)
+- WHY: the 20-theme picker and the Look presets existed only in the keyboard (gear > More settings > Themes). The app only had one "Theme" tap-to-cycle row.
+- What you get: Look & Theme page > Theme & style, under the Theme row: a grid (3 per row, 64 dp tiles) of all themes with their real colours (Classic first, same order as the keyboard, never reordered). Tap = chooses that theme; the current one has a frame in the app accent colour. A "Custom" tile appears only when a custom theme is saved (Theme Studio in the keyboard). Under the grid: the 4 Look presets (AMOLED, Reading, Professional, Cyber), same one-tap action as in the keyboard (sets theme + look + key border + gap + bold; to go back, tap your old theme). The old Theme cycle row stays and always agrees with the grid; picking a tile can be undone with the page Undo.
+- Code: NEW AppThemeGrid.kt. KeyboardPreview.kt: ThemeTile made "internal" (was private) + one "ring" colour field (default = old blue, so the preview strip looks exactly as before). SettingsGroups.kt: 1 hook block under the Theme row + 1 line in noteChange (Theme row -> grid frame). No Java change, no new pref; all 74 tests green.
+- BROKE: nothing intended.
+- NOT tested: phone (CHECKLIST Z82). Kotlin compile: 0 errors.
+- Rollback: delete AppThemeGrid.kt, restore KeyboardPreview.kt + SettingsGroups.kt from v0.15.5.
+
 v0.15.5 - BUILD: toolbar editor inside the app (plan N, step N5)
 - WHY: the toolbar order / show-hide list existed only inside the keyboard (gear > More settings > Edit toolbar). Now you can edit it in the app.
 - What you get: Settings > Tools & Panels > Toolbar, under the toolbar rows: a list of all toolbar items (icon + name). Per item: [First] [up] [down] [Hide / Show]. Hidden items are dimmed with "(hidden)". Buttons that cannot work (First / up on the first item, down on the last) are greyed. "Reset toolbar" (tap twice) = default order, nothing hidden, extras OFF, fold OFF (same as the keyboard button). Same data as the keyboard panel (tb_order, tb_hidden, tb_on): change in the app, the keyboard bar follows when it opens; change in the keyboard, the app list follows when the page is opened again. The "Vault key (toolbar)" row and the editor's Vault item stay in sync.

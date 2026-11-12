@@ -168,7 +168,8 @@ object KeyboardPreview {
 }
 
 /** v0.10.25: one theme tile (background, 3 mini keys, name). Drawn in code, same colours as the real theme. */
-private class ThemeTile(c: Context, private val p: JabraPrefs, val idx: Int, var chosen: Boolean) : View(c) {
+internal class ThemeTile(c: Context, private val p: JabraPrefs, val idx: Int, var chosen: Boolean) : View(c) {   // v0.15.6 (N6): internal (reused by AppThemeGrid)
+    var ring: Int = 0xFF2271B1.toInt()   // v0.15.6: frame colour of the chosen tile (default = as before)
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
     private val rect = RectF()
 
@@ -205,7 +206,7 @@ private class ThemeTile(c: Context, private val p: JabraPrefs, val idx: Int, var
             if (chosen) {
                 paint.style = Paint.Style.STROKE
                 paint.strokeWidth = 2.5f * d
-                paint.color = 0xFF2271B1.toInt()
+                paint.color = ring
                 rect.set(1.5f * d, 1.5f * d, w - 1.5f * d, h - 1.5f * d)
                 cv.drawRoundRect(rect, 8f * d, 8f * d, paint)
                 paint.style = Paint.Style.FILL
