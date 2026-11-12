@@ -226,7 +226,7 @@ class ProfilePanel(private val ctx: Context, private val host: JabraHost, privat
             if (app.isNotEmpty() || pkgs.isNotEmpty()) {
                 val hd = TextView(ctx); hd.textSize = 11f; hd.setTextColor(dim()); hd.setPadding(dp(4), dp(6), dp(4), dp(2))
                 hd.text = (if (app.isNotEmpty()) "Open app: $app. Tap \"> App\" on a profile to use it for this app.\n" else "") +
-                    "Apps with a profile (" + pkgs.size + "). Switching by app is not active yet (next version)."
+                    "Apps with a profile (" + pkgs.size + "). Switching works only when Settings > Auto-profile per app is ON."
                 root.addView(hd)
                 val names = ArrayList<String>()
                 for (s in ProfileCodec.starters()) names.add(s.name)

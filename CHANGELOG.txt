@@ -1,3 +1,17 @@
+v0.10.19 - NEW: Auto-profile per app, part 2 of 2 (plan W6.2: the switch)
+- WHY: W6.1 stored which profile belongs to which app; now the keyboard applies it by itself.
+- What you get: Settings > Keys & gestures > "Auto-profile per app" (default OFF). When ON and you open a text field in an app that has a profile (Profiles > "> App"), that profile is applied automatically (the same way tapping it in Profiles does) and the letters are rebuilt ONCE.
+  It does NOT apply when: the toggle is OFF; the app has no mapping; the same profile was already applied for this app; applying would change nothing (no flicker); the profile was deleted (mapping ignored); the app gives no package name.
+  Going to an app WITHOUT a mapping changes nothing (your settings stay as the last profile left them; there is no "go back" profile; use Profiles > Normal). Coming back to a mapped app applies its profile again.
+  Number / phone field (number pad open): prefs change at once, the new look shows when the letters come back.
+  The Profiles panel Undo is not touched by auto-apply.
+- Code: typing/AppProfileApply.java (NEW, pure: pick / find / differs), MgbIme.kt (ONE call at the end of onStartInputView + autoProfile() + apLast, all try/catch), SettingsGroups.kt (1 toggle line), typing/SettingsIndex.java (help line ap_on), ProfilePanel.kt (note text), tools/SettingsIndexTest.java (+ap_on in the help list), build.gradle.kts 0.10.19.
+- Prefs (new): ap_on (bool, default OFF). Not in ProfileCodec KEYS. Permissions: none.
+- Tests (new): tools/AppProfileApplyTest.java (46 checks incl. every ready profile and look preset is idempotent = no second rebuild).
+BROKE: nothing intended; with ap_on OFF the only new work is one pref read per field open. NOT tested: Kotlin compile (GitHub Actions), phone (CHECKLIST Z63): rebuild flicker when switching apps, rotate, stuck bubble, number fields.
+TESTED here: 58 tools tests PASS / 0 FAIL.
+Rollback: delete AppProfileApply.java + AppProfileApplyTest.java; put back v0.10.18 MgbIme.kt, SettingsGroups.kt, SettingsIndex.java, ProfilePanel.kt, SettingsIndexTest.java.
+
 v0.10.18 - NEW: Auto-profile per app, part 1 of 2 (plan W6.1: the app > profile list; switching comes in W6.2)
 - WHY: you want "Novel Writing" in your notes app and "Compact" in chat apps without tapping Profiles every time. The plan splits it: W6.1 = remember which profile belongs to which app (this version), W6.2 = switch automatically when a field opens.
 - What you get: Profiles panel (toolbar > Profiles), only while a text field is open: a "> App" button on every profile (ready ones too) = "use this profile for the app I am typing in". Below the list: "Apps with a profile (n)" with the app package name, the profile, and Remove. A mapping whose profile was deleted later shows "(missing)" in red.

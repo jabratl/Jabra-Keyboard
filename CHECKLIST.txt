@@ -696,3 +696,13 @@ Z62) v0.10.18 App > profile list (W6.1; nothing switches yet)
  [ ] Profiles opened with no field (e.g. from the app icon screen is not possible): list and "> App" buttons only appear when something fits; old buttons (Save current, Ren, Del, Undo) work as before.
  [ ] Apply a profile (tap its name) works as before; ap_json survives Backup now > Restore (Data & Backup).
  [ ] Typing in any app is unchanged.
+
+Z63) v0.10.19 Auto-profile per app (W6.2)
+ [ ] Settings > Keys & gestures: "Auto-profile per app" exists and is OFF by default. Settings search "profile" finds it.
+ [ ] OFF: map two apps to two different profiles (Profiles > "> App"), switch between the apps: nothing changes.
+ [ ] ON: open a field in app 1 = its profile applies (theme / size changes) once, typing works at once. Open app 2 = its profile applies.
+ [ ] Go back to app 1 = its profile applies again. Tap another field in the same app: NO flicker / no rebuild.
+ [ ] App with no mapping: nothing changes (settings stay).
+ [ ] Delete a mapped profile: opening that app does nothing, no crash.
+ [ ] Rotate the phone in a mapped app: keyboard height OK, no stuck key bubble. Number field in a mapped app: number pad stays, letters later show the profile.
+ [ ] Profiles > Undo still goes back to the state before YOUR last manual apply.

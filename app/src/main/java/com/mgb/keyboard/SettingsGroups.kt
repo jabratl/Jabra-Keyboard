@@ -317,6 +317,7 @@ object SettingsGroups {
             }
             toggle(g, "Space before , . ! ?", "sp_punct", true)   // v0.10.6: after a tapped suggestion, punctuation removes its extra space
             toggle(g, "Auto-correct", "ac_on", false)   // v0.10.3 (G3.2): fixes 1-letter English typos on space; backspace undoes (default OFF)
+            toggle(g, "Auto-profile per app", "ap_on", false)   // v0.10.19 (W6.2): applies the profile you set for an app (Profiles > "> App") when its field opens; default OFF
             toggle(g, "Suggestion row", "sg_on", true)   // v0.10.1 (G2): word suggestions (needs the toolbar unfolded)
             toggle(g, "Fast bubble", "pop_fast", true)   // v0.9.9 (V4): bubble drawn inside the keyboard (no window call) on rows with room above; works only while Key popup is ON
             toggle(g, "Same keyboard height", "h_lock", true)   // v0.9.7 (V2): no height jump when the language changes (keeps the Probhat row space)

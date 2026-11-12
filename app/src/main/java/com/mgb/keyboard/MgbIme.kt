@@ -340,6 +340,22 @@ class MgbIme : InputMethodService() {
             try { shiftSt.reset(); autoCapUpdate() } catch (_: Throwable) { }   // v0.0.9: new field = shift/caps off, then sentence-start rule
             try { refreshLetters() } catch (_: Throwable) { }   // v0.0.4: Probhat labels follow the field type
         } catch (_: Throwable) { latinOnly = false }
+        try { autoProfile(info?.packageName) } catch (_: Throwable) { }   // v0.10.19 (W6.2): auto-profile per app (pref ap_on, default OFF)
+    }
+
+    private var apLast = ""   // v0.10.19 (W6.2): profile applied for the current mapped app (memory only)
+
+    /** v0.10.19 (W6.2): when ap_on and this app has a mapped profile that is not applied yet and would change something: apply it (same ProfileStore.apply as the panel) and rebuild the letters once. */
+    private fun autoProfile(pkg: String?) {
+        if (!prefs.bool("ap_on", false) || pkg.isNullOrEmpty()) return
+        val map = com.mgb.keyboard.typing.AppProfileMap.parse(prefs.str("ap_json", ""))
+        if (map.lookup(pkg).isEmpty()) { apLast = ""; return }   // app without a profile: forget, so coming back applies again
+        val name = com.mgb.keyboard.typing.AppProfileApply.pick(map, pkg, apLast) ?: return
+        val store = ProfileStore(this)
+        val p = com.mgb.keyboard.typing.AppProfileApply.find(name, store.get(), com.mgb.keyboard.typing.ProfileCodec.starters()) ?: return   // deleted profile = ignored
+        apLast = name
+        if (!com.mgb.keyboard.typing.AppProfileApply.differs(p.values, getSharedPreferences("jabra", MODE_PRIVATE).all)) return   // nothing would change: no rebuild
+        if (store.apply(p) && !autoNumpad) showLetters()   // number pad open (number field): the new look shows when the letters come back
     }
 
     /** v0.3.1: no full-screen "extract" editor in landscape (it hides the app and breaks many apps). Hidden pref fs_extract = true gives the old system behaviour. */
