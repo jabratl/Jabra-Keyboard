@@ -679,3 +679,16 @@ Z95) v0.16.12 Toolbar editor + Quick toolbar, style New (X12)
  [ ] Reset toolbar: first tap = "Sure? reset all", second tap resets; tapping First / up / down / Hide / an Add chip in between cancels the question.
  [ ] Quick toolbar (hold an icon 1.5 s, tap Edit shortcut): header with Order >, preview strip, tap an icon = add / remove (strip updates), Done = letters.
  [ ] The app screen toolbar editor shows the same order / hidden items. Window height not taller than the classic page, landscape and dark theme OK.
+
+Z96) v0.16.13 Toolbar edit items (X13 part 2)  [use a multi-line note app AND a browser text field]
+ [ ] Edit toolbar (More > Edit toolbar): 8 new items at the END of the list (Select word, Select line, Delete word, Delete line, Line start, Line end, Duplicate line, Select none), all "Hidden". The bar looks the same as before.
+ [ ] Turn all 8 on (Show or "Add tool" chips), ABC (apply): 8 new icons appear at the end of the strip, readable in dark + light; icons OFF = short text (SWd SLn DWd DLn |< >| Dup Sel0). Hold one 0.3 s = name tip.
+ [ ] Select word: cursor inside / at the end of a word = that word is selected. Bangla word with kar (বাংলা) and a conjunct (ক্ষ) = the whole word.
+ [ ] Select line: the line with the cursor is selected (no line break). Select across 2 lines first = both lines.
+ [ ] Select none: with a selection, the cursor goes to the end of it, selection gone. Nothing selected = nothing happens.
+ [ ] Line start / Line end: cursor jumps to the start / end of the CURRENT line (not the whole text) in a 3-line note.
+ [ ] Delete word: deletes the word before the cursor (same as hold-backspace); with a selection = deletes the selection.
+ [ ] Delete line: removes the line and one line break, no empty line is left; last line of the text and a single-line field also work.
+ [ ] Duplicate line: the line appears again below, cursor at the end of the copy. Empty field / empty line = a new empty line.
+ [ ] Password field: none of the 8 does anything. Emoji in the text is never cut in half. Undo (if on the bar) takes the change back.
+ [ ] Browser field / app that gives no text: no crash; Delete word / Delete line still work, the others may do nothing (write the app name).

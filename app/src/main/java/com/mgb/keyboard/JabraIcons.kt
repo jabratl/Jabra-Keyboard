@@ -21,7 +21,9 @@ object JabraIcons {
 
     val NAMES = listOf(
         "clip", "all", "cut", "copy", "paste", "plain", "search", "close",
-        "pin", "pinned", "gear", "shift", "back", "enter", "space", "fmt", "globe", "mic", "emoji", "mode_phone", "mode_pc", "numpad", "sym", "theme", "onehand", "size", "pad", "vault", "tt", "profiles", "keymap"   // v0.16.5: keymap; v0.5.1: profiles; v0.4.6: tt; v0.4.4: vault; v0.1.2; v0.2.2: 5 names; v0.2.3: pad
+        "pin", "pinned", "gear", "shift", "back", "enter", "space", "fmt", "globe", "mic", "emoji", "mode_phone", "mode_pc", "numpad", "sym", "theme", "onehand", "size", "pad", "vault", "tt", "profiles", "keymap",
+        "selword", "selline", "delword", "delline", "linestart", "lineend", "dupline", "selnone"   // v0.16.13 (X13): 8 edit items
+        // v0.16.5: keymap; v0.5.1: profiles; v0.4.6: tt; v0.4.4: vault; v0.1.2; v0.2.2: 5 names; v0.2.3: pad
     )
 
     /**
@@ -255,6 +257,47 @@ object JabraIcons {
                     line(c, s, 0.70f, 0.30f, 0.50f, 0.10f)
                     line(c, s, 0.30f, 0.70f, 0.50f, 0.90f)
                     line(c, s, 0.70f, 0.70f, 0.50f, 0.90f)
+                }
+                "selword" -> {   // v0.16.13: a word bar with a filled selection block
+                    c.drawRoundRect(RectF(0.14f * s, 0.34f * s, 0.86f * s, 0.66f * s), 0.06f * s, 0.06f * s, f)
+                    line(c, s, 0.14f, 0.18f, 0.14f, 0.82f)
+                    line(c, s, 0.86f, 0.18f, 0.86f, 0.82f)
+                }
+                "selline" -> {   // v0.16.13: three lines, the middle one selected
+                    line(c, s, 0.10f, 0.22f, 0.90f, 0.22f)
+                    c.drawRoundRect(RectF(0.08f * s, 0.42f * s, 0.92f * s, 0.58f * s), 0.05f * s, 0.05f * s, f)
+                    line(c, s, 0.10f, 0.78f, 0.90f, 0.78f)
+                }
+                "delword" -> {   // v0.16.13: a word bar crossed out
+                    line(c, s, 0.10f, 0.50f, 0.90f, 0.50f)
+                    line(c, s, 0.30f, 0.20f, 0.70f, 0.80f)
+                    line(c, s, 0.70f, 0.20f, 0.30f, 0.80f)
+                }
+                "delline" -> {   // v0.16.13: three lines, the middle one removed with a cross
+                    line(c, s, 0.10f, 0.18f, 0.90f, 0.18f)
+                    line(c, s, 0.10f, 0.82f, 0.90f, 0.82f)
+                    line(c, s, 0.28f, 0.36f, 0.72f, 0.64f)
+                    line(c, s, 0.72f, 0.36f, 0.28f, 0.64f)
+                }
+                "linestart" -> {   // v0.16.13: bar on the left + arrow to it
+                    line(c, s, 0.14f, 0.16f, 0.14f, 0.84f)
+                    line(c, s, 0.30f, 0.50f, 0.90f, 0.50f)
+                    line(c, s, 0.50f, 0.30f, 0.30f, 0.50f)
+                    line(c, s, 0.50f, 0.70f, 0.30f, 0.50f)
+                }
+                "lineend" -> {   // v0.16.13: bar on the right + arrow to it
+                    line(c, s, 0.86f, 0.16f, 0.86f, 0.84f)
+                    line(c, s, 0.10f, 0.50f, 0.70f, 0.50f)
+                    line(c, s, 0.50f, 0.30f, 0.70f, 0.50f)
+                    line(c, s, 0.50f, 0.70f, 0.70f, 0.50f)
+                }
+                "dupline" -> {   // v0.16.13: two stacked line cards (copy below)
+                    rr(c, s, 0.10f, 0.12f, 0.90f, 0.40f, 0.06f)
+                    c.drawRoundRect(RectF(0.10f * s, 0.58f * s, 0.90f * s, 0.86f * s), 0.06f * s, 0.06f * s, f)
+                }
+                "selnone" -> {   // v0.16.13: selection block with a caret (selection collapsed)
+                    rr(c, s, 0.08f, 0.34f, 0.60f, 0.66f, 0.05f)
+                    line(c, s, 0.80f, 0.16f, 0.80f, 0.84f)
                 }
                 "keymap" -> {   // v0.16.5: a keyboard outline with 3 key dots (key map)
                     rr(c, s, 0.06f, 0.22f, 0.94f, 0.78f, 0.08f)

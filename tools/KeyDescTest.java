@@ -5,7 +5,7 @@ public class KeyDescTest {
     static int ok = 0, bad = 0;
     static void t(String n, boolean c) { if (c) ok++; else { bad++; System.out.println("FAIL: " + n); } }
     static boolean eq(String a, String b) { return a == null ? b == null : a.equals(b); }
-    static final String[] ICONS = { "clip", "all", "cut", "copy", "paste", "plain", "search", "close", "pin", "pinned", "gear", "shift", "back", "enter", "space", "fmt", "globe", "mic", "emoji", "mode_phone", "mode_pc", "numpad", "sym", "theme", "onehand", "size", "pad", "vault", "tt", "profiles", "keymap" };
+    static final String[] ICONS = { "clip", "all", "cut", "copy", "paste", "plain", "search", "close", "pin", "pinned", "gear", "shift", "back", "enter", "space", "fmt", "globe", "mic", "emoji", "mode_phone", "mode_pc", "numpad", "sym", "theme", "onehand", "size", "pad", "vault", "tt", "profiles", "keymap" , "selword", "selline", "delword", "delline", "linestart", "lineend", "dupline", "selnone" };
 
     public static void main(String[] a) {
         t("shift", eq(KeyDesc.describe("⇧"), "Shift"));
@@ -57,6 +57,7 @@ public class KeyDescTest {
         // space
         t("space plain", eq(KeyDesc.spaceDesc("space"), "Space") && eq(KeyDesc.spaceDesc("Space"), "Space") && eq(KeyDesc.spaceDesc(""), "Space") && eq(KeyDesc.spaceDesc(null), "Space"));
         t("space with language", eq(KeyDesc.spaceDesc("English"), "Space, English") && eq(KeyDesc.spaceDesc(" Avro "), "Space, Avro"));
+        t("toolbar labels of the 8 edit items are spoken", eq(KeyDesc.describe("SWd"), "Select word") && eq(KeyDesc.describe("SLn"), "Select line") && eq(KeyDesc.describe("DWd"), "Delete word") && eq(KeyDesc.describe("DLn"), "Delete line") && eq(KeyDesc.describe("|<"), "Line start") && eq(KeyDesc.describe(">|"), "Line end") && eq(KeyDesc.describe("Dup"), "Duplicate line") && eq(KeyDesc.describe("Sel0"), "Select none"));
         System.out.println("KeyDescTest: " + ok + " ok, " + bad + " failed");
         if (bad > 0) System.exit(1);
     }

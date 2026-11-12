@@ -58,6 +58,14 @@ public final class KeyDesc {
             case "Tt": return "Text tools";
             case "Pf": return "Profiles";
             case "Km": return "Key map";
+            case "SWd": return "Select word";
+            case "SLn": return "Select line";
+            case "DWd": return "Delete word";
+            case "DLn": return "Delete line";
+            case "|<": return "Line start";
+            case ">|": return "Line end";
+            case "Dup": return "Duplicate line";
+            case "Sel0": return "Select none";
             case "Ren": return "Rename";
             case "Del": return "Delete";
             default: return null;
@@ -99,6 +107,14 @@ public final class KeyDesc {
             case "tt": return "Text tools";
             case "profiles": return "Profiles";
             case "keymap": return "Key map";
+            case "selword": return "Select word";
+            case "selline": return "Select line";
+            case "delword": return "Delete word";
+            case "delline": return "Delete line";
+            case "linestart": return "Line start";
+            case "lineend": return "Line end";
+            case "dupline": return "Duplicate line";
+            case "selnone": return "Select none";
             default: return icon;
         }
     }

@@ -5,11 +5,11 @@ are in HANDOFF_Jabra-Keyboard_v0.16.10.txt (sections 1-6, "RULE 0", touch-listen
 Language with the user: Banglish. Keep answers short. User wants: do the part, give ONE zip with only
 changed files at exact repo paths, say how much is left.
 
-1) STATE NOW (code = v0.16.12, appVersionName "0.16.12")
-  DONE: X1-X10, X11 (parts 1, 2a, 2b: gear + More tiles + in-keyboard search), X12 (B1 toolbar cards, B2 quick toolbar + preview strip + Add tool row).
+1) STATE NOW (code = v0.16.13, appVersionName "0.16.13")
+  DONE: X1-X10, X11 (parts 1, 2a, 2b: gear + More tiles + in-keyboard search), X12 (B1 toolbar cards, B2 quick toolbar + preview strip + Add tool row), X13 (C1 EditOps, C2 8 toolbar edit items: EditActions.kt + MgbIme.editAction else-branch).
   NOT compiled (Kotlin), NOT phone-tested. All tools/*Test.java green (WordBuildTest needs  -sourcepath app/src/main/java:tools). javac here = java --add-modules jdk.compiler -m jdk.compiler/com.sun.tools.javac.Main
-  If GitHub shows errors: ToolbarPanel.kt / ToolbarQuick.kt blocks "v0.16.12 (X12)", then JabraExtras.kt "v0.16.11", TypingExtras.kt makeNew(), PanelSearchUi.kt. FIX comes before new work.
-  Phone checklist for what is built: CHECKLIST Z92-Z95 (panel_ui = 1).
+  If GitHub shows errors: EditActions.kt / "v0.16.13 (X13)" lines (MgbIme.kt, Toolbar.kt, JabraIcons.kt), then ToolbarPanel.kt / ToolbarQuick.kt blocks "v0.16.12 (X12)", then JabraExtras.kt "v0.16.11", TypingExtras.kt makeNew(), PanelSearchUi.kt. FIX comes before new work.
+  Phone checklist for what is built: CHECKLIST Z92-Z95 (panel_ui = 1) and Z96 (edit items).
 
 2) HOW TO WORK IN EACH CHAT (all parts)
   - The user can upload the full repo zip; grep only what the part needs. One ZIP out. Say how much is left.
@@ -23,7 +23,7 @@ changed files at exact repo paths, say how much is left.
 
   ---------------------------------------------------------------
   PART C1  X13 part 1: EditOps (pure logic + tests, NO Kotlin)      size S-M (~25%)      BUMP: no
-  PART C2  X13 part 2: wire the new toolbar items                    size M (~25%)        BUMP: v0.16.13
+  PART C2  X13 part 2: wire the new toolbar items  (DONE v0.16.13)
   ---------------------------------------------------------------
   Goal (X13): optional toolbar items (default HIDDEN, defaults unchanged): Select word, Select line, Delete word (WordDelete exists), Delete line, Line start / Line end, Duplicate line, Select none (collapse).
   C1: typing/EditOps.java (pure: text-before + text-after + selection -> {selStart, selEnd} / delete ranges; newline aware; Bangla letters + combining marks (kar, hasanta, etc.) count as word characters) + tools/EditOpsTest.java (>= 40 checks incl. Bangla words with kar / hasanta, empty field, start / end of text, multi-line). Read-only: WordDelete.java, PadState.java, EditPlan.java. Run javac + the test here (java is available in some chats; if not, say so).
@@ -52,5 +52,5 @@ changed files at exact repo paths, say how much is left.
   [ ] C1  [ ] C2  [ ] D  X14  [ ] E1  [ ] E2
   About 5 more chats of size S-M. Order must stay: C1, C2, D, E1, E2.
 
-5) COPY-PASTE START MESSAGE FOR THE NEXT CHAT (PART C1)
-  "Jabra-Keyboard plan X. Read HANDOFF_Jabra-Keyboard_v0.16.12.txt (in the repo zip). Do PART C1 (X13 part 1: EditOps pure logic + tests). Grep only the files under NEEDS. Deliver the full repo zip named after the version and tell me how much is left. GitHub build of v0.16.12: GREEN / errors pasted below."
+5) COPY-PASTE START MESSAGE FOR THE NEXT CHAT (PART D)
+  "Jabra-Keyboard plan X. Read HANDOFF_Jabra-Keyboard_v0.16.13.txt (in the repo zip). Do PART D (X14: final check + docs). I upload the FULL repo zip (input only). Deliver ONLY a patch zip and tell me how much is left. GitHub build of v0.16.13: GREEN / errors pasted below. (If errors: FIX first, they are in EditActions.kt or the lines marked v0.16.13.)"

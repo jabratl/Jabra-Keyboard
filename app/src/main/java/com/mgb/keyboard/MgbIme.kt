@@ -282,6 +282,7 @@ class MgbIme : InputMethodService() {
             }
             "paste" -> if (!ic.performContextMenuAction(android.R.id.paste)) pastePlain()
             "plain" -> pastePlain()
+            else -> { try { if (!pwdField && EditActions.isEditId(kind)) EditActions.run(ic, kind) } catch (_: Throwable) { } }   // v0.16.13 (X13): select / delete / line items, never in password fields
         }
     }
 

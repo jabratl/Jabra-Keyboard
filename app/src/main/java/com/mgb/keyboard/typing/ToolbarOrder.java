@@ -16,10 +16,10 @@ public final class ToolbarOrder {
 
     /** Default CUSTOM order: Formatter first, then clipboard, then mode, then the edit keys. Later versions append new ids here. */
     public static final String[] DEFAULT = { "fmt", "clip", "mode", "all", "cut", "copy", "paste", "plain",
-        "emoji", "numpad", "sym", "gear", "voice", "globe", "theme", "onehand", "size", "pad", "undo", "redo", "vault", "tt", "profiles", "keymap" };   // v0.16.5: + keymap (extra, OFF until turned on); v0.5.1: + profiles; v0.4.4: + vault (extra, OFF until turned on); v0.2.2: the last 9 are EXTRAS; v0.2.3: + pad; v0.2.7: + undo, redo
+        "emoji", "numpad", "sym", "gear", "voice", "globe", "theme", "onehand", "size", "pad", "undo", "redo", "vault", "tt", "profiles", "keymap", "selword", "selline", "delword", "delline", "linestart", "lineend", "dupline", "selnone" };   // v0.16.13 (X13): + 8 edit items (extras, OFF until turned on); v0.16.5: + keymap (extra, OFF until turned on); v0.5.1: + profiles; v0.4.4: + vault (extra, OFF until turned on); v0.2.2: the last 9 are EXTRAS; v0.2.3: + pad; v0.2.7: + undo, redo
 
     /** v0.2.2 extra shortcuts: NOT shown until the user turns them on (pref tb_on). The first 8 ids keep the v0.2.1 rule (shown unless in tb_hidden). */
-    public static final String[] EXTRAS = { "emoji", "numpad", "sym", "gear", "voice", "globe", "theme", "onehand", "size", "pad", "undo", "redo", "vault", "tt", "profiles", "keymap" };   // v0.16.5: + keymap; v0.5.1: + profiles; v0.4.4: + vault
+    public static final String[] EXTRAS = { "emoji", "numpad", "sym", "gear", "voice", "globe", "theme", "onehand", "size", "pad", "undo", "redo", "vault", "tt", "profiles", "keymap", "selword", "selline", "delword", "delline", "linestart", "lineend", "dupline", "selnone" };   // v0.16.13 (X13): + 8 edit items; v0.16.5: + keymap; v0.5.1: + profiles; v0.4.4: + vault
 
     public static boolean isExtra(String id) {
         if (id == null) return false;
