@@ -49,7 +49,7 @@ object JabraLook {
             val ct = JabraThemes.customActive(p)   // v0.4.8: custom theme = own roundness + key opacity (only when theme 20 is chosen)
             var base = if (kind == FUNC) JabraThemes.funcFill(p) else fill(p)
             if (ct != null) base = ct.withKeyAlpha(base)
-            val radius = if (kind == PILL) 200f * d else if (ct != null) ct.radiusDp() * d else 9f * d
+            val radius = if (kind == PILL) 200f * d else if (ct != null) ct.radiusDp() * d else com.mgb.keyboard.typing.EdgePlan.radiusDp(p.int("key_radius", -1)) * d   // v0.10.28: key corner radius (unset = 9 dp = old)
             val up = GradientDrawable()
             up.setColor(base)
             up.cornerRadius = radius

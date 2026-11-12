@@ -1,3 +1,15 @@
+v0.10.28 - NEW: key corner radius + spacing rows in the keyboard Size panel (plan "Ridmik feel" P3 of 3)
+- WHY: Ridmik keys are less round (about 6 dp) than Jabra's fixed 9 dp; and the new spacing rows (P1) were only in the app screen.
+- What you get: Settings > Layout & size > [Key corner radius] 0-14 dp (unset = 9 = old; Jabra look only, Classic and Borderless keys unchanged; a custom theme keeps its own roundness). Inside the keyboard (gear > More settings > Size): new rows Edge distance, Row gap, Shift gap, Key radius (same prefs as the app screen). "Reset sizes" also resets them. Button [Ridmik-style spacing] now sets radius 6 too; [Undo] restores it (older undo data is padded).
+- Not changed: landscape-only values for the new rows (one value for portrait and landscape), ProfileCodec keys (still 53).
+- Code: typing/EdgePlan.java (radius, isBool, preset 10 keys), JabraLook.kt (1 line: radius), SizePrefs.kt (4 rows + reset), SettingsGroups.kt, typing/SettingsIndex.java, CHECKLIST.txt (Z70), tools/EdgePlanTest.java (40 checks), build.gradle.kts 0.10.28.
+- Prefs (new): key_radius (int, unset = 9). Permissions: none.
+BROKE: nothing intended. Unset = v0.10.27 look.
+NOT tested: Kotlin NOT compiled here (GitHub Actions is the first compile check); nothing seen on a phone (radius 0 / 14 on small keys, Size panel height on a small screen - it scrolls, preview radius vs keyboard).
+TESTED here: tools/EdgePlanTest.java 40/40, tools/BottomPlanTest.java 24/24 (unchanged); bracket balance OK.
+Rollback: Size panel > Reset sizes, or Key corner radius back to 9, or revert to v0.10.27.
+NEXT (plan, not built): separate landscape values for edge / gaps, emoji key at the right of the bottom row (Ridmik order), ProfileCodec keys for the new prefs, compile-error fixes if Actions reports any.
+
 v0.10.27 - NEW: Ridmik-like bottom row, long-press dots, Probhat home row gap (plan "Ridmik feel" P2 of 3)
 - WHY: Ridmik's bottom row is symmetric (?123 and Enter the same width, space about 3.3 keys) and long-press keys carry small "..." marks; its Probhat home row has 9 keys with a half-key gap, Jabra's had 10 keys full width (screenshots 2026-11-12).
 - What you get (Settings > Layout & size, all default = old look): [Bottom row] Old / Ridmik-like (?123 = Enter = 1.55, EN key 1.0, space takes what is left, row stays as wide as before); [Long-press dots] three small dots at the corner of ?123, the language key and comma (only keys that really have a long-press action); [Probhat home row gap] left gap of half a key, the extra key (ৃ / ঞ) becomes half width at the right - NO key is removed (needs Home row side gap ON). Button [Ridmik-style spacing] now also sets Bottom row = Ridmik-like, Dots ON, Probhat gap ON; [Undo] restores them too (also reads the undo data saved by v0.10.26).

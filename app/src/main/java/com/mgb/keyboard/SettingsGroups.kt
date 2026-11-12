@@ -351,6 +351,8 @@ object SettingsGroups {
                 { val v = prefs.int("letter_pct", -1); if (com.mgb.keyboard.typing.SizePct.letterValid(v)) v else 100 }, -1)
             toggle(g, "Bold letters", "letter_bold", false)
             toggle(g, "Home row side gap", "row_gap", true)
+            stepper(g, "Key corner radius", "key_radius", com.mgb.keyboard.typing.EdgePlan.R_MIN, com.mgb.keyboard.typing.EdgePlan.R_MAX, 1, " dp",
+                { com.mgb.keyboard.typing.EdgePlan.radiusDp(prefs.int("key_radius", -1)) }, -1)   // v0.10.28 (P3): Jabra look only; Ridmik about 6
             // v0.10.26 (P1): spacing like Ridmik. All three unset = the old look (edge 2 dp, up-down gap = key gap, no extra gap).
             stepper(g, "Edge distance", "edge_dp", com.mgb.keyboard.typing.EdgePlan.E_MIN, com.mgb.keyboard.typing.EdgePlan.E_MAX, 1, " dp",
                 { com.mgb.keyboard.typing.EdgePlan.edgeDp(prefs.int("edge_dp", -1)) }, -1)
@@ -371,9 +373,9 @@ object SettingsGroups {
                     else {
                         sure = false
                         val bf = com.mgb.keyboard.typing.EdgePlan.BOOL_FROM
-                        val old = IntArray(keys.size) { if (it >= bf) (if (prefs.bool(keys[it], false)) 1 else 0) else prefs.int(keys[it], -1) }   // v0.10.27: last 2 are boolean prefs
+                        val old = IntArray(keys.size) { if (com.mgb.keyboard.typing.EdgePlan.isBool(it)) (if (prefs.bool(keys[it], false)) 1 else 0) else prefs.int(keys[it], -1) }   // v0.10.27: last 2 are boolean prefs
                         prefs.setStr("geo_prev", com.mgb.keyboard.typing.EdgePlan.encode(old))
-                        for (i in keys.indices) { if (i >= bf) prefs.setBool(keys[i], com.mgb.keyboard.typing.EdgePlan.RIDMIK[i] == 1) else prefs.setInt(keys[i], com.mgb.keyboard.typing.EdgePlan.RIDMIK[i]) }
+                        for (i in keys.indices) { if (com.mgb.keyboard.typing.EdgePlan.isBool(i)) prefs.setBool(keys[i], com.mgb.keyboard.typing.EdgePlan.RIDMIK[i] == 1) else prefs.setInt(keys[i], com.mgb.keyboard.typing.EdgePlan.RIDMIK[i]) }
                         prefs.setBool("row_gap", true)
                         (v as Button).text = "Ridmik-style spacing (applied)"
                         refreshAll()
@@ -385,7 +387,7 @@ object SettingsGroups {
                     if (old == null) { (v as Button).text = "Nothing to undo" }
                     else {
                         val bf = com.mgb.keyboard.typing.EdgePlan.BOOL_FROM
-                        for (i in keys.indices) { if (i >= bf) prefs.setBool(keys[i], old[i] == 1) else prefs.setInt(keys[i], old[i]) }
+                        for (i in keys.indices) { if (com.mgb.keyboard.typing.EdgePlan.isBool(i)) prefs.setBool(keys[i], old[i] == 1) else prefs.setInt(keys[i], old[i]) }
                         prefs.setStr("geo_prev", "")
                         (v as Button).text = "Undone"
                         pb.text = "Ridmik-style spacing"

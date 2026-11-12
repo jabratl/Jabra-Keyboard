@@ -130,6 +130,7 @@ public final class SettingsIndex {
             case "key_gap": return "Space between keys in dp. Smaller gap = bigger keys.";   // v0.10.25
             case "edge_dp": return "Space between the screen edge and the first key. Smaller = wider keys. 2 dp = old.";   // v0.10.26
             case "row_vgap": return "Up-down space between key rows. Not set = same as Key gap.";   // v0.10.26
+            case "key_radius": return "Roundness of the keys in dp (Jabra look only; Look group). 9 = old, Ridmik is about 6.";   // v0.10.28
             case "bot_style": return "Bottom row widths. Ridmik-like: ?123 and Enter same width, space a bit shorter. Old = as before.";   // v0.10.27
             case "key_dots": return "Three small dots on keys with a long-press action (?123, language key, comma). OFF = none.";   // v0.10.27
             case "pb_home_gap": return "Probhat home row: half-key gap at the left like Ridmik. The extra key (ৃ / ঞ) becomes half width at the right. Needs Home row side gap ON.";   // v0.10.27

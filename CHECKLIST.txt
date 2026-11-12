@@ -415,3 +415,12 @@ Z69) v0.10.25 Home row gap + live preview (P1)
  [ ] Button [EN]: picture shows Probhat letters, the settings do not change. Button [Themes: ON]: cycles Keys only > Show (hidden) > back.
  [ ] Dark app theme, big font size: card readable, buttons not cut. Rotate: no crash.
  [ ] Change a setting inside the keyboard (gear > Size), go back to the app: the picture shows the new size.
+
+Z70) v0.10.28 Ridmik feel P1-P3 (spacing, bottom row, radius)
+ [ ] App > Layout & size: Edge distance / Row gap / Shift gap / Key corner radius [+] [-]: the picture and the real keyboard change. Unset values = old look.
+ [ ] [Ridmik-style spacing]: first tap asks "Sure?", second applies (height 120 / 100, gaps, bottom row, dots, Probhat gap, radius 6). [Undo Ridmik-style spacing] puts the old values back.
+ [ ] Bottom row = Ridmik-like: ?123 and Enter same width, space shorter; with Emoji / Globe keys ON nothing is cut. Old = as before.
+ [ ] Long-press dots ON: dots on ?123, language key, comma. OFF: none. Check on 2 dark and 1 light theme.
+ [ ] Probhat + Probhat home row gap ON: left gap, narrow right key types the extra letter; OFF: 10 keys full width.
+ [ ] Shift gap 8 dp on a 360 px phone: z..m keys still as wide as the row above (about).
+ [ ] Gear > More settings > Size: new rows Edge distance, Row gap, Shift gap, Key radius work; Reset sizes resets them.

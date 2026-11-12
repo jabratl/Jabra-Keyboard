@@ -128,6 +128,12 @@ class SizePanel(private val ctx: Context, private val host: JabraHost) {
         // v0.3.0: gap between keys (smaller gap = bigger keys, easier to hit)
         root.addView(sizeRow("Key gap", { SizePct.gapDp(prefs.int(SizeKeys.GAP, SizePct.G_DEF)) }, { prefs.setInt(SizeKeys.GAP, it) }, SizePct.G_MIN, SizePct.G_MAX, 1, " dp"))
 
+        // v0.10.28 (P3): same prefs as the app screen (Layout & size): edge distance, up-down gap, Shift / Backspace gap, corner radius (Jabra look)
+        root.addView(sizeRow("Edge distance", { com.mgb.keyboard.typing.EdgePlan.edgeDp(prefs.int("edge_dp", -1)) }, { prefs.setInt("edge_dp", it) }, com.mgb.keyboard.typing.EdgePlan.E_MIN, com.mgb.keyboard.typing.EdgePlan.E_MAX, 1, " dp"))
+        root.addView(sizeRow("Row gap", { com.mgb.keyboard.typing.EdgePlan.vGapDp(prefs.int("row_vgap", -1), SizePct.gapDp(prefs.int(SizeKeys.GAP, SizePct.G_DEF))) }, { prefs.setInt("row_vgap", it) }, com.mgb.keyboard.typing.EdgePlan.V_MIN, com.mgb.keyboard.typing.EdgePlan.V_MAX, 1, " dp"))
+        root.addView(sizeRow("Shift gap", { com.mgb.keyboard.typing.EdgePlan.fnGapDp(prefs.int("fn_gap", -1)) }, { prefs.setInt("fn_gap", it) }, com.mgb.keyboard.typing.EdgePlan.F_MIN, com.mgb.keyboard.typing.EdgePlan.F_MAX, 1, " dp"))
+        root.addView(sizeRow("Key radius", { com.mgb.keyboard.typing.EdgePlan.radiusDp(prefs.int("key_radius", -1)) }, { prefs.setInt("key_radius", it) }, com.mgb.keyboard.typing.EdgePlan.R_MIN, com.mgb.keyboard.typing.EdgePlan.R_MAX, 1, " dp"))
+
         // v0.2.9: bold letters toggle
         val rbold = row()
         rbold.addView(pk(if (prefs.bool(SizeKeys.BOLD, false)) "Bold letters: ON" else "Bold letters: OFF", 1f) { b ->
@@ -144,6 +150,7 @@ class SizePanel(private val ctx: Context, private val host: JabraHost) {
             prefs.setInt(SizeKeys.LETTER, SizePct.UNSET)   // v0.2.8
             prefs.setBool(SizeKeys.BOLD, false)   // v0.2.9
             prefs.setInt(SizeKeys.GAP, SizePct.UNSET)   // v0.3.0
+            for (k in arrayOf("edge_dp", "row_vgap", "fn_gap", "key_radius")) prefs.setInt(k, -1)   // v0.10.28
             host.showPanel("size")
         })
         root.addView(rr)

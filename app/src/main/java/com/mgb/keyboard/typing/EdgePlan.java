@@ -21,10 +21,15 @@ public final class EdgePlan {
     public static final float FN_MIN = 1.1f;
 
     /** v0.10.27: entries from BOOL_FROM on are boolean prefs (stored here as 1 / 0; -1 = was unset = off). */
-    public static final String[] PRESET_KEYS = { "kh_pct_p", "kh_pct_l", "key_gap", "edge_dp", "row_vgap", "fn_gap", "bot_style", "key_dots", "pb_home_gap" };
-    public static final int BOOL_FROM = 7;
+    public static final String[] PRESET_KEYS = { "kh_pct_p", "kh_pct_l", "key_gap", "edge_dp", "row_vgap", "fn_gap", "bot_style", "key_dots", "pb_home_gap", "key_radius" };
+    public static final int BOOL_FROM = 7;   // kept for old callers; use isBool(i)
+    public static boolean isBool(int i) { return i == 7 || i == 8; }
+    /** v0.10.28 (P3): key corner radius, dp. Unset = 9 (old Jabra look). Ridmik is about 6. Works in the Jabra look only (Classic keys stay as they are). */
+    public static final int R_MIN = 0, R_MAX = 14, R_DEF = 9;
+    public static boolean radiusValid(int v) { return v >= R_MIN && v <= R_MAX; }
+    public static int radiusDp(int v) { return radiusValid(v) ? v : R_DEF; }
     /** Ridmik-style values, same order as PRESET_KEYS. 120 / 100 = the height the user already matched by hand. */
-    public static final int[] RIDMIK = { 120, 100, 2, 1, 2, 4, 1, 1, 1 };
+    public static final int[] RIDMIK = { 120, 100, 2, 1, 2, 4, 1, 1, 1, 6 };
 
     public static boolean edgeValid(int v) { return v >= E_MIN && v <= E_MAX; }
     public static boolean vValid(int v) { return v >= V_MIN && v <= V_MAX; }

@@ -36,6 +36,14 @@ public class EdgePlanTest {
         eq("padded junk", EdgePlan.decodeUpTo("1,x", 9) == null, true);
         eq("padded empty", EdgePlan.decodeUpTo("", 9) == null, true);
         eq("bool from", EdgePlan.BOOL_FROM, 7);
+        eq("isBool 7 8", EdgePlan.isBool(7) && EdgePlan.isBool(8), true);
+        eq("isBool others", EdgePlan.isBool(6) || EdgePlan.isBool(9) || EdgePlan.isBool(0), false);
+        eq("radius unset", EdgePlan.radiusDp(-1), 9);
+        eq("radius 0", EdgePlan.radiusDp(0), 0);
+        eq("radius 6", EdgePlan.radiusDp(6), 6);
+        eq("radius 15 invalid", EdgePlan.radiusDp(15), 9);
+        eq("preset radius", EdgePlan.RIDMIK[9], 6);
+        eq("decode 9 saved pads radius", EdgePlan.decodeUpTo("120,-1,2,1,-1,4,0,0,0", 10)[9], -1);
         eq("decode empty", EdgePlan.decode("", 6) == null, true);
         eq("decode null", EdgePlan.decode(null, 6) == null, true);
         eq("decode wrong count", EdgePlan.decode("1,2", 6) == null, true);
