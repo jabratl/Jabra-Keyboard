@@ -392,3 +392,13 @@ Z67) v0.10.23 Selection quick actions (W9)
  [ ] Password field: select text = no chips. Switch the setting OFF again: nothing changes.
  [ ] Typing speed feels the same as v0.10.22.
 
+Z68) v0.10.24 Clipboard look (C1)
+ [ ] Copy a link (https://...) in another app > open Clipboard (List view): the row shows a small blue "Link" tag before the number. Copy a normal sentence: no tag.
+ [ ] Copy "me@example.com" = Email, "482913" = Code (orange), "+8801712345678" = Phone, a Bangla sentence = Bangla.
+ [ ] The small grey text ends with the age: "23 · 5m" (now / m / h / d / w). After a paste it shows "23 · 1x · 5m".
+ [ ] List view: a thin line between rows; rows are not taller than before; text not cut at the right (360 px).
+ [ ] Cards view (Settings > Clipboard view): same tag in the bottom-left of the info line, age in the text. Odd number of clips + pinned card still visible.
+ [ ] Pinned / Recent headers still show; select mode (long-press) still works, tap = tick, no paste.
+ [ ] Dark theme and Classic: tag readable (not too faint). Settings "Char count" OFF: no age text.
+ [ ] Opening the clipboard feels as fast as before (with ~40 clips).
+

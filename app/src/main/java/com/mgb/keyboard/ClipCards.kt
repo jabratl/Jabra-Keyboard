@@ -133,15 +133,28 @@ object ClipCards {
         }
         t.layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f)
         box.addView(t)
-        try {   // v0.4.3: char count line
+        try {   // v0.4.3: char count line (v0.10.24 C1: + kind tag on the left + age in the text)
             val inf = sm.info(item)
-            if (inf.isNotEmpty()) {
-                val ct = TextView(ctx)
-                ct.text = inf
-                ct.textSize = 10f
-                ct.setTextColor(try { JabraTokens.cardNote(pf!!) } catch (_: Throwable) { Color.GRAY })
-                ct.setPadding(dp(ctx, 8), 0, dp(ctx, 8), 0)
-                box.addView(ct)
+            val tg = ClipLook.tag(ctx, pf, item.text)
+            if (inf.isNotEmpty() || tg != null) {
+                val line = LinearLayout(ctx)
+                line.orientation = LinearLayout.HORIZONTAL
+                line.gravity = Gravity.CENTER_VERTICAL
+                if (tg != null) {
+                    val tlp = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT)
+                    tlp.setMargins(dp(ctx, 8), 0, 0, 0)
+                    tg.layoutParams = tlp
+                    line.addView(tg)
+                }
+                if (inf.isNotEmpty()) {
+                    val ct = TextView(ctx)
+                    ct.text = inf
+                    ct.textSize = 10f
+                    ct.setTextColor(try { JabraTokens.cardNote(pf!!) } catch (_: Throwable) { Color.GRAY })
+                    ct.setPadding(dp(ctx, 8), 0, dp(ctx, 8), 0)
+                    line.addView(ct)
+                }
+                box.addView(line)
             }
         } catch (_: Throwable) { }
 

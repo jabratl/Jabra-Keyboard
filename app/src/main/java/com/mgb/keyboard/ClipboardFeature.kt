@@ -59,6 +59,7 @@ class ClipStore(private val prefs: JabraPrefs) {
     } catch (_: Throwable) { 4 }
     fun has(t: String): Boolean = try { list.view("").any { it.text == t } } catch (_: Throwable) { false }
     fun countOf(t: String): Int = try { meta.count(t) } catch (_: Throwable) { 0 }
+    fun madeOf(t: String): Long = try { meta.madeAt(t) } catch (_: Throwable) { 0L }   // v0.10.24 (C1): when the clip was copied (0 = unknown)
     fun noteUse(i: ClipList.Item) { try { meta.used(i.text, System.currentTimeMillis()); saveMeta() } catch (_: Throwable) { } }
     fun sorted(l: List<ClipList.Item>, mode: Int): List<ClipList.Item> = try { if (mode == 0) l else meta.sort(l, mode) } catch (_: Throwable) { l }
     /** Auto-delete (pref clip_expire 0..3): unpinned only; runs when the panel opens or a clip is added, never on a timer. Returns how many were removed. */
@@ -530,11 +531,27 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
     private fun infoLine(item: ClipList.Item): String = try {
         if (!JabraPrefs(ctx).bool("clip_count", true)) "" else {
             val n = store.countOf(item.text)
-            item.text.length.toString() + (if (n > 0) " \u00B7 " + n + "x" else "")
+            val age = try { com.mgb.keyboard.clip.ClipAge.shortAge(store.madeOf(item.text), System.currentTimeMillis()) } catch (_: Throwable) { "" }   // v0.10.24 (C1)
+            item.text.length.toString() + (if (n > 0) " \u00B7 " + n + "x" else "") + (if (age.isNotEmpty()) " \u00B7 " + age else "")
         }
     } catch (_: Throwable) { "" }
 
+    /** v0.10.24 (C1): list row + a thin divider line under it. Any problem = the plain row as before. */
     private fun itemRow(item: ClipList.Item): View {
+        val r = itemRowBase(item)
+        return try {
+            val w = LinearLayout(ctx)
+            w.orientation = LinearLayout.VERTICAL
+            w.addView(r)
+            val ln = View(ctx)
+            ln.setBackgroundColor(JabraTokens.withAlpha(dim(), 0x40))
+            ln.layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, maxOf(1, dp(1))).also { it.setMargins(dp(8), dp(1), dp(8), dp(1)) }
+            w.addView(ln)
+            w
+        } catch (_: Throwable) { r }
+    }
+
+    private fun itemRowBase(item: ClipList.Item): View {
         val lv = try { JabraPrefs(ctx).int("clip_lines", 0).coerceIn(0, 2) } catch (_: Throwable) { 0 }   // v0.2.5.1: 0/1/2 = 2/4/6 lines
         val rowH = 44 + 22 * lv
         val r = row()
@@ -562,6 +579,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
         t.ellipsize = TextUtils.TruncateAt.END
         t.setPadding(dp(8), 0, dp(8), 0)
         r.addView(t)
+        try { ClipLook.tag(ctx, pf, item.text)?.let { tg -> tg.setPadding(dp(5), dp(1), dp(5), dp(1)); r.addView(tg) } } catch (_: Throwable) { }   // v0.10.24 (C1): kind tag (Link / Email / Code / Phone / Bangla)
         try {   // v0.4.3: char count (small grey) between the text and the star
             val inf = infoLine(item)
             if (inf.isNotEmpty()) {

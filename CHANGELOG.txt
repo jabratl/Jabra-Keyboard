@@ -1,3 +1,14 @@
+v0.10.24 - NEW: clipboard look: kind tag, age, divider (plan C1)
+- WHY: every clip looked the same. A link, a one-time code and a note were hard to tell apart.
+- What you get (List AND Cards view): (1) a small rounded tag before the char count: Link, Email, Code, Phone or Bangla (plain text = no tag; Code uses the existing warning orange, the rest the accent blue). (2) the info text gets the age at the end: "123 \u00B7 2x \u00B7 5m" (now / 5m / 3h / 2d / 3w; blank when older than 8 weeks or unknown). Follows the existing setting "Char count" (clip_count). (3) List view: a thin divider line under every row.
+- Not changed: Pinned / Recent headers already existed (List and Cards) and stay. Text sizes, row heights, buttons, paste / pin / delete / select behaviour: unchanged.
+- Code: clip/ClipKind.java (NEW, pure: kind(text) - one-token rules, Link / Email / Code (uses ClipSensitive) / Phone / Bangla, texts over 2000 chars = none), clip/ClipAge.java (NEW, pure: shortAge), ClipLook.kt (NEW: the tag view), ClipboardFeature.kt (store.madeOf, infoLine + age, itemRow wrapper with divider, tag in the row), ClipCards.kt (tag + info in one line), build.gradle.kts 0.10.24. Hooks marked "v0.10.24".
+- Prefs: none. Permissions: none. Nothing is stored (the tag is worked out when the panel is drawn). Tests (new): tools/ClipKindTest.java (56 checks).
+BROKE: nothing intended. Any problem in a new part = no tag / no divider = the old look.
+NOT tested: Kotlin NOT compiled here (GitHub Actions is the first compile check); nothing seen on a phone (tag width on a 360 px screen, dark themes, big font).
+TESTED here: all 63 tools/*Test.java green.
+Rollback: revert to v0.10.23.
+
 v0.10.23 - NEW: selection quick actions in the top row (plan W9)
 - WHY: to change a selected text you had to open Text Tools. Now one tap in the suggestion row.
 - What you get: Settings > Keys & gestures > "Selection quick actions" (qa_on, default OFF; needs "Suggestion row" ON). Select text in a normal field: the 3 top-row slots show [Copy] [Case] [Clean] (or [N words] when Case / Clean do not apply). Copy = clipboard + "Copied". Case cycles UPPER > lower > Title on every tap and keeps the text selected. Clean = extra spaces, trailing spaces, 3+ blank lines (same as Text Tools > Clean). "N words" tap = full counts message. Deselect = normal suggestions come back. Never in password / email / URL / number fields; never for a selection over 20000 characters.
