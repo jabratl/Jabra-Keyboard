@@ -1,0 +1,33 @@
+JABRA KEYBOARD - 10-MINUTE SMOKE TEST (v0.15.9, whole of plan N: N1 - N8)
+=========================================================================
+Use this FIRST after installing a new build. It touches every new thing of plan N once.
+If all lines are OK, the long lists in CHECKLIST.txt (Z77 - Z84) are only needed when something looks wrong.
+If a line fails, send: which line number + what you see (+ screenshot). One bug = one fix version.
+Not tested on a phone by the builder: every line below is still [ ] until you tick it.
+
+A. CLIPBOARD (N1, N2)                                                  [Z77, Z78]
+ [ ] 1. Open any text field, tap the clipboard key. The panel is as tall as the letters keyboard (no shrink, no jump). Tap ABC: same height.
+ [ ] 2. Copy 3 texts, pin 2 of them. List view: "Pinned" on top, "Recent" below. Tap a section header: the order swaps. Switch to Cards: same order, header tap works there too.
+ [ ] 3. App > Clipboard & Tools page: "Clip order" and "Clipboard follows keyboard height" rows exist and agree with what you see in the keyboard.
+
+B. APP MAP + NEW ROWS (N3, N4)                                          [Z79, Z80]
+ [ ] 4. App Home shows 7 tiles, the 7th is "Tools & Panels". Typing, Clipboard and Data pages are split into named sections.
+ [ ] 5. Layout & Size: "Key height (landscape)" and "One-hand width (landscape)" exist. Tools & Panels: Toolbar style, Most-used tools first, Fold toolbar, Vault sort, Vault save folder exist. Typing: Long-press override and Extra character row (tap = small text box).
+ [ ] 6. Global search (Home): type "vault": the Vault rows are found. Change any row: its blue dot appears; long-press the row: it resets.
+
+C. TOOLBAR EDITOR (N5)                                                  [Z81]
+ [ ] 7. App > Tools & Panels > Toolbar: tap "down" on "Clipboard", open the keyboard: the bar has the new order. "Reset toolbar" (tap twice) brings the default order back.
+
+D. THEMES IN THE APP (N6, N7)                                           [Z82, Z83]
+ [ ] 8. App > Look & Theme: tap a theme tile (e.g. Dark): frame moves, preview card and keyboard follow.
+ [ ] 9. Section "Custom theme": tap "Cyber", Save and use this theme: the keyboard uses it. Type a wrong colour (#12G): the field turns red and nothing is saved. Delete custom theme (two taps): theme goes back to Classic.
+
+E. EASY EDIT (N8)                                                       [Z84]
+ [ ] 10. Layout & Size > Key height (portrait): tap the number, type 999, OK: it shows the highest value (150%) and a toast tells the allowed range. Type 120: it shows 120%.
+ [ ] 11. Change Key gap and Edge distance, then tap "Reset this section" (Spacing) twice: both go back to default, other sections keep their values. The Undo button at the top says "Undo reset: Spacing (2 settings)": tap it, both values are back.
+ [ ] 12. One tap on a reset button changes the text to a warning; waiting 3 s puts it back and resets nothing.
+
+F. GENERAL (after the above)
+ [ ] 13. App in dark mode: all new buttons / dialogs readable. Rotate the phone: nothing breaks.
+ [ ] 14. Type a few words in a real app (English + Bangla Avro): normal typing, suggestions, backspace all feel as before (nothing slower).
+ [ ] 15. App > Data & About > Check for updates works (no error).

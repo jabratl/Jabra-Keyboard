@@ -564,3 +564,20 @@ Z83) v0.15.7 Custom theme editor in the app (N7)
  [ ] Change the custom theme in the keyboard (gear > More settings > Themes > Custom theme > Save), go to the app Look page again: fields show the new colours (if you had no unsaved edits).
  [ ] Delete custom theme: tap once = warning text, tap again within 3 s = deleted; if it was in use the theme goes back to Classic, the Custom tile disappears.
  [ ] 360 dp phone: fields and buttons fit, no sideways scroll; dark mode readable.
+
+Z84) v0.15.8 Type exact stepper value + Reset this section / page (N8)
+ [ ] Settings > Layout & Size > Key height (portrait): the number is underlined. Tap it: a small box opens with the number selected, the hint says "Allowed: 70 - 150%". Type 120, OK: the row shows 120%, the preview card follows, the dot appears.
+ [ ] Type 999 (OK): the row shows 150% (the highest) and a toast says "Set to 150% (allowed: 70 - 150%)". Type 5: it shows 70%. Type abc or leave it empty: toast "Type a number from 70 to 150", the value does not change. Cancel: nothing changes.
+ [ ] Type the number with the keyboard's Bangla digits (e.g. ১০০): it works as 100.
+ [ ] After a typed value, the page Undo says "Undo last change: Key height (portrait)": tap it, the old value is back. Hold + / - still repeats as before.
+ [ ] Check 2 more steppers: Key gap (0 - 6 dp: type 9 -> 6 dp) and One-hand width (50 - 95%).
+ [ ] Layout & Size > section "Spacing": change Key gap, Edge distance, Row gap. At the end of the section tap "Reset this section": the text changes to "Tap again: reset ..." in the warning colour. Wait 3 s: it goes back to normal and nothing is reset.
+ [ ] Tap it twice in a row: only the Spacing rows go back to default (dots disappear); rows of other sections (Size, Shape) keep their values. Toast: "Reset 3 settings. Undo is at the top of the page."
+ [ ] At the top of the page the Undo button says "Undo reset: Spacing (3 settings)". Tap it: all three values are back exactly as they were, the button goes away.
+ [ ] Change one row, then reset a section, then change another row: the Undo button now says "Undo last change: <that row>" (the reset undo is replaced). Normal.
+ [ ] "Reset this page" at the bottom of the Layout & Size page (two taps): every changed row on the page returns to default, Undo brings them back. A page with nothing changed: toast "Nothing to reset: all settings here are already default".
+ [ ] Look page: change Theme (grid) + a Hints row, Reset this page: the theme grid frame goes to Classic and the Theme row agrees. Your saved custom theme (section Custom theme) is NOT deleted. Undo: theme and grid frame come back.
+ [ ] Tools & Panels: change Vault key (toolbar) and Reset this section (Toolbar): the toolbar editor list follows the Vault item. The toolbar ORDER itself is not changed by this button (use its own Reset toolbar).
+ [ ] Type a word in the search box: the "Reset this section" buttons are hidden while searching and come back when the box is empty. Section headers still hide when no row matches.
+ [ ] Old screen (only if you switch back to it with the app's own "old screen" button): still shows "Reset this group to default" with its old two-tap behaviour, and the old - / + steppers. Optional check, skip it if you never use the old screen.
+ [ ] 360 dp phone: buttons fit, the dialog is readable in light and dark mode.

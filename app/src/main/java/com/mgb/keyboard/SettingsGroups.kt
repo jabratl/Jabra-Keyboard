@@ -47,7 +47,8 @@ object SettingsGroups {
 
         // ---- v0.4.2: row registry = search, recently changed, help line, reset group, undo last (all inside this file) ----
         class Row(val key: String, val title: String, val group: String, val wrap: View,
-                  val refresh: () -> Unit, val setIdx: (Int) -> Unit, val cur: () -> Int, val def: Int)
+                  val refresh: () -> Unit, val setIdx: (Int) -> Unit, val cur: () -> Int, val def: Int,
+                  val sec: String = "", val changed: () -> Boolean = { false }, val raw: (() -> Int)? = null)   // v0.15.8 (N8): section + changed rule + saved value (new app rows only)
         class Grp(val name: String, val head: Button, val body: LinearLayout) {
             var isOpen = false
             val rows = ArrayList<Row>()
@@ -83,11 +84,15 @@ object SettingsGroups {
         val dotUpdaters = HashMap<String, () -> Unit>()   // key -> redraw the "changed" dot of that row
         val secBoxes = HashMap<String, LinearLayout>()    // section title -> box of the group being built
         val secList = ArrayList<Pair<View, LinearLayout>>()   // section header + its box (header hides when the box has no visible row)
+        var searchOn = false   // v0.15.8 (N8): the section Reset buttons hide while searching
+        var bulk: List<Pair<Row, Int>>? = null   // v0.15.8 (N8): rows + values before the last "Reset this section / page" (Undo button text + restore)
+        var bulkName = ""
         fun secVis() {
             for ((hd, bx) in secList) {
                 var any = false
-                for (i in 0 until bx.childCount) if (bx.getChildAt(i).visibility == View.VISIBLE) any = true
+                for (i in 0 until bx.childCount) { val v = bx.getChildAt(i); if (v.tag != "secreset" && v.visibility == View.VISIBLE) any = true }   // v0.15.8: the reset button does not count as a row
                 hd.visibility = if (any) View.VISIBLE else View.GONE
+                for (i in 0 until bx.childCount) { val v = bx.getChildAt(i); if (v.tag == "secreset") v.visibility = if (any && !searchOn) View.VISIBLE else View.GONE }   // v0.15.8
             }
         }
 
@@ -95,7 +100,9 @@ object SettingsGroups {
             try {
                 val last = SettingsIndex.parseLast(prefs.str("set_last", ""))
                 val lr = if (last != null) rowByKey(last[0]) else null
-                if (lr != null) { undoBtn.text = "Undo last change: " + lr.title; undoBtn.visibility = View.VISIBLE } else undoBtn.visibility = View.GONE
+                val bk = bulk   // v0.15.8 (N8): after a section / page reset the button undoes the whole reset
+                if (bk != null) { undoBtn.text = com.mgb.keyboard.typing.EditPlan.undoText(bulkName, bk.size); undoBtn.visibility = View.VISIBLE }
+                else if (lr != null) { undoBtn.text = "Undo last change: " + lr.title; undoBtn.visibility = View.VISIBLE } else undoBtn.visibility = View.GONE
                 recentRow.removeAllViews()
                 var n = 0
                 for (k in SettingsIndex.parseRecent(prefs.str("set_recent", ""))) {
@@ -114,6 +121,7 @@ object SettingsGroups {
         var themeGrid: AppThemeGrid.Handle? = null   // v0.15.6 (N6): theme grid (new app screen only)
         var tbEditor: AppToolbarEditor.Handle? = null   // v0.15.5 (N5): inline toolbar editor (new app screen only)
         fun noteChange(key: String, old: Int) {
+            bulk = null   // v0.15.8 (N8): a new change takes over the Undo button
             if (key == "theme") { try { themeGrid?.refresh?.invoke() } catch (_: Throwable) { } }   // v0.15.6: Theme row -> grid frame
             if (key == "tb_vault") { try { tbEditor?.refresh?.invoke() } catch (_: Throwable) { } }   // v0.15.5: Vault key row <-> editor list stay in sync
             try { dotUpdaters[key]?.invoke() } catch (_: Throwable) { }   // v0.12.0 (M2)
@@ -125,7 +133,20 @@ object SettingsGroups {
             try { link?.changed?.invoke() } catch (_: Throwable) { }   // v0.10.25: redraw the live preview
         }
 
+        fun afterRowSet(key: String) {   // v0.15.8 (N8): same follow-ups as noteChange(), without touching the undo record
+            if (key == "theme") { try { themeGrid?.refresh?.invoke() } catch (_: Throwable) { } }
+            if (key == "tb_vault") { try { tbEditor?.refresh?.invoke() } catch (_: Throwable) { } }
+        }
         fun undoLast() {
+            val bk = bulk   // v0.15.8 (N8): undo of a section / page reset = every changed row gets its old value back
+            if (bk != null) {
+                for ((r, old) in bk.asReversed()) { try { r.setIdx(old); r.refresh(); afterRowSet(r.key) } catch (_: Throwable) { } }
+                bulk = null
+                prefs.setStr("set_last", "")
+                refreshTop()
+                try { link?.changed?.invoke() } catch (_: Throwable) { }
+                return
+            }
             val last = SettingsIndex.parseLast(prefs.str("set_last", "")) ?: return
             val r = rowByKey(last[0]) ?: return
             r.setIdx(last[1].toInt())
@@ -135,6 +156,30 @@ object SettingsGroups {
             try { link?.changed?.invoke() } catch (_: Throwable) { }   // v0.10.25
         }
         undoBtn.setOnClickListener { try { undoLast() } catch (_: Throwable) { } }
+        // v0.15.8 (N8): "Reset this section / page" (new app screen only). Only rows that differ from default are touched; ONE Undo brings all of them back.
+        fun resetRows(list: List<Row>, name: String) {
+            try {
+                val done = ArrayList<Pair<Row, Int>>()
+                for (r in list) {
+                    if (!r.changed()) continue
+                    val before = r.raw?.invoke() ?: r.cur()   // stepper rows: the saved value (so Undo restores exactly that); others: current value
+                    r.setIdx(r.def)
+                    r.refresh()
+                    afterRowSet(r.key)
+                    done.add(Pair(r, before))
+                }
+                if (done.isEmpty()) {
+                    try { android.widget.Toast.makeText(ctx, com.mgb.keyboard.typing.EditPlan.doneText(0), android.widget.Toast.LENGTH_SHORT).show() } catch (_: Throwable) { }
+                    return
+                }
+                bulk = done
+                bulkName = name
+                prefs.setStr("set_last", "")   // the single-row Undo is replaced by this one
+                refreshTop()
+                try { link?.changed?.invoke() } catch (_: Throwable) { }
+                try { android.widget.Toast.makeText(ctx, com.mgb.keyboard.typing.EditPlan.doneText(done.size) + ". Undo is at the top of the page.", android.widget.Toast.LENGTH_LONG).show() } catch (_: Throwable) { }
+            } catch (_: Throwable) { }
+        }
         try { sink?.clearSearch = { search.setText("") } } catch (_: Throwable) { }   // v0.11.0 (M1)
 
         fun addRow(box: LinearLayout, key: String, title: String, b: Button, refresh: () -> Unit, setIdx: (Int) -> Unit, cur: () -> Int, def: Int) {
@@ -166,9 +211,11 @@ object SettingsGroups {
                 try { android.widget.Toast.makeText(ctx, "Reset: " + title, android.widget.Toast.LENGTH_SHORT).show() } catch (_: Throwable) { }
             }
             dotUpdaters[key] = { dec.refresh() }
-            val target = secBoxes[ChangedPlan.sectionOf(curGrp?.name, key)] ?: box
+            val secName = ChangedPlan.sectionOf(curGrp?.name, key)
+            val target = secBoxes[secName] ?: box
             target.addView(dec.view)
-            val r = Row(key, title, curGrp?.name ?: "", dec.view, { built.refresh(); dec.refresh() }, setIdx, cur, def)
+            val r = Row(key, title, curGrp?.name ?: "", dec.view, { built.refresh(); dec.refresh() }, setIdx, cur, def,
+                if (secBoxes.containsKey(secName)) secName else "", { ChangedPlan.isChanged(raw?.invoke() ?: cur(), def) }, raw)   // v0.15.8 (N8)
             rows.add(r)
             curGrp?.rows?.add(r)
             try {   // v0.13.0 (M3): the global search on Home reads the rows from here (same view, same dot rule)
@@ -180,6 +227,7 @@ object SettingsGroups {
         fun applySearch(q: String) {
             val query = q.trim()
             val on = query.isNotEmpty()
+            searchOn = on   // v0.15.8 (N8)
             val entries = ArrayList<SettingsIndex.Entry>()
             for (r in rows) entries.add(SettingsIndex.Entry(r.key, r.title, SettingsIndex.help(r.key), r.group))
             val hit = HashSet<String>()
@@ -304,7 +352,17 @@ object SettingsGroups {
                 val built = AppRows.stepperRow(ctx, title, SettingsIndex.help(key), { read().toString() + unit },
                     { holdOld = read() },
                     { dir -> prefs.setInt(key, com.mgb.keyboard.typing.SizePct.step(read(), dir, min, max, step)) },
-                    { noteChange(key, holdOld) })
+                    { noteChange(key, holdOld) },
+                    "$min - $max$unit",
+                    { typed ->   // v0.15.8 (N8): tap the number = type the exact value, clamped to the row range; same pref, same undo record as a - / + tap
+                        val v = com.mgb.keyboard.typing.EditPlan.parseValue(typed, min, max)
+                        if (v == null) "Type a number from $min to $max" else {
+                            val old = read()
+                            if (v != old) { prefs.setInt(key, v); noteChange(key, old) }
+                            val free = com.mgb.keyboard.typing.EditPlan.parseValue(typed, Int.MIN_VALUE, Int.MAX_VALUE)
+                            if (free != null && free != v) "Set to $v$unit (allowed: $min - $max$unit)" else null
+                        }
+                    })
                 addRowNew(box, key, title, built, { prefs.setInt(key, it) }, { read() }, def, { prefs.int(key, -1) }) { read().toString() + unit }
                 return
             }
@@ -369,6 +427,18 @@ object SettingsGroups {
             }
             try { fill(body) } catch (_: Throwable) { }
             curGrp = null
+            if (sink != null) {   // v0.15.8 (N8): "Reset this section" at the end of every section that has settings rows (hidden while searching, see secVis)
+                try {
+                    for ((sn, bx) in secBoxes) {
+                        val inSec = g.rows.filter { it.sec == sn }
+                        if (inSec.isEmpty()) continue
+                        val sb = AppRows.confirmAction(ctx, "Reset this section", "Tap again: reset \"" + sn + "\"") { resetRows(inSec, sn) }
+                        sb.tag = "secreset"
+                        bx.addView(sb)
+                    }
+                    secVis()
+                } catch (_: Throwable) { }
+            }
             if (sink != null) {   // v0.12.0 (M2): buttons / notes added straight to the group (presets, forget, hints) get the new style
                 try {
                     secVis()
@@ -377,7 +447,11 @@ object SettingsGroups {
                     if (firstBtn >= 0) body.addView(AppRows.sectionHeader(ctx, "Actions"), firstBtn)
                 } catch (_: Throwable) { }
             }
-            if (g.rows.isNotEmpty()) {   // v0.4.2: Reset this group (two taps)
+            if (g.rows.isNotEmpty() && sink != null) {   // v0.15.8 (N8): new app screen = "Reset this page" (changed rows only, warning colour only on the confirm step, one Undo)
+                val pb = AppRows.confirmAction(ctx, "Reset this page", "Tap again: reset all settings on this page") { resetRows(g.rows, title) }
+                body.addView(pb)
+                g.resetBtn = pb
+            } else if (g.rows.isNotEmpty()) {   // v0.4.2: Reset this group (two taps) - old screen keeps exactly this
                 var armed = false
                 val rb = Button(ctx)
                 rb.isAllCaps = false

@@ -185,8 +185,11 @@ object AppRows {
     /**
      * Title + [-] value [+] (48 dp). One tap = one step. Press and hold = repeats (slow, then faster).
      * Callbacks: [begin] (remember the old value), [step] (write + redraw, no undo record), [end] (record the change once: undo = value before the hold).
+     * v0.15.8 (N8): when [onType] is given, a tap on the value opens a number dialog (hint = [typeHint], e.g. "40 - 140"). OK = [onType] gets the typed text and
+     * returns a short message to show as a toast (null = nothing to say); Cancel = nothing changes.
      */
-    fun stepperRow(c: Context, title: String, help: String, value: () -> String, begin: () -> Unit, step: (Int) -> Unit, end: () -> Unit): Built {
+    fun stepperRow(c: Context, title: String, help: String, value: () -> String, begin: () -> Unit, step: (Int) -> Unit, end: () -> Unit,
+                  typeHint: String = "", onType: ((String) -> String?)? = null): Built {   // v0.15.8 (N8): 2 trailing params with defaults (old callers unchanged)
         val box = LinearLayout(c)
         box.orientation = LinearLayout.VERTICAL
         val line = LinearLayout(c)
@@ -200,7 +203,39 @@ object AppRows {
         val0.setTypeface(null, Typeface.BOLD)
         val0.setTextColor(AppUi.text(c))
         val0.minWidth = dp(c, 64)
-        fun show() { val0.text = value(); val0.contentDescription = title + ": " + value() }
+        fun show() { val0.text = value(); val0.contentDescription = title + ": " + value() + (if (onType != null) ". Tap to type a value" else "") }
+        if (onType != null) safe {   // v0.15.8 (N8): tap the number = type the exact value (dialog)
+            val0.minHeight = dp(c, AppTokens.TOUCH)
+            val0.paintFlags = val0.paintFlags or android.graphics.Paint.UNDERLINE_TEXT_FLAG   // small cue that the number can be tapped
+            val0.setOnClickListener {
+                safe {
+                    val et = android.widget.EditText(c)
+                    et.inputType = android.text.InputType.TYPE_CLASS_NUMBER or android.text.InputType.TYPE_NUMBER_FLAG_SIGNED
+                    et.setText(value().filter { it.isDigit() || it == '-' })
+                    et.selectAll()
+                    et.hint = typeHint
+                    et.setSingleLine(true)
+                    val pad = dp(c, AppTokens.S4)
+                    val wrap = FrameLayout(c)
+                    wrap.setPadding(pad, dp(c, AppTokens.S2), pad, 0)
+                    wrap.addView(et)
+                    val dlg = android.app.AlertDialog.Builder(c)
+                        .setTitle(title)
+                        .setMessage(if (typeHint.isEmpty()) null else "Allowed: " + typeHint)
+                        .setView(wrap)
+                        .setPositiveButton("OK") { _, _ ->
+                            safe {
+                                val err = onType(et.text.toString())
+                                if (err != null) android.widget.Toast.makeText(c, err, android.widget.Toast.LENGTH_SHORT).show()
+                                show()
+                            }
+                        }
+                        .setNegativeButton("Cancel", null)
+                        .create()
+                    dlg.show()
+                }
+            }
+        }
         val h = Handler(Looper.getMainLooper())
         var tick = 0
         var dirNow = 0
@@ -287,6 +322,35 @@ object AppRows {
             val lp = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
             lp.topMargin = dp(c, AppTokens.S2)
             b.layoutParams = lp
+        }
+        return b
+    }
+
+    /**
+     * v0.15.8 (N8): two-tap button for "Reset this section / page". Normal look (styleAction); the first tap changes the text to [confirm] in the
+     * warning colour for 3 s, a second tap inside that time runs [onDo]. Waiting out the 3 s puts the button back (nothing was done).
+     */
+    fun confirmAction(c: Context, label: String, confirm: String, onDo: () -> Unit): Button {
+        val b = Button(c)
+        styleAction(c, b)
+        var armed = false
+        val idle = Runnable { armed = false; b.text = label; b.setTextColor(AppUi.text(c)) }
+        b.text = label
+        b.setOnClickListener {
+            safe {
+                if (!armed) {
+                    armed = true
+                    b.text = confirm
+                    b.setTextColor(AppUi.warn(c))
+                    b.postDelayed(idle, 3000)
+                } else {
+                    b.removeCallbacks(idle)
+                    armed = false
+                    b.text = label
+                    b.setTextColor(AppUi.text(c))
+                    onDo()
+                }
+            }
         }
         return b
     }
