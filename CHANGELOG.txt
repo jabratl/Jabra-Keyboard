@@ -1,3 +1,12 @@
+v0.16.6 - MODIFY: toolbar height + icon / text size options (plan X, step X6)
+- WHY: you asked that the toolbar size is customizable.
+- What you get: App > Tools & Panels > section Toolbar: two new rows "Toolbar height" (tb_hpct) and "Toolbar icon / text size" (tb_ipct), 70-150 % in steps of 5, tap the number to type a value. 100 % = EXACTLY the old toolbar (36 dp high, 44 dp wide keys, text 12 sp, fold key 14 sp). Height changes the key height; icon / text size changes the text size and the key width. The old Classic edit bar (Toolbar style = Classic) uses the same height and text size. The toolbar already scrolls sideways, so big sizes just scroll.
+- Code: NEW typing/BarSize.java (pure) + tools/BarSizeTest.java (24 checks). Hooks "// v0.16.6": Toolbar.kt (key size), MgbIme.kt (toolbarKey text size, fold key, mode key, old bar height, helper barH()), SettingsGroups.kt (2 stepper rows), SettingsIndex.java (2 help lines), ProfileCodec.java (2 keys, range 70-150), ChangedPlan.java (section Toolbar). Tests updated (never weakened): SettingsIndexTest (68 help lines), ProfileTest (56 keys), ChangedPlanTest.
+- Not changed: keyboard Size panel (no row there, plan said optional), number row, letters, toolbar order / items.
+- BROKE: nothing intended; unset = 100 % = identical to v0.16.5.
+- NOT tested: phone (CHECKLIST Z90). Own drawn icons may keep their size when only text size changes: look at it on the phone. Kotlin NOT compiled (no kotlinc / github.com); bracket balance of the 3 changed Kotlin files checked. TESTED here: all 83 tools/*Test.java green.
+- Rollback: version back to 0.16.5, delete BarSize.java + BarSizeTest.java, remove the "// v0.16.6" lines.
+
 v0.16.5 - BUILD: Practice page (বাংলা লেখা চর্চা) + keyboard "Key map" cheat-sheet panel (plan X, step X5)
 - WHY: the Ridmik key map works (X3) and has a reference page (X4). Now you can also PRACTISE it, and look at it without leaving the keyboard.
 - Practice (app): Typing page > Languages & layouts > section "Bangla" > new button "Practice typing (বাংলা লেখা চর্চা)". Full-screen page: a Bangla word (about 80 words: all key map examples + everyday words), a box to type the roman letters, live feedback: GREEN = the engine makes exactly the word, RED = shows what your letters made. Buttons Next / Skip / Hint (shows one roman that works). Counter "Streak N  Best M" (Skip, Hint or a wrong word start from 0 again; best is saved in the new data pref kp_best, local only).

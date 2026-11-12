@@ -627,3 +627,8 @@ Z89) v0.16.5 Practice page + keyboard Key map panel (X5)
  [ ] Keyboard gear panel (bottom row): new button "Key map" next to "More settings >": opens the cheat sheet, same height as the letters keyboard. Chips switch the group, long lists scroll, ABC returns to the letters.
  [ ] Toolbar editor: new extra "Key map (Bangla cheat sheet)" (icon / "Km"), OFF by default; turn it on, tap it on the bar: same panel. Default bar looks exactly as before.
 
+Z90) v0.16.6 Toolbar size options (X6)
+ [ ] App > Tools & Panels > Toolbar: rows "Toolbar height" and "Toolbar icon / text size", both 100%. With 100% the keyboard toolbar looks exactly as before.
+ [ ] Height 70% / 150%: toolbar keys get shorter / taller; keyboard does not jump the app (check in a browser / chat app). Icon size 70% / 150%: keys narrower / wider, text smaller / bigger; bar scrolls sideways when it does not fit.
+ [ ] Fold ON, Icons OFF (text labels), Toolbar style = Classic, portrait + landscape: all follow the sizes. Tap the number, type 200: it is set to 150. Reset / undo of the row works.
+

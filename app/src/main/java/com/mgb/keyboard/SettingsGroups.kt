@@ -697,6 +697,10 @@ object SettingsGroups {
             cycle(g, "Toolbar style", "tb_custom", { arrayOf("Classic", "Custom") }, { if (prefs.bool("tb_custom", true)) 1 else 0 }, { prefs.setBool("tb_custom", it == 1) }, 1)   // v0.15.4 (N4)
             toggle(g, "Most-used tools first", "tb_auto", false)   // v0.15.4 (N4)
             toggle(g, "Fold toolbar", "tb_fold", false)   // v0.15.4 (N4)
+            stepper(g, "Toolbar height", "tb_hpct", com.mgb.keyboard.typing.BarSize.MIN, com.mgb.keyboard.typing.BarSize.MAX, com.mgb.keyboard.typing.BarSize.STEP, "%",   // v0.16.6 (X6): 100 = old 36 dp
+                { com.mgb.keyboard.typing.BarSize.sanitize(prefs.int("tb_hpct", com.mgb.keyboard.typing.BarSize.DEF)) }, com.mgb.keyboard.typing.BarSize.DEF)
+            stepper(g, "Toolbar icon / text size", "tb_ipct", com.mgb.keyboard.typing.BarSize.MIN, com.mgb.keyboard.typing.BarSize.MAX, com.mgb.keyboard.typing.BarSize.STEP, "%",   // v0.16.6 (X6): 100 = old 12 sp, 44 dp wide
+                { com.mgb.keyboard.typing.BarSize.sanitize(prefs.int("tb_ipct", com.mgb.keyboard.typing.BarSize.DEF)) }, com.mgb.keyboard.typing.BarSize.DEF)
             toggle(g, "Formatter (Aa button)", "fmt_on", true)
             level(g, "Vault sort", "vault_sort", 0, arrayOf("Newest", "A-Z", "Used"))   // v0.15.4 (N4)
             cycle(g, "Vault save folder", "vault_dest", { arrayOf("Unfiled") + vaultFolders().toTypedArray() },   // v0.15.4 (N4): folder used by "To Vault" (index 0 = Unfiled)

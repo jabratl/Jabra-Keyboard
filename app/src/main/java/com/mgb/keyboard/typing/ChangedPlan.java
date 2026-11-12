@@ -84,7 +84,7 @@ public final class ChangedPlan {
             if (in(key, "clip_view", "clip_sort", "clip_order", "clip_lines", "clip_fit")) return "Look of clips";
             if (in(key, "clip_expire", "clip_sens")) return "Privacy";
         } else if (group.equals("Tools & Panels")) {
-            if (in(key, "edit_bar", "tb_vault", "tb_custom", "tb_auto", "tb_fold")) return "Toolbar";
+            if (in(key, "edit_bar", "tb_vault", "tb_custom", "tb_auto", "tb_fold", "tb_hpct", "tb_ipct")) return "Toolbar";
             if (in(key, "fmt_on")) return "Formatter";
             if (in(key, "vault_sort", "vault_dest")) return "Vault";
         }

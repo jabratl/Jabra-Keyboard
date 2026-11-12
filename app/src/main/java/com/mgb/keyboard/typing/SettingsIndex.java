@@ -172,6 +172,8 @@ public final class SettingsIndex {
             case "tb_custom": return "Custom = your own toolbar (order, hide). Classic = the old fixed bar.";   // v0.15.4
             case "tb_auto": return "Moves the tools you use most to the front of the toolbar.";   // v0.15.4
             case "tb_fold": return "Folds the toolbar to its first tool. The \u00AB key on the bar does the same.";   // v0.15.4
+            case "tb_hpct": return "Height of the toolbar keys. 100% = the old size.";   // v0.16.6
+            case "tb_ipct": return "Size of the toolbar icons / text and key width. 100% = the old size.";   // v0.16.6
             case "hint_custom": return "Your own long-press characters: a=@,e=3 (letter=text). Empty = normal.";   // v0.15.4
             case "xrow_chars": return "Extra row of up to 10 characters above the numbers. Empty = no row.";   // v0.15.4
             case "vault_sort": return "Order of the Vault list: Newest, A-Z or most Used.";   // v0.15.4

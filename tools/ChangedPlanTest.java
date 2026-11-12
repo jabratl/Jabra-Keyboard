@@ -52,7 +52,7 @@ public class ChangedPlanTest {
         String[][] ng = {
             {"Typing", "bs_repeat,bs_word,autocap,enter_action,ds_period,ds_tab,hint_on,hint_custom,xrow_chars"},
             {"Clipboard & tools", "clip_on,clip_lines,clip_view,clip_sort,clip_order,clip_count,clip_expire,clip_fit,clip_sens"},
-            {"Tools & Panels", "edit_bar,tb_vault,tb_custom,tb_auto,tb_fold,fmt_on,vault_sort,vault_dest"} };
+            {"Tools & Panels", "edit_bar,tb_vault,tb_custom,tb_auto,tb_fold,tb_hpct,tb_ipct,fmt_on,vault_sort,vault_dest"} };
         for (String[] g : ng) {
             java.util.Set<String> used = new java.util.HashSet<>();
             for (String k : g[1].split(",")) { String sec = ChangedPlan.sectionOf(g[0], k); eq("row has section " + g[0] + "/" + k, sec.isEmpty(), false); used.add(sec); }

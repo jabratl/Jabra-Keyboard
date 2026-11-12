@@ -1,5 +1,6 @@
 package com.mgb.keyboard
 
+import com.mgb.keyboard.typing.BarSize
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.graphics.Color
@@ -728,24 +729,27 @@ class MgbIme : InputMethodService() {
     }
 
     /** v0.2.1: one key of the custom toolbar (id from typing/ToolbarOrder.java, or "fold"). */
+    /** v0.16.6 (X6): toolbar / old edit bar key height in dp (pref tb_hpct, 100 = 36 = old). */
+    private fun barH(): Int = try { BarSize.heightDp(prefs.int("tb_hpct", BarSize.DEF)) } catch (_: Throwable) { 36 }
+
     private fun toolbarKey(id: String): Button? {
         if (id == "fold" && prefs.bool("sg_on", true)) {   // v0.10.1 (G2): with the suggestion row ON this first toolbar key brings the suggestions back
             val bk = key("\u00AB", 1f) { sgTools = false; showLetters() }
-            bk.textSize = 14f
+            bk.textSize = try { BarSize.foldSp(prefs.int("tb_ipct", BarSize.DEF)) } catch (_: Throwable) { 14f }   // v0.16.6 (X6)
             try { ToolTip.attach(bk, prefs) { "Suggestions" } } catch (_: Throwable) { }
             return bk
         }
         if (id == "fold") {
             val folded = prefs.bool("tb_fold", false)
             val f = key(if (folded) "\u00BB" else "\u00AB", 1f) { prefs.setBool("tb_fold", !prefs.bool("tb_fold", false)); showLetters() }
-            f.textSize = 14f
+            f.textSize = try { BarSize.foldSp(prefs.int("tb_ipct", BarSize.DEF)) } catch (_: Throwable) { 14f }   // v0.16.6 (X6)
             try { ToolTip.attach(f, prefs) { if (prefs.bool("tb_fold", false)) "Unfold toolbar" else "Fold toolbar" } } catch (_: Throwable) { }   // v0.8.8: name tip
             return f
         }
-        if (id == "mode") { val mk = modeKey(36); attachEdit(mk, Toolbar.title("mode")); return mk }   // v0.2.7
+        if (id == "mode") { val mk = modeKey(barH()); try { mk.textSize = BarSize.textSp(prefs.int("tb_ipct", BarSize.DEF)) } catch (_: Throwable) { }; attachEdit(mk, Toolbar.title("mode")); return mk }   // v0.2.7
         val k = key(Toolbar.label(id), 1f) { toolbarAction(id) }   // v0.2.2
         JabraIcons.putThemed(this, k, Toolbar.icon(id))
-        k.textSize = 12f
+        k.textSize = try { BarSize.textSp(prefs.int("tb_ipct", BarSize.DEF)) } catch (_: Throwable) { 12f }   // v0.16.6 (X6): 100 = 12 sp
         attachEdit(k, Toolbar.title(id))   // v0.2.7: hold 1.5 s = Edit shortcut; v0.8.8: hold 0.3 s = name tip
         return k
     }
@@ -958,14 +962,14 @@ class MgbIme : InputMethodService() {
                 val tb = try { if (prefs.bool("tb_custom", true)) Toolbar.build(this, prefs, tbHost) else null } catch (_: Throwable) { null }   // v0.2.1
                 if (tb != null) root.addView(tb) else {   // v0.2.1: custom toolbar, else the old bar below
                 val eb = row()
-                try { if (prefs.bool("mode_key", true)) eb.addView(modeKey(36)) } catch (_: Throwable) { }   // v0.1.2: first key of the edit bar
+                try { if (prefs.bool("mode_key", true)) eb.addView(modeKey(barH())) } catch (_: Throwable) { }   // v0.1.2: first key of the edit bar
                 val items0 = arrayOf("📋" to "clip", "All" to "all", "Cut" to "cut", "Copy" to "copy", "Paste" to "paste", "Plain" to "plain")
                 val items = if (prefs.bool("fmt_on", true)) items0 + ("Aa" to "fmt") else items0   // v0.0.8: formatter button (setting "fmt_on")
                 for ((label, kind) in items) {
                     val k = key(label, 1f) { if (kind == "clip") openClipboard() else if (kind == "fmt") openFormatter() else editAction(kind) }
                     JabraIcons.putThemed(this, k, kind)   // v0.0.7: own icon (kind = clip/all/cut/copy/paste/plain); Icons OFF = old text
-                    (k.layoutParams as LinearLayout.LayoutParams).height = dp(36)
-                    k.textSize = 12f
+                    (k.layoutParams as LinearLayout.LayoutParams).height = dp(barH())   // v0.16.6 (X6)
+                    k.textSize = try { BarSize.textSp(prefs.int("tb_ipct", BarSize.DEF)) } catch (_: Throwable) { 12f }
                     eb.addView(k)
                 }
                 root.addView(eb)

@@ -5,6 +5,7 @@ import android.view.View
 import android.widget.Button
 import android.widget.HorizontalScrollView
 import android.widget.LinearLayout
+import com.mgb.keyboard.typing.BarSize
 import com.mgb.keyboard.typing.ToolbarOrder
 
 /** v0.2.1: MgbIme implements this: makeKey(id) returns the finished key for an item id (or "fold"), null = skip it. */
@@ -47,8 +48,10 @@ object Toolbar {
     private fun make(ctx: Context, prefs: JabraPrefs, host: ToolbarHost): View? {
         val d = ctx.resources.displayMetrics.density
         fun dp(v: Int): Int = (v * d).toInt()
+        val kw = try { BarSize.widthDp(prefs.int("tb_ipct", BarSize.DEF)) } catch (_: Throwable) { KEY_W }   // v0.16.6 (X6): 100 = 44 dp
+        val kh = try { BarSize.heightDp(prefs.int("tb_hpct", BarSize.DEF)) } catch (_: Throwable) { KEY_H }   // v0.16.6 (X6): 100 = 36 dp
         fun fixed(): LinearLayout.LayoutParams {
-            val lp = LinearLayout.LayoutParams(dp(KEY_W), dp(KEY_H))
+            val lp = LinearLayout.LayoutParams(dp(kw), dp(kh))
             lp.setMargins(dp(2), dp(2), dp(2), dp(2))
             return lp
         }
