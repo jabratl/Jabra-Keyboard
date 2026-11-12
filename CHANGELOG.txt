@@ -1,17 +1,3 @@
-v0.12.0 - NEW: new app screen, part M2 of 3 (new rows + sections). Only with the new screen ON (pref app_ui = 1).
-- WHY: plan "App UI" part M2: the rows were still plain "Name: ON" buttons in long lists.
-- What you get (new screen only, old screen unchanged): on/off settings = real Switch (title left, help text under, 56 dp); 2-4 short options = segmented buttons; longer lists (Theme, Look...) = title + value chip, tap = next; numbers = [-] value [+] 48 dp, HOLD = repeats (slow, then faster; one "Undo last change" step per hold). Small dot at the left of a row = changed from default. LONG-PRESS on a row (title area) = reset THIS row (toast "Reset: ...", Undo last change works).
-- Sections: Layout & Size = Size | Spacing | Shape | Bottom row | One-hand. Look = Theme & style | Number row | Hints | Other. Typing page (Languages part) = Bangla | Switching | Number row & mode. Keys & Gestures = Feedback | Popup | Smart typing | Extra keys | Timing. Preset / Forget / Undo buttons sit under "Actions" at the end of the page. Section headers hide when search hides all their rows.
-- Logic untouched: same prefs, same Row registry (search, recent, Undo last change, Reset this group). The old Button rows are still the code path of the old screen.
-- Code: typing/ChangedPlan.java (NEW, pure: changed rule, segments rule, hold speed, row -> section map), AppRows.kt (NEW: Switch / Choice / Chip / Stepper rows, dot + long-press, section header, action style), SettingsGroups.kt (toggle / level / cycle / stepper: new branch when the new screen is on; addRowNew; sections; styles), tools/ChangedPlanTest.java (59 checks), CHECKLIST.txt (Z72), build.gradle.kts 0.12.0.
-- Prefs (new): none. Permissions: none.
-BROKE: nothing intended. app_ui = 0 = exactly v0.11.0 / v0.10.28 screen.
-NOT tested: Kotlin NOT compiled here (GitHub Actions is the first compile check); nothing seen on a phone (Switch colours in dark mode, segmented text at 130% font, hold-repeat feel, long-press reset vs scroll, 360 px width of [-] value [+] rows).
-KNOWN LIMIT (M2): the dot of a number row means "a value is saved" (unset = default); a value saved equal to the default also shows the dot until you reset it. Landscape values are still only inside the keyboard. Search still per page (M3).
-TESTED here: all 68 tools/*Test.java PASS (ChangedPlanTest 59 checks); bracket balance of AppRows.kt / SettingsGroups.kt OK.
-Rollback: Data & About > [New app screen: ON] (old screen), or revert to v0.11.0.
-NEXT (plan, not built): M3 = global search on Home, two panes >= 600 dp, setup wizard, a11y pass, default app_ui = 1 after Z71 + Z72 are green.
-
 v0.11.0 - NEW: new app screen, part M1 of 3 (Home + 6 pages). OFF by default.
 - WHY: the old app screen is one long scroll with 7 accordion groups. Plan "App UI" (HANDOFF plan file) part M1 = frame + Home only.
 - What you get: old screen has a new button [Try the new app screen (beta)] (pref app_ui = 1). New screen: Home = logo + version, ONE setup card (hidden when done), test field, [Quick looks] Ridmik-style / Compact / Large keys (+ [Undo last look]), 6 tiles with a one-line summary (Typing, Look & Theme, Layout & Size, Keys & Gestures, Clipboard & Tools, Data & About). Tap a tile = a page with [Back]; system Back = Home; rotate keeps the page. The live preview stays at the top on Home, Look & Theme and Layout & Size only.
