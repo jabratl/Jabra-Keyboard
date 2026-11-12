@@ -1,3 +1,12 @@
+v0.15.5 - BUILD: toolbar editor inside the app (plan N, step N5)
+- WHY: the toolbar order / show-hide list existed only inside the keyboard (gear > More settings > Edit toolbar). Now you can edit it in the app.
+- What you get: Settings > Tools & Panels > Toolbar, under the toolbar rows: a list of all toolbar items (icon + name). Per item: [First] [up] [down] [Hide / Show]. Hidden items are dimmed with "(hidden)". Buttons that cannot work (First / up on the first item, down on the last) are greyed. "Reset toolbar" (tap twice) = default order, nothing hidden, extras OFF, fold OFF (same as the keyboard button). Same data as the keyboard panel (tb_order, tb_hidden, tb_on): change in the app, the keyboard bar follows when it opens; change in the keyboard, the app list follows when the page is opened again. The "Vault key (toolbar)" row and the editor's Vault item stay in sync.
+- Code: NEW AppToolbarEditor.kt (only calls ToolbarOrder.java: parse / moveFirst / up / down / setHidden / setOn / off, no logic copied). SettingsGroups.kt: 1 hook block after the Vault rows (try / catch, new app screen only) + 1 line in noteChange for the Vault key sync. No new pref, no Java change, ToolbarTest (44) + all 74 tests green.
+- Not done (by design): no live keyboard-bar picture on this page (the preview card is only pinned on Home / Look / Layout). The old screen keeps the keyboard-panel editor only.
+- BROKE: nothing intended.
+- NOT tested: phone (CHECKLIST Z81). Kotlin compile: 0 errors.
+- Rollback: delete AppToolbarEditor.kt and restore SettingsGroups.kt from v0.15.4.
+
 v0.15.4 - MODIFY: missing simple settings added to the app (plan N, step N4)
 - WHY: these settings existed only inside the keyboard. Now the app has a row for each, same pref, same range, same default (so app and keyboard always agree).
 - What you get: (1) Layout & Size: "Key height (landscape)" and "One-hand width (landscape)" steppers (kh_pct_l, oh_w_l). (2) Tools & Panels > Toolbar: "Toolbar style" Classic | Custom (tb_custom), "Most-used tools first" (tb_auto), "Fold toolbar" (tb_fold). (3) Tools & Panels > Vault: "Vault sort" Newest | A-Z | Used (vault_sort), "Vault save folder" = Unfiled or one of your folders (vault_dest). (4) Typing > Custom characters: "Long-press override" (hint_custom, a=@,e=3) and "Extra character row" (xrow_chars): tap = small text box, OK saves a cleaned value (same cleaning as the keyboard Typing panel), Cancel = nothing, empty OK = clear. Long-press the row = reset. Search, Favourites, changed dot, Undo work for all of them.

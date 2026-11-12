@@ -111,7 +111,9 @@ object SettingsGroups {
             } catch (_: Throwable) { }
         }
 
+        var tbEditor: AppToolbarEditor.Handle? = null   // v0.15.5 (N5): inline toolbar editor (new app screen only)
         fun noteChange(key: String, old: Int) {
+            if (key == "tb_vault") { try { tbEditor?.refresh?.invoke() } catch (_: Throwable) { } }   // v0.15.5: Vault key row <-> editor list stay in sync
             try { dotUpdaters[key]?.invoke() } catch (_: Throwable) { }   // v0.12.0 (M2)
             try {
                 prefs.setStr("set_last", SettingsIndex.encodeLast(key, old))
@@ -591,6 +593,13 @@ object SettingsGroups {
             cycle(g, "Vault save folder", "vault_dest", { arrayOf("Unfiled") + vaultFolders().toTypedArray() },   // v0.15.4 (N4): folder used by "To Vault" (index 0 = Unfiled)
                 { val d = prefs.str("vault_dest", ""); if (d.isEmpty()) 0 else vaultFolders().indexOf(d) + 1 },
                 { i -> val f = vaultFolders(); prefs.setStr("vault_dest", if (i <= 0 || i > f.size) "" else f[i - 1]) }, 0)
+            if (sink != null) {   // v0.15.5 (N5): toolbar editor under the Toolbar section; any problem = no editor, the rows above stay
+                try {
+                    val ed = AppToolbarEditor.build(ctx, prefs) { try { link?.refreshRows?.invoke() } catch (_: Throwable) { }; try { link?.changed?.invoke() } catch (_: Throwable) { } }
+                    tbEditor = ed
+                    (secBoxes["Toolbar"] ?: g).addView(ed.view)
+                } catch (_: Throwable) { }
+            }
         }
 
         try { group("Data & Backup") { g -> g.addView(DataPage.build(ctx)) } } catch (_: Throwable) { }   // v0.4.1

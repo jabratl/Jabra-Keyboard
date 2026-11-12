@@ -531,3 +531,14 @@ Z80) v0.15.4 Missing simple rows in the app (N4)
  [ ] "Extra character row": type ()[]{}  OK: extra row appears above the numbers in the keyboard. Empty OK / long-press reset = row gone.
  [ ] Undo (top of the page) after changing a text row brings the old text back. Global search "landscape", "fold", "vault sort", "override" finds the rows on the right page.
  [ ] Old screen (Data & About > old screen): all old rows still work.
+
+Z81) v0.15.5 Toolbar editor in the app (N5)
+ [ ] Home > Tools & Panels > Toolbar: under the switches you see the list of tools (icon + name) with First / up / down / Hide (or Show). First item has First and up greyed, last item has down greyed.
+ [ ] Tap down on "Clipboard": it moves one place. Open the keyboard (letters): the toolbar shows the new order. Tap First on some item: it becomes the leftmost.
+ [ ] Hide "Cut": it is dimmed "(hidden)" and button says Show; keyboard bar has no Cut. Show: back.
+ [ ] An extra item (e.g. Emoji, Undo) says Show at first (extras are OFF by default). Show it: it appears on the bar.
+ [ ] "Vault" item Show / Hide and the row "Vault key (toolbar)" ON / OFF agree with each other (change one, the other follows).
+ [ ] Change the order in the keyboard (gear > More settings > Edit toolbar), go to the app, reopen the page: the list shows the same order.
+ [ ] Reset toolbar: first tap changes the text (warning colour), second tap within 3 s resets: default order, nothing hidden, extras OFF. A single tap alone does nothing.
+ [ ] Page scrolls normally, buttons are easy to hit at 360 dp width, dark mode readable. Rotate the phone: still works.
+ [ ] Toolbar style Classic: the list can still be edited (it applies when Custom is on).
