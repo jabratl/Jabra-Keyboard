@@ -105,7 +105,13 @@ class VaultPanel(private val ctx: Context, private val host: JabraHost, private 
 
     private fun small(b: Button): Button { b.textSize = 12f; return b }
 
+    // v0.10.12 (D2.2): row() = UiKit.row (same horizontal LinearLayout). Old body kept as rowOld() = automatic fallback.
     private fun row(): LinearLayout {
+        try { return UiKit.row(ctx) } catch (_: Throwable) { }
+        return rowOld()
+    }
+
+    private fun rowOld(): LinearLayout {
         val r = LinearLayout(ctx)
         r.orientation = LinearLayout.HORIZONTAL
         return r

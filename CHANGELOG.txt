@@ -1,3 +1,12 @@
+v0.10.12 - D2.2 VaultPanel on the shared UiKit helpers (no look change)
+- WHY: plan D2 (one look for all panels). AUDIT FIRST: VaultPanel.btn() was ALREADY UiKit.btn since v0.6.6 (old body btnOld() kept). The only private layout helper left was row().
+- What changed: VaultPanel.row() now calls UiKit.row(ctx) (same horizontal LinearLayout); old body kept as rowOld() = automatic fallback. 1 tiny patch, nothing visible changes.
+- Deliberately NOT changed: the kind / folder chips keep the "check mark + plain button" style (UiKit.chip has a blue selected fill = visible change), small() 12sp, the 30dp chip height, the entry-row colours (rowInk / rowFill already use JabraTokens), the 11sp preview / meta texts. These stay as they are; moving them is a look decision for the user.
+- Code: VaultPanel.kt (row), build.gradle.kts 0.10.12.
+- Tests: no Java touched; all 54 tools/*Test.java PASS.
+BROKE: nothing intended. NOT tested: Kotlin compile (GitHub Actions), phone (CHECKLIST Z56).
+Rollback: put back v0.10.11 VaultPanel.kt.
+
 v0.10.11 - NEW: shared panel look, step D2.1 (UiKit.header / row, PanelSpec, Theme panel moved to UiKit)
 - WHY: panels each kept private btn() / note() copies, so spacing / heights could drift. D2 moves them to UiKit one group at a time, with NO look change.
 - AUDIT FIRST: TextToolsPanel and ProfilePanel were ALREADY on UiKit.btn since v0.6.7 (btn() -> UiKit, old body kept as btnOld()). Only ThemePanel still had private pk() / note(). So D2.1 = ThemePanel + the shared helpers.
