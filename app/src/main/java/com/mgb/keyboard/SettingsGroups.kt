@@ -153,7 +153,7 @@ object SettingsGroups {
         }
 
         // v0.12.0 (M2): same registry entry as addRow, but the view is a new row (switch / segments / chip / stepper) wrapped with the "changed" dot + long-press reset
-        fun addRowNew(box: LinearLayout, key: String, title: String, built: AppRows.Built, setIdx: (Int) -> Unit, cur: () -> Int, def: Int, raw: (() -> Int)? = null) {
+        fun addRowNew(box: LinearLayout, key: String, title: String, built: AppRows.Built, setIdx: (Int) -> Unit, cur: () -> Int, def: Int, raw: (() -> Int)? = null, valueText: (() -> String)? = null) {
             val dec = AppRows.decorate(ctx, built.view, { ChangedPlan.isChanged(raw?.invoke() ?: cur(), def) }) {
                 val old = cur()
                 setIdx(def)
@@ -167,6 +167,10 @@ object SettingsGroups {
             val r = Row(key, title, curGrp?.name ?: "", dec.view, { built.refresh(); dec.refresh() }, setIdx, cur, def)
             rows.add(r)
             curGrp?.rows?.add(r)
+            try {   // v0.13.0 (M3): the global search on Home reads the rows from here (same view, same dot rule)
+                sink?.rows?.add(SinkRow(key, title, curGrp?.name ?: "", SettingsIndex.help(key), dec.view,
+                    { ChangedPlan.isChanged(raw?.invoke() ?: cur(), def) }, { valueText?.invoke() ?: "" }))
+            } catch (_: Throwable) { }
         }
 
         fun applySearch(q: String) {
@@ -207,7 +211,7 @@ object SettingsGroups {
                     prefs.setBool(key, nv)
                     noteChange(key, old)
                 }
-                addRowNew(box, key, title, built, { prefs.setBool(key, it == 1) }, { if (prefs.bool(key, def)) 1 else 0 }, if (def) 1 else 0)
+                addRowNew(box, key, title, built, { prefs.setBool(key, it == 1) }, { if (prefs.bool(key, def)) 1 else 0 }, if (def) 1 else 0, null) { onOff(prefs.bool(key, def)) }
                 return
             }
             val b = btn("") { v ->
@@ -228,7 +232,7 @@ object SettingsGroups {
                 val built = if (ChangedPlan.useSegments(names.size, names.sumOf { it.length }))
                     AppRows.choiceRow(ctx, title, h, { names }, { cur() }) { i -> val old = cur(); prefs.setInt(key, i); noteChange(key, old) }
                 else AppRows.chipRow(ctx, title, h, { names[cur()] }) { val old = cur(); prefs.setInt(key, (old + 1) % names.size); noteChange(key, old) }
-                addRowNew(box, key, title, built, { prefs.setInt(key, it.coerceIn(0, names.size - 1)) }, { cur() }, def.coerceIn(0, names.size - 1))
+                addRowNew(box, key, title, built, { prefs.setInt(key, it.coerceIn(0, names.size - 1)) }, { cur() }, def.coerceIn(0, names.size - 1), null) { names[cur()] }
                 return
             }
             val b = btn("") { v ->
@@ -249,7 +253,7 @@ object SettingsGroups {
                 val built = if (ChangedPlan.useSegments(names().size, names().sumOf { it.length }))
                     AppRows.choiceRow(ctx, title, h, names, { cur() }) { i -> val old = cur(); set(i); noteChange(key, old) }
                 else AppRows.chipRow(ctx, title, h, { names()[cur()] }) { val old = cur(); set((get() + 1) % names().size); noteChange(key, old) }
-                addRowNew(box, key, title, built, { set(it) }, { cur() }, def)
+                addRowNew(box, key, title, built, { set(it) }, { cur() }, def, null) { names()[cur()] }
                 return
             }
             val b = btn("") { v ->
@@ -273,7 +277,7 @@ object SettingsGroups {
                     { holdOld = read() },
                     { dir -> prefs.setInt(key, com.mgb.keyboard.typing.SizePct.step(read(), dir, min, max, step)) },
                     { noteChange(key, holdOld) })
-                addRowNew(box, key, title, built, { prefs.setInt(key, it) }, { read() }, def) { prefs.int(key, -1) }
+                addRowNew(box, key, title, built, { prefs.setInt(key, it) }, { read() }, def, { prefs.int(key, -1) }) { read().toString() + unit }
                 return
             }
             val line = LinearLayout(ctx)

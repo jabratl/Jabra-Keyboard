@@ -1,14 +1,17 @@
 package com.mgb.keyboard
 
 import android.graphics.Typeface
+import android.graphics.drawable.GradientDrawable
 import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
+import android.view.ViewTreeObserver
 import android.widget.Button
 import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
+import com.mgb.keyboard.typing.HomePlan
 import com.mgb.keyboard.typing.PagePlan
 
 /**
@@ -20,7 +23,12 @@ class PageSink {
     val bodies = LinkedHashMap<String, View>()
     var top: View? = null
     var clearSearch: (() -> Unit)? = null
+    val rows = ArrayList<SinkRow>()   // v0.13.0 (M3): every row of every page, for the global search on Home (filled by SettingsGroups.addRowNew)
 }
+
+/** v0.13.0 (M3): one row as the global search sees it. [view] = the row on its page (scroll target + flash), [changed] = dot rule, [value] = short value text ("ON", "120%"). */
+class SinkRow(val key: String, val title: String, val group: String, val help: String, val view: View,
+              val changed: () -> Boolean, val value: () -> String)
 
 /**
  * v0.11.0 (M1): page container. One FrameLayout shows either Home or one page (title bar + scroll body). Same Activity, no manifest change.
@@ -29,42 +37,134 @@ class PageSink {
  * [onShown] is called after every switch (the Activity pins or hides the preview card and refreshes the tile summaries).
  */
 class AppPages(private val act: SettingsActivity, private val sink: PageSink, private val home: View,
-               private val about: () -> View?, private val onShown: (String) -> Unit) {
+               private val about: () -> View?, private val twoPane: Boolean, private val oldScreen: () -> Unit,
+               private val onShown: (String) -> Unit) {
+    // v0.13.0 (M3): twoPane = true: Home lives in the left pane (the Activity places it), this frame is the right pane and never shows Home
+    // (show(HOME) opens the last / first page, no Back button). oldScreen = button of the error card ("Use the old app screen").
 
     val frame = FrameLayout(act)
     var current: String = PagePlan.HOME
         private set
     private val views = HashMap<String, View>()
     private val cols = HashMap<String, LinearLayout>()
+    private val scrolls = HashMap<String, ScrollView>()
+    private var lastPage: String = ""
+
+    /** The column of an opened page (the Activity puts the preview card there on short two-pane screens). null = page not built yet. */
+    fun inlineHost(id: String): LinearLayout? = cols[id]
 
     private fun dp(v: Int): Int = (v * act.resources.displayMetrics.density).toInt()
 
     fun show(id0: String) {
-        val id = PagePlan.sanitize(id0)
+        var id = PagePlan.sanitize(id0)
+        if (twoPane && id == PagePlan.HOME) id = HomePlan.firstPage(lastPage)   // v0.13.0 (M3): the right pane has no Home page
         try {
             val v: View = if (id == PagePlan.HOME) home else (views[id] ?: build(id).also { views[id] = it })
             frame.removeAllViews()
             (v.parent as? ViewGroup)?.removeView(v)
             frame.addView(v, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
             current = id
-            if (id != PagePlan.HOME) attachTop(id)
+            if (id != PagePlan.HOME) { lastPage = id; attachTop(id) }
             try { onShown(id) } catch (_: Throwable) { }
         } catch (_: Throwable) {
-            try {   // could not open this page: show Home
+            try {   // v0.13.0 (M3): could not open this page: a card with [Back] and [Use the old app screen] (was: silently Home)
                 frame.removeAllViews()
-                (home.parent as? ViewGroup)?.removeView(home)
-                frame.addView(home, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
-                current = PagePlan.HOME
-                try { onShown(PagePlan.HOME) } catch (_: Throwable) { }
+                val wrap = ScrollView(act)
+                wrap.addView(errorCard(id))
+                frame.addView(wrap, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
+                current = id
+                try { onShown(id) } catch (_: Throwable) { }
             } catch (_: Throwable) { }
         }
     }
 
-    /** true = Back was used here (a page was closed). false = already on Home, the system handles Back. */
+    /** true = Back was used here (a page was closed). false = already on Home (or two panes: no Home page), the system handles Back. */
     fun back(): Boolean {
-        if (current == PagePlan.HOME) return false
+        if (twoPane || current == PagePlan.HOME) return false
         show(PagePlan.HOME)
         return true
+    }
+
+    /**
+     * v0.13.0 (M3): opens page [id] and scrolls to [target] (a row view of that page) and flashes it. Any problem = the page is simply open.
+     * The scroll waits for the next layout pass (the page was just put into the frame).
+     */
+    fun reveal(id: String, target: View?) {
+        show(id)
+        try {
+            val t = target ?: return
+            val pid = PagePlan.sanitize(id)
+            val sv = scrolls[pid] ?: return
+            val col = cols[pid] ?: return
+            var done = false
+            fun go() {
+                if (done) return
+                done = true
+                try {
+                    var y = 0
+                    var v: View? = t
+                    while (v != null && v !== col) { y += v.top; v = v.parent as? View }
+                    if (v === col) sv.smoothScrollTo(0, HomePlan.revealY(y, dp(72)))
+                    flash(t)
+                } catch (_: Throwable) { }
+            }
+            sv.viewTreeObserver.addOnGlobalLayoutListener(object : ViewTreeObserver.OnGlobalLayoutListener {
+                override fun onGlobalLayout() {
+                    try { if (sv.viewTreeObserver.isAlive) sv.viewTreeObserver.removeOnGlobalLayoutListener(this) } catch (_: Throwable) { }
+                    go()
+                }
+            })
+            sv.requestLayout()
+        } catch (_: Throwable) { }
+    }
+
+    private fun flash(v: View) {   // soft accent background for about one second, then the old background again
+        try {
+            val old = v.background
+            val g = GradientDrawable()
+            g.setColor((AppUi.accent(act) and 0x00FFFFFF) or 0x40000000)
+            g.cornerRadius = dp(8).toFloat()
+            v.background = g
+            v.postDelayed({ try { v.background = old } catch (_: Throwable) { } }, 1100)
+        } catch (_: Throwable) { }
+    }
+
+    /** v0.13.0 (M3): error / empty state card. Buttons: Back to Home (one pane only) and the old app screen. */
+    private fun errorCard(id: String): View {
+        val card = LinearLayout(act)
+        card.orientation = LinearLayout.VERTICAL
+        card.setPadding(dp(16), dp(16), dp(16), dp(16))
+        try { card.background = AppUi.cardBg(act, 12) } catch (_: Throwable) { }
+        val lp = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+        lp.setMargins(dp(16), dp(16), dp(16), dp(16))
+        card.layoutParams = lp
+        val t = TextView(act)
+        t.text = "Could not open this page"
+        t.textSize = 16f
+        t.setTypeface(null, Typeface.BOLD)
+        try { t.setTextColor(AppUi.warn(act)) } catch (_: Throwable) { }
+        try { t.isAccessibilityHeading = true } catch (_: Throwable) { }
+        card.addView(t)
+        val m = TextView(act)
+        m.text = "Your settings are safe. You can go back, or use the old app screen."
+        try { m.setTextColor(AppUi.text(act)) } catch (_: Throwable) { }
+        m.setPadding(0, dp(6), 0, dp(8))
+        card.addView(m)
+        if (!twoPane) {
+            val b = Button(act)
+            b.text = "Back to Home"
+            b.isAllCaps = false
+            b.minHeight = dp(48); b.minimumHeight = dp(48)
+            b.setOnClickListener { try { show(PagePlan.HOME) } catch (_: Throwable) { } }
+            card.addView(b)
+        }
+        val o = Button(act)
+        o.text = "Use the old app screen"
+        o.isAllCaps = false
+        o.minHeight = dp(48); o.minimumHeight = dp(48)
+        o.setOnClickListener { try { oldScreen() } catch (_: Throwable) { } }
+        card.addView(o)
+        return card
     }
 
     // search + undo + recent live in ONE view; it moves to the page that is open (search box is emptied first)
@@ -94,13 +194,13 @@ class AppPages(private val act: SettingsActivity, private val sink: PageSink, pr
         backBtn.minimumHeight = dp(48)
         backBtn.contentDescription = "Back to home"
         backBtn.setOnClickListener { try { back() } catch (_: Throwable) { } }
-        bar.addView(backBtn, LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, dp(48)))
+        if (!twoPane) bar.addView(backBtn, LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, dp(48)))   // v0.13.0 (M3): no Back button in two panes (Home is always visible)
         val title = TextView(act)
         title.text = PagePlan.title(id)
         title.textSize = 20f
         title.setTypeface(null, Typeface.BOLD)
         try { title.setTextColor(AppUi.text(act)) } catch (_: Throwable) { }
-        title.setPadding(dp(8), 0, 0, 0)
+        title.setPadding(if (twoPane) dp(16) else dp(8), 0, 0, 0)
         try { title.isAccessibilityHeading = true } catch (_: Throwable) { }
         bar.addView(title, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
         outer.addView(bar)
@@ -121,17 +221,15 @@ class AppPages(private val act: SettingsActivity, private val sink: PageSink, pr
         if (id == PagePlan.DATA) {
             try { about()?.let { col.addView(sectionHeader("About & updates")); col.addView(it) } } catch (_: Throwable) { }
         }
-        if (names.isEmpty()) {   // nothing to show: say so, the Back button still works
-            val t = TextView(act)
-            t.text = "Could not open this page. Use Back."
-            try { t.setTextColor(AppUi.warn(act)) } catch (_: Throwable) { }
-            col.addView(t)
+        if (names.isEmpty()) {   // nothing to show: error card (v0.13.0: with a button to the old screen)
+            col.addView(errorCard(id))
         }
         cols[id] = col
 
         val sv = ScrollView(act)
         sv.isFillViewport = true
         sv.addView(col)
+        scrolls[id] = sv   // v0.13.0 (M3): for reveal()
         outer.addView(sv, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f))
         return outer
     }

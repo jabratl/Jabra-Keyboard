@@ -445,3 +445,21 @@ Z72) v0.12.0 New app screen M2 (rows + sections), new screen ON only
  [ ] [Undo last change] and [Recently changed] chips still work with the new rows; Ridmik-style spacing + its Undo update the steppers and dots.
  [ ] 360 / 412 / 1280 px, light + dark, big font (130%): no cut text, [-] value [+] row readable, touch targets 48 dp. TalkBack reads "title, switch, on / off" and "Increase / Decrease title".
 
+
+Z73) v0.13.0 New app screen M3 (search, two panes, wizard), new screen ON only
+ [ ] Home: a search box under the logo line. App opens WITHOUT the keyboard popping up. Type "vib": results grouped under the page name (Keys & Gestures...), each row shows ON / OFF or the value; the rest of Home is hidden. Clear the text: Home is back.
+ [ ] Tap a result: the page opens, scrolls to the row, the row flashes for about one second. Works for a switch, a [-] [+] row and a segmented row, also a row far down in Layout & Size.
+ [ ] Type a nonsense word: "No setting found". Two words in any order ("history clip") find "Clip history".
+ [ ] Change 2 settings. Home > [Recently changed]: chips with those names, tap = jump. [Changed from default (N)]: collapsed, tap opens the list, tap an entry = jump. After Reset this row the entry is gone from the list.
+ [ ] Page search box (top of each page) still works as in M2; opening a page from the global search clears it.
+ [ ] Tablet / 1280 px or phone in landscape (600 dp or more): Home on the LEFT, the page on the RIGHT, the open tile has a frame, no Back button; tap another tile = the right side changes. Change a setting on the right: the tile summary and the lists on the left follow at once.
+ [ ] Landscape phone (short): the live preview is NOT pinned, it scrolls at the top of Layout & Size / Look & Theme. Tall tablet: preview pinned above the page.
+ [ ] Rotate portrait <-> landscape on a page: the same page is open. Rotate from Home (portrait): Layout & Size opens on the right.
+ [ ] Fresh install (or Settings > Apps > Clear data): Home shows "Setup: step 1 of 3" with [Open keyboard settings]. Enable the keyboard, come back: step 2 [Choose Jabra Keyboard]. Choose it, come back: step 3 with a test box and [Done]. Tap Done: the card is gone and does not come back.
+ [ ] A phone that is already set up (keyboard enabled + chosen): NO wizard (only the old setup card logic: hidden when both steps are done).
+ [ ] Break test: turn the keyboard off in the phone settings after Done: the plain setup card shows again (not the wizard).
+ [ ] Error card: (hard to trigger) if a page cannot open, the card shows [Back to Home] (one pane) and [Use the old app screen]; the second button goes to the old screen.
+ [ ] TalkBack: a tile is read "Layout & Size. Height 120%, radius 6, button". A result is read "Vibrate, ON, Keys & Gestures". The search box is read once ("Search all settings").
+ [ ] 130% font on 360 px: tiles, Quick looks, result rows, wizard card: no cut text, every button at least 48 dp tall.
+ [ ] 360 / 412 / 640 / 1280 px, light + dark: no overlap, left pane about 300-380 dp, right pane at least 300 dp.
+ [ ] Data & About > [New app screen: ON] goes to the old screen; the old screen has [Try the new app screen (beta)]. Default is still the OLD screen after a fresh install.

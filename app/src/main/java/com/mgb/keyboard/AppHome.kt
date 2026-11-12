@@ -1,6 +1,7 @@
 package com.mgb.keyboard
 
 import android.graphics.Typeface
+import android.graphics.drawable.GradientDrawable
 import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
@@ -14,8 +15,9 @@ import com.mgb.keyboard.typing.EdgePlan
 import com.mgb.keyboard.typing.PagePlan
 import com.mgb.keyboard.typing.SizePct
 
-/** v0.11.0 (M1): the Home view and a refresh() that redraws the tile summaries (called when Home is shown again). */
-class AppHomeView(val view: View, val refresh: () -> Unit)
+/** v0.11.0 (M1): the Home view and a refresh() that redraws the tile summaries (called when Home is shown again).
+ *  v0.13.0 (M3): select(id) marks the tile of the open page (two panes); refresh() also rebuilds the lists of the global search. */
+class AppHomeView(val view: View, val refresh: () -> Unit, val select: (String) -> Unit)
 
 /**
  * v0.11.0 (M1 of the "App UI" plan): new Home = header, ONE setup card, test field, Quick looks, 6 tiles (2 columns).
@@ -25,7 +27,7 @@ class AppHomeView(val view: View, val refresh: () -> Unit)
  */
 object AppHome {
 
-    fun build(act: SettingsActivity, setupCard: View?, pvLink: PreviewLink, open: (String) -> Unit): AppHomeView {
+    fun build(act: SettingsActivity, setupCard: View?, pvLink: PreviewLink, search: AppSearchView?, open: (String) -> Unit): AppHomeView {   // v0.13.0 (M3): search = global search (null = none)
         val prefs = JabraPrefs(act)
         val d = act.resources.displayMetrics.density
         fun dp(v: Int): Int = (v * d).toInt()
@@ -62,6 +64,8 @@ object AppHome {
         head.addView(names, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
         col.addView(head)
 
+        try { if (search != null) col.addView(search.view) } catch (_: Throwable) { }   // v0.13.0 (M3): ONE search for all settings, right under the header
+
         try {   // warning when the crash guard switched a panel off / backup is old (same text as the old screen)
             val bn = com.mgb.keyboard.typing.HealthCheck.backupNote(prefs.bool("bk_auto", true), prefs.str("bk_last", ""), System.currentTimeMillis())
             val w = listOf(PanelGuard.note(act), bn).filter { it.isNotEmpty() }.joinToString("\n")
@@ -93,7 +97,15 @@ object AppHome {
         undo.visibility = if (hasUndo()) View.VISIBLE else View.GONE
 
         val tileSum = ArrayList<Pair<String, TextView>>()
-        fun refreshTiles() { for ((id, tv) in tileSum) { try { tv.text = summary(act, prefs, id) } catch (_: Throwable) { } } }
+        val tileViews = HashMap<String, View>()   // v0.13.0 (M3)
+        fun refreshTiles() {
+            for ((id, tv) in tileSum) {
+                try {
+                    tv.text = summary(act, prefs, id)
+                    tileViews[id]?.contentDescription = PagePlan.title(id) + ". " + tv.text   // v0.13.0 (M3): TalkBack reads title + summary
+                } catch (_: Throwable) { }
+            }
+        }
         fun redrawAll() {
             try { pvLink.changed?.invoke() } catch (_: Throwable) { }
             try { pvLink.refreshRows?.invoke() } catch (_: Throwable) { }
@@ -182,18 +194,45 @@ object AppHome {
             sm.text = summary(act, prefs, id)
             tile.addView(sm)
             tileSum.add(Pair(id, sm))
-            tile.contentDescription = PagePlan.title(id)
+            tile.contentDescription = PagePlan.title(id) + ". " + sm.text   // v0.13.0 (M3)
+            AppA11y.asButton(tile)
+            tileViews[id] = tile
             tile.setOnClickListener { try { open(id) } catch (_: Throwable) { } }
             val lp = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
             lp.setMargins(dp(4), dp(4), dp(4), dp(4))
             rowBox?.addView(tile, lp)
         }
 
+        try {   // v0.13.0 (M3): lists at the end; everything under the search box is hidden while a search text is typed
+            if (search != null) {
+                col.addView(search.lists)
+                val at = col.indexOfChild(search.view)
+                if (at >= 0) search.bindRest((at + 1 until col.childCount).map { col.getChildAt(it) })
+            }
+        } catch (_: Throwable) { }
+
+        fun select(id: String) {   // v0.13.0 (M3): two panes: the tile of the open page gets an accent frame
+            for ((tid, tv) in tileViews) {
+                try {
+                    if (tid == id) {
+                        val g = GradientDrawable()
+                        g.setColor(com.mgb.keyboard.typing.AppPalette.card(dark))
+                        g.cornerRadius = dp(12).toFloat()
+                        g.setStroke(dp(2), AppUi.accent(act))
+                        tv.background = g
+                    } else tv.background = AppUi.cardBg(act, 12)
+                } catch (_: Throwable) { }
+            }
+        }
+
         val sv = ScrollView(act)
         sv.isFillViewport = true
         sv.addView(col)
         try { if (dark) sv.setBackgroundColor(AppUi.bg(act)) } catch (_: Throwable) { }
-        return AppHomeView(sv) { try { refreshTiles(); undo.visibility = if (hasUndo()) View.VISIBLE else View.GONE } catch (_: Throwable) { } }
+        return AppHomeView(sv, {
+            try { refreshTiles(); undo.visibility = if (hasUndo()) View.VISIBLE else View.GONE } catch (_: Throwable) { }
+            try { search?.refresh?.invoke() } catch (_: Throwable) { }
+        }, { id -> select(id) })
     }
 
     private fun label(act: SettingsActivity, text: String, topPx: Int): TextView {

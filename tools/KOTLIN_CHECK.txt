@@ -1,0 +1,19 @@
+HOW TO COMPILE THE KOTLIN OF THIS PROJECT IN A CHAT (syntax + type check, found 2026-11-12, used first for v0.13.0)
+It is NOT a phone test and NOT the Gradle build, but it catches nearly every error that GitHub Actions would report.
+Needs internet to github.com only (allowed in the chat sandbox). Java: the sandbox has only a JRE; javac works through the jdk.compiler module:
+  printf '#!/bin/sh\nexec java -m jdk.compiler/com.sun.tools.javac.Main "$@"\n' > ~/bin/javac && chmod +x ~/bin/javac   (then PATH=~/bin:$PATH)
+
+1) Kotlin compiler (85 MB) + Android API 34 stubs (26 MB):
+   curl -sL -o kc.zip https://github.com/JetBrains/kotlin/releases/download/v2.0.21/kotlin-compiler-2.0.21.zip && unzip -q kc.zip     (kotlinc/bin/kotlinc)
+   curl -sL -o android.jar https://github.com/Sable/android-platforms/raw/master/android-34/android.jar
+2) Stubs for what Gradle generates / androidx (5 tiny Java files in a folder "stubs"):
+   stubs/com/mgb/keyboard/R.java            package com.mgb.keyboard; public final class R { public static final class drawable { public static final int jabra_logo=1; } }
+   stubs/com/mgb/keyboard/BuildConfig.java  package com.mgb.keyboard; public final class BuildConfig { public static final String VERSION_NAME="x"; public static final int VERSION_CODE=1; public static final String GITHUB_REPO="x/y"; }
+   stubs/androidx/core/content/FileProvider.java   package androidx.core.content; public class FileProvider { public static android.net.Uri getUriForFile(android.content.Context c, String a, java.io.File f){return null;} }
+   stubs/androidx/core/graphics/ColorUtils.java    package androidx.core.graphics; public class ColorUtils { public static int compositeColors(int a,int b){return a;} }
+   (if a new file uses another R.* / androidx class, add one more stub line)
+3) Compile ALL Kotlin + Java sources together (about 1-2 minutes):
+   kotlinc -jvm-target 17 -cp android.jar -d out app/src/main/java stubs 2>&1 | grep "error:"
+   No "error:" line = OK (warnings about deprecated calls are normal).
+4) Pure Java tests: javac -encoding UTF-8 -d out2 $(find app/src/main/java -name "*.java") ; then each tools/XTest.java with -cp out2 (WordBuildTest also needs tools/WordBuild.java).
+Result 2026-11-12: v0.12.0 (M1 + M2) and v0.13.0 (M3) = 0 errors.

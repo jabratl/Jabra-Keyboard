@@ -23,6 +23,7 @@ class SettingsActivity : Activity() {
     private var appPages: AppPages? = null   // v0.11.0 (M1): new app screen (pref app_ui = 1); null = old accordion screen
     private var homeRefresh: (() -> Unit)? = null
     private var pvCardView: View? = null
+    private var wizardRefresh: (() -> Unit)? = null   // v0.13.0 (M3): first-run wizard card (null = plain setup card or old screen)
 
     private fun dp(v: Int): Int = (v * resources.displayMetrics.density).toInt()
 
@@ -42,7 +43,7 @@ class SettingsActivity : Activity() {
                 val nv = buildNewUi(savedInstanceState)
                 if (nv != null) { setContentView(nv); return }
             } catch (_: Throwable) { }
-            appPages = null; homeRefresh = null; pvCardView = null
+            appPages = null; homeRefresh = null; pvCardView = null; wizardRefresh = null
             try { pvLink.changed = null; pvLink.refreshRows = null } catch (_: Throwable) { }
         }
         val col = LinearLayout(this)
@@ -176,10 +177,30 @@ class SettingsActivity : Activity() {
         try { setupRefresh?.invoke() } catch (_: Throwable) { }   // v0.10.9: ticks update after coming back from the system screens
         try { pvLink.changed?.invoke(); pvLink.refreshRows?.invoke() } catch (_: Throwable) { }   // v0.10.25: settings changed inside the keyboard while the app was in the background
         try { homeRefresh?.invoke() } catch (_: Throwable) { }   // v0.11.0 (M1): tile summaries
+        try { wizardRefresh?.invoke() } catch (_: Throwable) { }   // v0.13.0 (M3): wizard step moves on after the system screens
     }
 
     // ---- v0.11.0 (M1 of the "App UI" plan): new app screen = Home + pages inside this Activity. Pref app_ui: 0 = old accordion screen (default), 1 = new. ----
-    private fun newUiOn(): Boolean = try { getSharedPreferences("jabra", MODE_PRIVATE).getInt("app_ui", 0) == 1 } catch (_: Throwable) { false }
+    private fun newUiOn(): Boolean = try { getSharedPreferences("jabra", MODE_PRIVATE).getInt("app_ui", com.mgb.keyboard.typing.HomePlan.DEFAULT_APP_UI) == 1 } catch (_: Throwable) { false }   // v0.13.0 (M3): default from HomePlan (still 0 = old screen until the phone checklist is green)
+
+    private fun switchToOldScreen() {   // v0.13.0 (M3): used by the error card and the About switch
+        getSharedPreferences("jabra", MODE_PRIVATE).edit().putInt("app_ui", 0).apply()
+        recreate()
+    }
+
+    /** v0.13.0 (M3): Home gets the first-run wizard while setup is not finished (or the wizard is still running); otherwise the plain setup card as before. */
+    private fun setupSlot(): View? {
+        try {
+            val p = JabraPrefs(this)
+            val st = AppWizard.state(this)
+            if (com.mgb.keyboard.typing.WizardPlan.wanted(p.bool("wiz_done", false), p.bool("wiz_on", false), st.first, st.second)) {
+                val w = AppWizard.build(this) { try { homeRefresh?.invoke() } catch (_: Throwable) { } }
+                if (w != null) { p.setBool("wiz_on", true); wizardRefresh = w.refresh; return w.view }
+            }
+        } catch (_: Throwable) { }
+        wizardRefresh = null
+        return try { buildSetupCard() } catch (_: Throwable) { null }
+    }
 
     private fun buildNewUi(saved: Bundle?): View? {
         val sink = PageSink()
@@ -188,21 +209,55 @@ class SettingsActivity : Activity() {
         updBtn.visibility = View.GONE
         val pvCard: View? = try { PreviewCard.build(this, pvLink) } catch (_: Throwable) { null }
         SettingsGroups.build(this, pvLink, sink)   // throws = old screen
-        val setup = try { buildSetupCard() } catch (_: Throwable) { null }
-        val home = AppHome.build(this, setup, pvLink) { id -> appPages?.show(id) }
+        // v0.13.0 (M3): panes by screen size (>= 600 dp wide = Home left, page right; landscape phones too)
+        val wDp = resources.configuration.screenWidthDp
+        val hDp = resources.configuration.screenHeightDp
+        val two = com.mgb.keyboard.typing.HomePlan.twoPane(wDp)
+        val pvMode = com.mgb.keyboard.typing.HomePlan.previewMode(two, hDp)
+        val setup = setupSlot()
+        val search = try { AppSearch.build(this, sink) { id, v -> appPages?.reveal(id, v) } } catch (_: Throwable) { null }   // no search = Home without it
+        val home = AppHome.build(this, setup, pvLink, search) { id -> appPages?.show(id) }
         homeRefresh = home.refresh
-        val pages = AppPages(this, sink, home.view, { buildAbout() }) { id ->
-            try { pvCardView?.visibility = if (com.mgb.keyboard.typing.PagePlan.pinPreview(id)) View.VISIBLE else View.GONE } catch (_: Throwable) { }
+        val pages = AppPages(this, sink, home.view, { buildAbout() }, two, { switchToOldScreen() }) { id ->
+            try {
+                val pv = pvCardView
+                val pin = com.mgb.keyboard.typing.PagePlan.pinPreview(id)
+                if (pv != null) {
+                    if (pvMode == com.mgb.keyboard.typing.HomePlan.PV_INLINE) {   // short two-pane screen: the preview scrolls inside the page
+                        (pv.parent as? android.view.ViewGroup)?.removeView(pv)
+                        if (pin) appPages?.inlineHost(id)?.addView(pv, 0)
+                        pv.visibility = View.VISIBLE
+                    } else pv.visibility = if (pin) View.VISIBLE else View.GONE
+                }
+            } catch (_: Throwable) { }
             if (id == com.mgb.keyboard.typing.PagePlan.HOME) { try { homeRefresh?.invoke() } catch (_: Throwable) { } }
+            if (two) { try { home.select(id) } catch (_: Throwable) { } }
         }
         appPages = pages
         pvCardView = pvCard
+        if (two) {   // a change on the right must show on the left (tile summaries, lists) at once
+            val prev = pvLink.changed
+            pvLink.changed = { try { prev?.invoke() } catch (_: Throwable) { }; try { homeRefresh?.invoke() } catch (_: Throwable) { } }
+        }
         val outer = LinearLayout(this)
-        outer.orientation = LinearLayout.VERTICAL
         try { if (AppUi.isDark(this)) outer.setBackgroundColor(AppUi.bg(this)) } catch (_: Throwable) { }
-        if (pvCard != null) outer.addView(pvCard)
-        outer.addView(pages.frame, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f))
-        pages.show(com.mgb.keyboard.typing.PagePlan.sanitize(saved?.getString("app_page", "") ?: ""))   // rotate keeps the page
+        if (two) {
+            outer.orientation = LinearLayout.HORIZONTAL
+            outer.addView(home.view, LinearLayout.LayoutParams(dp(com.mgb.keyboard.typing.HomePlan.leftPaneDp(wDp)), LinearLayout.LayoutParams.MATCH_PARENT))
+            val line = View(this)
+            try { line.setBackgroundColor((AppUi.dim(this) and 0x00FFFFFF) or 0x40000000) } catch (_: Throwable) { }
+            outer.addView(line, LinearLayout.LayoutParams(dp(1), LinearLayout.LayoutParams.MATCH_PARENT))
+            val right = LinearLayout(this)
+            right.orientation = LinearLayout.VERTICAL
+            if (pvCard != null && pvMode == com.mgb.keyboard.typing.HomePlan.PV_PIN) right.addView(pvCard)
+            right.addView(pages.frame, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f))
+            outer.addView(right, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 1f))
+        } else {
+            outer.orientation = LinearLayout.VERTICAL
+            if (pvCard != null) outer.addView(pvCard)
+            outer.addView(pages.frame, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f))
+        }
+        pages.show(com.mgb.keyboard.typing.PagePlan.sanitize(saved?.getString("app_page", "") ?: ""))   // rotate keeps the page (two panes: Home = first page)
         try { HealthRun.migrate(this) } catch (_: Throwable) { }   // same as the old screen: only after everything above worked
         try { BackupStore.autoIfDue(this) } catch (_: Throwable) { }
         return outer
@@ -218,10 +273,7 @@ class SettingsActivity : Activity() {
         }
         tb.text = "App theme: " + com.mgb.keyboard.typing.AppPalette.name(AppUi.mode(this)) + " (tap to change)"
         box.addView(tb)
-        val sw = btn("") {
-            getSharedPreferences("jabra", MODE_PRIVATE).edit().putInt("app_ui", 0).apply()
-            recreate()
-        }
+        val sw = btn("") { switchToOldScreen() }
         sw.text = "New app screen: ON (tap = back to the old screen)"
         box.addView(sw)
         box.addView(btn("Check for updates") { checkUpdate() })
