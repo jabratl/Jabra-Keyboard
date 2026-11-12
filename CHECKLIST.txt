@@ -640,3 +640,10 @@ Z54) v0.10.10 Privacy & storage + clip code guard
  [ ] Guard ON: copy the same code again after 3 minutes: it stays for 2 more minutes (not removed instantly).
  [ ] Clip auto-delete (1 hour etc.) still works as before, together with the guard.
  [ ] Backup now > Restore preview still works (clip_sens is just one more setting).
+
+Z55) v0.10.11 Panel look D2.1 (Theme panel on UiKit; should look EXACTLY like v0.10.10)
+ [ ] Keyboard > More settings > Theme: tiles, the note under them, "Custom theme (colours)...", "< More settings", "ABC (apply)" look the same as before (Classic, then Dark, Gloss Black, a gradient, Custom).
+ [ ] Same button height / text size / gaps as before; the keyboard does NOT get taller or shorter when the Theme panel opens.
+ [ ] Tap a tile = theme changes and the list keeps its scroll position. Custom theme opens Theme Studio. "< More settings" goes back. "ABC (apply)" returns to letters.
+ [ ] Text tools and Profiles panels: unchanged (they were already on UiKit).
+

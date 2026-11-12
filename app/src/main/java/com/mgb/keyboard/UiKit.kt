@@ -9,6 +9,7 @@ import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.TextView
 import com.mgb.keyboard.typing.LookColors
+import com.mgb.keyboard.typing.PanelSpec
 
 /**
  * v0.6.3 UiKit (S4): ready-made panel parts, so panels do not each keep a private btn() copy.
@@ -119,6 +120,36 @@ object UiKit {
             g.setStroke(JabraTokens.dp(ctx, if (picked) 2 else 1), JabraTokens.cardStroke(p, picked, pinned))
         } catch (_: Throwable) { }
         return g
+    }
+
+
+    /** v0.10.11 (D2.1): empty horizontal row (what every panel built by hand as row()). */
+    fun row(ctx: Context): LinearLayout {
+        val r = LinearLayout(ctx)
+        try { r.orientation = LinearLayout.HORIZONTAL } catch (_: Throwable) { }
+        return r
+    }
+
+    /**
+     * v0.10.11 (D2.1): shared panel header = [back button] + bold title, 40dp tall (PanelSpec.H_BTN), same look as btn().
+     * Ready for the panels but NOT inserted anywhere yet: adding it would make a panel taller, so each panel decides
+     * in its own D2.x step (it replaces an existing back row, never adds height). backLabel e.g. "<" or "< More settings".
+     */
+    fun header(
+        ctx: Context, p: JabraPrefs, title: String, backLabel: String = "<",
+        feedback: ((View) -> Unit)? = null, onBack: () -> Unit
+    ): LinearLayout {
+        val r = row(ctx)
+        try {
+            val back = btn(ctx, p, backLabel, 0f, PanelSpec.H_BTN, JabraTokens.T_BTN, feedback) { onBack() }
+            try { back.minWidth = JabraTokens.dp(ctx, PanelSpec.backWidthDp(backLabel)) } catch (_: Throwable) { }
+            r.addView(back)
+            val t = sectionTitle(ctx, p, title)
+            t.gravity = android.view.Gravity.CENTER_VERTICAL
+            t.layoutParams = LinearLayout.LayoutParams(0, JabraTokens.dp(ctx, PanelSpec.H_BTN), 1f)
+            r.addView(t)
+        } catch (_: Throwable) { }
+        return r
     }
 
     // ---- private ----

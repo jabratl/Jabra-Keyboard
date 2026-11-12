@@ -26,7 +26,14 @@ class ThemePanel(private val ctx: Context, private val host: JabraHost) {
 
     private fun dp(v: Int): Int = (v * ctx.resources.displayMetrics.density).toInt()
 
+    // v0.10.11 (D2.1): pk() = UiKit.btn (40dp, 14sp, same 2dp margins, theme style). Old body kept as pkOld() = automatic fallback.
+    // Callers set their own click listener afterwards (as before), so onClick here is empty.
     private fun pk(label: String, weight: Float): Button {
+        try { return UiKit.btn(ctx, prefs, label, weight, 40, 14f, null) { } } catch (_: Throwable) { }
+        return pkOld(label, weight)
+    }
+
+    private fun pkOld(label: String, weight: Float): Button {
         val b = Button(ctx)
         b.text = label
         b.isAllCaps = false
@@ -50,7 +57,13 @@ class ThemePanel(private val ctx: Context, private val host: JabraHost) {
         return r
     }
 
+    // v0.10.11 (D2.1): note() = UiKit.noteText (11sp, note colour, 6 / 2dp padding). Old body kept as noteOld() = fallback.
     private fun note(text: String): TextView {
+        try { return UiKit.noteText(ctx, prefs, text) } catch (_: Throwable) { }
+        return noteOld(text)
+    }
+
+    private fun noteOld(text: String): TextView {
         val t = TextView(ctx)
         t.text = text
         t.textSize = 11f
