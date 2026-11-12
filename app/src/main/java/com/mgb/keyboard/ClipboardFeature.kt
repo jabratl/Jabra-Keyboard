@@ -126,6 +126,8 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
     private var confirmSave = false
     /** v0.4.4: set by MgbIme: saves the given clip texts into the Text Vault and returns a short message. null = no "To Vault" button. */
     var toVault: ((List<String>) -> String)? = null
+    /** v0.15.1 (N1): height in px of the letters keyboard, set by MgbIme before build(). 0 = unknown = old fixed sizes. Used only when pref clip_fit is ON (default). */
+    var fitPx: Int = 0
 
     /** Call when the panel is opened from outside (fresh start). */
     // v0.3.7: Undo for deleted clips (x, Delete, Clear). Kept until you leave the clipboard or delete something else.
@@ -198,7 +200,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
     fun build(): View? = try { make() } catch (_: Throwable) { null }
 
     private fun make(): View {
-        if (editing != null) { try { return makeEdit() } catch (_: Throwable) { editing = null } }   // v0.4.3.1
+        if (editing != null) { try { return fitEdit(makeEdit()) } catch (_: Throwable) { editing = null } }   // v0.15.1: fitEdit   // v0.4.3.1
         val root = LinearLayout(ctx)
         root.orientation = LinearLayout.VERTICAL
         paintBg(root)   // v0.8.7
@@ -332,7 +334,23 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
                 root.addView(r)
             }
         }
+        fitList(root, sv)   // v0.15.1 (N1): panel keeps the letters keyboard height
         return root
+    }
+
+    // v0.15.1 (N1): clip_fit (default ON) = the clipboard is as tall as the letters keyboard. Built as before, measured, the list grows by the missing height (never shrinks; any problem = old size).
+    private fun fitOn(): Boolean = try { JabraPrefs(ctx).bool("clip_fit", true) && fitPx > 0 } catch (_: Throwable) { false }
+    private fun fitList(root: View, sv: ScrollView) {
+        try {
+            if (!fitOn()) return
+            root.measure(View.MeasureSpec.makeMeasureSpec(ctx.resources.displayMetrics.widthPixels, View.MeasureSpec.EXACTLY), View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED))
+            val extra = com.mgb.keyboard.typing.ClipFit.extraPx(fitPx, root.measuredHeight, dp(com.mgb.keyboard.typing.ClipFit.MAX_EXTRA_DP))
+            if (extra > 0) { val lp = sv.layoutParams; lp.height = lp.height + extra; sv.layoutParams = lp }
+        } catch (_: Throwable) { }
+    }
+    private fun fitEdit(v: View): View {
+        try { if (fitOn()) v.minimumHeight = maxOf(v.minimumHeight, minOf(fitPx, dp(560))) } catch (_: Throwable) { }
+        return v
     }
 
     /** v0.4.3.1: edit screen for ONE clip: Cancel | Use field text | Save (two taps), text box, mini keys (Latin). Bangla = type it in the field, then "Use field text". */

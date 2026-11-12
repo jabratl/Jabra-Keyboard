@@ -491,3 +491,12 @@ Z76) v0.15.0 New app screen M5 (Favourites + own tiles)
  [ ] Two panes (landscape / 1280 px): Home on the left follows the order, the open page keeps its frame on its tile; hide the open page's tile: the right side stays open.
  [ ] TalkBack: the star reads "Pin Vibrate to Home" / "Unpin Vibrate from Home"; the arrows read "Move Typing down". 130% font on 360 px: star and arrow buttons are not cut.
 
+Z77) v0.15.1 Clipboard keeps the keyboard height (N1)
+ [ ] Key height 100%: open any text field, tap the clipboard key. The panel is as tall as the letters keyboard (no shrink, the app's text bar does not jump). Tap ABC: same height again.
+ [ ] Key height 120% and 80% (Settings > Layout & size): clipboard still as tall as the letters keyboard (80% = old size if the panel is already taller, never cut).
+ [ ] Cards view and List view: both fill the height; scroll still works; pinned / recent still shown.
+ [ ] Search: tap Search, type: the panel is not shorter than the keyboard; mini keys still all visible.
+ [ ] Manage (select mode) and the edit screen of one clip (tap a clip's edit): same height, nothing cut.
+ [ ] Rotate to landscape: clipboard opens in the landscape keyboard height.
+ [ ] Settings > Clipboard & Tools > [Clipboard follows keyboard height] OFF: clipboard is exactly the old fixed size. ON again: fits again.
+ [ ] Empty history ("Nothing copied yet"): panel still keeps the height.
