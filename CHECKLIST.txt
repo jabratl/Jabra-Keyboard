@@ -669,3 +669,10 @@ Z94) v0.16.11 Gear panel as tile grid, style New (X11 part 1)
  [ ] More settings (Panel style = New): tiles Typing / Look / PC mode / Open. Tap a toggle tile (Hold backspace, Auto caps, Enter action, Word delete, Mode key, Remember mode): ON/OFF changes and the page redraws. Cycle tiles (Theme, One-hand, Look, Key border, Mode) change value. Each "Open" tile opens its old panel; < Settings and ABC (apply) work.
  [ ] Search (gear AND More): tap "Search settings", type "height" -> Size is listed first, tap it -> Size panel opens. Also try: "toolbar" -> Toolbar editor / Quick toolbar; "vibrate" -> Typing; "backspace" -> More; "theme" -> Themes / Theme studio; "backup" -> Profiles. Max 8 results; "zzzz" = "No match"; backspace key works; X returns to the tiles.
  [ ] Window height unchanged while searching (letters keyboard height), landscape OK, dark theme OK, Classic style = no search row at all.
+
+Z95) v0.16.12 Toolbar editor as cards, style New (X12 part 1)
+ [ ] Panel style = Classic: More > Edit toolbar = exactly the old list.
+ [ ] Panel style = New: header < | Edit toolbar | ABC, Classic | Custom switch (changes the bar after ABC), tiles Most used to front / Name tip (ON/OFF flips at once).
+ [ ] Cards, 2 per row: icon + name + "On bar"/"Hidden". [First] moves the item to the front, up / down move one step, Hide / Show flips it (extras: Show turns them on). List keeps its scroll position.
+ [ ] Reset toolbar: first tap = "Sure? reset all", second tap resets; tapping First / up / down / Hide in between cancels the question.
+ [ ] The app screen toolbar editor shows the same order / hidden items. < goes to More, ABC applies. Window height not taller than the classic page, landscape and dark theme OK.

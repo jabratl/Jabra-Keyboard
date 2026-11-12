@@ -8,6 +8,7 @@ import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
+import com.mgb.keyboard.typing.PanelLayout   // v0.16.12 (X12)
 import com.mgb.keyboard.typing.ToolbarOrder
 
 /**
@@ -90,6 +91,8 @@ class ToolbarPanel(private val ctx: Context, private val host: JabraHost) {
     fun build(): View? = try { make() } catch (_: Throwable) { null }
 
     private fun make(): View {
+        // v0.16.12 (X12): pref panel_ui = 1 -> items as cards (makeNew below). Default 0 / any problem = the classic list that follows, untouched.
+        try { if (PanelLayout.isNewStyle(prefs.int("panel_ui", 0))) { val nv = makeNew(); if (nv != null) return nv } } catch (_: Throwable) { }
         val root = LinearLayout(ctx)
         root.orientation = LinearLayout.VERTICAL
         root.setBackgroundColor(Color.parseColor("#DDDDDD"))
@@ -180,5 +183,102 @@ class ToolbarPanel(private val ctx: Context, private val host: JabraHost) {
         rb.addView(pk("ABC  (apply)", 1f, 40) { scrollY = 0; host.showLetters() })
         root.addView(rb)
         return root
+    }
+
+    // ===================== v0.16.12 (X12): NEW toolbar editor = cards (pref panel_ui = 1) =====================
+    private var resetAsk = false   // Reset toolbar needs two taps: first tap = "Sure?", second = reset
+
+    private fun toggleTile(label: String, key: String, def: Boolean): PanelKit.Tile {
+        val on = prefs.bool(key, def)
+        return PanelKit.Tile(label, if (on) "ON" else "OFF", on) { prefs.setBool(key, !on); host.showPanel("toolbar") }
+    }
+
+    private fun makeNew(): View? {
+        val root = LinearLayout(ctx)
+        root.orientation = LinearLayout.VERTICAL
+        root.setBackgroundColor(Color.parseColor("#DDDDDD"))
+        try { JabraThemes.paint(prefs, root) } catch (_: Throwable) { }
+        root.setPadding(dp(2), dp(4), dp(2), dp(4))
+
+        root.addView(PanelKit.header(ctx, prefs, host, "Edit toolbar", "<", listOf(Pair("ABC") { resetAsk = false; scrollY = 0; host.showLetters() })) { resetAsk = false; scrollY = 0; host.showPanel("more") })
+        val custom = prefs.bool("tb_custom", true)
+        root.addView(PanelKit.segmented(ctx, prefs, host, listOf("Classic", "Custom"), if (custom) 1 else 0) { i -> prefs.setBool("tb_custom", i == 1); host.showPanel("toolbar") })
+        root.addView(PanelKit.tileGrid(ctx, prefs, host, 2, listOf(toggleTile("Most used to front", "tb_auto", false), toggleTile("Name tip (hold icon)", "tb_tip", true))))
+
+        val sv = ScrollView(ctx)
+        val col = LinearLayout(ctx)
+        col.orientation = LinearLayout.VERTICAL
+        val all = order()
+        val hidden = prefs.str("tb_hidden", "")
+        val on = prefs.str("tb_on", "")
+        val nameColor = try { JabraThemes.iconColor(prefs) } catch (_: Throwable) { Color.parseColor("#222222") }
+        var i = 0
+        while (i < all.size) {
+            val line = row()
+            for (k in 0 until 2) {
+                val id = all.getOrNull(i + k)
+                val lp = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+                lp.setMargins(dp(2), dp(2), dp(2), dp(2))
+                line.addView(if (id == null) View(ctx) else card(id, all, hidden, on, nameColor, sv), lp)
+            }
+            col.addView(line)
+            i += 2
+        }
+        sv.addView(col)
+        sv.layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(4 * 44))
+        root.addView(sv)
+        sv.post { try { sv.scrollTo(0, scrollY) } catch (_: Throwable) { } }
+
+        root.addView(note("First = leftmost after the fold key. Hidden items stay in the list (grey). Extra shortcuts are Hidden until you press Show. Then ABC (apply)."))
+        root.addView(PanelKit.stickyBar(ctx, prefs, host, listOf(Pair(if (resetAsk) "Sure? reset all" else "Reset toolbar") {
+            if (!resetAsk) { resetAsk = true; host.showPanel("toolbar") }
+            else {
+                resetAsk = false
+                prefs.setStr("tb_order", ""); prefs.setStr("tb_hidden", ""); prefs.setStr("tb_on", ""); prefs.setBool("tb_fold", false)
+                scrollY = 0
+                host.showPanel("toolbar")
+            }
+        })))
+        return root
+    }
+
+    /** One card = icon + name + status on top, [First] [up] [down] [Hide / Show] below. Same prefs as the classic row. */
+    private fun card(id: String, all: List<String>, hidden: String, on: String, nameColor: Int, sv: ScrollView): View {
+        val isHidden = ToolbarOrder.off(hidden, on, id)
+        val c = LinearLayout(ctx)
+        c.orientation = LinearLayout.VERTICAL
+        c.setPadding(dp(4), dp(4), dp(4), dp(4))
+        try { c.background = UiKit.cardBackground(ctx, prefs, false, false) } catch (_: Throwable) { }
+        val top = row()
+        top.gravity = Gravity.CENTER_VERTICAL
+        val ic = pk("", 0f, 40) { }
+        ic.isClickable = false
+        ic.layoutParams = LinearLayout.LayoutParams(dp(40), dp(40)).also { it.setMargins(dp(2), dp(2), dp(2), dp(2)) }
+        try { JabraIcons.putThemed(ctx, ic, Toolbar.icon(id)) } catch (_: Throwable) { }
+        if (ic.text.isNullOrEmpty() && ic.foreground == null) ic.text = Toolbar.label(id)
+        val nm = TextView(ctx)
+        nm.text = Toolbar.title(id) + "\n" + (if (isHidden) "Hidden" else "On bar")
+        nm.textSize = 11f
+        nm.maxLines = 2
+        nm.setTextColor(nameColor)
+        nm.gravity = Gravity.CENTER_VERTICAL
+        nm.alpha = if (isHidden) 0.45f else 1f
+        nm.setPadding(dp(4), 0, 0, 0)
+        nm.layoutParams = LinearLayout.LayoutParams(0, dp(40), 1f)
+        top.addView(ic)
+        top.addView(nm)
+        c.addView(top)
+        val bt = row()
+        bt.addView(pk("First", 1.3f, 40) { resetAsk = false; save(ToolbarOrder.moveFirst(all, id), sv) })
+        bt.addView(pk("\u25B2", 0.8f, 40) { resetAsk = false; save(ToolbarOrder.up(all, id), sv) })
+        bt.addView(pk("\u25BC", 0.8f, 40) { resetAsk = false; save(ToolbarOrder.down(all, id), sv) })
+        bt.addView(pk(if (isHidden) "Show" else "Hide", 1.1f, 40) {
+            resetAsk = false
+            if (ToolbarOrder.isExtra(id)) prefs.setStr("tb_on", ToolbarOrder.setOn(on, id, isHidden))
+            else prefs.setStr("tb_hidden", ToolbarOrder.setHidden(hidden, id, !isHidden))
+            refresh(sv)
+        })
+        c.addView(bt)
+        return c
     }
 }
