@@ -358,17 +358,22 @@ object SettingsGroups {
                 { com.mgb.keyboard.typing.EdgePlan.vGapDp(prefs.int("row_vgap", -1), com.mgb.keyboard.typing.SizePct.gapDp(prefs.int("key_gap", -1))) }, -1)
             stepper(g, "Shift / Backspace gap", "fn_gap", com.mgb.keyboard.typing.EdgePlan.F_MIN, com.mgb.keyboard.typing.EdgePlan.F_MAX, 1, " dp",
                 { com.mgb.keyboard.typing.EdgePlan.fnGapDp(prefs.int("fn_gap", -1)) }, -1)
+            // v0.10.27 (P2): bottom row like Ridmik, "..." marks on long-press keys, Probhat home row gap. All default = old look.
+            cycle(g, "Bottom row", "bot_style", { arrayOf("Old", "Ridmik-like") }, { prefs.int("bot_style", 0).coerceIn(0, 1) }, { prefs.setInt("bot_style", it) }, 0)
+            toggle(g, "Long-press dots", "key_dots", false)
+            toggle(g, "Probhat home row gap", "pb_home_gap", false)
             run {   // v0.10.26: one tap = Ridmik-style numbers (height 120 / 100 %, gap 2, edge 1, row gap 2, Shift gap 4). Two taps to apply, one tap to undo.
                 val keys = com.mgb.keyboard.typing.EdgePlan.PRESET_KEYS
                 var sure = false
                 fun refreshAll() { for (r in rows) { try { r.refresh() } catch (_: Throwable) { } }; try { link?.changed?.invoke() } catch (_: Throwable) { } }
                 val pb = btn("Ridmik-style spacing") { v ->
-                    if (!sure) { sure = true; (v as Button).text = "Sure? Changes height, gaps, edge. Tap again" }
+                    if (!sure) { sure = true; (v as Button).text = "Sure? Changes height, gaps, bottom row. Tap again" }
                     else {
                         sure = false
-                        val old = IntArray(keys.size) { prefs.int(keys[it], -1) }
+                        val bf = com.mgb.keyboard.typing.EdgePlan.BOOL_FROM
+                        val old = IntArray(keys.size) { if (it >= bf) (if (prefs.bool(keys[it], false)) 1 else 0) else prefs.int(keys[it], -1) }   // v0.10.27: last 2 are boolean prefs
                         prefs.setStr("geo_prev", com.mgb.keyboard.typing.EdgePlan.encode(old))
-                        for (i in keys.indices) prefs.setInt(keys[i], com.mgb.keyboard.typing.EdgePlan.RIDMIK[i])
+                        for (i in keys.indices) { if (i >= bf) prefs.setBool(keys[i], com.mgb.keyboard.typing.EdgePlan.RIDMIK[i] == 1) else prefs.setInt(keys[i], com.mgb.keyboard.typing.EdgePlan.RIDMIK[i]) }
                         prefs.setBool("row_gap", true)
                         (v as Button).text = "Ridmik-style spacing (applied)"
                         refreshAll()
@@ -376,10 +381,11 @@ object SettingsGroups {
                 }
                 g.addView(pb)
                 g.addView(btn("Undo Ridmik-style spacing") { v ->
-                    val old = com.mgb.keyboard.typing.EdgePlan.decode(prefs.str("geo_prev", ""), keys.size)
+                    val old = com.mgb.keyboard.typing.EdgePlan.decodeUpTo(prefs.str("geo_prev", ""), keys.size)   // v0.10.27: also reads the 6 values saved by v0.10.26
                     if (old == null) { (v as Button).text = "Nothing to undo" }
                     else {
-                        for (i in keys.indices) prefs.setInt(keys[i], old[i])
+                        val bf = com.mgb.keyboard.typing.EdgePlan.BOOL_FROM
+                        for (i in keys.indices) { if (i >= bf) prefs.setBool(keys[i], old[i] == 1) else prefs.setInt(keys[i], old[i]) }
                         prefs.setStr("geo_prev", "")
                         (v as Button).text = "Undone"
                         pb.text = "Ridmik-style spacing"

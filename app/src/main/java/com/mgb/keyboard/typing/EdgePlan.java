@@ -20,9 +20,11 @@ public final class EdgePlan {
     public static final float FN_BASE = 1.5f;
     public static final float FN_MIN = 1.1f;
 
-    public static final String[] PRESET_KEYS = { "kh_pct_p", "kh_pct_l", "key_gap", "edge_dp", "row_vgap", "fn_gap" };
+    /** v0.10.27: entries from BOOL_FROM on are boolean prefs (stored here as 1 / 0; -1 = was unset = off). */
+    public static final String[] PRESET_KEYS = { "kh_pct_p", "kh_pct_l", "key_gap", "edge_dp", "row_vgap", "fn_gap", "bot_style", "key_dots", "pb_home_gap" };
+    public static final int BOOL_FROM = 7;
     /** Ridmik-style values, same order as PRESET_KEYS. 120 / 100 = the height the user already matched by hand. */
-    public static final int[] RIDMIK = { 120, 100, 2, 1, 2, 4 };
+    public static final int[] RIDMIK = { 120, 100, 2, 1, 2, 4, 1, 1, 1 };
 
     public static boolean edgeValid(int v) { return v >= E_MIN && v <= E_MAX; }
     public static boolean vValid(int v) { return v >= V_MIN && v <= V_MAX; }
@@ -63,6 +65,17 @@ public final class EdgePlan {
         if (p.length != n) return null;
         int[] out = new int[n];
         try { for (int i = 0; i < n; i++) out[i] = Integer.parseInt(p[i].trim()); } catch (NumberFormatException e) { return null; }
+        return out;
+    }
+
+    /** v0.10.27: like decode, but a shorter list (saved by v0.10.26 = 6 values) is padded with -1. More than n values or junk -> null. */
+    public static int[] decodeUpTo(String s, int n) {
+        if (s == null || s.length() == 0) return null;
+        String[] p = s.split(",", -1);
+        if (p.length > n) return null;
+        int[] out = new int[n];
+        java.util.Arrays.fill(out, -1);
+        try { for (int i = 0; i < p.length; i++) out[i] = Integer.parseInt(p[i].trim()); } catch (NumberFormatException e) { return null; }
         return out;
     }
 }

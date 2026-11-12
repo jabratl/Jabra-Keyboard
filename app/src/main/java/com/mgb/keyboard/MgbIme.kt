@@ -508,9 +508,19 @@ class MgbIme : InputMethodService() {
     }
 
     private fun relabelPbExtras(pb: Boolean) {
-        try {   // v0.10.25: home row gap only while the Probhat extra key is hidden
-            val gv = if (com.mgb.keyboard.typing.RowGap.side(true, com.mgb.keyboard.typing.RowGap.homeKeys(pb)) > 0f) View.VISIBLE else View.GONE
-            homeGaps.forEach { if (it.visibility != gv) it.visibility = gv }
+        try {   // v0.10.25: home row gap only while the Probhat extra key is hidden. v0.10.27: pb_home_gap ON = Probhat also gets the left gap and its extra key is half width at the right (no key lost)
+            val gapOn = prefs.bool("pb_home_gap", false)
+            val rg = homeGaps.size > 0   // gaps exist only while row_gap is ON
+            if (rg) {
+                val lv = if (com.mgb.keyboard.typing.BottomPlan.leftGapShown(pb, gapOn, true)) View.VISIBLE else View.GONE
+                val rv = if (com.mgb.keyboard.typing.BottomPlan.rightGapShown(pb, true)) View.VISIBLE else View.GONE
+                if (homeGaps[0].visibility != lv) homeGaps[0].visibility = lv
+                if (homeGaps.size > 1 && homeGaps[1].visibility != rv) homeGaps[1].visibility = rv
+            }
+            val kw = com.mgb.keyboard.typing.BottomPlan.pbKeyWeight(pb, gapOn, rg)
+            pbExtraKeys.forEach { (b, pair) ->
+                if (pair === ProbhatLayout.EXTRA_ROW2[0]) { val lp = b.layoutParams as LinearLayout.LayoutParams; if (lp.weight != kw) { lp.weight = kw; b.layoutParams = lp } }
+            }
         } catch (_: Throwable) { }
         pbExtraKeys.forEach { (b, pair) ->
             val v = if (pb) View.VISIBLE else View.GONE
@@ -1024,11 +1034,14 @@ class MgbIme : InputMethodService() {
         root.addView(r3)
 
         val r4 = row()
-        val symKey = key("?123", 1.2f) { showPanel("symbols") }   // v0.0.5: symbols / number pad / settings panel
-        try { JabraLongPress.attach(symKey, prefs) { pickKeyboard() } } catch (_: Throwable) { }   // v0.0.9: long-press = keyboard picker
+        val bst = try { com.mgb.keyboard.typing.BottomPlan.style(prefs.int("bot_style", 0)) } catch (_: Throwable) { 0 }   // v0.10.27: bottom row style (0 = old)
+        val symKey = key("?123", com.mgb.keyboard.typing.BottomPlan.symWeight(bst)) { showPanel("symbols") }   // v0.0.5: symbols / number pad / settings panel
+        try { JabraLongPress.attach(symKey, prefs) { pickKeyboard() } } catch (_: Throwable) { }
+        KeyDots.attach(symKey, prefs)   // v0.10.27: "..." mark (pref key_dots, default OFF)   // v0.0.9: long-press = keyboard picker
         r4.addView(fn(symKey))   // v0.1.5
-        val lb = key(langLabel(), 1.3f) { toggleLang() }
-        try { JabraLongPress.attach(lb, prefs) { switchBnLayout() } } catch (_: Throwable) { }   // v0.0.4: long-press = Avro <-> Probhat
+        val lb = key(langLabel(), com.mgb.keyboard.typing.BottomPlan.langWeight(bst)) { toggleLang() }
+        try { JabraLongPress.attach(lb, prefs) { switchBnLayout() } } catch (_: Throwable) { }
+        KeyDots.attach(lb, prefs)   // v0.10.27   // v0.0.4: long-press = Avro <-> Probhat
         val showLang = try { com.mgb.keyboard.typing.LangSwipe.langKeyVisible(prefs.bool("key_lang", true), prefs.bool("space_lang", false)) } catch (_: Throwable) { true }   // v0.8.9: EN key optional (only with space swipe ON)
         langBtn = if (showLang) lb else null
         if (showLang) r4.addView(fn(lb))   // v0.1.5
@@ -1040,7 +1053,8 @@ class MgbIme : InputMethodService() {
             if (prefs.bool("key_emoji", false)) r4.addView(JabraIcons.putThemed(this, key("\u263A", 1f) { emojiPanel.reset(); showPanel("emoji") }, "emoji"))
         } catch (_: Throwable) { }
         val commaKey = key(",", 1f) { commitWord(); typeText(",") }
-        try { JabraLongPress.attach(commaKey, prefs) { emojiPanel.reset(); showPanel("emoji") } } catch (_: Throwable) { }   // v0.1.0: long-press "," = emoji panel
+        try { JabraLongPress.attach(commaKey, prefs) { emojiPanel.reset(); showPanel("emoji") } } catch (_: Throwable) { }
+        KeyDots.attach(commaKey, prefs)   // v0.10.27   // v0.1.0: long-press "," = emoji panel
         r4.addView(commaKey)
         val spaceAction = { commitWord(); spaceKey() }   // v0.1.1: double space
         val sb = key("space", 4f) { spaceAction() }
@@ -1060,7 +1074,14 @@ class MgbIme : InputMethodService() {
         dandaBtn = db
         r4.addView(db)
         r4.addView(key(".", 1f) { commitWord(); typeText(".") })
-        r4.addView(fn(JabraIcons.putThemed(this, key("⏎", 1.4f) { commitWord(); doEnter() }, "enter")))   // v0.0.7 + v0.0.9
+        r4.addView(fn(JabraIcons.putThemed(this, key("⏎", com.mgb.keyboard.typing.BottomPlan.enterWeight(bst)) { commitWord(); doEnter() }, "enter")))   // v0.0.7 + v0.0.9
+        try {   // v0.10.27: Ridmik-like bottom row: space takes what is left, so the row stays as wide as before (old style = space 4, nothing changes)
+            if (com.mgb.keyboard.typing.BottomPlan.ridmik(bst)) {
+                var others = 0f
+                for (i in 0 until r4.childCount) { val c = r4.getChildAt(i); if (c !== sb) others += (c.layoutParams as LinearLayout.LayoutParams).weight }
+                (sb.layoutParams as LinearLayout.LayoutParams).weight = com.mgb.keyboard.typing.BottomPlan.spaceWeight(bst, others)
+            }
+        } catch (_: Throwable) { }
         root.addView(r4)
 
         try { refreshLetters() } catch (_: Throwable) { }   // v0.0.4: right labels from the start (Probhat after rebuild / rotate)

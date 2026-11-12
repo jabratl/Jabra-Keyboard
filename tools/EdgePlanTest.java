@@ -29,6 +29,13 @@ public class EdgePlanTest {
         int[] a = { 120, -1, 2, 1, -1, 4 };
         eq("encode", EdgePlan.encode(a), "120,-1,2,1,-1,4");
         eq("roundtrip", java.util.Arrays.equals(EdgePlan.decode(EdgePlan.encode(a), 6), a), true);
+        int[] pad = EdgePlan.decodeUpTo("120,-1,2,1,-1,4", 9);
+        eq("padded len", pad.length, 9);
+        eq("padded values", pad[5] == 4 && pad[6] == -1 && pad[8] == -1, true);
+        eq("padded too long", EdgePlan.decodeUpTo("1,2,3,4,5,6,7,8,9,10", 9) == null, true);
+        eq("padded junk", EdgePlan.decodeUpTo("1,x", 9) == null, true);
+        eq("padded empty", EdgePlan.decodeUpTo("", 9) == null, true);
+        eq("bool from", EdgePlan.BOOL_FROM, 7);
         eq("decode empty", EdgePlan.decode("", 6) == null, true);
         eq("decode null", EdgePlan.decode(null, 6) == null, true);
         eq("decode wrong count", EdgePlan.decode("1,2", 6) == null, true);

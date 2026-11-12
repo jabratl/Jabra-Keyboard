@@ -15,6 +15,7 @@ import android.widget.HorizontalScrollView
 import android.widget.LinearLayout
 import android.widget.TextView
 import com.mgb.keyboard.probhat.ProbhatLayout
+import com.mgb.keyboard.typing.BottomPlan
 import com.mgb.keyboard.typing.EdgePlan
 import com.mgb.keyboard.typing.RowGap
 import com.mgb.keyboard.typing.SizePct
@@ -112,11 +113,14 @@ object KeyboardPreview {
         root.addView(r1)
 
         val r2 = row()
-        val side = RowGap.side(p.bool("row_gap", true), RowGap.homeKeys(probhat))
+        val rowGapOn = p.bool("row_gap", true)
+        val pbGap = BottomPlan.pbGap(probhat, p.bool("pb_home_gap", false), rowGapOn)   // v0.10.27: Probhat home row gap (left gap + half width extra key)
+        val side = if (pbGap) 0.5f else RowGap.side(rowGapOn, RowGap.homeKeys(probhat))
         if (side > 0f) r2.addView(spacer(side))
         "asdfghjkl".forEach { letter(r2, it) }
-        extras(r2, ProbhatLayout.EXTRA_ROW2)
-        if (side > 0f) r2.addView(spacer(side))
+        if (pbGap) { for (pair in ProbhatLayout.EXTRA_ROW2) r2.addView(key(ProbhatLayout.extraLabel(pair[0]), 0.5f, 0, keyH, letterSp)) }
+        else extras(r2, ProbhatLayout.EXTRA_ROW2)
+        if (side > 0f && !pbGap) r2.addView(spacer(side))
         root.addView(r2)
 
         val r3 = row()
@@ -140,14 +144,15 @@ object KeyboardPreview {
         root.addView(r3)
 
         val r4 = row()
-        r4.addView(key("?123", 1.2f, 1))
-        r4.addView(key(if (probhat) "\u09AA\u09CD\u09B0\u09AD\u09BE" else "EN", 1.3f, 1))
+        val bst = BottomPlan.style(p.int("bot_style", 0))   // v0.10.27
+        r4.addView(key("?123", BottomPlan.symWeight(bst), 1))
+        r4.addView(key(if (probhat) "\u09AA\u09CD\u09B0\u09AD\u09BE" else "EN", BottomPlan.langWeight(bst), 1))
         r4.addView(key(",", 1f, 0))
         val spaceLabel = if (p.bool("space_lang", false)) (if (probhat) "\u09AA\u09CD\u09B0\u09AD\u09BE\u09A4" else "English") else "space"
-        r4.addView(key(spaceLabel, 4f, 2))
+        r4.addView(key(spaceLabel, BottomPlan.spaceWeight(bst, BottomPlan.symWeight(bst) + BottomPlan.langWeight(bst) + BottomPlan.enterWeight(bst) + 3f), 2))
         r4.addView(key(if (probhat) "\u0964" else "?", 1f, 0))
         r4.addView(key(".", 1f, 0))
-        val en = key("\u23CE", 1.4f, 1)
+        val en = key("\u23CE", BottomPlan.enterWeight(bst), 1)
         try { JabraIcons.putThemed(ctx, en, "enter") } catch (_: Throwable) { }
         r4.addView(en)
         root.addView(r4)
