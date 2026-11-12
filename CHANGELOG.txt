@@ -1,3 +1,12 @@
+v0.16.8 - BUILD: Panel kit v2, the shared parts for the panel redesign (plan X, step X8)
+- WHY: X9-X12 redesign Clipboard, Vault, Settings options and Toolbar panels. They all need the same header / tabs / tiles / bottom bar, so those are built ONCE here and the next steps only use them.
+- What you get: NOTHING visible yet (no screen uses the kit). New PanelKit.kt: header (back + title + up to 3 small actions), segmented (2-4 equal options), sectionLabel, tileGrid (columns from the panel width, last row padded so tiles keep one width), stickyBar (bottom action buttons). All controls >= 40 dp high, text 12 / 11 sp, theme colours via UiKit / JabraTokens (Classic = same greys). New typing/PanelLayout.java = the numbers (columns 2..5 from the width, tile height 48 / 58 dp, rows, empty cells, segment width).
+- Tests: tools/PanelLayoutTest.java (28 checks, includes: tile never narrower than 96 dp, columns never shrink when the panel gets wider). All 85 tools/*Test.java green.
+- Not changed: every old file (no hook, no pref). The pref panel_ui (classic / new panels) is added together with the first screen that uses the kit (X9).
+- PLAN CHANGE (your request): new LAST step X15 = clipboard select fix (hold 1.5 s on the first clip starts selecting, then one tap selects the others, the tick must work). Written into HANDOFF_Jabra-Keyboard_v0.16.8.txt with the audit + root-cause-first rule.
+- BROKE: nothing (no old file touched). NOT tested: phone (nothing to see). Kotlin NOT compiled (no kotlinc / github.com in this chat; bracket balance of PanelKit.kt checked).
+- Rollback: version back to 0.16.7, delete PanelKit.kt, PanelLayout.java, PanelLayoutTest.java.
+
 v0.16.7 - MODIFY: number row options: height %, digits + symbols, own characters (plan X, step X7)
 - WHY: you asked that the number row is customizable.
 - What you get (App > Look page > section "Number row"): "Number row height" 70-150 % (100 = exactly the old height; works together with "Large number row"); "Number row keys": Digits (default = today) | Digits + symbols (long-press a digit = ! @ # $ % ^ & * ( ), small symbol shown in the key corner) | My characters (your own 1-10 characters from "Number row characters", e.g. @#&_-+()/; empty = normal digits; 5 characters = 5 wider keys). The app keyboard preview follows height + keys.
