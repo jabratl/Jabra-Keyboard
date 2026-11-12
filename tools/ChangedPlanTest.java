@@ -50,17 +50,27 @@ public class ChangedPlanTest {
         }
         // v0.15.3 (N3): every section of the new groups is used by at least one row, and every row of those groups has a section
         String[][] ng = {
-            {"Typing", "bs_repeat,bs_word,autocap,enter_action,ds_period,ds_tab,hint_on"},
+            {"Typing", "bs_repeat,bs_word,autocap,enter_action,ds_period,ds_tab,hint_on,hint_custom,xrow_chars"},
             {"Clipboard & tools", "clip_on,clip_lines,clip_view,clip_sort,clip_order,clip_count,clip_expire,clip_fit,clip_sens"},
-            {"Tools & Panels", "edit_bar,tb_vault,fmt_on"} };
+            {"Tools & Panels", "edit_bar,tb_vault,tb_custom,tb_auto,tb_fold,fmt_on,vault_sort,vault_dest"} };
         for (String[] g : ng) {
             java.util.Set<String> used = new java.util.HashSet<>();
             for (String k : g[1].split(",")) { String sec = ChangedPlan.sectionOf(g[0], k); eq("row has section " + g[0] + "/" + k, sec.isEmpty(), false); used.add(sec); }
             for (String sn : ChangedPlan.sections(g[0])) eq("section used " + g[0] + "/" + sn, used.contains(sn), true);
         }
-        eq("sections typing 2", ChangedPlan.sections("Typing").length, 2);
+        eq("sections typing 3", ChangedPlan.sections("Typing").length, 3);
         eq("sections clip 3", ChangedPlan.sections("Clipboard & tools").length, 3);
-        eq("sections tools", ChangedPlan.sections("Tools & Panels").length, 2);
+        eq("sections tools 3", ChangedPlan.sections("Tools & Panels").length, 3);
+        // v0.15.4 (N4): landscape rows sit next to their portrait twins
+        eq("kh_pct_l size", ChangedPlan.sectionOf("Layout & size", "kh_pct_l"), "Size");
+        eq("oh_w_l one-hand", ChangedPlan.sectionOf("Layout & size", "oh_w_l"), "One-hand");
+        eq("hint_custom", ChangedPlan.sectionOf("Typing", "hint_custom"), "Custom characters");
+        eq("xrow_chars", ChangedPlan.sectionOf("Typing", "xrow_chars"), "Custom characters");
+        eq("tb_custom", ChangedPlan.sectionOf("Tools & Panels", "tb_custom"), "Toolbar");
+        eq("tb_auto", ChangedPlan.sectionOf("Tools & Panels", "tb_auto"), "Toolbar");
+        eq("tb_fold", ChangedPlan.sectionOf("Tools & Panels", "tb_fold"), "Toolbar");
+        eq("vault_sort", ChangedPlan.sectionOf("Tools & Panels", "vault_sort"), "Vault");
+        eq("vault_dest", ChangedPlan.sectionOf("Tools & Panels", "vault_dest"), "Vault");
         eq("no sections data", ChangedPlan.sections("Data & Backup").length, 0);
         eq("no sections null", ChangedPlan.sections(null).length, 0);
         System.out.println("ChangedPlanTest " + ok + " ok, " + bad + " fail");

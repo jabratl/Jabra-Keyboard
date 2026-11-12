@@ -10,6 +10,7 @@ import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
+import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.Switch
 import android.widget.TextView
@@ -145,6 +146,40 @@ object AppRows {
         box.addView(line)
         help(c, help)?.let { box.addView(it) }
         return Built(box) { safe { chip.text = value(); chip.contentDescription = title + ": " + value() } }
+    }
+
+    /**
+     * v0.15.4 (N4): value chip that opens a small text dialog. OK = [onSave] (returns an error text to refuse, null = saved), Cancel = nothing changes.
+     * [value] is the text on the chip ("none" when empty is the caller's job).
+     */
+    fun textRow(c: Context, title: String, help: String, value: () -> String, current: () -> String, hint: String, onSave: (String) -> String?): Built {
+        var built: Built? = null
+        built = chipRow(c, title, help, value) {
+            try {
+                val et = android.widget.EditText(c)
+                et.setText(current())
+                et.setSelection(et.text.length)
+                et.hint = hint
+                et.setSingleLine(false)
+                val pad = dp(c, AppTokens.S4)
+                val wrap = FrameLayout(c)
+                wrap.setPadding(pad, dp(c, AppTokens.S2), pad, 0)
+                wrap.addView(et)
+                android.app.AlertDialog.Builder(c)
+                    .setTitle(title)
+                    .setView(wrap)
+                    .setPositiveButton("OK") { _, _ ->
+                        try {
+                            val err = onSave(et.text.toString())
+                            if (err != null) android.widget.Toast.makeText(c, err, android.widget.Toast.LENGTH_SHORT).show()
+                            built?.refresh?.invoke()
+                        } catch (_: Throwable) { }
+                    }
+                    .setNegativeButton("Cancel", null)
+                    .show()
+            } catch (_: Throwable) { }
+        }
+        return built
     }
 
     /**

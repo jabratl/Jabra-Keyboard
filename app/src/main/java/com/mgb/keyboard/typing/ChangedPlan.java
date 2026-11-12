@@ -32,9 +32,9 @@ public final class ChangedPlan {
     private static final String[] G_KEYS = { "Feedback", "Popup", "Smart typing", "Extra keys", "Timing" };
 
     // v0.15.3 (N3): sections for the groups that had none
-    private static final String[] G_TYPING = { "Editing", "Spaces & hints" };
+    private static final String[] G_TYPING = { "Editing", "Spaces & hints", "Custom characters" };
     private static final String[] G_CLIP = { "History", "Look of clips", "Privacy" };
-    private static final String[] G_TOOLS = { "Toolbar", "Formatter" };
+    private static final String[] G_TOOLS = { "Toolbar", "Formatter", "Vault" };
 
     /** Section titles of a group (in order). Groups without sections: empty array. */
     public static String[] sections(String group) {
@@ -54,11 +54,11 @@ public final class ChangedPlan {
     public static String sectionOf(String group, String key) {
         if (group == null || key == null) return "";
         if (group.equals("Layout & size")) {
-            if (in(key, "kh_pct_p", "letter_pct", "letter_bold")) return "Size";
+            if (in(key, "kh_pct_p", "kh_pct_l", "letter_pct", "letter_bold")) return "Size";
             if (in(key, "key_gap", "row_gap", "edge_dp", "row_vgap", "fn_gap")) return "Spacing";
             if (in(key, "key_radius")) return "Shape";
             if (in(key, "bot_style", "key_dots", "pb_home_gap")) return "Bottom row";
-            if (in(key, "oh_w_p")) return "One-hand";
+            if (in(key, "oh_w_p", "oh_w_l")) return "One-hand";
         } else if (group.equals("Look")) {
             if (in(key, "theme", "look", "key_border", "icons_on")) return "Theme & style";
             if (in(key, "numrow_large", "numrow_bn")) return "Number row";
@@ -77,13 +77,15 @@ public final class ChangedPlan {
         } else if (group.equals("Typing")) {   // v0.15.3 (N3)
             if (in(key, "bs_repeat", "bs_word", "autocap", "enter_action")) return "Editing";
             if (in(key, "ds_period", "ds_tab", "hint_on")) return "Spaces & hints";
+            if (in(key, "hint_custom", "xrow_chars")) return "Custom characters";
         } else if (group.equals("Clipboard & tools")) {
             if (in(key, "clip_on", "clip_count")) return "History";
             if (in(key, "clip_view", "clip_sort", "clip_order", "clip_lines", "clip_fit")) return "Look of clips";
             if (in(key, "clip_expire", "clip_sens")) return "Privacy";
         } else if (group.equals("Tools & Panels")) {
-            if (in(key, "edit_bar", "tb_vault")) return "Toolbar";
+            if (in(key, "edit_bar", "tb_vault", "tb_custom", "tb_auto", "tb_fold")) return "Toolbar";
             if (in(key, "fmt_on")) return "Formatter";
+            if (in(key, "vault_sort", "vault_dest")) return "Vault";
         }
         return "";
     }

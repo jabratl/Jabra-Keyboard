@@ -269,6 +269,30 @@ object SettingsGroups {
             addRow(box, key, title, b, { val n = names(); b.text = title + ": " + n[get().coerceIn(0, n.size - 1)] }, { set(it) }, { get().coerceIn(0, names().size - 1) }, def)   // v0.4.2 (was box.addView(b))
         }
 
+        // v0.15.4 (N4): text pref row (new app screen only: the old screen keeps its keyboard-panel buttons). Chip shows the text, tap = dialog, OK saves a cleaned value.
+        // Row value for dot / reset / undo: 0 = empty (default), 1 = has text. The last text is kept so Undo after a reset / replace brings it back.
+        fun textRow(box: LinearLayout, title: String, key: String, hint: String, clean: (String) -> String, bad: String) {
+            if (sink == null) return
+            var stash = ""
+            fun now() = prefs.str(key, "")
+            val built = AppRows.textRow(ctx, title, SettingsIndex.help(key), { now().ifEmpty { "none" } }, { now() }, hint) { raw ->
+                val old = if (now().isEmpty()) 0 else 1
+                val s = if (raw.isBlank()) "" else clean(raw)
+                if (raw.isNotBlank() && s.isEmpty()) bad else {
+                    if (s != now()) { stash = now(); prefs.setStr(key, s); noteChange(key, old) }
+                    null
+                }
+            }
+            val setIdx = { i: Int ->
+                if (i == 0) { if (now().isNotEmpty()) stash = now(); prefs.setStr(key, "") }
+                else if (stash.isNotEmpty()) prefs.setStr(key, stash)
+            }
+            addRowNew(box, key, title, built, setIdx, { if (now().isEmpty()) 0 else 1 }, 0, null) { now().ifEmpty { "none" } }
+        }
+
+        // v0.15.4 (N4): vault folder names (read-only look at the vault file; empty list when unreadable)
+        fun vaultFolders(): List<String> = try { com.mgb.keyboard.VaultStore(ctx).get()?.folders() ?: emptyList() } catch (_: Throwable) { emptyList() }
+
         // v0.10.25: [-] [title: value] [+] row (same prefs as the in-keyboard Size panel). def = value written by "Reset this group" (-1 = unset = the old default).
         fun stepper(box: LinearLayout, title: String, key: String, min: Int, max: Int, step: Int, unit: String, read: () -> Int, def: Int) {
             if (sink != null) {   // v0.12.0 (M2): [-] value [+], hold = repeat, ONE undo record per hold
@@ -420,6 +444,10 @@ object SettingsGroups {
             toggle(g, "Double-space period", "ds_period", false)
             toggle(g, "Double-space tab", "ds_tab", false)
             toggle(g, "Long-press characters", "hint_on", true)
+            textRow(g, "Long-press override", "hint_custom", "a=@,e=3 (letter=text, comma between)",   // v0.15.4 (N4): same cleaning as the keyboard Typing panel
+                { com.mgb.keyboard.typing.LongPressHints.normalizeCustom(it.replace('\n', ',')) }, "No a=@ pairs found")
+            textRow(g, "Extra character row", "xrow_chars", "up to 10 characters, e.g. ()[]{}",
+                { com.mgb.keyboard.typing.LangOrder.customRowText(it) }, "No characters found")
         }
 
         group("Look") { g ->
@@ -444,6 +472,8 @@ object SettingsGroups {
         group("Layout & size") { g ->
             stepper(g, "Key height (portrait)", "kh_pct_p", com.mgb.keyboard.typing.SizePct.H_MIN, com.mgb.keyboard.typing.SizePct.H_MAX, com.mgb.keyboard.typing.SizePct.H_STEP, "%",
                 { val v = prefs.int("kh_pct_p", -1); if (com.mgb.keyboard.typing.SizePct.heightValid(v)) v else com.mgb.keyboard.typing.SizePct.pctFromDp(prefs.keyHeightDp(false)) }, -1)
+            stepper(g, "Key height (landscape)", "kh_pct_l", com.mgb.keyboard.typing.SizePct.H_MIN, com.mgb.keyboard.typing.SizePct.H_MAX, com.mgb.keyboard.typing.SizePct.H_STEP, "%",   // v0.15.4 (N4): same range / unset rule as the keyboard Size panel
+                { val v = prefs.int("kh_pct_l", -1); if (com.mgb.keyboard.typing.SizePct.heightValid(v)) v else com.mgb.keyboard.typing.SizePct.pctFromDp(prefs.keyHeightDp(true)) }, -1)
             stepper(g, "Key gap", "key_gap", com.mgb.keyboard.typing.SizePct.G_MIN, com.mgb.keyboard.typing.SizePct.G_MAX, 1, " dp",
                 { com.mgb.keyboard.typing.SizePct.gapDp(prefs.int("key_gap", -1)) }, -1)
             stepper(g, "Letter size", "letter_pct", com.mgb.keyboard.typing.SizePct.L_MIN, com.mgb.keyboard.typing.SizePct.L_MAX, com.mgb.keyboard.typing.SizePct.L_STEP, "%",
@@ -496,8 +526,10 @@ object SettingsGroups {
             }
             stepper(g, "One-hand width (portrait)", "oh_w_p", com.mgb.keyboard.typing.SizePct.W_MIN, com.mgb.keyboard.typing.SizePct.W_MAX, com.mgb.keyboard.typing.SizePct.W_STEP, "%",
                 { val v = prefs.int("oh_w_p", -1); if (com.mgb.keyboard.typing.SizePct.widthValid(v)) v else Math.round(com.mgb.keyboard.typing.SizePct.widthFrac(-1, false) * 100f) }, -1)
+            stepper(g, "One-hand width (landscape)", "oh_w_l", com.mgb.keyboard.typing.SizePct.W_MIN, com.mgb.keyboard.typing.SizePct.W_MAX, com.mgb.keyboard.typing.SizePct.W_STEP, "%",   // v0.15.4 (N4)
+                { val v = prefs.int("oh_w_l", -1); if (com.mgb.keyboard.typing.SizePct.widthValid(v)) v else Math.round(com.mgb.keyboard.typing.SizePct.widthFrac(-1, true) * 100f) }, -1)
             val note2 = TextView(ctx)
-            note2.text = "The picture at the top shows every change at once. One-hand width shows only while One-hand (Look group) is Left or Right. Landscape sizes: inside the keyboard (gear > More settings > Size)."
+            note2.text = "The picture at the top shows every change at once. One-hand width shows only while One-hand (Look group) is Left or Right."
             note2.textSize = 12f
             note2.setTextColor(0xFF888888.toInt())
             g.addView(note2)
@@ -551,7 +583,14 @@ object SettingsGroups {
             cycle(g, "Vault key (toolbar)", "tb_vault", { arrayOf("OFF", "ON") },
                 { if (com.mgb.keyboard.typing.ToolbarOrder.off(prefs.str("tb_hidden", ""), prefs.str("tb_on", ""), "vault")) 0 else 1 },
                 { i -> prefs.setStr("tb_on", com.mgb.keyboard.typing.ToolbarOrder.setOn(prefs.str("tb_on", ""), "vault", i == 1)) }, 0)
+            cycle(g, "Toolbar style", "tb_custom", { arrayOf("Classic", "Custom") }, { if (prefs.bool("tb_custom", true)) 1 else 0 }, { prefs.setBool("tb_custom", it == 1) }, 1)   // v0.15.4 (N4)
+            toggle(g, "Most-used tools first", "tb_auto", false)   // v0.15.4 (N4)
+            toggle(g, "Fold toolbar", "tb_fold", false)   // v0.15.4 (N4)
             toggle(g, "Formatter (Aa button)", "fmt_on", true)
+            level(g, "Vault sort", "vault_sort", 0, arrayOf("Newest", "A-Z", "Used"))   // v0.15.4 (N4)
+            cycle(g, "Vault save folder", "vault_dest", { arrayOf("Unfiled") + vaultFolders().toTypedArray() },   // v0.15.4 (N4): folder used by "To Vault" (index 0 = Unfiled)
+                { val d = prefs.str("vault_dest", ""); if (d.isEmpty()) 0 else vaultFolders().indexOf(d) + 1 },
+                { i -> val f = vaultFolders(); prefs.setStr("vault_dest", if (i <= 0 || i > f.size) "" else f[i - 1]) }, 0)
         }
 
         try { group("Data & Backup") { g -> g.addView(DataPage.build(ctx)) } } catch (_: Throwable) { }   // v0.4.1

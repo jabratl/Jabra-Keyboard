@@ -166,6 +166,15 @@ public final class SettingsIndex {
             case "clip_fit": return "Clipboard opens as tall as the keyboard (no shrink). OFF = old fixed size.";   // v0.15.1
             case "clip_sens": return "Removes copied one-time codes (4-8 digits, short codes) after 2 minutes.";   // v0.10.10
             case "tb_vault": return "Shows the Vault key on the toolbar (saved texts, terms and templates).";   // v0.7.1
+            case "kh_pct_l": return "Key height in landscape (sideways). Unset = the old level.";   // v0.15.4
+            case "oh_w_l": return "Width of the keyboard in one-hand mode (landscape).";   // v0.15.4
+            case "tb_custom": return "Custom = your own toolbar (order, hide). Classic = the old fixed bar.";   // v0.15.4
+            case "tb_auto": return "Moves the tools you use most to the front of the toolbar.";   // v0.15.4
+            case "tb_fold": return "Folds the toolbar to its first tool. The \u00AB key on the bar does the same.";   // v0.15.4
+            case "hint_custom": return "Your own long-press characters: a=@,e=3 (letter=text). Empty = normal.";   // v0.15.4
+            case "xrow_chars": return "Extra row of up to 10 characters above the numbers. Empty = no row.";   // v0.15.4
+            case "vault_sort": return "Order of the Vault list: Newest, A-Z or most Used.";   // v0.15.4
+            case "vault_dest": return "Vault folder that \"To Vault\" from the clipboard saves into.";   // v0.15.4
             default: return "";
         }
     }

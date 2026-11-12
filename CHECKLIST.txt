@@ -521,3 +521,13 @@ Z79) v0.15.3 Settings map v2 + Tools & Panels page (N3)
  [ ] A changed value (dot) and long-press reset still work on moved rows (e.g. turn Edit bar OFF, dot shows, long-press = back ON; the keyboard edit bar follows).
  [ ] Old screen (Data & About > switch to old screen): the rows are all there, "Tools & Panels" is one more group in the list.
  [ ] Two panes (rotate the phone / tablet): Tools & Panels opens in the right pane, no crash.
+
+Z80) v0.15.4 Missing simple rows in the app (N4)
+ [ ] Layout & Size: "Key height (landscape)" and "One-hand width (landscape)" rows. Change them: dot appears. Rotate the phone, open the keyboard: landscape height / width follow. Keyboard gear > More settings > Size shows the same values; change there, the app row follows.
+ [ ] Long-press a landscape row: back to default (dot gone).
+ [ ] Tools & Panels > Toolbar: "Toolbar style" Classic | Custom. Classic = old fixed bar in the keyboard, Custom = your toolbar. "Most-used tools first" and "Fold toolbar" switches: the keyboard bar follows after reopening; the << / >> key on the bar and the Fold row agree.
+ [ ] Tools & Panels > Vault: "Vault sort" Newest | A-Z | Used = same as the sort button in the Vault panel. "Vault save folder": Unfiled + your folders (make a folder in the Vault first). Pick one, copy a clip, clipboard Manage > To Vault: it lands in that folder. With no folders the row shows only Unfiled.
+ [ ] Typing > Custom characters > "Long-press override": tap, type  a=@,e=3  OK: chip shows it, keyboard long-press a gives @. Type rubbish (no a=@ pairs): message "No a=@ pairs found", nothing saved. Cancel = nothing. Empty + OK = cleared.
+ [ ] "Extra character row": type ()[]{}  OK: extra row appears above the numbers in the keyboard. Empty OK / long-press reset = row gone.
+ [ ] Undo (top of the page) after changing a text row brings the old text back. Global search "landscape", "fold", "vault sort", "override" finds the rows on the right page.
+ [ ] Old screen (Data & About > old screen): all old rows still work.
