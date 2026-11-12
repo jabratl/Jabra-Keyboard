@@ -5,10 +5,11 @@ If all lines are OK, the long lists in CHECKLIST.txt (Z77 - Z84) are only needed
 If a line fails, send: which line number + what you see (+ screenshot). One bug = one fix version.
 Not tested on a phone by the builder: every line below is still [ ] until you tick it.
 
-A. CLIPBOARD (N1, N2)                                                  [Z77, Z78]
+A. CLIPBOARD (N1, N2, X1)                                              [Z77, Z78, Z85]
  [ ] 1. Open any text field, tap the clipboard key. The panel is as tall as the letters keyboard (no shrink, no jump). Tap ABC: same height.
  [ ] 2. Copy 3 texts, pin 2 of them. List view: "Pinned" on top, "Recent" below. Tap a section header: the order swaps. Switch to Cards: same order, header tap works there too.
  [ ] 3. App > Clipboard & Tools page: "Clip order" and "Clipboard follows keyboard height" rows exist and agree with what you see in the keyboard.
+ [ ] 3b. (X1) Clipboard > Manage with 30+ clips: scroll down, tap clips at the bottom: the list stays where you are (no jump to the top).
 
 B. APP MAP + NEW ROWS (N3, N4)                                          [Z79, Z80]
  [ ] 4. App Home shows 7 tiles, the 7th is "Tools & Panels". Typing, Clipboard and Data pages are split into named sections.

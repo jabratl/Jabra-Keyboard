@@ -149,7 +149,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
         refresh()
     }
 
-    fun reset() { editing = null; confirmSave = false; undoBuf = emptyList(); searching = false; query = ""; confirmClear = false; msg = ""; sel.leave(); confirmDel = false }
+    fun reset() { editing = null; confirmSave = false; undoBuf = emptyList(); searching = false; query = ""; confirmClear = false; msg = ""; sel.leave(); confirmDel = false; keepY = -1; fromRefresh = false }   // v0.16.1 (X1)
 
     private fun dp(v: Int): Int = (v * ctx.resources.displayMetrics.density).toInt()
 
@@ -195,12 +195,23 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
         return r
     }
 
-    private fun refresh() { host.showPanel("clipboard") }
+    // v0.16.1 (X1): refresh() keeps the list position (the panel is rebuilt = new ScrollView at 0). refreshTop() = start at the top on purpose (search, sort, view, order).
+    private var curSv: ScrollView? = null
+    private var keepY = -1
+    private var fromRefresh = false
+    private fun refresh() {
+        try { if (editing == null) keepY = curSv?.scrollY ?: -1; fromRefresh = true } catch (_: Throwable) { keepY = -1; fromRefresh = false }
+        host.showPanel("clipboard")
+    }
+    private fun refreshTop() { keepY = -1; fromRefresh = false; host.showPanel("clipboard") }
 
     /** Returns null on any problem -> keyboard shows normal letters. */
     fun build(): View? = try { make() } catch (_: Throwable) { null }
 
     private fun make(): View {
+        val restoreY = if (fromRefresh) keepY else -1   // v0.16.1 (X1)
+        fromRefresh = false
+        if (restoreY < 0 && editing == null) keepY = -1   // fresh open = start at the top
         if (editing != null) { try { return fitEdit(makeEdit()) } catch (_: Throwable) { editing = null } }   // v0.15.1: fitEdit   // v0.4.3.1
         val root = LinearLayout(ctx)
         root.orientation = LinearLayout.VERTICAL
@@ -218,7 +229,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
             searching = !searching
             query = ""
             confirmClear = false
-            refresh()
+            refreshTop()   // v0.16.1
         }
         JabraIcons.putThemed(ctx, searchBtn, if (searching) "close" else "search")   // v0.0.7
         top.addView(searchBtn)
@@ -255,14 +266,14 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
         val sortBtn = btn("\u2195 " + arrayOf("Newest", "Oldest", "A-Z", "Used")[sortLv], 0f, 30) {
             try { JabraPrefs(ctx).setInt("clip_sort", (sortLv + 1) % 4) } catch (_: Throwable) { }
             confirmClear = false
-            refresh()
+            refreshTop()   // v0.16.1
         }
         sortBtn.textSize = 12f
         sortBtn.setPadding(dp(10), 0, dp(10), 0)
         val viewBtn = btn(if (cardsOn) "View: Cards" else "View: List", 0f, 30) {
             try { JabraPrefs(ctx).setInt("clip_view", if (cardsOn) 0 else 1) } catch (_: Throwable) { }
             confirmClear = false
-            refresh()
+            refreshTop()   // v0.16.1
         }
         viewBtn.textSize = 12f
         viewBtn.setPadding(dp(10), 0, dp(10), 0)
@@ -306,7 +317,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
         val recentItems = store.sorted(store.recentView(query), sortLv)
         val showHeaders = ClipOrder.showHeaders(searching, pinnedItems.size, recentItems.size)   // v0.15.2 (same rule as before)
         val ordMode = try { ClipOrder.sanitize(JabraPrefs(ctx).int("clip_order", 0)) } catch (_: Throwable) { 0 }   // v0.15.2 (N2): 0 = Pinned first (old), 1 = Recent first
-        val ordSwap: () -> Unit = { try { JabraPrefs(ctx).setInt("clip_order", ClipOrder.next(ordMode)) } catch (_: Throwable) { }; confirmClear = false; refresh() }   // v0.15.2: tap on a section header
+        val ordSwap: () -> Unit = { try { JabraPrefs(ctx).setInt("clip_order", ClipOrder.next(ordMode)) } catch (_: Throwable) { }; confirmClear = false; refreshTop() }   // v0.15.2: tap on a section header; v0.16.1: top
         // v0.2.5.2: Cards view (clip_view = 1); any problem -> null -> the old List code below
         val lines = try { JabraPrefs(ctx).int("clip_lines", 0).coerceIn(0, 2) } catch (_: Throwable) { 0 }
         val cards: View? = if (cardsOn && items.isNotEmpty()) {
@@ -329,14 +340,29 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
         }
         sv.addView(col)
         root.addView(sv)
+        try {   // v0.16.1 (X1): same list position after a rebuild (restored after the first layout, clamped to the new content height)
+            curSv = sv
+            if (com.mgb.keyboard.typing.ScrollKeep.wants(restoreY)) {
+                keepY = -1
+                sv.viewTreeObserver.addOnGlobalLayoutListener(object : android.view.ViewTreeObserver.OnGlobalLayoutListener {
+                    override fun onGlobalLayout() {
+                        try {
+                            if (sv.viewTreeObserver.isAlive) sv.viewTreeObserver.removeOnGlobalLayoutListener(this)
+                            val ch = col.height
+                            if (ch > 0) sv.scrollTo(0, com.mgb.keyboard.typing.ScrollKeep.clamp(restoreY, ch, sv.height))
+                        } catch (_: Throwable) { }
+                    }
+                })
+            }
+        } catch (_: Throwable) { }
 
         // tiny search keyboard (Latin letters only)
         if (searching) {
             for (letters in arrayOf("qwertyuiop", "asdfghjkl", "zxcvbnm")) {
                 val r = row()
-                letters.forEach { ch -> r.addView(btn(ch.toString(), 1f, 34) { query += ch; confirmClear = false; refresh() }) }
-                if (letters == "asdfghjkl") r.addView(JabraIcons.putThemed(ctx, btn("␣", 1f, 34) { query += " "; refresh() }, "space"))   // v0.0.7
-                if (letters == "zxcvbnm") r.addView(JabraIcons.putThemed(ctx, btn("⌫", 1.5f, 34) { if (query.isNotEmpty()) query = query.dropLast(1); refresh() }, "back"))   // v0.0.7
+                letters.forEach { ch -> r.addView(btn(ch.toString(), 1f, 34) { query += ch; confirmClear = false; refreshTop() }) }
+                if (letters == "asdfghjkl") r.addView(JabraIcons.putThemed(ctx, btn("␣", 1f, 34) { query += " "; refreshTop() }, "space"))   // v0.0.7
+                if (letters == "zxcvbnm") r.addView(JabraIcons.putThemed(ctx, btn("⌫", 1.5f, 34) { if (query.isNotEmpty()) query = query.dropLast(1); refreshTop() }, "back"))   // v0.0.7
                 root.addView(r)
             }
         }

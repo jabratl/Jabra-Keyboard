@@ -61,12 +61,21 @@ class VaultPanel(private val ctx: Context, private val host: JabraHost, private 
     fun reset() {
         scr = Scr.LIST; searching = false; query = ""; msg = ""; selOn = false; sel.clear(); confirmDel = false; confirmFolder = ""
         eConfirm = false; eCaps = false; fName = ""; fillVals.clear()
+        keepY = -1; fromRefresh = false   // v0.16.1 (X1)
         store.unload()   // always read the file fresh (a backup may have been restored)
     }
 
     private fun dp(v: Int): Int = (v * ctx.resources.displayMetrics.density).toInt()
     private fun now(): Long = System.currentTimeMillis()
-    private fun refresh() { host.showPanel("vault") }
+    // v0.16.1 (X1): refresh() keeps the list position (panel rebuild = new ScrollView at 0). refreshTop() = top on purpose (search, sort, chips).
+    private var curSv: ScrollView? = null
+    private var keepY = -1
+    private var fromRefresh = false
+    private fun refresh() {
+        try { if (scr == Scr.LIST) keepY = curSv?.scrollY ?: -1; fromRefresh = true } catch (_: Throwable) { keepY = -1; fromRefresh = false }
+        host.showPanel("vault")
+    }
+    private fun refreshTop() { keepY = -1; fromRefresh = false; host.showPanel("vault") }
 
     // v0.6.6 theme: buttons = UiKit.btn (follows theme / Jabra look / Borderless), old body kept as btnOld() = automatic fallback
     private fun btn(label: String, weight: Float, hDp: Int, onClick: (Button) -> Unit): Button {
@@ -229,14 +238,17 @@ class VaultPanel(private val ctx: Context, private val host: JabraHost, private 
     // ------------------------------------------------------------------ LIST
 
     private fun makeList(): View {
+        val restoreY = if (fromRefresh) keepY else -1   // v0.16.1 (X1)
+        fromRefresh = false
+        if (restoreY < 0) keepY = -1
         val root = rootView()
         val l = store.get()
 
         val top = row()
         top.addView(btn("ABC", 1f, 40) { leaveSel(); store.unload(); host.showLetters() })
-        top.addView(btn(if (searching) "✕ Search" else "🔍 Search", 1.6f, 40) { searching = !searching; query = ""; refresh() })
+        top.addView(btn(if (searching) "✕ Search" else "🔍 Search", 1.6f, 40) { searching = !searching; query = ""; refreshTop() })
         top.addView(btn("+ Add", 1f, 40) { addFromField() })
-        top.addView(btn("Folders", 1.3f, 40) { leaveSel(); scr = Scr.FOLDERS; msg = ""; refresh() })
+        top.addView(btn("Folders", 1.3f, 40) { leaveSel(); scr = Scr.FOLDERS; msg = ""; refreshTop() })
         root.addView(top)
 
         if (l == null) {
@@ -260,7 +272,7 @@ class VaultPanel(private val ctx: Context, private val host: JabraHost, private 
         if (!selOn) {
             val sortBtn = small(btn("↕ " + arrayOf("Newest", "A-Z", "Used")[sortLv], 0f, 30) {
                 try { prefs.setInt("vault_sort", (sortLv + 1) % 3) } catch (_: Throwable) { }
-                refresh()
+                refreshTop()   // v0.16.1
             })
             sortBtn.setPadding(dp(10), 0, dp(10), 0)
             head.addView(sortBtn)
@@ -277,7 +289,7 @@ class VaultPanel(private val ctx: Context, private val host: JabraHost, private 
         val kinds = arrayOf<String?>(null, VaultList.SNIPPET, VaultList.NOTE, VaultList.TERM)
         for (i in 0..3) {
             val label = (if (kindF == i) "✓ " else "") + names[i] + " " + l.countKind(kinds[i])
-            chips.addView(small(btn(label, 1f, 30) { kindF = i; confirmDel = false; refresh() }))
+            chips.addView(small(btn(label, 1f, 30) { kindF = i; confirmDel = false; refreshTop() }))
         }
         root.addView(chips)
 
@@ -292,7 +304,7 @@ class VaultPanel(private val ctx: Context, private val host: JabraHost, private 
                     folderF = value
                     if (value != null) { try { prefs.setStr("vault_dest", value) } catch (_: Throwable) { } }
                     confirmDel = false
-                    refresh()
+                    refreshTop()   // v0.16.1
                 }).also { it.setPadding(dp(10), 0, dp(10), 0) })
             }
             chip("All folders", null)
@@ -327,13 +339,28 @@ class VaultPanel(private val ctx: Context, private val host: JabraHost, private 
         for (e in items) col.addView(entryRow(e))
         sv.addView(col)
         root.addView(sv)
+        try {   // v0.16.1 (X1): same list position after a rebuild (restored after the first layout, clamped)
+            curSv = sv
+            if (com.mgb.keyboard.typing.ScrollKeep.wants(restoreY)) {
+                keepY = -1
+                sv.viewTreeObserver.addOnGlobalLayoutListener(object : android.view.ViewTreeObserver.OnGlobalLayoutListener {
+                    override fun onGlobalLayout() {
+                        try {
+                            if (sv.viewTreeObserver.isAlive) sv.viewTreeObserver.removeOnGlobalLayoutListener(this)
+                            val ch = col.height
+                            if (ch > 0) sv.scrollTo(0, com.mgb.keyboard.typing.ScrollKeep.clamp(restoreY, ch, sv.height))
+                        } catch (_: Throwable) { }
+                    }
+                })
+            }
+        } catch (_: Throwable) { }
 
         if (searching) {
             for (letters in arrayOf("qwertyuiop", "asdfghjkl", "zxcvbnm")) {
                 val r = row()
-                letters.forEach { ch -> r.addView(btn(ch.toString(), 1f, 34) { query += ch; refresh() }) }
-                if (letters == "asdfghjkl") r.addView(JabraIcons.putThemed(ctx, btn("␣", 1f, 34) { query += " "; refresh() }, "space"))
-                if (letters == "zxcvbnm") r.addView(JabraIcons.putThemed(ctx, btn("⌫", 1.5f, 34) { if (query.isNotEmpty()) query = query.dropLast(1); refresh() }, "back"))
+                letters.forEach { ch -> r.addView(btn(ch.toString(), 1f, 34) { query += ch; refreshTop() }) }
+                if (letters == "asdfghjkl") r.addView(JabraIcons.putThemed(ctx, btn("␣", 1f, 34) { query += " "; refreshTop() }, "space"))
+                if (letters == "zxcvbnm") r.addView(JabraIcons.putThemed(ctx, btn("⌫", 1.5f, 34) { if (query.isNotEmpty()) query = query.dropLast(1); refreshTop() }, "back"))
                 root.addView(r)
             }
         }

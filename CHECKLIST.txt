@@ -581,3 +581,12 @@ Z84) v0.15.8 Type exact stepper value + Reset this section / page (N8)
  [ ] Type a word in the search box: the "Reset this section" buttons are hidden while searching and come back when the box is empty. Section headers still hide when no row matches.
  [ ] Old screen (only if you switch back to it with the app's own "old screen" button): still shows "Reset this group to default" with its old two-tap behaviour, and the old - / + steppers. Optional check, skip it if you never use the old screen.
  [ ] 360 dp phone: buttons fit, the dialog is readable in light and dark mode.
+
+Z85) v0.16.1 Clipboard / Vault keep the scroll position (X1)
+ [ ] Copy 30+ different texts (or use an old history). Open the clipboard (List view). Tap Manage. Scroll to the bottom, tap a clip: the check box turns on and the list STAYS where it was (no jump to the top). Tap 3 more clips lower / higher: always stays.
+ [ ] Long-press a clip near the bottom (enters select mode): list stays. Tap All: stays. Tap Pin: stays. Delete (two taps): the list stays, or goes to the new end if it became shorter.
+ [ ] Switch View to Cards, repeat: tap cards at the bottom to select / unselect: list stays. Pin / x on a card at the bottom: stays.
+ [ ] Search: open Search, type letters: the list starts at the top (expected). Sort button and List / Cards switch: top (expected). Tap a section header (order swap): top (expected).
+ [ ] Open the clipboard, scroll down, tap ABC, open the clipboard again: it starts at the top. Edit one clip (Manage > tick one > Edit > Cancel): back in the list at the same place.
+ [ ] Clipboard still as tall as the letters keyboard (Z77), no flicker added.
+ [ ] Vault (toolbar item Vault, if it is on): 10+ entries, Manage, tick entries at the bottom: list stays. Delete: stays. Folder chips / kind chips / Search: top (expected).
