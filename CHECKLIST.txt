@@ -724,3 +724,12 @@ Z65) v0.10.21 Big font + wide screens (D4)
  [ ] Landscape (rotate): panels fine, key bubble stays on screen at the left / right edge keys (q, p).
  [ ] Tablet / fold unfolded / split-screen window wider than ~700dp (if you have one): letters keyboard full width as before, panels in the middle with side space. Back / ABC buttons still work.
  [ ] One-hand mode still works with panels open.
+
+Z66) v0.10.22 Bigger word lists (W8)
+ [ ] English: type "hel" -> strip shows 3 normal words (for example help / hello / helped), tap one = word + space.
+ [ ] English: type "don" -> "don't" can appear; "didn" or "ll" is never offered alone.
+ [ ] Bangla (Avro): type "ami" and a few more words -> Bangla suggestions look like real words (no ।, no digits, no English letters).
+ [ ] First suggestion after opening a field may come a moment late (lists load in the background); after that it is instant.
+ [ ] Typing speed feels the same as v0.10.21 (hold a key, type fast), also on Bangla.
+ [ ] Auto-correct is still OFF by default; with it ON, "teh" -> "the" still works.
+ [ ] Settings > Data & Backup > Health Check: no new WARN.

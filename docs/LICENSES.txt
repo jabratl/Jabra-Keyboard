@@ -1,0 +1,11 @@
+THIRD-PARTY DATA IN JABRA KEYBOARD
+
+Word lists (app/src/main/assets/words/en.txt, bn.txt) - since v0.10.22
+  Source : FrequencyWords by Hermit Dave, https://github.com/hermitdave/FrequencyWords (2018 lists en_50k.txt, bn_50k.txt;
+           derived from OpenSubtitles).
+  Licence: content = CC BY-SA 4.0 (https://creativecommons.org/licenses/by-sa/4.0/), code = MIT.
+  Changes: lower-cased, filtered (no digits / punctuation / tokenizer fragments), cut to the most frequent words, the hand-written
+           starter words kept on top (tools/WordBuild.java, tools/build_words.sh).
+  Share-alike: if the word files are shared further, keep this credit and the same licence (CC BY-SA 4.0) for those two files.
+
+Emoji data (assets/emoji/emoji_v1.txt): derived from Unicode emoji-test.txt (Unicode terms of use).
