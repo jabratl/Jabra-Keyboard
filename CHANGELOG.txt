@@ -1,3 +1,15 @@
+v0.10.23 - NEW: selection quick actions in the top row (plan W9)
+- WHY: to change a selected text you had to open Text Tools. Now one tap in the suggestion row.
+- What you get: Settings > Keys & gestures > "Selection quick actions" (qa_on, default OFF; needs "Suggestion row" ON). Select text in a normal field: the 3 top-row slots show [Copy] [Case] [Clean] (or [N words] when Case / Clean do not apply). Copy = clipboard + "Copied". Case cycles UPPER > lower > Title on every tap and keeps the text selected. Clean = extra spaces, trailing spaces, 3+ blank lines (same as Text Tools > Clean). "N words" tap = full counts message. Deselect = normal suggestions come back. Never in password / email / URL / number fields; never for a selection over 20000 characters.
+- DEVIATION from the plan text: 3 slots exist, not 4, so Count only takes the free slot when Case or Clean is not offered (full counts are still in Text Tools).
+- Code: typing/QuickActionPlan.java (NEW, pure: active / ids / label / nextCase / apply), SuggestStrip.kt (setActions + actOn flag, tap routing), SuggestController.kt (selection(), quick(), act(), 3 optional constructor lambdas), MgbIme.kt (constructor args selected / replaceSel / copyText + ONE line in onUpdateSelection that stores the selection), SettingsGroups.kt (toggle), typing/SettingsIndex.java (help line), build.gradle.kts 0.10.23. Hooks marked "v0.10.23".
+- Speed: nothing new on a key press. The selected text is read only in the 50 ms debounced refresh, and only when qa_on is ON and text is selected.
+- Prefs (new): qa_on (bool, default OFF). Not added to ProfileCodec KEYS (same as ac_on / ap_on; keeps ProfileTest count 53). Permissions: none. Tests (new): tools/QuickActionPlanTest.java (46 checks).
+BROKE: nothing intended. qa_on OFF = exactly as v0.10.22.
+NOT tested: the Kotlin was NOT compiled here (GitHub Actions is the first compile check); nothing run on a phone.
+TESTED here: all 62 tools/*Test.java green; brackets of the 4 edited .kt files unchanged in balance.
+Rollback: Settings > "Selection quick actions" OFF, or revert to v0.10.22.
+
 v0.10.22 - NEW: bigger word lists for suggestions (plan W8)
 - WHY: suggestions came from hand-written starter lists (569 English / 191 Bangla words) = weak. The user supplied FrequencyWords 2018 en_50k.txt + bn_50k.txt (CC BY-SA 4.0 content, MIT code).
 - What you get: assets/words/en.txt = 30000 words (235 KB), bn.txt = 10000 words (about 190 KB; cut from 21243 so the phone loads it faster). The old starter words stay on top (same order), then the frequency list. English keeps inner apostrophes (don't, i'm); tokenizer pieces (don, didn, ll, ve ...) are dropped. Bangla: no danda, no digits, Bengali block only.

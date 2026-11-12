@@ -130,6 +130,7 @@ public final class SettingsIndex {
             case "ac_on": return "Fixes 1-letter English typos on space. Backspace right after undoes it. OFF = never.";   // v0.10.3
             case "learn_on": return "Learns words you type (kept on this phone only) and suggests them. OFF = nothing stored.";   // v0.10.2
             case "ap_on": return "Uses the profile you set for an app (Profiles > App) when its field opens. OFF = never.";   // v0.10.19
+            case "qa_on": return "Select text: the top row shows Copy, Case, Clean and the word count. Needs Suggestion row. OFF = normal.";   // v0.10.23
             case "sg_on": return "Word suggestions in the top row; the left icon opens the toolbar. OFF = toolbar only.";   // v0.10.1
             case "pop_fast": return "Draws the key bubble inside the keyboard: smoother (needs Key popup ON). OFF = old.";   // v0.9.9
             case "sp_tick": return "Soft tick for every language step while you swipe on space. Needs Space swipe ON.";   // v0.9.8

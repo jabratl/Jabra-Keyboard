@@ -41,6 +41,8 @@ class SuggestStrip(
     val view: LinearLayout = LinearLayout(ctx)
     private val slots = ArrayList<TextView>()
     private var enabled = true
+    private var actOn = false                      // v0.10.23 (W9): the 3 slots show selection quick actions (tap = onAct(slot index), no grid)
+    private var onAct: ((Int) -> Unit)? = null
     private var grid: List<String> = emptyList()
     private val d = ctx.resources.displayMetrics.density
     private val col: Int = try { JabraThemes.iconColor(prefs) } catch (_: Throwable) { Color.parseColor("#222222") }
@@ -174,7 +176,8 @@ class SuggestStrip(
                             if (w.isNotEmpty()) onPick(w)
                         } else if (Math.abs(ev.rawX - downX) <= 24f * d && Math.abs(ev.rawY - downY) <= 24f * d) {
                             val w = t.text?.toString() ?: ""
-                            if (enabled && w.isNotEmpty()) onPick(w)
+                            if (actOn) { if (w.isNotEmpty()) onAct?.invoke(slots.indexOf(t)) }   // v0.10.23 (W9)
+                            else if (enabled && w.isNotEmpty()) onPick(w)
                         }
                         true
                     }
@@ -250,9 +253,19 @@ class SuggestStrip(
     fun set(words: List<String>, more: List<String> = emptyList(), on: Boolean = true) {
         try {
             enabled = on
+            actOn = false; onAct = null   // v0.10.23 (W9): back to word suggestions
             grid = if (on) more else emptyList()
             val l = SuggestPlan.slots(if (on) words else emptyList())
             for (i in slots.indices) { val w = l[i]; if (slots[i].text.toString() != w) slots[i].text = w }
+            slots.getOrNull(1)?.invalidate()
+        } catch (_: Throwable) { }
+    }
+
+    /** v0.10.23 (W9): selection quick actions: [labels] (max 3) fill the slots, a tap calls [on] with the slot number. No grid. Any later set() brings the word suggestions back. */
+    fun setActions(labels: List<String>, on: (Int) -> Unit) {
+        try {
+            enabled = true; actOn = true; onAct = on; grid = emptyList()
+            for (i in slots.indices) { val w = labels.getOrNull(i) ?: ""; if (slots[i].text.toString() != w) slots[i].text = w }
             slots.getOrNull(1)?.invalidate()
         } catch (_: Throwable) { }
     }

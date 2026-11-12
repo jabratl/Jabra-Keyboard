@@ -26,7 +26,10 @@ class SuggestController(
     private val openClip: () -> Unit,
     private val hasTools: () -> Boolean,           // toolbar row exists (edit_bar ON)
     private val openTools: () -> Unit,
-    private val openMic: () -> Unit
+    private val openMic: () -> Unit,
+    private val selected: () -> String = { "" },                       // v0.10.23 (W9): selected text of the field
+    private val replaceSel: (String, Int) -> Unit = { _, _ -> },        // v0.10.23 (W9): replace the selection (text, start) and keep it selected
+    private val copyText: (String) -> Unit = { _ -> }                   // v0.10.23 (W9): put text on the clipboard
 ) {
     private val h = Handler(Looper.getMainLooper())
     private var strip: SuggestStrip? = null
@@ -36,6 +39,38 @@ class SuggestController(
     private var curWord = ""
     private var curAvro = false
     private val run = Runnable { try { refresh() } catch (_: Throwable) { } }
+    private var selS = 0; private var selE = 0     // v0.10.23 (W9): selection (start <= end), set by MgbIme.onUpdateSelection (plain assignment, no work)
+    private var qaSel = ""; private var qaStart = 0
+
+    fun selection(a: Int, b: Int) { selS = minOf(a, b); selE = maxOf(a, b) }
+
+    /** v0.10.23 (W9): selection quick actions in the strip. True = shown (the caller stops). Pref qa_on (default OFF); only called from the debounced refresh, never from a key press. */
+    private fun quick(s: SuggestStrip): Boolean {
+        try {
+            if (!com.mgb.keyboard.typing.QuickActionPlan.active(prefs.bool("qa_on", false), blocked(), selS, selE)) return false
+            val t = selected()
+            val ids = com.mgb.keyboard.typing.QuickActionPlan.ids(t)
+            if (ids.isEmpty()) return false
+            qaSel = t; qaStart = selS
+            s.setActions(ids.map { com.mgb.keyboard.typing.QuickActionPlan.label(it, t) }) { i -> act(ids.getOrNull(i) ?: "") }
+            return true
+        } catch (_: Throwable) { return false }
+    }
+
+    private fun act(id: String) {
+        try {
+            val t = qaSel
+            if (t.isEmpty()) return
+            when (id) {
+                com.mgb.keyboard.typing.QuickActionPlan.COPY -> { copyText(t); BackupStore.toast(ctx, "Copied") }
+                com.mgb.keyboard.typing.QuickActionPlan.COUNT -> BackupStore.toast(ctx, com.mgb.keyboard.typing.TextTools.countsLine(t))
+                else -> {
+                    val r = com.mgb.keyboard.typing.QuickActionPlan.apply(id, t)
+                    if (r != null && r != t) replaceSel(r, qaStart) else BackupStore.toast(ctx, "Nothing to change")
+                }
+            }
+        } catch (_: Throwable) { }
+    }
 
     /** True when the strip takes the toolbar's place now (pref sg_on ON and the toolbar page is not opened). */
     fun wants(toolsOpen: Boolean): Boolean = SuggestPlan.show(prefs.bool("sg_on", true), toolsOpen)
@@ -78,6 +113,7 @@ class SuggestController(
         val s = strip ?: return
         if (!s.view.isAttachedToWindow) return
         if (blocked()) { s.set(emptyList(), emptyList(), false); return }
+        if (selE > selS && quick(s)) return   // v0.10.23 (W9): text selected = quick actions (pref qa_on)
         val a = avroWord()
         val word = if (a.isNotEmpty()) a else SuggestPlan.currentWord(textBefore())
         curWord = word; curAvro = a.isNotEmpty()

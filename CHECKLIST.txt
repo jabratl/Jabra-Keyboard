@@ -733,3 +733,15 @@ Z66) v0.10.22 Bigger word lists (W8)
  [ ] Typing speed feels the same as v0.10.21 (hold a key, type fast), also on Bangla.
  [ ] Auto-correct is still OFF by default; with it ON, "teh" -> "the" still works.
  [ ] Settings > Data & Backup > Health Check: no new WARN.
+
+Z67) v0.10.23 Selection quick actions (W9)
+ [ ] Settings > Keys & gestures > "Selection quick actions" exists and is OFF. With it OFF, select a word: top row shows normal suggestions / nothing new.
+ [ ] Turn it ON, long-press a word in a notes app to select it: top row shows Copy | Case | (Clean or "1 word").
+ [ ] Tap Case three times: HELLO > hello > Hello > HELLO; the text stays selected after each tap.
+ [ ] Tap Copy: toast "Copied"; paste somewhere (or open Clipboard) = the text is there.
+ [ ] Select text with double spaces "a   b": Clean appears; tap = "a b".
+ [ ] Select a Bangla word: no Case chip; Copy + "1 word". Tap the word chip = a counts message.
+ [ ] Tap elsewhere (deselect): normal suggestions come back at once. Type a word: suggestions work as before.
+ [ ] Password field: select text = no chips. Switch the setting OFF again: nothing changes.
+ [ ] Typing speed feels the same as v0.10.22.
+

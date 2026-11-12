@@ -41,7 +41,13 @@ class MgbIme : InputMethodService() {
             { openClipboard() },
             { prefs.bool("edit_bar", true) },
             { sgTools = true; showLetters() },
-            { try { commitWord(); switcher.voice() } catch (_: Throwable) { } })
+            { try { commitWord(); switcher.voice() } catch (_: Throwable) { } },
+            selected = { try { currentInputConnection?.getSelectedText(0)?.toString() ?: "" } catch (_: Throwable) { "" } },   // v0.10.23 (W9)
+            replaceSel = { res, start -> try {
+                val ic = currentInputConnection
+                if (ic != null) { ic.beginBatchEdit(); ic.commitText(res, 1); ic.setSelection(start, start + res.length); ic.endBatchEdit() }
+            } catch (_: Throwable) { } },
+            copyText = { t -> setClipText(t) })
     }
     private var langBtn: Button? = null
     private var spaceBtn: Button? = null   // v0.8.9: space key (shows the language name when space_lang is ON)
@@ -381,6 +387,7 @@ class MgbIme : InputMethodService() {
                 currentInputConnection?.finishComposingText()
             }
         } catch (_: Throwable) { }
+        try { sg.selection(newSelStart, newSelEnd) } catch (_: Throwable) { }   // v0.10.23 (W9): remember the selection (plain assignment)
         try { sg.schedule() } catch (_: Throwable) { }   // v0.10.1 (G2): cursor moved / deleted
         val kind = pendingKind; pendingKind = com.mgb.keyboard.typing.AutoCapGate.E_JUMP   // v0.6.1: consume once; anything we did not type = JUMP
         autoCapUpdate(kind)   // v0.0.9 (has its own try/catch)
