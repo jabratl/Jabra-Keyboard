@@ -54,4 +54,13 @@ public final class PanelLayout {
 
     /** True when [options] segments of the given width are all at least MIN_TOUCH wide (else use chips that scroll). */
     public static boolean segmentsFit(int widthDp, int options) { return options >= 1 && segmentWidthDp(widthDp, options) >= MIN_TOUCH; }
+
+    // v0.16.9 (X9): pref panel_ui = style of the redesigned panels (X9 clipboard, later X10-X12). 0 = Classic = today's panels, 1 = New. First build default = 0.
+    public static final int STYLE_CLASSIC = 0, STYLE_NEW = 1;
+    public static final String[] STYLE_NAMES = { "Classic", "New" };
+
+    /** Unknown / out of range = Classic (old behaviour). */
+    public static int sanitizeStyle(int v) { return v == STYLE_NEW ? STYLE_NEW : STYLE_CLASSIC; }
+
+    public static boolean isNewStyle(int v) { return sanitizeStyle(v) == STYLE_NEW; }
 }

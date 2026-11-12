@@ -639,3 +639,13 @@ Z91) v0.16.7 Number row options (X7)
  [ ] Keys = My characters, characters "()[]{}": 6 keys, each types its character. Clear the characters: back to 1234567890. Try 12 characters (only 10 kept), spaces / repeats (dropped), an emoji.
  [ ] Landscape, Bangলা mode, dark theme: row fine. Back to Digits: old row (and Bangla digit hints) come back.
 
+
+Z92) v0.16.9 Clipboard panel redesign, style New (X9)
+ [ ] App > Clipboard & tools > "Look of clips": row "Panel style" = Classic. Open the clipboard in the keyboard: it looks exactly like before (List + Cards, Manage, Search, Sort, View, Clear all as before).
+ [ ] Panel style = New. Open the clipboard: top bar ABC | Search | Add | Manage, a row of chips All | Pinned | Text | Links | Numbers, an info line (Sort / View / Clear). The bar and the chips stay when you scroll a long list (40+ clips). Window is not taller than the letters keyboard.
+ [ ] Copy a link, a price (1,250.50), a phone number, an e-mail and a normal sentence. Chip Links = only the link; Numbers = price + phone; Text = e-mail + sentence; Pinned = only pinned. An empty chip shows a short hint. Check List AND Cards view, and Pinned first / Recent first.
+ [ ] Manage: top bar shows Done, bottom bar shows "Tap clips to select". Tap clips at the bottom of a long list: they are ticked and the list stays where you are (X1). Bottom bar says "3 selected". Pin = pinned (button turns into Unpin when all are pinned). Delete asks "Sure? delete 3" (second tap deletes), Undo (info line) brings them back. Paste types them joined by a blank line and returns to the letters.
+ [ ] More: tray with All / Unpin / Merge -> 1 clip / Edit / Paste in 1 line / To Vault. All selects only the clips of the current chip. Edit with ONE clip opens the edit screen and comes back to the New panel. Chips row is hidden while the tray is open; "Less" closes it.
+ [ ] Select mode: tap another chip = selection cleared. Clear (info line): "Delete all unpinned clips?" [Cancel] [Yes, clear]; pinned clips stay.
+ [ ] Search in New style: type letters, chips still work, results follow the chip; Search again closes it. Landscape, dark theme, Classic theme, clip_fit OFF (App > "Clipboard follows keyboard height"): panel fine, nothing cut off.
+ [ ] Back to Classic: the old panel returns at once. Backup / profile export + import keeps the style (Panel style is a normal setting).

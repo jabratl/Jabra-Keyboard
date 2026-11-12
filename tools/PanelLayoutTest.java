@@ -40,6 +40,9 @@ public class PanelLayoutTest {
         t("grid height empty / bad margin", PanelLayout.gridHeightDp(0, 3, false, 2) == 0 && PanelLayout.gridHeightDp(3, 3, false, -9) == 48);
         t("segment width", PanelLayout.segmentWidthDp(360, 3) == 120 && PanelLayout.segmentWidthDp(360, 0) == 360 && PanelLayout.segmentWidthDp(-1, 3) == 0);
         t("segments fit", PanelLayout.segmentsFit(360, 4) && PanelLayout.segmentsFit(360, 9) && !PanelLayout.segmentsFit(360, 10) && !PanelLayout.segmentsFit(360, 0));
+        t("style sanitize", PanelLayout.sanitizeStyle(0) == 0 && PanelLayout.sanitizeStyle(1) == 1 && PanelLayout.sanitizeStyle(2) == 0 && PanelLayout.sanitizeStyle(-1) == 0 && PanelLayout.sanitizeStyle(Integer.MAX_VALUE) == 0);   // v0.16.9
+        t("style isNew", PanelLayout.isNewStyle(1) && !PanelLayout.isNewStyle(0) && !PanelLayout.isNewStyle(7) && !PanelLayout.isNewStyle(-1));
+        t("style names", PanelLayout.STYLE_NAMES.length == 2 && PanelLayout.STYLE_NAMES[0].equals("Classic") && PanelLayout.STYLE_NAMES[1].equals("New"));
         System.out.println("PanelLayoutTest: " + ok + " ok, " + bad + " bad");
         if (bad > 0) System.exit(1);
     }

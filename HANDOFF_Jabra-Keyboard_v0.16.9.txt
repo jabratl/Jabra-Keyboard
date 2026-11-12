@@ -1,4 +1,4 @@
-JABRA KEYBOARD - HANDOFF   code = v0.16.8 (X1-X8 DONE; plan N finished)   PLAN "X" in progress (clipboard scroll FIX + "Bangলা / বাংলা" names + Ridmik key map engine + key map & practice pages + toolbar / number-row size + panel redesign + new edit shortcuts)
+JABRA KEYBOARD - HANDOFF   code = v0.16.9 (X1-X9 DONE; plan N finished)   PLAN "X" in progress (clipboard scroll FIX + "Bangলা / বাংলা" names + Ridmik key map engine + key map & practice pages + toolbar / number-row size + panel redesign + new edit shortcuts)
 Written by a PLANNING chat (2026-11-12, audit read-only, grep + sed ranges only). Paste this file at the start of EVERY chat together with Jabra-Keyboard-main.zip.
 This file REPLACES the file of the same name; the previous full text (plan N, 12 sections) is kept UNCHANGED in docs/ARCHIVE_HANDOFF_v0.15.9_before_plan_X.txt (grep only, never read fully).
 ASSUMPTIONS (1 line each): (a) "Ovro" = Avro (the bn_layout value "avro"); "provat" = Probhat (value "probhat"). Only the DISPLAYED NAMES change, never pref values / storage keys. (b) "clipboard manage / select" = ClipPanel select mode (Manage button, long-press, check boxes). (c) The user wants the Ridmik key map to be the DEFAULT typing of "Bangলা" mode, with a setting to go back to the old Avro rules. (d) "toolbar" = the row above the letters (Toolbar.kt custom toolbar, or the old edit bar); "edit shortcuts" = All / Cut / Copy / Paste / Plain / Undo / Redo items.
@@ -151,7 +151,7 @@ ASSUMPTIONS (1 line each): (a) "Ovro" = Avro (the bn_layout value "avro"); "prov
       Dependencies: none. Design note: Classic theme colours identical; radii 9 / 12; 12 sp labels.
       Checks: tests green; Kotlin compile; nothing visible changes.
 
-  [ ] X9  v0.16.9  Clipboard panel redesign (R2)      mode MODIFY      size M (~45%)
+  [x] X9  v0.16.9  (DONE 2026-11-12: typing/ClipFilter.java + ClipFilterTest 88 checks; ClipboardFeature.kt makeNew() + selectBarNew() behind pref panel_ui (int 0/1, DEFAULT 0 = classic, first build), ONE hook in make(); PanelLayout STYLE_*; row "Panel style" in App > Clipboard & tools; ProfileCodec 60 keys + Migrate + ChangedPlan + SettingsIndex 72 help lines; CHECKLIST Z92; all 86 tests green; Kotlin NOT compiled; phone NOT tested)  Clipboard panel redesign (R2)      mode MODIFY      size M (~45%)
       Goal: easier to browse: sticky top bar (ABC | search | Manage), filter chips (All | Pinned | Text | Links | Numbers - ClipKind already exists), bigger tap targets, selection summary bar at the bottom ("3 selected" + Pin / Delete / Paste / More), same scroll-keep as X1, same height rule as N1.
       Add: typing/ClipFilter.java (pure: filter(items, chip) using ClipKind) + tools/ClipFilterTest.java (>= 20 checks).
       Modify: ClipboardFeature.kt (build new top area behind panel_ui = 1; panel_ui = 0 keeps today's code path untouched), SettingsGroups.kt row "Panel style" [Classic / New] in section Clipboard, SettingsIndex, ProfileCodec.SPEC, ProfileTest, ChangedPlan, SettingsIndexTest.
@@ -232,6 +232,8 @@ ASSUMPTIONS (1 line each): (a) "Ovro" = Avro (the bn_layout value "avro"); "prov
   2026-11-12 X3 DONE RidmikMap.java + RidmikMapTest.java (new), MgbIme.toBangla hook, SettingsGroups row, SettingsIndex help, ProfileCodec + Migrate (bn_map 0..1), ChangedPlan, ProfileTest / ChangedPlanTest / SettingsIndexTest updated, version 0.16.3, CHANGELOG, CHECKLIST Z87, HANDOFF renamed -> jabra_v0_16_3.zip
   2026-11-12 X4 DONE KeyMapData.java + KeyMapDataTest.java + KeyMapPage.kt (new), SettingsGroups.kt hook (section Bangla), version 0.16.4, CHANGELOG, CHECKLIST Z88, HANDOFF renamed -> jabra_v0_16_4.zip
 
+  2026-11-12 X9 DONE ClipFilter.java + ClipFilterTest.java (new), ClipboardFeature.kt (makeNew, selectBarNew, 6 action funs, hook in make), PanelLayout.java (STYLE_*), PanelLayoutTest, pref panel_ui (SettingsGroups row, SettingsIndex, ProfileCodec, Migrate, ChangedPlan + 3 tests), version 0.16.9, CHANGELOG, CHECKLIST Z92, HANDOFF renamed -> jabra_v0_16_9.zip
+
 11) NEXT (ideas, NOT planned, ask the user first)
   - Clipboard: quick-paste popup on long-press of the clipboard toolbar icon (top 5 pinned); "remove duplicates" button; clip templates with {date} / {clipboard} (VarFill exists).
   - Language: per-app default language (AppProfileMap exists: Bangলা in the notes app, English in the browser); Bangla date + digit converter in Text tools.
@@ -250,3 +252,9 @@ UPDATE v0.16.5 (old): X6 was next (see the step list above). GitHub build of v0.
 UPDATE v0.16.6: NEXT STEP = X7 (see the step list above). GitHub build of v0.16.5 + v0.16.6: ASK the user.
 UPDATE v0.16.7: NEXT STEP = X8 (see the step list above). GitHub build of v0.16.5 - v0.16.7: ASK the user.
 UPDATE v0.16.8: NEXT STEP = X9 (clipboard redesign). X15 (clipboard select fix) was ADDED by the user as the very last step (see the step list).
+UPDATE v0.16.9: NEXT STEP = X10 (Vault panel redesign). GitHub build of v0.16.5 - v0.16.9: ASK the user (GREEN or pasted errors -> a FIX comes first; X9 Kotlin is in ClipboardFeature.kt makeNew / selectBarNew, lines marked "// v0.16.9").
+  X9 NOTES: (1) pref panel_ui EXISTS now (PanelLayout.sanitizeStyle / isNewStyle, row "Panel style" in App > Clipboard & tools > Look of clips; help text says "now Clipboard"). X10-X12 read the SAME pref (no new row needed: just use PanelLayout.isNewStyle(prefs.int("panel_ui", 0)); update the help line when the next panel joins). First-build default = 0; X14 flips it to 1 only if the user phone-tested X9-X12 OK.
+  (2) The New clipboard panel DUPLICATES the classic select-bar actions as actPin / actDelete / actPaste / actMerge / actEdit / actToVault (so the classic selectBar() stayed untouched = RULE 0). A change to the classic select bar (e.g. X15 select fix) must be applied to BOTH. X15 must also fix the NEW rows: the list rows / cards are SHARED (itemRow + ClipCards), only the bars differ.
+  (3) Filter chip fChip + More tray moreOpen are fields of ClipPanel, reset in reset(); not saved. Changing the chip in select mode clears the selection (on purpose). "All" in the More tray selects only the VISIBLE (filtered) clips.
+  (4) PanelKit.stickyBar (X8) is used for the bottom bars; the top bar + chips use btn() / UiKit.chip directly (PanelKit.segmented is limited to 4 options, the chips are 5).
+  (5) Not built (ideas): chip counts on the chips; remembering the chip between opens; "Notes" chip for long clips.

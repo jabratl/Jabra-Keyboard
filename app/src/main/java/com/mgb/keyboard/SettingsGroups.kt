@@ -690,6 +690,7 @@ object SettingsGroups {
             toggle(g, "Clip character count", "clip_count", true)   // v0.4.3
             level(g, "Clip auto-delete (unpinned)", "clip_expire", 0, com.mgb.keyboard.clip.ClipMeta.EXPIRE_NAMES)   // v0.4.3
             toggle(g, "Clipboard follows keyboard height", "clip_fit", true)   // v0.15.1 (N1): OFF = old fixed clipboard size
+            level(g, "Panel style", "panel_ui", 0, com.mgb.keyboard.typing.PanelLayout.STYLE_NAMES)   // v0.16.9 (X9): 0 Classic = today's clipboard (default in the first build), 1 New
             toggle(g, "Clip code guard (2 min)", "clip_sens", false)   // v0.10.10 (W4): copied one-time codes leave the history after 2 minutes (default OFF)
         }
 

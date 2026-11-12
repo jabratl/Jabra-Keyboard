@@ -14,6 +14,8 @@ import com.mgb.keyboard.clip.ClipMeta
 import com.mgb.keyboard.typing.ClipSelect
 import com.mgb.keyboard.typing.ClipOrder   // v0.15.2 (N2)
 import com.mgb.keyboard.typing.ClipSensitive   // v0.10.10 (W4)
+import com.mgb.keyboard.typing.ClipFilter   // v0.16.9 (X9)
+import com.mgb.keyboard.typing.PanelLayout   // v0.16.9 (X9)
 
 /*
  * v0.0.6: clipboard history (+ pinned, delete, search). All new code is here; MgbIme.kt has small hooks marked "v0.0.6".
@@ -149,7 +151,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
         refresh()
     }
 
-    fun reset() { editing = null; confirmSave = false; undoBuf = emptyList(); searching = false; query = ""; confirmClear = false; msg = ""; sel.leave(); confirmDel = false; keepY = -1; fromRefresh = false }   // v0.16.1 (X1)
+    fun reset() { editing = null; confirmSave = false; undoBuf = emptyList(); searching = false; query = ""; confirmClear = false; msg = ""; sel.leave(); confirmDel = false; keepY = -1; fromRefresh = false; fChip = 0; moreOpen = false }   // v0.16.1 (X1); v0.16.9 (X9): chip + More tray start fresh
 
     private fun dp(v: Int): Int = (v * ctx.resources.displayMetrics.density).toInt()
 
@@ -213,6 +215,9 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
         fromRefresh = false
         if (restoreY < 0 && editing == null) keepY = -1   // fresh open = start at the top
         if (editing != null) { try { return fitEdit(makeEdit()) } catch (_: Throwable) { editing = null } }   // v0.15.1: fitEdit   // v0.4.3.1
+        // v0.16.9 (X9): pref panel_ui = 1 -> the NEW panel (makeNew below). Default 0 / any problem = the classic code that follows, untouched.
+        val newUi = try { PanelLayout.isNewStyle(JabraPrefs(ctx).int("panel_ui", 0)) } catch (_: Throwable) { false }
+        if (newUi) { try { return makeNew(restoreY) } catch (_: Throwable) { } }
         val root = LinearLayout(ctx)
         root.orientation = LinearLayout.VERTICAL
         paintBg(root)   // v0.8.7
@@ -369,6 +374,299 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
         fitList(root, sv)   // v0.15.1 (N1): panel keeps the letters keyboard height
         return root
     }
+
+    // ===================== v0.16.9 (X9): NEW clipboard panel (pref panel_ui = 1) =====================
+    // Same data, same actions, same scroll keeping (X1), same height rule (N1) as the classic make() above (which stays untouched and is the default).
+    // New: sticky top bar (ABC | Search | Add | Manage / Done), filter chips (All | Pinned | Text | Links | Numbers), 40 dp tap targets,
+    // and in select mode a bottom summary bar ("3 selected" + Pin | Delete | Paste | More). Any exception = make() goes on with the classic panel.
+    private var fChip = 0            // v0.16.9: filter chip (not saved: a fresh open starts at All)
+    private var moreOpen = false     // v0.16.9: the "More" tray of the bottom bar (All / Unpin / Merge / Edit / Paste in 1 line / To Vault)
+
+    private fun makeNew(restoreY: Int): View {
+        val t40 = PanelLayout.MIN_TOUCH
+        val root = LinearLayout(ctx)
+        root.orientation = LinearLayout.VERTICAL
+        paintBg(root)
+        root.setPadding(dp(2), dp(4), dp(2), dp(4))
+        try { sel.prune(store.pinnedView("") + store.recentView("")) } catch (_: Throwable) { sel.leave() }
+        val selOn = sel.isOn
+        if (!selOn) moreOpen = false
+        fChip = ClipFilter.sanitize(fChip)
+
+        // ---- sticky top bar
+        val top = row()
+        top.addView(btn("ABC", 1.0f, t40) { sel.leave(); confirmDel = false; moreOpen = false; host.showLetters() })
+        val searchBtn = btn(if (searching) "✕ Search" else "🔍 Search", 1.6f, t40) {
+            searching = !searching
+            query = ""
+            confirmClear = false
+            refreshTop()
+        }
+        JabraIcons.putThemed(ctx, searchBtn, if (searching) "close" else "search")
+        top.addView(searchBtn)
+        if (!selOn) top.addView(btn("Add", 1.0f, t40) { addFromField() })
+        top.addView(btn(if (selOn) "Done" else "Manage", 1.3f, t40) {
+            if (selOn) { sel.leave(); moreOpen = false } else sel.enter()
+            confirmClear = false
+            confirmDel = false
+            refresh()
+        })
+        root.addView(top)
+
+        // ---- filter chips (hidden while the More tray is open: the space goes to the list)
+        if (!(selOn && moreOpen)) {
+            val chips = row()
+            for (c in 0 until ClipFilter.COUNT) {
+                val ch = UiKit.chip(ctx, pf, ClipFilter.label(c), c == fChip, t40, { v -> try { host.feedback(v) } catch (_: Throwable) { } }) {
+                    if (c != fChip) {
+                        fChip = c
+                        if (sel.isOn) sel.clear()   // a hidden selection could be pinned / deleted by mistake
+                        confirmDel = false
+                        confirmClear = false
+                        refreshTop()
+                    }
+                }
+                ch.setPadding(dp(2), 0, dp(2), 0)
+                ch.maxLines = 1
+                ch.layoutParams = LinearLayout.LayoutParams(0, dp(t40), 1f).also { it.setMargins(dp(2), dp(2), dp(2), dp(2)) }
+                chips.addView(ch)
+            }
+            root.addView(chips)
+        }
+
+        // ---- info line: message | Undo | Sort | View | Clear (not while searching; no Sort / View / Clear in select mode)
+        val sortLv = try { JabraPrefs(ctx).int("clip_sort", 0).coerceIn(0, 3) } catch (_: Throwable) { 0 }
+        val cardsOn = try { JabraPrefs(ctx).int("clip_view", 0) == 1 } catch (_: Throwable) { false }
+        if (!searching) {
+            val shownMsg = msg
+            msg = ""
+            val head = row()
+            head.gravity = Gravity.CENTER_VERTICAL
+            val m = TextView(ctx)
+            m.text = if (confirmClear) "Delete all unpinned clips?" else shownMsg
+            m.textSize = 12f
+            m.setTextColor(dim())
+            m.setPadding(dp(8), 0, dp(4), 0)
+            m.maxLines = 1
+            m.ellipsize = TextUtils.TruncateAt.END
+            m.layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+            head.addView(m)
+            fun small(label: String, onClick: (Button) -> Unit): Button {
+                val b = btn(label, 0f, 34, onClick)
+                b.textSize = 12f
+                b.setPadding(dp(10), 0, dp(10), 0)
+                return b
+            }
+            if (confirmClear) {
+                head.addView(small("Cancel") { confirmClear = false; refresh() })
+                head.addView(small("Yes, clear") { keepUndo(store.recentView("")); store.clearUnpinned(); confirmClear = false; refresh() })
+            } else {
+                if (undoBuf.isNotEmpty()) head.addView(small("↶ Undo") { doUndo() })
+                if (!selOn) {
+                    head.addView(small("\u2195 " + arrayOf("Newest", "Oldest", "A-Z", "Used")[sortLv]) {
+                        try { JabraPrefs(ctx).setInt("clip_sort", (sortLv + 1) % 4) } catch (_: Throwable) { }
+                        confirmClear = false
+                        refreshTop()
+                    })
+                    head.addView(small(if (cardsOn) "View: Cards" else "View: List") {
+                        try { JabraPrefs(ctx).setInt("clip_view", if (cardsOn) 0 else 1) } catch (_: Throwable) { }
+                        confirmClear = false
+                        refreshTop()
+                    })
+                    head.addView(small("Clear") { confirmClear = true; refresh() })
+                }
+            }
+            root.addView(head)
+        }
+
+        if (searching) {
+            val q = TextView(ctx)
+            q.text = (if (pf.bool("icons_on", true)) "" else "🔍 ") + query + "▏"
+            q.textSize = 15f
+            q.setTextColor(ink())
+            q.setPadding(dp(8), dp(2), dp(8), dp(2))
+            root.addView(q)
+        }
+
+        // ---- list (scrolls; the top bar, chips and bottom bar stay)
+        try { store.expireNow() } catch (_: Throwable) { }
+        val pinnedItems = ClipFilter.filter(store.sorted(store.pinnedView(query), sortLv), fChip)
+        val recentItems = ClipFilter.filter(store.sorted(store.recentView(query), sortLv), fChip)
+        val visible = pinnedItems + recentItems
+        val listH = if (fitOn()) 72 else if (searching) 88 else 176   // fitList() grows the 72 dp list to the letters keyboard height (N1)
+        val sv = ScrollView(ctx)
+        sv.layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(listH))
+        val col = LinearLayout(ctx)
+        col.orientation = LinearLayout.VERTICAL
+        if (visible.isEmpty()) {
+            val t = TextView(ctx)
+            t.text = ClipFilter.emptyText(fChip, searching)
+            t.setPadding(dp(8), dp(12), dp(8), dp(12))
+            t.setTextColor(dim())
+            col.addView(t)
+        }
+        val showHeaders = ClipOrder.showHeaders(searching, pinnedItems.size, recentItems.size)
+        val ordMode = try { ClipOrder.sanitize(JabraPrefs(ctx).int("clip_order", 0)) } catch (_: Throwable) { 0 }
+        val ordSwap: () -> Unit = { try { JabraPrefs(ctx).setInt("clip_order", ClipOrder.next(ordMode)) } catch (_: Throwable) { }; confirmClear = false; refreshTop() }
+        val lines = try { JabraPrefs(ctx).int("clip_lines", 0).coerceIn(0, 2) } catch (_: Throwable) { 0 }
+        val cards: View? = if (cardsOn && visible.isNotEmpty()) {
+            ClipCards.build(ctx, host, pinnedItems, recentItems, !searching, lines,
+                { it2 -> store.togglePin(it2); refresh() },
+                { it2 -> keepUndo(listOf(it2)); store.remove(it2); refresh() },
+                SelectMode(selOn, { x -> sel.isSelected(x) }, { x -> sel.toggle(x); confirmDel = false; refresh() }, { x -> sel.enterWith(x); confirmDel = false; refresh() },
+                    { x -> store.noteUse(x) }, { x -> infoLine(x) }), ClipOrder.recentFirst(ordMode), ordSwap)
+        } else null
+        if (cards != null) {
+            col.addView(cards)
+        } else {
+            val ordLabels = ClipOrder.labels(ordMode)
+            val ordGroups = ClipOrder.groups(pinnedItems, recentItems, ordMode)
+            for (gi in 0..1) {
+                if (showHeaders) col.addView(sectionHeader(ordLabels[gi], gi == 0, ordSwap))
+                for (entry in ordGroups[gi]) col.addView(itemRow(entry))
+            }
+        }
+        sv.addView(col)
+        root.addView(sv)
+        try {   // same scroll keeping as X1
+            curSv = sv
+            if (com.mgb.keyboard.typing.ScrollKeep.wants(restoreY)) {
+                keepY = -1
+                sv.viewTreeObserver.addOnGlobalLayoutListener(object : android.view.ViewTreeObserver.OnGlobalLayoutListener {
+                    override fun onGlobalLayout() {
+                        try {
+                            if (sv.viewTreeObserver.isAlive) sv.viewTreeObserver.removeOnGlobalLayoutListener(this)
+                            val ch = col.height
+                            if (ch > 0) sv.scrollTo(0, com.mgb.keyboard.typing.ScrollKeep.clamp(restoreY, ch, sv.height))
+                        } catch (_: Throwable) { }
+                    }
+                })
+            }
+        } catch (_: Throwable) { }
+
+        // ---- bottom summary bar (select mode)
+        if (selOn) root.addView(selectBarNew(visible))
+
+        // ---- tiny search keyboard (Latin letters only), same as the classic panel
+        if (searching) {
+            for (letters in arrayOf("qwertyuiop", "asdfghjkl", "zxcvbnm")) {
+                val r = row()
+                letters.forEach { ch -> r.addView(btn(ch.toString(), 1f, 34) { query += ch; confirmClear = false; refreshTop() }) }
+                if (letters == "asdfghjkl") r.addView(JabraIcons.putThemed(ctx, btn("␣", 1f, 34) { query += " "; refreshTop() }, "space"))
+                if (letters == "zxcvbnm") r.addView(JabraIcons.putThemed(ctx, btn("⌫", 1.5f, 34) { if (query.isNotEmpty()) query = query.dropLast(1); refreshTop() }, "back"))
+                root.addView(r)
+            }
+        }
+        fitList(root, sv)   // N1: the panel keeps the letters keyboard height
+        return root
+    }
+
+    /** v0.16.9 (X9): bottom bar of the NEW panel in select mode: "N selected" + Pin | Delete | Paste | More; the More tray holds All / Unpin / Merge / Edit / Paste in 1 line / To Vault (every classic action stays reachable). */
+    private fun selectBarNew(visible: List<ClipList.Item>): View {
+        val t40 = PanelLayout.MIN_TOUCH
+        val all = LinearLayout(ctx)
+        all.orientation = LinearLayout.VERTICAL
+        if (moreOpen) {
+            all.addView(PanelKit.stickyBar(ctx, pf, host, listOf<Pair<String, () -> Unit>>(
+                "All" to { sel.selectAll(visible); confirmDel = false; refresh() },
+                "Unpin" to { actPin(false) },
+                "Merge → 1 clip" to { actMerge() }), listOf(1f, 1f, 1.8f)))
+            val acts = ArrayList<Pair<String, () -> Unit>>()
+            val ws = ArrayList<Float>()
+            acts.add("Edit" to { actEdit() }); ws.add(0.8f)
+            acts.add("Paste in 1 line" to { actPaste(true) }); ws.add(1.6f)
+            if (toVault != null) { acts.add("To Vault" to { actToVault() }); ws.add(1f) }
+            all.addView(PanelKit.stickyBar(ctx, pf, host, acts, ws))
+        }
+        val n = sel.count()
+        val allPinned = n > 0 && sel.pinnedCount() == n
+        val main = PanelKit.stickyBar(ctx, pf, host, listOf<Pair<String, () -> Unit>>(
+            (if (allPinned) "Unpin" else "Pin") to { actPin(!allPinned) },
+            (if (confirmDel) "Sure? delete $n" else "Delete") to { actDelete() },
+            "Paste" to { actPaste(false) },
+            (if (moreOpen) "Less \u25B4" else "More \u25BE") to { moreOpen = !moreOpen; confirmDel = false; refresh() }),
+            listOf(1f, if (confirmDel) 3f else 1.2f, 1.1f, 1.1f))
+        if (!confirmDel) {
+            val c = TextView(ctx)
+            c.text = ClipFilter.selectedText(n)
+            c.textSize = 12f
+            c.setTextColor(ink())
+            c.setTypeface(c.typeface, android.graphics.Typeface.BOLD)
+            c.setPadding(dp(8), 0, dp(4), 0)
+            c.maxLines = 1
+            c.ellipsize = TextUtils.TruncateAt.END
+            c.gravity = Gravity.CENTER_VERTICAL
+            c.layoutParams = LinearLayout.LayoutParams(0, dp(t40), 1.4f)
+            main.addView(c, 0)
+        }
+        all.addView(main)
+        return all
+    }
+
+    // v0.16.9: actions of the NEW bottom bar (same behaviour and messages as the classic selectBar(), which is untouched)
+    private fun actPin(pin: Boolean) {
+        val chosen = sel.selection()
+        if (chosen.isEmpty()) msg = "Nothing selected"
+        else if (pin) {
+            val want = chosen.count { !it.pinned }
+            val n = store.setPinned(chosen, true)
+            msg = if (n < want) "Pinned " + n + " of " + want + " (limit " + ClipList.MAX_PINNED + ")" else "Pinned " + n
+        } else msg = "Unpinned " + store.setPinned(chosen, false)
+        confirmDel = false
+        refresh()
+    }
+
+    private fun actDelete() {
+        val n = sel.count()
+        if (n == 0) { msg = "Nothing selected"; confirmDel = false }
+        else if (confirmDel) {
+            keepUndo(sel.selection())
+            val gone = store.removeAll(sel.selection())
+            sel.clear()
+            msg = "Deleted " + gone
+            confirmDel = false
+        } else confirmDel = true
+        refresh()
+    }
+
+    private fun actPaste(oneLine: Boolean) {
+        val chosen = sel.selection()
+        if (chosen.isEmpty()) { msg = "Nothing selected"; confirmDel = false; refresh(); return }
+        val text = if (oneLine) chosen.joinToString(" ") { it.text.replace(Regex("\\s*\\n\\s*"), " ").trim() } else chosen.joinToString("\n\n") { it.text }
+        sel.leave(); confirmDel = false; moreOpen = false
+        host.commitWord()
+        host.typeText(text)
+        host.showLetters()
+    }
+
+    private fun actMerge() {
+        val chosen = sel.selection()
+        if (chosen.size < 2) msg = "Select 2 or more"
+        else when (store.addChecked(chosen.joinToString("\n\n") { it.text })) {
+            0 -> { msg = "Merged " + chosen.size + " into 1 (see Recent)"; sel.leave() }
+            2 -> msg = "Too long (max " + ClipList.MAX_LEN + ")"
+            else -> msg = "Nothing to merge"
+        }
+        confirmDel = false
+        refresh()
+    }
+
+    private fun actEdit() {
+        val chosen = sel.selection()
+        if (chosen.size != 1) msg = "Select ONE clip to edit"
+        else { editing = chosen[0]; editText = chosen[0].text; editCaps = false; confirmSave = false }
+        confirmDel = false
+        refresh()
+    }
+
+    private fun actToVault() {
+        val chosen = sel.selection()
+        if (chosen.isEmpty()) msg = "Nothing selected"
+        else { msg = try { toVault?.invoke(chosen.map { it.text }) ?: "" } catch (_: Throwable) { "Could not save to Vault" }; sel.leave() }
+        confirmDel = false
+        refresh()
+    }
+    // ===================== end v0.16.9 (X9) =====================
 
     // v0.15.1 (N1): clip_fit (default ON) = the clipboard is as tall as the letters keyboard. Built as before, measured, the list grows by the missing height (never shrinks; any problem = old size).
     private fun fitOn(): Boolean = try { JabraPrefs(ctx).bool("clip_fit", true) && fitPx > 0 } catch (_: Throwable) { false }
