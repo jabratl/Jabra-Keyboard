@@ -21,7 +21,7 @@ import com.mgb.keyboard.typing.TypingLevels
  */
 object SettingsGroups {
 
-    fun build(ctx: Context, link: PreviewLink? = null): View {   // v0.10.25: link = live preview card (null = no preview, exactly v0.10.24)
+    fun build(ctx: Context, link: PreviewLink? = null, sink: PageSink? = null): View {   // v0.10.25: link = live preview card (null = no preview, exactly v0.10.24); v0.11.0 (M1): sink != null = groups are handed to the new app pages instead of the accordion (same rows, same registry)
         val prefs = JabraPrefs(ctx)
         val d = ctx.resources.displayMetrics.density
         fun dp(v: Int) = (v * d).toInt()
@@ -117,6 +117,7 @@ object SettingsGroups {
             try { link?.changed?.invoke() } catch (_: Throwable) { }   // v0.10.25
         }
         undoBtn.setOnClickListener { try { undoLast() } catch (_: Throwable) { } }
+        try { sink?.clearSearch = { search.setText("") } } catch (_: Throwable) { }   // v0.11.0 (M1)
 
         fun addRow(box: LinearLayout, key: String, title: String, b: Button, refresh: () -> Unit, setIdx: (Int) -> Unit, cur: () -> Int, def: Int) {
             val wrap = LinearLayout(ctx)
@@ -289,6 +290,12 @@ object SettingsGroups {
                     head.text = (if (open) "\u25BC  " else "\u25B6  ") + title
                 } catch (_: Throwable) { }
             }
+            if (sink != null) {   // v0.11.0 (M1): new app screen: the page shows the body (always open, no head); rows / search / undo stay in this registry
+                g.isOpen = true
+                body.visibility = View.VISIBLE
+                sink.bodies[title] = body
+                return
+            }
             root.addView(head)
             root.addView(body)
         }
@@ -453,6 +460,7 @@ object SettingsGroups {
         try { group("Data & Backup") { g -> g.addView(DataPage.build(ctx)) } } catch (_: Throwable) { }   // v0.4.1
 
         refreshTop()   // v0.4.2
+        try { sink?.top = root } catch (_: Throwable) { }   // v0.11.0 (M1): intro + search + undo + recent, shown at the top of the open page
         link?.refreshRows = { for (r in rows) { try { r.refresh() } catch (_: Throwable) { } } }   // v0.10.25: the preview theme strip redraws the row labels
 
         return root

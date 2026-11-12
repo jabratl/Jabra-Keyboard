@@ -20,6 +20,9 @@ class SettingsActivity : Activity() {
     var refreshData: (() -> Unit)? = null   // v0.4.1 Data & Backup page hooks
     var dataMsg: ((String) -> Unit)? = null
     private val pvLink = PreviewLink()   // v0.10.25: live preview card <-> settings groups
+    private var appPages: AppPages? = null   // v0.11.0 (M1): new app screen (pref app_ui = 1); null = old accordion screen
+    private var homeRefresh: (() -> Unit)? = null
+    private var pvCardView: View? = null
 
     private fun dp(v: Int): Int = (v * resources.displayMetrics.density).toInt()
 
@@ -34,6 +37,14 @@ class SettingsActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         try { if (AppUi.isDark(this)) setTheme(android.R.style.Theme_DeviceDefault) } catch (_: Throwable) { }   // v0.10.9: dark app screen (base theme in the manifest stays Light)
         super.onCreate(savedInstanceState)
+        if (newUiOn()) {   // v0.11.0 (M1): new app screen. Any error = the old screen below (pref app_ui stays as it is).
+            try {
+                val nv = buildNewUi(savedInstanceState)
+                if (nv != null) { setContentView(nv); return }
+            } catch (_: Throwable) { }
+            appPages = null; homeRefresh = null; pvCardView = null
+            try { pvLink.changed = null; pvLink.refreshRows = null } catch (_: Throwable) { }
+        }
         val col = LinearLayout(this)
         col.orientation = LinearLayout.VERTICAL
         col.setPadding(dp(16), dp(16), dp(16), dp(16))
@@ -75,6 +86,7 @@ class SettingsActivity : Activity() {
             col.addView(tb)
         } catch (_: Throwable) { }
 
+        try { col.addView(btn("Try the new app screen (beta)") { getSharedPreferences("jabra", MODE_PRIVATE).edit().putInt("app_ui", 1).apply(); recreate() }) } catch (_: Throwable) { }   // v0.11.0 (M1)
         col.addView(btn("1. Enable keyboard") {
             startActivity(Intent(Settings.ACTION_INPUT_METHOD_SETTINGS))
         })
@@ -127,7 +139,7 @@ class SettingsActivity : Activity() {
     // ---- v0.10.9 (D1): setup status card. Read-only checks, no permission; any problem = card hidden. ----
     private var setupRefresh: (() -> Unit)? = null
 
-    private fun buildSetupCard(): android.view.View? {
+    fun buildSetupCard(): android.view.View? {   // v0.11.0: was private, the new Home uses it too
         try {
             val imm = getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager
             val card = LinearLayout(this)
@@ -163,6 +175,75 @@ class SettingsActivity : Activity() {
         super.onResume()
         try { setupRefresh?.invoke() } catch (_: Throwable) { }   // v0.10.9: ticks update after coming back from the system screens
         try { pvLink.changed?.invoke(); pvLink.refreshRows?.invoke() } catch (_: Throwable) { }   // v0.10.25: settings changed inside the keyboard while the app was in the background
+        try { homeRefresh?.invoke() } catch (_: Throwable) { }   // v0.11.0 (M1): tile summaries
+    }
+
+    // ---- v0.11.0 (M1 of the "App UI" plan): new app screen = Home + pages inside this Activity. Pref app_ui: 0 = old accordion screen (default), 1 = new. ----
+    private fun newUiOn(): Boolean = try { getSharedPreferences("jabra", MODE_PRIVATE).getInt("app_ui", 0) == 1 } catch (_: Throwable) { false }
+
+    private fun buildNewUi(saved: Bundle?): View? {
+        val sink = PageSink()
+        status = TextView(this)
+        updBtn = btn("Download & install") { doUpdate() }
+        updBtn.visibility = View.GONE
+        val pvCard: View? = try { PreviewCard.build(this, pvLink) } catch (_: Throwable) { null }
+        SettingsGroups.build(this, pvLink, sink)   // throws = old screen
+        val setup = try { buildSetupCard() } catch (_: Throwable) { null }
+        val home = AppHome.build(this, setup, pvLink) { id -> appPages?.show(id) }
+        homeRefresh = home.refresh
+        val pages = AppPages(this, sink, home.view, { buildAbout() }) { id ->
+            try { pvCardView?.visibility = if (com.mgb.keyboard.typing.PagePlan.pinPreview(id)) View.VISIBLE else View.GONE } catch (_: Throwable) { }
+            if (id == com.mgb.keyboard.typing.PagePlan.HOME) { try { homeRefresh?.invoke() } catch (_: Throwable) { } }
+        }
+        appPages = pages
+        pvCardView = pvCard
+        val outer = LinearLayout(this)
+        outer.orientation = LinearLayout.VERTICAL
+        try { if (AppUi.isDark(this)) outer.setBackgroundColor(AppUi.bg(this)) } catch (_: Throwable) { }
+        if (pvCard != null) outer.addView(pvCard)
+        outer.addView(pages.frame, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f))
+        pages.show(com.mgb.keyboard.typing.PagePlan.sanitize(saved?.getString("app_page", "") ?: ""))   // rotate keeps the page
+        try { HealthRun.migrate(this) } catch (_: Throwable) { }   // same as the old screen: only after everything above worked
+        try { BackupStore.autoIfDue(this) } catch (_: Throwable) { }
+        return outer
+    }
+
+    /** About section of the page "Data & About": app theme, switch back to the old screen, update + emoji buttons, status line. */
+    private fun buildAbout(): View {
+        val box = LinearLayout(this)
+        box.orientation = LinearLayout.VERTICAL
+        val tb = btn("") {
+            AppUi.setMode(this, com.mgb.keyboard.typing.AppPalette.next(AppUi.mode(this)))
+            recreate()
+        }
+        tb.text = "App theme: " + com.mgb.keyboard.typing.AppPalette.name(AppUi.mode(this)) + " (tap to change)"
+        box.addView(tb)
+        val sw = btn("") {
+            getSharedPreferences("jabra", MODE_PRIVATE).edit().putInt("app_ui", 0).apply()
+            recreate()
+        }
+        sw.text = "New app screen: ON (tap = back to the old screen)"
+        box.addView(sw)
+        box.addView(btn("Check for updates") { checkUpdate() })
+        box.addView(btn("Update emoji list") { updateEmoji() })
+        box.addView(btn("Use built-in emoji list") { builtInEmoji() })
+        (updBtn.parent as? android.view.ViewGroup)?.removeView(updBtn)
+        box.addView(updBtn)
+        (status.parent as? android.view.ViewGroup)?.removeView(status)
+        box.addView(status)
+        return box
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        try { appPages?.let { outState.putString("app_page", it.current) } } catch (_: Throwable) { }   // v0.11.0 (M1)
+    }
+
+    @Deprecated("Deprecated in Java")
+    override fun onBackPressed() {   // v0.11.0 (M1): Back on a page = Home; on Home (or the old screen) = as before
+        try { if (appPages?.back() == true) return } catch (_: Throwable) { }
+        @Suppress("DEPRECATION")
+        super.onBackPressed()
     }
 
     // ---- v0.4.1: Data & Backup file picker (system picker, no storage permission) ----

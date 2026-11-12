@@ -1,3 +1,17 @@
+v0.11.0 - NEW: new app screen, part M1 of 3 (Home + 6 pages). OFF by default.
+- WHY: the old app screen is one long scroll with 7 accordion groups. Plan "App UI" (HANDOFF plan file) part M1 = frame + Home only.
+- What you get: old screen has a new button [Try the new app screen (beta)] (pref app_ui = 1). New screen: Home = logo + version, ONE setup card (hidden when done), test field, [Quick looks] Ridmik-style / Compact / Large keys (+ [Undo last look]), 6 tiles with a one-line summary (Typing, Look & Theme, Layout & Size, Keys & Gestures, Clipboard & Tools, Data & About). Tap a tile = a page with [Back]; system Back = Home; rotate keeps the page. The live preview stays at the top on Home, Look & Theme and Layout & Size only.
+- Pages MOVE the existing groups (same rows, same search / recent / undo / reset group, same prefs). Languages rows are on the Typing page. Data & About = Data & Backup (with Health check + Privacy as before) + App theme, [Check for updates], emoji buttons, status, switch back to the old screen.
+- Any error while building the new screen = the old screen is shown. Switch back: Data & About > [New app screen: ON].
+- Code: typing/PagePlan.java (NEW, pure: pages, group -> page, summaries, quick look values), AppHome.kt (NEW), AppPages.kt (NEW: PageSink + page container), SettingsActivity.kt (hook in onCreate, buildNewUi, buildAbout, onBackPressed, onSaveInstanceState, buildSetupCard no longer private), SettingsGroups.kt (build(..., sink): hands group bodies to the pages), tools/PagePlanTest.java (63 checks), CHECKLIST.txt (Z71), build.gradle.kts 0.11.0.
+- Prefs (new): app_ui (int, 0 = old screen = default, 1 = new). Reused: geo_prev (undo of Quick looks). Permissions: none.
+BROKE: nothing intended. app_ui unset = exactly the v0.10.28 screen (only one extra button).
+NOT tested: Kotlin NOT compiled here (GitHub Actions is the first compile check); nothing seen on a phone (360 / 412 / 1280 px, dark, big font, rotate, TalkBack, search on a page, Reset group on a page).
+KNOWN LIMIT (M1): search / undo / recent sit at the top of EACH page and look only at the rows of that page; one global search comes in M3. Rows still look like the old buttons (M2).
+TESTED here: all 67 tools/*Test.java PASS (PagePlanTest 63 checks); bracket balance of the 4 edited / new Kotlin files OK.
+Rollback: Data & About > [New app screen: ON], or revert to v0.10.28.
+NEXT (plan, not built): M2 = AppRows.kt (switch / segmented / stepper rows), sections, "changed from default" dot, ChangedPlan.java.
+
 v0.10.28 - NEW: key corner radius + spacing rows in the keyboard Size panel (plan "Ridmik feel" P3 of 3)
 - WHY: Ridmik keys are less round (about 6 dp) than Jabra's fixed 9 dp; and the new spacing rows (P1) were only in the app screen.
 - What you get: Settings > Layout & size > [Key corner radius] 0-14 dp (unset = 9 = old; Jabra look only, Classic and Borderless keys unchanged; a custom theme keeps its own roundness). Inside the keyboard (gear > More settings > Size): new rows Edge distance, Row gap, Shift gap, Key radius (same prefs as the app screen). "Reset sizes" also resets them. Button [Ridmik-style spacing] now sets radius 6 too; [Undo] restores it (older undo data is padded).

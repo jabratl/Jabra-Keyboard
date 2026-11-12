@@ -424,3 +424,13 @@ Z70) v0.10.28 Ridmik feel P1-P3 (spacing, bottom row, radius)
  [ ] Probhat + Probhat home row gap ON: left gap, narrow right key types the extra letter; OFF: 10 keys full width.
  [ ] Shift gap 8 dp on a 360 px phone: z..m keys still as wide as the row above (about).
  [ ] Gear > More settings > Size: new rows Edge distance, Row gap, Shift gap, Key radius work; Reset sizes resets them.
+
+Z71) v0.11.0 New app screen M1 (Home + pages), OFF by default
+ [ ] Old screen: new button [Try the new app screen (beta)] at the top. Tap: new Home opens. Without tapping, nothing is different.
+ [ ] Home: logo + version, setup card (only while not enabled / not current), test field, 3 Quick looks, 6 tiles with a summary line.
+ [ ] Quick look Compact / Large keys / Ridmik-style: summary on the Layout tile and the picture change; [Undo last look] puts the old values back; the in-keyboard height follows.
+ [ ] Tap each of the 6 tiles: page opens with the old rows (Typing = Typing + Languages & layouts). Change a setting, Undo last change, Reset this group, search box on the page: all work.
+ [ ] [Back] button and the system Back: page -> Home -> leaves the app. Rotate on a page: same page stays.
+ [ ] Preview card visible on Home, Look & Theme, Layout & Size; hidden on the other pages.
+ [ ] Data & About: Data & Backup (Backup now, Export, Import, Health check, Privacy) + About section: App theme, Check for updates, emoji buttons, status text. [New app screen: ON] goes back to the old screen.
+ [ ] 360 px + 412 px + 1280 px, light + dark, big font: tiles not cut, buttons at least 48 dp. TalkBack reads the tile titles.
