@@ -186,6 +186,25 @@ class ThemePanel(private val ctx: Context, private val host: JabraHost) {
 
         root.addView(note("Tap a tile to choose a theme (blue frame = current). Then ABC (apply). The old Theme: tap-to-cycle button in More settings still works."))
 
+        // v0.10.17 (D3): look presets = one tap sets theme + look + key border + gap + bold (existing prefs, same path as Profiles). Old theme tile = undo.
+        try {
+            val pr = row()
+            for (i in 0 until com.mgb.keyboard.typing.LookPresets.count()) {
+                val b = pk(com.mgb.keyboard.typing.LookPresets.name(i), 1f)
+                b.textSize = 12f
+                b.setOnClickListener {
+                    try { host.feedback(b) } catch (_: Throwable) { }
+                    try {
+                        val pf = com.mgb.keyboard.typing.LookPresets.profile(i)
+                        if (pf != null && ProfileStore(ctx).apply(pf)) { scrollY = 0; host.showLetters() }
+                    } catch (_: Throwable) { }
+                }
+                pr.addView(b)
+            }
+            root.addView(note("Look presets (one tap, sets theme + look + keys). To go back, tap your old theme tile."))
+            root.addView(pr)
+        } catch (_: Throwable) { }
+
         val rc = row()   // v0.4.8: custom theme studio
         val studio = pk("\u270E Custom theme (colours)\u2026", 1f)
         studio.setOnClickListener { try { host.feedback(studio) } catch (_: Throwable) { }; scrollY = 0; host.showPanel("tstudio") }

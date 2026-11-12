@@ -196,6 +196,17 @@ class ThemeStudio(private val ctx: Context, private val host: JabraHost) {
         }
         root.addView(pr)
 
+        // v0.10.17 (D3): live contrast warning (never blocks Save). Needs text vs key >= 4.5:1; keys with opacity < 100 are judged on the opaque colour.
+        try {
+            if (com.mgb.keyboard.typing.LookColors.lowContrast(draft.text, draft.key)) {
+                val w = TextView(ctx)
+                w.text = "\u26A0 Low contrast: letters hard to read (" + String.format(java.util.Locale.US, "%.1f", com.mgb.keyboard.typing.LookColors.contrast(draft.text, draft.key)) + ":1, want 4.5:1)"
+                w.textSize = 11f
+                w.setTextColor(Color.parseColor("#BF360C"))
+                w.setPadding(dp(6), dp(1), dp(6), dp(1))
+                root.addView(w)
+            }
+        } catch (_: Throwable) { }
         val note = TextView(ctx)
         note.text = "Round / Opacity show with Look = Jabra. Save makes it theme 20 (picker)."
         note.textSize = 11f

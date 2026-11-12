@@ -39,4 +39,49 @@ public final class LookColors {
         int b = Math.round((argb & 0xFF) * k);
         return (a << 24) | (r << 16) | (g << 8) | b;
     }
+
+    // ---- v0.10.17 (D3): contrast helpers (WCAG 2.x relative luminance / contrast ratio). Pure, no Android.
+
+    /** Smallest contrast ratio we accept for text (WCAG AA, normal text). */
+    public static final double MIN_RATIO = 4.5;
+
+    private static double lin(int c8) {
+        double s = c8 / 255.0;
+        return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4);
+    }
+
+    /** Relative luminance 0..1 (alpha ignored). */
+    public static double luminance(int argb) {
+        return 0.2126 * lin((argb >> 16) & 0xFF) + 0.7152 * lin((argb >> 8) & 0xFF) + 0.0722 * lin(argb & 0xFF);
+    }
+
+    /** Contrast ratio 1..21 between two colours (alpha ignored, order does not matter). */
+    public static double contrast(int a, int b) {
+        double x = luminance(a), y = luminance(b);
+        double hi = x > y ? x : y, lo = x > y ? y : x;
+        return (hi + 0.05) / (lo + 0.05);
+    }
+
+    /** True when text on fill is hard to read (ratio < MIN_RATIO). */
+    public static boolean lowContrast(int text, int fill) { return contrast(text, fill) < MIN_RATIO; }
+
+    /** Worst contrast of c against the bg and (when hasBg2) the second gradient colour. */
+    public static double minOnBg(int c, int bg, boolean hasBg2, int bg2) {
+        double r = contrast(c, bg);
+        if (hasBg2) { double r2 = contrast(c, bg2); if (r2 < r) r = r2; }
+        return r;
+    }
+
+    /**
+     * Small help-text colour. Old rule (dark bg -> #B8B8B8, else #555555) is kept whenever it reads well (>= 4.5:1 on the bg and on bg2),
+     * so Classic and every theme that was already fine look EXACTLY as before. Otherwise: the theme text colour when that reads
+     * (hasText), else white or black, whichever contrasts more.
+     */
+    public static int noteColor(int bg, boolean hasBg2, int bg2, boolean hasText, int text) {
+        int old = luminance(bg) < 0.4 ? 0xFFB8B8B8 : 0xFF555555;
+        if (minOnBg(old, bg, hasBg2, bg2) >= MIN_RATIO) return old;
+        if (hasText && minOnBg(text, bg, hasBg2, bg2) >= MIN_RATIO) return text | 0xFF000000;
+        double w = minOnBg(0xFFFFFFFF, bg, hasBg2, bg2), k = minOnBg(0xFF000000, bg, hasBg2, bg2);
+        return w >= k ? 0xFFFFFFFF : 0xFF000000;
+    }
 }

@@ -34,20 +34,20 @@ object JabraThemes {
         T("Sand", 0xFFEFE6D6.toInt(), 0xFFFFFAF0.toInt(), 0xFF4A3B22.toInt()),
         T("Dark", 0xFF1E1F22.toInt(), 0xFF3A3C42.toInt(), 0xFFF2F2F2.toInt()),
         T("Sandstone", 0xFFE8DFCB.toInt(), 0xFFF7F1E3.toInt(), 0xFF2B2620.toInt()),   // v0.2.4: indexes 5..17 appended, NEVER reorder
-        T("Seaweed Grey", 0xFF5F7369.toInt(), 0xFF2F3E38.toInt(), 0xFFEAF2EE.toInt()),
+        T("Seaweed Grey", 0xFF5C7066.toInt(), 0xFF2F3E38.toInt(), 0xFFEAF2EE.toInt()),
         T("Ivory", 0xFFF3F0E8.toInt(), 0xFFFFFFFF.toInt(), 0xFF2A2A2A.toInt()),
         T("Gloss Black", 0xFF0B0B0D.toInt(), 0xFF222226.toInt(), 0xFFFFFFFF.toInt()),
         T("Charcoal", 0xFF1A1A1A.toInt(), 0xFF2E2E2E.toInt(), 0xFFE6E6E6.toInt()),
         T("Midnight Navy", 0xFF0F1626.toInt(), 0xFF1E2A44.toInt(), 0xFFE8EEFF.toInt()),
         T("Moon Blue", 0xFFC9D6EE.toInt(), 0xFFF4F7FF.toInt(), 0xFF1F2F55.toInt()),
-        T("Ocean", 0xFF1C6BC0.toInt(), 0xFF3F89D6.toInt(), 0xFFFFFFFF.toInt()),
+        T("Ocean", 0xFF1C6BC0.toInt(), 0xFF3779BC.toInt(), 0xFFFFFFFF.toInt()),
         T("Deep Green", 0xFF0E2A24.toInt(), 0xFF1B4036.toInt(), 0xFFDDF3EA.toInt()),
         T("Aqua", 0xFFBFEEE3.toInt(), 0xFFEAFBF7.toInt(), 0xFF0F4A40.toInt()),
         T("Rose", 0xFFF6D3DE.toInt(), 0xFFFFF1F5.toInt(), 0xFF5A1F35.toInt()),
         T("Silver Grey", 0xFFB9BDC4.toInt(), 0xFFE6E8EC.toInt(), 0xFF23262B.toInt()),
         T("Dusk", 0xFF2A2340.toInt(), 0xFF3C3460.toInt(), 0xFFEDE8FF.toInt()),
-        T("Purple Haze", 0xFF3B1F6B.toInt(), 0xFF5B3A9A.toInt(), 0xFFF3EBFF.toInt(), 0xFF9C45C2.toInt()),   // v0.2.6: indexes 18..19 appended (gradients), NEVER reorder
-        T("Coral Sunset", 0xFFFF9A7B.toInt(), 0xFFFFF1EC.toInt(), 0xFF4A1A22.toInt(), 0xFFE8587A.toInt())
+        T("Purple Haze", 0xFF3B1F6B.toInt(), 0xFF5B3A9A.toInt(), 0xFFF3EBFF.toInt(), 0xFF9944BE.toInt()),   // v0.2.6: indexes 18..19 appended (gradients), NEVER reorder
+        T("Coral Sunset", 0xFFFF9A7B.toInt(), 0xFFFFF1EC.toInt(), 0xFF3D151C.toInt(), 0xFFE8587A.toInt())
     )
 
     // v0.4.8: slot 20 = the user's custom theme (pref ct_json, see typing/CustomTheme.java). Missing / invalid = slot 20 does not exist (old 20 themes untouched).
@@ -91,7 +91,11 @@ object JabraThemes {
     fun iconColor(p: JabraPrefs): Int = cur(p).text ?: Color.parseColor("#222222")
 
     /** Colour for small grey help texts: Classic/light themes = #555555 (as before), Dark = light grey. */
-    fun noteColor(p: JabraPrefs): Int = if (Color.luminance(cur(p).bg) < 0.4f) Color.parseColor("#B8B8B8") else Color.parseColor("#555555")
+    fun noteColor(p: JabraPrefs): Int {
+        // v0.10.17 (D3): same old rule when it reads (>= 4.5:1 on bg and bg2); otherwise theme text / white / black (LookColors.noteColor). Old line = fallback.
+        try { val t = cur(p); val b2 = t.bg2; val tx = t.text; return com.mgb.keyboard.typing.LookColors.noteColor(t.bg, b2 != null, b2 ?: 0, tx != null, tx ?: 0) } catch (_: Throwable) { }
+        return if (Color.luminance(cur(p).bg) < 0.4f) Color.parseColor("#B8B8B8") else Color.parseColor("#555555")
+    }
 
     /** Colours one key. Classic = does nothing. */
     fun style(p: JabraPrefs, b: Button) {

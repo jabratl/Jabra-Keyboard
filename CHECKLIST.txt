@@ -678,3 +678,12 @@ Z60) v0.10.16 Text Tools "More" tab (W5)
  [ ] No selection = whole field is used (Replace asks "Sure?" first). Password field: panel says not available.
  [ ] Windows line breaks (paste text from a PC file): line tools keep them.
 
+
+Z61) v0.10.17 Theme polish + Look presets (D3)
+ [ ] Themes: Classic, Blue, Dark look exactly as before (colours, help text under the tiles).
+ [ ] Themes Ocean, Seaweed Grey, Purple Haze, Coral Sunset: letters easy to read on the keys; small help text readable (panels: More settings, Size, Vault).
+ [ ] Theme picker: row AMOLED / Reading / Professional / Cyber above "Custom theme". Each one tap = keyboard changes at once (letters shown), no crash.
+ [ ] After a preset: key bubble + hint letters readable; keyboard height unchanged; open the theme picker again = right tile has the blue frame.
+ [ ] Go back: tap your old theme tile (Look / key border / gap may stay changed: apply Profile "Normal" or change them in Settings).
+ [ ] Your saved Profiles: unchanged, list the same.
+ [ ] Theme Studio: set Text = a colour close to Keys (for example both FFFFFF) -> orange line "Low contrast" appears; set a dark Text -> line disappears. Save still works with the warning.

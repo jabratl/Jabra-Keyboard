@@ -1,3 +1,23 @@
+v0.10.17 - NEW: Theme polish + Look presets (plan D3)
+- WHY: some themes had text that was hard to read, and choosing a whole "mood" took 4-5 taps.
+- CONTRAST AUDIT (WCAG ratio, want >= 4.5:1), all 20 themes, pairs: key vs letters / function key vs letters / bg vs letters / bg vs small help text. Found 7 problems, fixed:
+    Ocean (12) key 3F89D6 -> 3779BC           key/text 3.65 -> 4.54   (trade-off: key is now closer to the Ocean background, bg/key 1.18)
+    Seaweed Grey (6) bg 5F7369 -> 5C7066       bg/text 4.45 -> 4.65
+    Purple Haze (18) bg2 9C45C2 -> 9944BE      bg2/text 4.49 -> 4.62
+    Coral Sunset (19) text 4A1A22 -> 3D151C    bg2/text 4.18 -> 4.62 (key/text 13.0 -> 14.4)
+    Help text (note colour) was too faint on mid-tone backgrounds: Seaweed Grey 2.56, Ocean 2.71, Silver Grey 3.95, Coral Sunset 3.61 (gradient end 2.17), Purple Haze gradient end 2.62, Moon Blue 5.09 ok.
+      -> LookColors.noteColor(): the OLD rule is kept when it already reads (>= 4.5 on bg and bg2) = Classic and 14 other themes look EXACTLY as before; otherwise theme text colour, else white / black.
+  Theme index and order never changed. Classic (0) untouched. Tiles, themes 0-19 names unchanged.
+- What you get: (1) Theme picker: a row of 4 Look presets above the Custom theme button: AMOLED (Gloss Black, flat keys), Reading (Sandstone, roomy gap), Professional (Ivory), Cyber (Purple Haze, flat, bold letters).
+    One tap = sets theme + look = Jabra + key border + key gap + bold letters, then back to the letters. They are constants: nothing is stored, your Profiles are untouched. Undo = tap your old theme tile (or apply a Profile).
+  (2) Theme Studio: when letters vs key colour is < 4.5:1 a warning line "Low contrast: letters hard to read (x.x:1, want 4.5:1)" appears. It never blocks Save.
+- Code: typing/LookColors.java (+ contrast, luminance, lowContrast, minOnBg, noteColor, MIN_RATIO; pure), typing/LookPresets.java (NEW, pure), ThemeEmojiExtras.kt (4 colour values + noteColor hook with old line as fallback), ThemePanel.kt (preset row, applied with ProfileStore.apply = whitelist path), ThemeStudio.kt (warning line), build.gradle.kts 0.10.17.
+- Tests (new): tools/LookPresetsTest.java (177 checks: contrast math, noteColor, every theme 0-19 on 4 pairs, presets whitelisted / valid / deterministic / file round trip). Prefs: none new. Permissions: none.
+- Image / bubble: bubble and hints read theme text colours; text colours changed only for Coral Sunset (darker = more readable).
+BROKE: nothing intended. Look of Classic and 14 untouched themes identical. NOT tested: Kotlin compile (GitHub Actions), phone (CHECKLIST Z61), the real look of the 4 changed themes and the 4 presets.
+TESTED here: 56 tools tests PASS / 0 FAIL (55 old + LookPresetsTest).
+Rollback: delete LookPresets.java + LookPresetsTest.java; put back v0.10.16 LookColors.java, ThemeEmojiExtras.kt, ThemePanel.kt, ThemeStudio.kt.
+
 v0.10.16 - NEW: Text Tools "More" tab (plan W5): line tools, Bangla <-> English digits, URL, Base64, JSON
 - WHY: the Text Tools panel had only Count / Case / Clean / Repeat / Date. For novel / Bangla work you also need line tools, digit conversion and a few encoders, without leaving the keyboard.
 - What you get: a 6th tab "More" in Text Tools (Keyboard toolbar > Text tools). Group chips: Lines | Digits | Encode | JSON, then the tools of the group.
