@@ -8,10 +8,11 @@ import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
 import com.mgb.keyboard.typing.TextTools
+import com.mgb.keyboard.typing.TextTools2   // v0.10.16 (W5)
 
 /*
  * v0.4.6 TEXT TOOLS panel (route showPanel("tt"), toolbar item "tt", OFF until the user adds it).
- * Pages: Count | Case | Clean | Repeat | Date. Source = the selected text, else the whole field (same reader as the Formatter: FmtIo).
+ * Pages: Count | Case | Clean | Repeat | Date | More (v0.10.16: lines / digits / URL / Base64 / JSON). Source = the selected text, else the whole field (same reader as the Formatter: FmtIo).
  * The field is read when the panel opens and after a Replace / Undo, NOT on every key (nothing runs on the key-press path).
  * Replace on the selection = one tap; Replace on the WHOLE field = two taps ("Sure?") and an Undo button afterwards.
  * Same grey look as ClipPanel / VaultPanel. build() returns null on any problem -> the keyboard shows the letters.
@@ -30,6 +31,9 @@ class TextToolsPanel(private val ctx: Context, private val host: JabraHost, priv
     private var repN = 2
     private var repSep = 0
     private var datePreset = 0
+    private var moreTool = TextTools2.SORT_AZ   // v0.10.16 (W5) page 5 "More": selected tool
+    private var joinSep = 0
+    private var moreErr = ""                    // message of the last failed More tool (nothing is changed then)
     private var msg = ""
     private var confirmAll = false
     private var undoRes: String? = null        // text we inserted (for Undo)
@@ -93,9 +97,17 @@ class TextToolsPanel(private val ctx: Context, private val host: JabraHost, priv
             1 -> TextTools.caseConvert(src, caseMode)
             2 -> TextTools.clean(src, optSpaces, optBlank, optTrail)
             3 -> TextTools.repeat(src, repN, TextTools.SEPARATORS[repSep])
+            5 -> more()
             else -> TextTools.dateTime(datePreset, System.currentTimeMillis(), java.util.TimeZone.getDefault())
         }
     } catch (_: Throwable) { "" }
+
+    /** v0.10.16 (W5): result of the selected More tool; an error message goes to moreErr and the result stays empty. */
+    private fun more(): String = try {
+        val r = TextTools2.apply(moreTool, src, joinSep)
+        moreErr = r.err ?: ""
+        r.out
+    } catch (_: Throwable) { moreErr = "Could not do this"; "" }
 
     fun build(): View? = try { make() } catch (_: Throwable) { null }
 
@@ -107,15 +119,17 @@ class TextToolsPanel(private val ctx: Context, private val host: JabraHost, priv
 
         // tabs
         val tabs = row()
-        tabs.addView(btn("ABC", 1f, 38) { host.showLetters() })
-        val names = arrayOf("Count", "Case", "Clean", "Repeat", "Date")
-        for (i in 0..4) {
+        tabs.addView(btn("ABC", 0.8f, 38) { host.showLetters() })   // v0.10.16: 0.8 (was 1) so the 6th tab "More" fits at 360 dp
+        val names = arrayOf("Count", "Case", "Clean", "Repeat", "Date", "More")
+        for (i in 0..5) {
             tabs.addView(btn((if (page == i) "✓ " else "") + names[i], 1.25f, 38) { page = i; confirmAll = false; msg = ""; refresh() })
         }
         root.addView(tabs)
 
         // options of the page
         val opt = row()
+        val opt2 = row()   // v0.10.16 (W5): tool rows of the More page
+        val opt3 = row()
         when (page) {
             1 -> {
                 val n = arrayOf("UPPER", "lower", "Title", "Sentence")
@@ -139,15 +153,39 @@ class TextToolsPanel(private val ctx: Context, private val host: JabraHost, priv
                 opt.addView(btn(TextTools.dateTime(datePreset, now, tz), 3f, 32) { datePreset = (datePreset + 1) % TextTools.DATE_FORMATS.size; refresh() })
                 opt.addView(btn("▶", 0.6f, 32) { datePreset = (datePreset + 1) % TextTools.DATE_FORMATS.size; refresh() })
             }
+            5 -> {   // v0.10.16 (W5): group chips (Lines / Digits / Encode / JSON), then the tools of the group
+                val grp = TextTools2.groupOf(moreTool)
+                for (g in TextTools2.GROUP_NAMES.indices) {
+                    opt.addView(btn((if (grp == g) "✓ " else "") + TextTools2.GROUP_NAMES[g], 1f, 32) {
+                        if (grp != g) moreTool = TextTools2.firstOf(g)
+                        confirmAll = false; refresh()
+                    })
+                }
+                val tools = TextTools2.GROUP_TOOLS[grp]
+                for ((k, tl) in tools.withIndex()) {
+                    var label = (if (moreTool == tl) "✓ " else "") + TextTools2.TOOL_NAMES[tl]
+                    if (tl == TextTools2.JOIN) label += ": " + TextTools2.JOIN_NAMES[joinSep.coerceIn(0, TextTools2.JOIN_NAMES.size - 1)]
+                    val target = if (k < 4) opt2 else opt3
+                    target.addView(btn(label, if (tl == TextTools2.JOIN) 1.6f else 1f, 32) {
+                        if (tl == TextTools2.JOIN && moreTool == tl) joinSep = (joinSep + 1) % TextTools2.JOIN_SEPS.size   // tap again = next separator
+                        moreTool = tl
+                        confirmAll = false; refresh()
+                    })
+                }
+            }
         }
         if (page != 0) root.addView(opt)
+        if (page == 5) {
+            root.addView(opt2)
+            if (opt3.childCount > 0) root.addView(opt3)
+        }
 
         // info line
         val shown = msg
         msg = ""
         val srcInfo = if (page == 4) "Inserts at the cursor" else if (src.isEmpty()) "No text: select text or type some first" else (if (usedSel) "Source: selection" else "Source: whole field") + " (" + src.length + " characters)"
         val info = TextView(ctx)
-        info.text = if (shown.isEmpty()) srcInfo else shown
+        info.text = if (shown.isNotEmpty()) shown else if (page == 5 && moreErr.isNotEmpty()) moreErr else srcInfo
         info.textSize = 12f
         info.setTextColor(dim())   // v0.6.7
         info.setPadding(dp(8), dp(2), dp(8), dp(2))
@@ -168,11 +206,11 @@ class TextToolsPanel(private val ctx: Context, private val host: JabraHost, priv
 
         // actions
         val act = row()
-        val textPage = page in 1..3
+        val textPage = page in 1..3 || page == 5   // v0.10.16: More uses the same Replace + Undo flow
         if (textPage) {
             val ask = confirmAll && !usedSel
             act.addView(btn(if (ask) "Sure? Replace all" else "Replace", 1.6f, 40) {
-                if (src.isEmpty() || res.isEmpty()) { msg = "Nothing to replace"; refresh() }
+                if (src.isEmpty() || res.isEmpty()) { msg = if (page == 5 && moreErr.isNotEmpty()) moreErr else "Nothing to replace"; refresh() }
                 else if (res == src) { msg = "No change"; refresh() }
                 else if (!usedSel && !confirmAll) { confirmAll = true; refresh() }
                 else {

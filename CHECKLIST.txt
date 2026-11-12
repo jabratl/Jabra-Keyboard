@@ -667,3 +667,14 @@ Z59) v0.10.15 Toolbar / Typing / More panels D2.5 (should look and work EXACTLY 
  [ ] Edit toolbar (order panel): up / down / show / hide buttons work, list position kept; Quick toolbar panel works.
  [ ] No panel changes the keyboard height when opened. Emoji panel unchanged (not touched).
 
+Z60) v0.10.16 Text Tools "More" tab (W5)
+ [ ] Text tools panel: six tabs (ABC, Count, Case, Clean, Repeat, Date, More) fit in one row on your phone, text not cut. Old tabs work as before.
+ [ ] More > Lines: type 3 lines "pear / apple / fig", select them: A-Z, Z-A, No dupes, Reverse, Number, Trim each show the right result; Replace changes the text; Undo restores it.
+ [ ] Join: result is one line; tap Join again = separator changes (Space / Comma / Semicolon / None).
+ [ ] Digits: "2026" > To Bangla shows the Bangla digits; To 0-9 brings it back. Letters and emoji untouched.
+ [ ] Encode: "a b" > URL enc = a%20b; URL dec back. "hello" > B64 enc = aGVsbG8=; B64 dec back. Bangla text round-trips.
+ [ ] Encode errors: select "abc%" > URL dec shows a message, Replace does nothing. Select "a$b=" > B64 dec = message.
+ [ ] JSON: select {"a":1,"b":[1,2]} > Pretty shows indented text; Minify gives one line. Select {"a":1,} > message "Not valid JSON", text unchanged.
+ [ ] No selection = whole field is used (Replace asks "Sure?" first). Password field: panel says not available.
+ [ ] Windows line breaks (paste text from a PC file): line tools keep them.
+

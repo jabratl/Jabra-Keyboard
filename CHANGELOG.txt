@@ -1,3 +1,18 @@
+v0.10.16 - NEW: Text Tools "More" tab (plan W5): line tools, Bangla <-> English digits, URL, Base64, JSON
+- WHY: the Text Tools panel had only Count / Case / Clean / Repeat / Date. For novel / Bangla work you also need line tools, digit conversion and a few encoders, without leaving the keyboard.
+- What you get: a 6th tab "More" in Text Tools (Keyboard toolbar > Text tools). Group chips: Lines | Digits | Encode | JSON, then the tools of the group.
+  Lines: A-Z, Z-A (case-insensitive), No dupes (blank lines always kept), Reverse, Number ("1. text", blank lines skipped), Trim (every line), Join (one line; tap Join again = next separator: Space / Comma / Semicolon / None).
+  Digits: To 0-9 (Bangla -> English), To ০-৯ (English -> Bangla).
+  Encode: URL enc / URL dec ("+" = space; bad %-code or non-UTF-8 = message), B64 enc / B64 dec (UTF-8; whitespace ignored; padding optional; bad text = message).
+  JSON: Pretty (2 spaces) / Minify. Own strict checker, max 20000 characters, depth 100. Bad JSON = message "Not valid JSON (character N)" and NOTHING is changed.
+  Same flow as Case / Clean: source = selection, else the whole field; Replace (whole field = two taps "Sure?"), Copy, Undo.
+- Line breaks: CRLF / LF / CR kept as they were; a final line break is kept.
+- Limits: line tools input 100000 chars, URL / Base64 input 50000 chars (message, no change when longer).
+- Code: typing/TextTools2.java (NEW, pure; java.util + java.nio.charset only, own Base64 because java.util.Base64 is API 26), TextToolsPanel.kt (tab list + page 5 rows + more(); ABC tab weight 1 -> 0.8 so six tabs fit at 360 dp), build.gradle.kts 0.10.16.
+- Tests (new): tools/TextTools2Test.java (139 checks: empty / null, CRLF, Bangla, emoji, size caps, invalid JSON, invalid %-encoding, invalid Base64, depth cap). Prefs: none new. Permissions: none.
+BROKE: nothing intended. Count / Case / Clean / Repeat / Date unchanged. NOT tested: Kotlin compile (GitHub Actions), phone (CHECKLIST Z60), the 6-tab row width on a real 360 dp screen.
+Rollback: delete TextTools2.java + TextTools2Test.java and put back v0.10.15 TextToolsPanel.kt.
+
 v0.10.15 - D2.5 Toolbar / Quick toolbar / Typing / More panels on the shared UiKit helpers (no look change) = LAST D2 step
 - WHY: plan D2 (one look for all panels). ToolbarPanel, ToolbarQuick (panel), TypingPrefs (Typing panel) and TypingExtras (More panel) each had private pk() / row() / note() copies.
 - What changed: pk() = UiKit.btn (ToolbarPanel + ToolbarQuick: given height, 11sp; TypingPrefs + TypingExtras: key-height tall, 12sp; same 2dp margins, theme style, feedback before click); note() = UiKit.noteText (ToolbarPanel, TypingPrefs, TypingExtras: 11sp, same note colour, 6 / 2dp padding); row() = UiKit.row (all four). Every old body kept as pkOld() / noteOld() / rowOld() = automatic fallback.
