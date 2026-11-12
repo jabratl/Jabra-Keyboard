@@ -510,3 +510,14 @@ Z78) v0.15.2 Clipboard order: Pinned first / Recent first (N2)
  [ ] Search: type a letter: no headers (as before), groups still in the chosen order. Clear search: headers are back.
  [ ] Only pinned clips or only recent clips: no headers, no arrow, nothing crashes. Manage (select) mode and pin / delete / Undo work in both orders.
  [ ] Close and reopen the keyboard: the chosen order stays. Default on a fresh install = Pinned first.
+
+Z79) v0.15.3 Settings map v2 + Tools & Panels page (N3)
+ [ ] Open the app: Home shows 7 tiles. The last one is "Tools & Panels" (summary "Edit bar on, formatter on"). Tap it: sections "Toolbar" (Edit bar, Vault key) and "Formatter" (Formatter Aa button).
+ [ ] Home > Typing: after the language sections you see "Editing" (Hold backspace, Long hold deletes words, Auto caps, Enter action) and "Spaces & hints" (Double-space period / tab, Long-press characters).
+ [ ] Home > Clipboard & Tools: sections "History", "Look of clips", "Privacy". Edit bar / Formatter / Vault key are NOT here any more (they are in Tools & Panels). Clip rows all still there (order, fit, view, sort, lines, count, auto-delete, code guard).
+ [ ] Home > Data & About: sections "Backup" (buttons), "Health" (Jabra Health Check), "Privacy", "About & updates". Backup now / Export / Import / Health Check still work.
+ [ ] Global search: type "edit bar" or "formatter": the result opens on "Tools & Panels". Type "clip order": opens on Clipboard.
+ [ ] Favourites you made before (star) still open the right row. A tile order you set on Home before: the new tile appears at the end by itself. Tools tile can be hidden / moved like the others; Data & About can still not be hidden.
+ [ ] A changed value (dot) and long-press reset still work on moved rows (e.g. turn Edit bar OFF, dot shows, long-press = back ON; the keyboard edit bar follows).
+ [ ] Old screen (Data & About > switch to old screen): the rows are all there, "Tools & Panels" is one more group in the list.
+ [ ] Two panes (rotate the phone / tablet): Tools & Panels opens in the right pane, no crash.

@@ -41,11 +41,11 @@ public class PersonalPlanTest {
         // tiles order
         eq("default order", PersonalPlan.order(""), L(PagePlan.ORDER));
         eq("null order", PersonalPlan.order(null), L(PagePlan.ORDER));
-        eq("custom order + rest", PersonalPlan.order("clip,look"), L("clip", "look", "typing", "layout", "keys", "data"));
-        eq("unknown id dropped", PersonalPlan.order("zzz,keys"), L("keys", "typing", "look", "layout", "clip", "data"));
-        eq("duplicate dropped", PersonalPlan.order("keys,keys,look"), L("keys", "look", "typing", "layout", "clip", "data"));
-        eq("home id not a tile", PersonalPlan.order(",look"), L("look", "typing", "layout", "keys", "clip", "data"));
-        eq("order always 6", PersonalPlan.order("a,b,c,keys,data,clip,look,layout,typing").size(), 6);
+        eq("custom order + rest", PersonalPlan.order("clip,look"), L("clip", "look", "typing", "layout", "keys", "data", "tools"));
+        eq("unknown id dropped", PersonalPlan.order("zzz,keys"), L("keys", "typing", "look", "layout", "clip", "data", "tools"));
+        eq("duplicate dropped", PersonalPlan.order("keys,keys,look"), L("keys", "look", "typing", "layout", "clip", "data", "tools"));
+        eq("home id not a tile", PersonalPlan.order(",look"), L("look", "typing", "layout", "keys", "clip", "data", "tools"));
+        eq("order always 7", PersonalPlan.order("a,b,c,keys,data,clip,look,layout,typing").size(), 7);
         // hide
         eq("canHide data", PersonalPlan.canHide("data"), false);
         eq("canHide look", PersonalPlan.canHide("look"), true);
@@ -53,9 +53,9 @@ public class PersonalPlanTest {
         eq("canHide home", PersonalPlan.canHide(""), false);
         eq("hidden drops data", PersonalPlan.hidden("look,data,zzz"), L("look"));
         eq("visible default", PersonalPlan.visible("", ""), L(PagePlan.ORDER));
-        eq("visible hides", PersonalPlan.visible("", "look,clip"), L("typing", "layout", "keys", "data"));
-        eq("visible order + hide", PersonalPlan.visible("clip,look", "look"), L("clip", "typing", "layout", "keys", "data"));
-        eq("hide everything keeps data", PersonalPlan.visible("", "typing,look,layout,keys,clip,data"), L("data"));
+        eq("visible hides", PersonalPlan.visible("", "look,clip"), L("typing", "layout", "keys", "data", "tools"));
+        eq("visible order + hide", PersonalPlan.visible("clip,look", "look"), L("clip", "typing", "layout", "keys", "data", "tools"));
+        eq("hide everything keeps data", PersonalPlan.visible("", "typing,look,layout,keys,clip,data"), L("data", "tools"));
         eq("visible never empty", PersonalPlan.visible("zzz", "typing,look,layout,keys,clip,data").isEmpty(), false);
         // toggleHide
         eq("hide look", PersonalPlan.toggleHide("", "look"), "look");
@@ -64,18 +64,24 @@ public class PersonalPlanTest {
         eq("hide data refused", PersonalPlan.toggleHide("look", "data"), "look");
         eq("hide unknown refused", PersonalPlan.toggleHide("", "zzz"), "");
         // move
-        eq("move down", PersonalPlan.move("", "typing", 1), "look,typing,layout,keys,clip,data");
-        eq("move up", PersonalPlan.move("", "layout", -1), "typing,layout,look,keys,clip,data");
-        eq("move up at top", PersonalPlan.move("", "typing", -1), "typing,look,layout,keys,clip,data");
-        eq("move down at bottom", PersonalPlan.move("", "data", 1), "typing,look,layout,keys,clip,data");
-        eq("move unknown", PersonalPlan.move("", "zzz", 1), "typing,look,layout,keys,clip,data");
-        eq("move dir 0", PersonalPlan.move("", "look", 0), "typing,look,layout,keys,clip,data");
-        eq("move twice", PersonalPlan.move(PersonalPlan.move("", "typing", 1), "typing", 1), "look,layout,typing,keys,clip,data");
+        eq("move down", PersonalPlan.move("", "typing", 1), "look,typing,layout,keys,clip,data,tools");
+        eq("move up", PersonalPlan.move("", "layout", -1), "typing,layout,look,keys,clip,data,tools");
+        eq("move up at top", PersonalPlan.move("", "typing", -1), "typing,look,layout,keys,clip,data,tools");
+        eq("move down at bottom", PersonalPlan.move("", "data", 1), "typing,look,layout,keys,clip,tools,data");
+        eq("move unknown", PersonalPlan.move("", "zzz", 1), "typing,look,layout,keys,clip,data,tools");
+        eq("move dir 0", PersonalPlan.move("", "look", 0), "typing,look,layout,keys,clip,data,tools");
+        eq("move twice", PersonalPlan.move(PersonalPlan.move("", "typing", 1), "typing", 1), "look,layout,typing,keys,clip,data,tools");
+        // v0.15.3 (N3): a user with a saved tile_order (6 ids) gets the new tools tile appended by itself
+        eq("old saved order gets tools", PersonalPlan.order("look,typing,layout,keys,clip,data"), L("look", "typing", "layout", "keys", "clip", "data", "tools"));
+        eq("old saved order visible has tools", PersonalPlan.visible("look,typing,layout,keys,clip,data", "").contains("tools"), true);
+        eq("tools can hide", PersonalPlan.canHide("tools"), true);
+        eq("hide tools", PersonalPlan.toggleHide("", "tools"), "tools");
+        eq("tools moves up", PersonalPlan.move("", "tools", -1), "typing,look,layout,keys,clip,tools,data");
         // every move keeps all 6 pages exactly once
         for (String id : PagePlan.ORDER) for (int d = -1; d <= 1; d += 2) {
             List<String> o = PersonalPlan.order(PersonalPlan.move("clip,look", id, d));
-            eq("move keeps 6 " + id + d, o.size(), 6);
-            eq("move keeps all " + id + d, new java.util.HashSet<>(o).size(), 6);
+            eq("move keeps 7 " + id + d, o.size(), 7);
+            eq("move keeps all " + id + d, new java.util.HashSet<>(o).size(), 7);
         }
         // customised
         eq("customised no", PersonalPlan.customised("", ""), false);

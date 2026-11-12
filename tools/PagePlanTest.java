@@ -7,16 +7,16 @@ public class PagePlanTest {
     static int ok = 0, bad = 0;
     static void eq(String n, Object a, Object b) { if (java.util.Objects.equals(a, b)) ok++; else { bad++; System.out.println("FAIL " + n + ": " + a + " != " + b); } }
     public static void main(String[] x) {
-        eq("6 pages", PagePlan.ORDER.length, 6);
-        eq("titles len", PagePlan.TITLES.length, 6);
-        eq("icons len", PagePlan.ICONS.length, 6);
+        eq("7 pages", PagePlan.ORDER.length, 7);
+        eq("titles len", PagePlan.TITLES.length, 7);
+        eq("icons len", PagePlan.ICONS.length, 7);
         eq("sanitize junk", PagePlan.sanitize("zzz"), PagePlan.HOME);
         eq("sanitize null", PagePlan.sanitize(null), PagePlan.HOME);
         eq("sanitize ok", PagePlan.sanitize("look"), "look");
         eq("title home", PagePlan.title(""), "Jabra Keyboard");
         eq("title layout", PagePlan.title("layout"), "Layout & Size");
         // every old group is on exactly one page
-        String[] old = { "Languages & layouts", "Typing", "Look", "Layout & size", "Keys & gestures", "Clipboard & tools", "Data & Backup" };
+        String[] old = { "Languages & layouts", "Typing", "Look", "Layout & size", "Keys & gestures", "Clipboard & tools", "Data & Backup", "Tools & Panels" };
         for (String g : old) {
             int c = 0;
             for (String p : PagePlan.ORDER) for (String q : PagePlan.groupsOf(p)) if (q.equals(g)) c++;
@@ -24,6 +24,16 @@ public class PagePlanTest {
             eq("pageOfGroup consistent " + g, java.util.Arrays.asList(PagePlan.groupsOf(PagePlan.pageOfGroup(g))).contains(g), true);
         }
         eq("languages in typing", PagePlan.pageOfGroup("Languages & layouts"), "typing");
+        // v0.15.3 (N3): page "tools" is added at the END; old ids and positions stay
+        eq("tools is last", PagePlan.ORDER[6], "tools");
+        eq("old 6 keep place", String.join(",", java.util.Arrays.copyOf(PagePlan.ORDER, 6)), "typing,look,layout,keys,clip,data");
+        eq("tools title", PagePlan.title("tools"), "Tools & Panels");
+        eq("tools icon", PagePlan.icon("tools"), "tt");
+        eq("tools sanitize", PagePlan.sanitize("tools"), "tools");
+        eq("tools group page", PagePlan.pageOfGroup("Tools & Panels"), "tools");
+        eq("clip group stays on clip", PagePlan.pageOfGroup("Clipboard & tools"), "clip");
+        eq("tools no pin preview", PagePlan.pinPreview("tools"), false);
+        eq("tools summary", PagePlan.toolsSummary(true, false), "Edit bar on, formatter off");
         eq("unknown group last page", PagePlan.pageOfGroup("Nope"), "data");
         eq("null group last page", PagePlan.pageOfGroup(null), "data");
         eq("groupsOf junk", PagePlan.groupsOf("zzz").length, 0);

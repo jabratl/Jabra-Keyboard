@@ -31,12 +31,20 @@ public final class ChangedPlan {
     private static final String[] G_LANG = { "Bangla", "Switching", "Number row & mode" };
     private static final String[] G_KEYS = { "Feedback", "Popup", "Smart typing", "Extra keys", "Timing" };
 
+    // v0.15.3 (N3): sections for the groups that had none
+    private static final String[] G_TYPING = { "Editing", "Spaces & hints" };
+    private static final String[] G_CLIP = { "History", "Look of clips", "Privacy" };
+    private static final String[] G_TOOLS = { "Toolbar", "Formatter" };
+
     /** Section titles of a group (in order). Groups without sections: empty array. */
     public static String[] sections(String group) {
         if ("Layout & size".equals(group)) return G_LAYOUT.clone();
         if ("Look".equals(group)) return G_LOOK.clone();
         if ("Languages & layouts".equals(group)) return G_LANG.clone();
         if ("Keys & gestures".equals(group)) return G_KEYS.clone();
+        if ("Typing".equals(group)) return G_TYPING.clone();
+        if ("Clipboard & tools".equals(group)) return G_CLIP.clone();
+        if ("Tools & Panels".equals(group)) return G_TOOLS.clone();
         return new String[0];
     }
 
@@ -66,6 +74,16 @@ public final class ChangedPlan {
             if (in(key, "learn_on", "sp_punct", "ac_on", "sg_on", "ap_on", "qa_on")) return "Smart typing";
             if (in(key, "h_lock", "key_globe", "key_voice", "key_emoji")) return "Extra keys";
             if (in(key, "lp_delay", "cursor_speed")) return "Timing";
+        } else if (group.equals("Typing")) {   // v0.15.3 (N3)
+            if (in(key, "bs_repeat", "bs_word", "autocap", "enter_action")) return "Editing";
+            if (in(key, "ds_period", "ds_tab", "hint_on")) return "Spaces & hints";
+        } else if (group.equals("Clipboard & tools")) {
+            if (in(key, "clip_on", "clip_count")) return "History";
+            if (in(key, "clip_view", "clip_sort", "clip_order", "clip_lines", "clip_fit")) return "Look of clips";
+            if (in(key, "clip_expire", "clip_sens")) return "Privacy";
+        } else if (group.equals("Tools & Panels")) {
+            if (in(key, "edit_bar", "tb_vault")) return "Toolbar";
+            if (in(key, "fmt_on")) return "Formatter";
         }
         return "";
     }

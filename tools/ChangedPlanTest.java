@@ -31,7 +31,9 @@ public class ChangedPlanTest {
             {"Look", "theme", "Theme & style"}, {"Look", "onehand", "Other"}, {"Look", "hint_size_lv", "Hints"},
             {"Languages & layouts", "bn_layout", "Bangla"}, {"Languages & layouts", "sp_step", "Switching"}, {"Languages & layouts", "pc_mode", "Number row & mode"},
             {"Keys & gestures", "haptic", "Feedback"}, {"Keys & gestures", "ac_on", "Smart typing"}, {"Keys & gestures", "cursor_speed", "Timing"},
-            {"Typing", "autocap", ""}, {"Clipboard & tools", "clip_on", ""}, {"Look", "nope", ""}, {null, "x", ""}, {"Look", null, ""},
+            {"Typing", "autocap", "Editing"}, {"Typing", "hint_on", "Spaces & hints"}, {"Typing", "zzz", ""},
+            {"Clipboard & tools", "clip_on", "History"}, {"Clipboard & tools", "clip_view", "Look of clips"}, {"Clipboard & tools", "clip_order", "Look of clips"}, {"Clipboard & tools", "clip_fit", "Look of clips"}, {"Clipboard & tools", "clip_sens", "Privacy"}, {"Clipboard & tools", "clip_expire", "Privacy"},
+            {"Tools & Panels", "edit_bar", "Toolbar"}, {"Tools & Panels", "tb_vault", "Toolbar"}, {"Tools & Panels", "fmt_on", "Formatter"}, {"Tools & Panels", "zzz", ""}, {"Look", "nope", ""}, {null, "x", ""}, {"Look", null, ""},
         };
         for (String[] r : rows) eq("sectionOf " + r[0] + "/" + r[1], ChangedPlan.sectionOf(r[0], r[1]), r[2]);
         for (String g : new String[]{"Layout & size", "Look", "Languages & layouts", "Keys & gestures"}) {
@@ -46,7 +48,20 @@ public class ChangedPlanTest {
                 eq("section used " + g + "/" + s, used, true);
             }
         }
-        eq("no sections typing", ChangedPlan.sections("Typing").length, 0);
+        // v0.15.3 (N3): every section of the new groups is used by at least one row, and every row of those groups has a section
+        String[][] ng = {
+            {"Typing", "bs_repeat,bs_word,autocap,enter_action,ds_period,ds_tab,hint_on"},
+            {"Clipboard & tools", "clip_on,clip_lines,clip_view,clip_sort,clip_order,clip_count,clip_expire,clip_fit,clip_sens"},
+            {"Tools & Panels", "edit_bar,tb_vault,fmt_on"} };
+        for (String[] g : ng) {
+            java.util.Set<String> used = new java.util.HashSet<>();
+            for (String k : g[1].split(",")) { String sec = ChangedPlan.sectionOf(g[0], k); eq("row has section " + g[0] + "/" + k, sec.isEmpty(), false); used.add(sec); }
+            for (String sn : ChangedPlan.sections(g[0])) eq("section used " + g[0] + "/" + sn, used.contains(sn), true);
+        }
+        eq("sections typing 2", ChangedPlan.sections("Typing").length, 2);
+        eq("sections clip 3", ChangedPlan.sections("Clipboard & tools").length, 3);
+        eq("sections tools", ChangedPlan.sections("Tools & Panels").length, 2);
+        eq("no sections data", ChangedPlan.sections("Data & Backup").length, 0);
         eq("no sections null", ChangedPlan.sections(null).length, 0);
         System.out.println("ChangedPlanTest " + ok + " ok, " + bad + " fail");
         if (bad > 0) System.exit(1);

@@ -41,6 +41,7 @@ object DataPage {
             return b
         }
         fun line(t: String): TextView { val v = TextView(ctx); v.text = t; v.setPadding(0, dp(2), 0, dp(2)); return v }
+        fun dpHead(t: String): View = try { AppRows.sectionHeader(ctx, t) } catch (_: Throwable) { line(t) }   // v0.15.3 (N3)
         fun size(n: Long) = if (n < 1024) "$n B" else if (n < 1048576) "${n / 1024} KB" else String.format(Locale.US, "%.1f MB", n / 1048576.0)
         fun fileSize(f: File): Long = try { if (f.isDirectory) (f.listFiles() ?: emptyArray()).sumOf { fileSize(it) } else f.length() } catch (_: Throwable) { 0L }
         fun nice(t: Long) = if (t <= 0) "?" else SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.US).format(Date(t))
@@ -98,6 +99,7 @@ object DataPage {
             } catch (_: Throwable) { }
         }
 
+        root.addView(dpHead("Backup"))   // v0.15.3 (N3): section headers
         root.addView(info)
         root.addView(btn("Backup now") {
             msg.text = "Saving..."
@@ -126,12 +128,13 @@ object DataPage {
             prefs.setInt("bk_keep", nv); b.text = "Keep newest copies: $nv"
         }
         kb.text = "Keep newest copies: " + prefs.int("bk_keep", 5); root.addView(kb)
-        try { root.addView(HealthPanel.build(ctx)) } catch (_: Throwable) { }   // v0.5.3 Jabra Health Check
         root.addView(msg)
         root.addView(line("Backups"))
         root.addView(list)
+        root.addView(dpHead("Health"))   // v0.15.3 (N3): Health Check moved below the backup list so each section is in one block
+        try { root.addView(HealthPanel.build(ctx)) } catch (_: Throwable) { }   // v0.5.3 Jabra Health Check
+        root.addView(dpHead("Privacy"))
         try { root.addView(PrivacyPage.build(ctx)) } catch (_: Throwable) { }   // v0.10.10 (W4): Privacy & storage card
-        root.addView(line("Privacy"))
         root.addView(line("Everything is saved only on this phone (settings, clips, presets, backups). Nothing is sent anywhere. The only internet use is \"Check for updates\" and \"Update emoji list\" (only when you tap them). Permissions: Internet (update check, emoji list), Install packages (update), Vibrate. Export / Import and the external backup folder use the system pickers, no storage permission. The external copy goes only to the folder you choose."))
         act?.refreshData = { try { fill() } catch (_: Throwable) { } }
         act?.dataMsg = { m -> try { msg.text = m } catch (_: Throwable) { } }

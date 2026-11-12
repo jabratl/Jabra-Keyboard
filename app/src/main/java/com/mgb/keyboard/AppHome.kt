@@ -345,6 +345,7 @@ object AppHome {
             PagePlan.TYPING -> PagePlan.typingSummary(p.str("bn_layout", "avro") == "probhat", p.bool("space_lang", false))
             PagePlan.KEYS -> PagePlan.keysSummary(p.bool("haptic", true), p.bool("sound", false), p.bool("key_popup", false))
             PagePlan.CLIP -> PagePlan.clipSummary(p.bool("clip_on", true), p.bool("edit_bar", true))
+            PagePlan.TOOLS -> PagePlan.toolsSummary(p.bool("edit_bar", true), p.bool("fmt_on", true))   // v0.15.3 (N3)
             PagePlan.DATA -> PagePlan.dataSummary(p.bool("bk_auto", true), BuildConfig.VERSION_NAME)
             else -> ""
         }

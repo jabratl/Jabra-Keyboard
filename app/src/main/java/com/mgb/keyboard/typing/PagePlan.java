@@ -9,13 +9,13 @@ public final class PagePlan {
     private PagePlan() { }
 
     public static final String HOME = "";
-    public static final String TYPING = "typing", LOOK = "look", LAYOUT = "layout", KEYS = "keys", CLIP = "clip", DATA = "data";
+    public static final String TYPING = "typing", LOOK = "look", LAYOUT = "layout", KEYS = "keys", CLIP = "clip", DATA = "data", TOOLS = "tools";   // v0.15.3 (N3): TOOLS added at the END so saved ids / tile_order stay valid
 
     /** Tile order on Home. */
-    public static final String[] ORDER = { TYPING, LOOK, LAYOUT, KEYS, CLIP, DATA };
-    public static final String[] TITLES = { "Typing", "Look & Theme", "Layout & Size", "Keys & Gestures", "Clipboard & Tools", "Data & About" };
+    public static final String[] ORDER = { TYPING, LOOK, LAYOUT, KEYS, CLIP, DATA, TOOLS };
+    public static final String[] TITLES = { "Typing", "Look & Theme", "Layout & Size", "Keys & Gestures", "Clipboard & Tools", "Data & About", "Tools & Panels" };
     /** Icon names that exist in JabraIcons.NAMES. */
-    public static final String[] ICONS = { "sym", "theme", "size", "pad", "clip", "gear" };
+    public static final String[] ICONS = { "sym", "theme", "size", "pad", "clip", "gear", "tt" };
 
     /** Old group names (SettingsGroups) per page, same order as ORDER. Languages rows go into Typing. */
     private static final String[][] GROUPS = {
@@ -25,6 +25,7 @@ public final class PagePlan {
         { "Keys & gestures" },
         { "Clipboard & tools" },
         { "Data & Backup" },
+        { "Tools & Panels" },   // v0.15.3 (N3)
     };
 
     public static int index(String id) {
@@ -58,6 +59,7 @@ public final class PagePlan {
     public static String typingSummary(boolean probhat, boolean spaceSwipe) { return (probhat ? "Probhat" : "Avro") + ", space swipe " + onOff(spaceSwipe); }
     public static String keysSummary(boolean vibrate, boolean sound, boolean popup) { return "Vibrate " + onOff(vibrate) + ", sound " + onOff(sound) + ", popup " + onOff(popup); }
     public static String clipSummary(boolean history, boolean editBar) { return "History " + onOff(history) + ", edit bar " + onOff(editBar); }
+    public static String toolsSummary(boolean editBar, boolean formatter) { return "Edit bar " + onOff(editBar) + ", formatter " + onOff(formatter); }   // v0.15.3 (N3)
     public static String dataSummary(boolean autoBackup, String version) { return "Auto backup " + onOff(autoBackup) + ", v" + (version == null ? "?" : version); }
 
     // ---- Quick looks: tables over EdgePlan.PRESET_KEYS ----

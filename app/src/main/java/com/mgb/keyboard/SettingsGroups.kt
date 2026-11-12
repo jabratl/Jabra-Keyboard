@@ -534,13 +534,7 @@ object SettingsGroups {
         }
 
         group("Clipboard & tools") { g ->
-            toggle(g, "Edit bar", "edit_bar", true)
             toggle(g, "Clip history", "clip_on", true)
-            toggle(g, "Formatter (Aa button)", "fmt_on", true)
-            // v0.5.5: switch for the Vault key on the toolbar (same data as Edit toolbar > Vault; pseudo row key "tb_vault", no new pref)
-            cycle(g, "Vault key (toolbar)", "tb_vault", { arrayOf("OFF", "ON") },
-                { if (com.mgb.keyboard.typing.ToolbarOrder.off(prefs.str("tb_hidden", ""), prefs.str("tb_on", ""), "vault")) 0 else 1 },
-                { i -> prefs.setStr("tb_on", com.mgb.keyboard.typing.ToolbarOrder.setOn(prefs.str("tb_on", ""), "vault", i == 1)) }, 0)
             level(g, "Clip lines", "clip_lines", 0, arrayOf("2 lines", "4 lines", "6 lines"))   // v0.2.5.1
             level(g, "Clipboard view", "clip_view", 0, arrayOf("List", "Cards"))   // v0.2.5.2
             level(g, "Clip sort", "clip_sort", 0, com.mgb.keyboard.clip.ClipMeta.SORT_NAMES)   // v0.4.3
@@ -549,6 +543,15 @@ object SettingsGroups {
             level(g, "Clip auto-delete (unpinned)", "clip_expire", 0, com.mgb.keyboard.clip.ClipMeta.EXPIRE_NAMES)   // v0.4.3
             toggle(g, "Clipboard follows keyboard height", "clip_fit", true)   // v0.15.1 (N1): OFF = old fixed clipboard size
             toggle(g, "Clip code guard (2 min)", "clip_sens", false)   // v0.10.10 (W4): copied one-time codes leave the history after 2 minutes (default OFF)
+        }
+
+        group("Tools & Panels") { g ->   // v0.15.3 (N3): 3 rows moved here from "Clipboard & tools" (same keys, same behaviour)
+            toggle(g, "Edit bar", "edit_bar", true)
+            // v0.5.5: switch for the Vault key on the toolbar (same data as Edit toolbar > Vault; pseudo row key "tb_vault", no new pref)
+            cycle(g, "Vault key (toolbar)", "tb_vault", { arrayOf("OFF", "ON") },
+                { if (com.mgb.keyboard.typing.ToolbarOrder.off(prefs.str("tb_hidden", ""), prefs.str("tb_on", ""), "vault")) 0 else 1 },
+                { i -> prefs.setStr("tb_on", com.mgb.keyboard.typing.ToolbarOrder.setOn(prefs.str("tb_on", ""), "vault", i == 1)) }, 0)
+            toggle(g, "Formatter (Aa button)", "fmt_on", true)
         }
 
         try { group("Data & Backup") { g -> g.addView(DataPage.build(ctx)) } } catch (_: Throwable) { }   // v0.4.1
