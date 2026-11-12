@@ -402,3 +402,16 @@ Z68) v0.10.24 Clipboard look (C1)
  [ ] Dark theme and Classic: tag readable (not too faint). Settings "Char count" OFF: no age text.
  [ ] Opening the clipboard feels as fast as before (with ~40 clips).
 
+Z69) v0.10.25 Home row gap + live preview (P1)
+ [ ] English keyboard: the row a s d f g h j k l has keys as wide as q w e r t..., with a gap (half a key) at the left and right. Keys line up under the row above (a is under the gap between q and w).
+ [ ] Tap in the empty gap left of "a" = types "a"; right of "l" = types "l" (fast typing, thumb at the edge). Tap above / below the gap does not type a wrong letter.
+ [ ] Avro: same gap. Probhat (long-press language key): home row is full width as before (10 keys), no gap, extra key visible.
+ [ ] Switch EN <-> Bangla (Avro) <-> Probhat <-> EN several times: no jump, no missing key, height same.
+ [ ] App > Layout & size > "Home row side gap" OFF, open the keyboard: home row full width like v0.10.24. ON: gap again.
+ [ ] App screen: a "Live preview" card at the top, it stays when you scroll the settings. The picture looks like your real keyboard (theme, keys round / flat, number row).
+ [ ] Tap a theme tile: the picture changes at once, the "Theme: ..." row in Look shows the same name. Open the real keyboard: same theme.
+ [ ] Layout & size: [+] on Key gap / Key height / Letter size: the picture changes at once. Bold letters, Home row gap toggles: same. Undo last change and Reset this group: picture follows.
+ [ ] Look group: Theme / Look / Key border / One-hand / Large number row: picture follows. One-hand Left / Right: picture is narrower and sits at that side.
+ [ ] Button [EN]: picture shows Probhat letters, the settings do not change. Button [Themes: ON]: cycles Keys only > Show (hidden) > back.
+ [ ] Dark app theme, big font size: card readable, buttons not cut. Rotate: no crash.
+ [ ] Change a setting inside the keyboard (gear > Size), go back to the app: the picture shows the new size.

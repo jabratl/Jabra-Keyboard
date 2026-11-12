@@ -125,6 +125,12 @@ public final class SettingsIndex {
             case "haptic": return "Short vibration on every key press.";
             case "sound": return "Click sound on every key press.";
             case "key_popup": return "Shows a bubble with the letter above the pressed key.";
+            case "row_gap": return "Home row (a-l): same key width as the row above, half a key of free space on each side. A tap in the free space types the nearest key. ON = default.";   // v0.10.25
+            case "kh_pct_p": return "Key height in portrait. 100% = 48 dp. The picture at the top shows it.";   // v0.10.25
+            case "key_gap": return "Space between keys in dp. Smaller gap = bigger keys.";   // v0.10.25
+            case "letter_pct": return "Letter size. 100% = normal.";   // v0.10.25
+            case "letter_bold": return "Bold letters on the keys.";   // v0.10.25
+            case "oh_w_p": return "Width of the keyboard in one-hand mode (portrait). Needs One-hand Left or Right.";   // v0.10.25
             case "pop_ref": return "Bigger rounded key bubble in your theme colour (needs Key popup ON). OFF = old look.";   // v0.9.6
             case "sp_punct": return "After tapping a suggestion, , . ! ? removes its extra space (hello, not hello ,).";   // v0.10.6
             case "ac_on": return "Fixes 1-letter English typos on space. Backspace right after undoes it. OFF = never.";   // v0.10.3

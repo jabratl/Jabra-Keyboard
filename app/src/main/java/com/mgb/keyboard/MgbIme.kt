@@ -59,6 +59,7 @@ class MgbIme : InputMethodService() {
     private var autoNumpad = false             // numpad was opened automatically for a number/phone field
     private var extrasRow: LinearLayout? = null // (old v0.0.4 Probhat vowel row; not built any more since v0.9.10.3)
     private val pbExtraKeys = mutableListOf<Pair<Button, Array<String>>>()   // v0.9.10.3: Probhat keys inside the 3 letter rows (GONE outside Probhat)
+    private val homeGaps = mutableListOf<View>()   // v0.10.25: the two free-space views of the home row (a..l); GONE in Probhat; empty when row_gap is OFF
     // v0.0.6: clipboard history + edit bar
     private var pwdField = false               // true in password fields: nothing is recorded there
     private var clipListener: ClipboardManager.OnPrimaryClipChangedListener? = null
@@ -473,6 +474,19 @@ class MgbIme : InputMethodService() {
         refreshHints()   // v0.1.6: hint labels follow the language / layout
     }
 
+    /** v0.10.25: free space at the side of the home row (a..l). Not clickable, so GapRow sends a finger-down here to the nearest key ("a" or "l").
+     *  Width = half a key in English / Avro (same key width as the row above); GONE in Probhat (the home row has 10 keys there). Rules: typing/RowGap.java. */
+    private fun homeGapView(): View {
+        val v = View(this)
+        v.isClickable = false
+        try { v.importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO } catch (_: Throwable) { }
+        val w = com.mgb.keyboard.typing.RowGap.side(true, com.mgb.keyboard.typing.RowGap.homeKeys(false))
+        v.layoutParams = LinearLayout.LayoutParams(0, dp(keyDp()), w)
+        v.visibility = if (com.mgb.keyboard.typing.RowGap.side(true, com.mgb.keyboard.typing.RowGap.homeKeys(probhatOn())) > 0f) View.VISIBLE else View.GONE
+        homeGaps.add(v)
+        return v
+    }
+
     /** v0.9.10.3: adds one Probhat-only key ({normal, shift}) to a letter row. It is GONE in English / Avro, so those rows are unchanged. */
     private fun pbExtra(r: LinearLayout, pair: Array<String>) {
         val b = key("", 1f) { onPbExtra(pair) }
@@ -493,6 +507,10 @@ class MgbIme : InputMethodService() {
     }
 
     private fun relabelPbExtras(pb: Boolean) {
+        try {   // v0.10.25: home row gap only while the Probhat extra key is hidden
+            val gv = if (com.mgb.keyboard.typing.RowGap.side(true, com.mgb.keyboard.typing.RowGap.homeKeys(pb)) > 0f) View.VISIBLE else View.GONE
+            homeGaps.forEach { if (it.visibility != gv) it.visibility = gv }
+        } catch (_: Throwable) { }
         pbExtraKeys.forEach { (b, pair) ->
             val v = if (pb) View.VISIBLE else View.GONE
             if (b.visibility != v) b.visibility = v
@@ -967,6 +985,7 @@ class MgbIme : InputMethodService() {
         // v0.0.4: Probhat extra row (vowels, ঁ ঃ ৎ). Hidden (GONE) unless Probhat is active.
         // v0.9.10.3: the Probhat vowel row (and its reserved blank space in English / Avro) is gone; Probhat fits in the 3 letter rows
         pbExtraKeys.clear()
+        homeGaps.clear()   // v0.10.25
 
         val r1 = row()
         "qwertyuiop".forEach { r1.addView(letter(it)) }
@@ -974,8 +993,11 @@ class MgbIme : InputMethodService() {
         root.addView(r1)
 
         val r2 = row()
+        val rowGapOn = try { prefs.bool("row_gap", true) } catch (_: Throwable) { false }   // v0.10.25: home row side gap (default ON; OFF = exactly v0.10.24)
+        try { if (rowGapOn) r2.addView(homeGapView()) } catch (_: Throwable) { }   // v0.10.25: free space left of "a"
         "asdfghjkl".forEach { r2.addView(letter(it)) }
         try { ProbhatLayout.EXTRA_ROW2.forEach { pbExtra(r2, it) } } catch (_: Throwable) { }   // v0.9.10.3
+        try { if (rowGapOn) r2.addView(homeGapView()) } catch (_: Throwable) { }   // v0.10.25: free space right of "l"
         root.addView(r2)
 
         val r3 = row()

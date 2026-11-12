@@ -4,6 +4,7 @@ import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
 import android.provider.Settings
+import android.view.View
 import android.view.inputmethod.InputMethodManager
 import android.widget.Button
 import android.widget.EditText
@@ -18,6 +19,7 @@ class SettingsActivity : Activity() {
     private var pending: Updater.Info? = null
     var refreshData: (() -> Unit)? = null   // v0.4.1 Data & Backup page hooks
     var dataMsg: ((String) -> Unit)? = null
+    private val pvLink = PreviewLink()   // v0.10.25: live preview card <-> settings groups
 
     private fun dp(v: Int): Int = (v * resources.displayMetrics.density).toInt()
 
@@ -84,7 +86,8 @@ class SettingsActivity : Activity() {
         test.hint = "Type here to test the keyboard"
         col.addView(test)
 
-        try { col.addView(SettingsGroups.build(this)) } catch (_: Throwable) { }   // v0.1.7: settings in 5 groups
+        val pvCard: View? = try { PreviewCard.build(this, pvLink) } catch (_: Throwable) { null }   // v0.10.25: live keyboard preview (shown above the scroll area)
+        try { col.addView(SettingsGroups.build(this, pvLink)) } catch (_: Throwable) { }   // v0.1.7: settings in 5 groups (v0.10.25: + link to the preview)
         try { HealthRun.migrate(this) } catch (_: Throwable) { }   // v0.5.3: settings migration (background Thread, backup first)
         try { BackupStore.autoIfDue(this) } catch (_: Throwable) { }   // v0.4.0: auto backup once per day (background Thread)
 
@@ -102,7 +105,23 @@ class SettingsActivity : Activity() {
         val sv = ScrollView(this)
         sv.addView(col)
         try { if (AppUi.isDark(this)) sv.setBackgroundColor(AppUi.bg(this)) } catch (_: Throwable) { }   // v0.10.9
+        try {   // v0.10.25: the preview card stays at the top, the settings scroll below it. Any problem = old screen (scroll only).
+            if (pvCard != null) {
+                val outer = LinearLayout(this)
+                outer.orientation = LinearLayout.VERTICAL
+                try { if (AppUi.isDark(this)) outer.setBackgroundColor(AppUi.bg(this)) } catch (_: Throwable) { }
+                outer.addView(pvCard)
+                outer.addView(sv, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f))
+                setContentView(outer)
+                return
+            }
+        } catch (_: Throwable) { try { (sv.parent as? android.view.ViewGroup)?.removeView(sv) } catch (_: Throwable) { } }
         setContentView(sv)
+    }
+
+    override fun onDestroy() {   // v0.10.25: drop the callbacks (they hold views of this screen)
+        try { pvLink.changed = null; pvLink.refreshRows = null } catch (_: Throwable) { }
+        super.onDestroy()
     }
 
     // ---- v0.10.9 (D1): setup status card. Read-only checks, no permission; any problem = card hidden. ----
@@ -143,6 +162,7 @@ class SettingsActivity : Activity() {
     override fun onResume() {
         super.onResume()
         try { setupRefresh?.invoke() } catch (_: Throwable) { }   // v0.10.9: ticks update after coming back from the system screens
+        try { pvLink.changed?.invoke(); pvLink.refreshRows?.invoke() } catch (_: Throwable) { }   // v0.10.25: settings changed inside the keyboard while the app was in the background
     }
 
     // ---- v0.4.1: Data & Backup file picker (system picker, no storage permission) ----

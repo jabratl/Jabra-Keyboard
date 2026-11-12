@@ -21,7 +21,7 @@ import com.mgb.keyboard.typing.TypingLevels
  */
 object SettingsGroups {
 
-    fun build(ctx: Context): View {
+    fun build(ctx: Context, link: PreviewLink? = null): View {   // v0.10.25: link = live preview card (null = no preview, exactly v0.10.24)
         val prefs = JabraPrefs(ctx)
         val d = ctx.resources.displayMetrics.density
         fun dp(v: Int) = (v * d).toInt()
@@ -104,6 +104,7 @@ object SettingsGroups {
                 prefs.setStr("set_recent", SettingsIndex.pushRecent(prefs.str("set_recent", ""), key))
                 refreshTop()
             } catch (_: Throwable) { }
+            try { link?.changed?.invoke() } catch (_: Throwable) { }   // v0.10.25: redraw the live preview
         }
 
         fun undoLast() {
@@ -113,6 +114,7 @@ object SettingsGroups {
             r.refresh()
             prefs.setStr("set_last", "")
             refreshTop()
+            try { link?.changed?.invoke() } catch (_: Throwable) { }   // v0.10.25
         }
         undoBtn.setOnClickListener { try { undoLast() } catch (_: Throwable) { } }
 
@@ -204,6 +206,45 @@ object SettingsGroups {
             addRow(box, key, title, b, { val n = names(); b.text = title + ": " + n[get().coerceIn(0, n.size - 1)] }, { set(it) }, { get().coerceIn(0, names().size - 1) }, def)   // v0.4.2 (was box.addView(b))
         }
 
+        // v0.10.25: [-] [title: value] [+] row (same prefs as the in-keyboard Size panel). def = value written by "Reset this group" (-1 = unset = the old default).
+        fun stepper(box: LinearLayout, title: String, key: String, min: Int, max: Int, step: Int, unit: String, read: () -> Int, def: Int) {
+            val line = LinearLayout(ctx)
+            line.orientation = LinearLayout.HORIZONTAL
+            val mid = TextView(ctx)
+            mid.gravity = android.view.Gravity.CENTER
+            mid.textSize = 14f
+            fun show() { mid.text = title + ": " + read() + unit }
+            fun move(dir: Int) {
+                val old = read()
+                val nv = com.mgb.keyboard.typing.SizePct.step(old, dir, min, max, step)
+                prefs.setInt(key, nv)
+                show()
+                noteChange(key, old)
+            }
+            val minus = btn("-") { _ -> move(-1) }
+            val plus = btn("+") { _ -> move(1) }
+            line.addView(minus, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+            line.addView(mid, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 3f))
+            line.addView(plus, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+            show()
+            val wrap = LinearLayout(ctx)
+            wrap.orientation = LinearLayout.VERTICAL
+            wrap.addView(line)
+            val h = SettingsIndex.help(key)
+            if (h.isNotEmpty()) {
+                val t = TextView(ctx)
+                t.text = h
+                t.textSize = 12f
+                t.setTextColor(0xFF888888.toInt())
+                t.setPadding(dp(8), 0, dp(8), dp(4))
+                wrap.addView(t)
+            }
+            box.addView(wrap)
+            val r = Row(key, title, curGrp?.name ?: "", wrap, { show() }, { prefs.setInt(key, it) }, { read() }, def)
+            rows.add(r)
+            curGrp?.rows?.add(r)
+        }
+
         fun group(title: String, fill: (LinearLayout) -> Unit) {
             val body = LinearLayout(ctx)
             body.orientation = LinearLayout.VERTICAL
@@ -233,6 +274,7 @@ object SettingsGroups {
                             for (r in g.rows) { r.setIdx(r.def); r.refresh() }
                             prefs.setStr("set_last", "")
                             refreshTop()
+                            try { link?.changed?.invoke() } catch (_: Throwable) { }   // v0.10.25
                         }
                     } catch (_: Throwable) { }
                 }
@@ -299,6 +341,25 @@ object SettingsGroups {
             g.addView(note)
         }
 
+        // v0.10.25: layout sizes in the app, with the live preview at the top (same prefs as the in-keyboard Size panel: kh_pct_p, key_gap, letter_pct, letter_bold, oh_w_p)
+        group("Layout & size") { g ->
+            stepper(g, "Key height (portrait)", "kh_pct_p", com.mgb.keyboard.typing.SizePct.H_MIN, com.mgb.keyboard.typing.SizePct.H_MAX, com.mgb.keyboard.typing.SizePct.H_STEP, "%",
+                { val v = prefs.int("kh_pct_p", -1); if (com.mgb.keyboard.typing.SizePct.heightValid(v)) v else com.mgb.keyboard.typing.SizePct.pctFromDp(prefs.keyHeightDp(false)) }, -1)
+            stepper(g, "Key gap", "key_gap", com.mgb.keyboard.typing.SizePct.G_MIN, com.mgb.keyboard.typing.SizePct.G_MAX, 1, " dp",
+                { com.mgb.keyboard.typing.SizePct.gapDp(prefs.int("key_gap", -1)) }, -1)
+            stepper(g, "Letter size", "letter_pct", com.mgb.keyboard.typing.SizePct.L_MIN, com.mgb.keyboard.typing.SizePct.L_MAX, com.mgb.keyboard.typing.SizePct.L_STEP, "%",
+                { val v = prefs.int("letter_pct", -1); if (com.mgb.keyboard.typing.SizePct.letterValid(v)) v else 100 }, -1)
+            toggle(g, "Bold letters", "letter_bold", false)
+            toggle(g, "Home row side gap", "row_gap", true)
+            stepper(g, "One-hand width (portrait)", "oh_w_p", com.mgb.keyboard.typing.SizePct.W_MIN, com.mgb.keyboard.typing.SizePct.W_MAX, com.mgb.keyboard.typing.SizePct.W_STEP, "%",
+                { val v = prefs.int("oh_w_p", -1); if (com.mgb.keyboard.typing.SizePct.widthValid(v)) v else Math.round(com.mgb.keyboard.typing.SizePct.widthFrac(-1, false) * 100f) }, -1)
+            val note2 = TextView(ctx)
+            note2.text = "The picture at the top shows every change at once. One-hand width shows only while One-hand (Look group) is Left or Right. Landscape sizes: inside the keyboard (gear > More settings > Size)."
+            note2.textSize = 12f
+            note2.setTextColor(0xFF888888.toInt())
+            g.addView(note2)
+        }
+
         group("Keys & gestures") { g ->
             toggle(g, "Vibrate", "haptic", true)
             toggle(g, "Feedback at touch-down", "fb_down", false)   // v0.9.1
@@ -348,6 +409,7 @@ object SettingsGroups {
         try { group("Data & Backup") { g -> g.addView(DataPage.build(ctx)) } } catch (_: Throwable) { }   // v0.4.1
 
         refreshTop()   // v0.4.2
+        link?.refreshRows = { for (r in rows) { try { r.refresh() } catch (_: Throwable) { } } }   // v0.10.25: the preview theme strip redraws the row labels
 
         return root
     }
