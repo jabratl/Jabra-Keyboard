@@ -9,6 +9,7 @@ import android.widget.EditText
 import android.widget.HorizontalScrollView
 import android.widget.LinearLayout
 import android.widget.TextView
+import com.mgb.keyboard.typing.ChangedPlan
 import com.mgb.keyboard.typing.SettingsIndex
 import com.mgb.keyboard.typing.TypingLevels
 
@@ -78,6 +79,18 @@ object SettingsGroups {
 
         fun rowByKey(k: String): Row? = rows.firstOrNull { it.key == k }
 
+        // ---- v0.12.0 (M2): helpers of the new rows (used only when sink != null) ----
+        val dotUpdaters = HashMap<String, () -> Unit>()   // key -> redraw the "changed" dot of that row
+        val secBoxes = HashMap<String, LinearLayout>()    // section title -> box of the group being built
+        val secList = ArrayList<Pair<View, LinearLayout>>()   // section header + its box (header hides when the box has no visible row)
+        fun secVis() {
+            for ((hd, bx) in secList) {
+                var any = false
+                for (i in 0 until bx.childCount) if (bx.getChildAt(i).visibility == View.VISIBLE) any = true
+                hd.visibility = if (any) View.VISIBLE else View.GONE
+            }
+        }
+
         fun refreshTop() {
             try {
                 val last = SettingsIndex.parseLast(prefs.str("set_last", ""))
@@ -99,6 +112,7 @@ object SettingsGroups {
         }
 
         fun noteChange(key: String, old: Int) {
+            try { dotUpdaters[key]?.invoke() } catch (_: Throwable) { }   // v0.12.0 (M2)
             try {
                 prefs.setStr("set_last", SettingsIndex.encodeLast(key, old))
                 prefs.setStr("set_recent", SettingsIndex.pushRecent(prefs.str("set_recent", ""), key))
@@ -138,6 +152,23 @@ object SettingsGroups {
             curGrp?.rows?.add(r)
         }
 
+        // v0.12.0 (M2): same registry entry as addRow, but the view is a new row (switch / segments / chip / stepper) wrapped with the "changed" dot + long-press reset
+        fun addRowNew(box: LinearLayout, key: String, title: String, built: AppRows.Built, setIdx: (Int) -> Unit, cur: () -> Int, def: Int, raw: (() -> Int)? = null) {
+            val dec = AppRows.decorate(ctx, built.view, { ChangedPlan.isChanged(raw?.invoke() ?: cur(), def) }) {
+                val old = cur()
+                setIdx(def)
+                built.refresh()
+                noteChange(key, old)
+                try { android.widget.Toast.makeText(ctx, "Reset: " + title, android.widget.Toast.LENGTH_SHORT).show() } catch (_: Throwable) { }
+            }
+            dotUpdaters[key] = { dec.refresh() }
+            val target = secBoxes[ChangedPlan.sectionOf(curGrp?.name, key)] ?: box
+            target.addView(dec.view)
+            val r = Row(key, title, curGrp?.name ?: "", dec.view, { built.refresh(); dec.refresh() }, setIdx, cur, def)
+            rows.add(r)
+            curGrp?.rows?.add(r)
+        }
+
         fun applySearch(q: String) {
             val query = q.trim()
             val on = query.isNotEmpty()
@@ -160,6 +191,7 @@ object SettingsGroups {
                     g.resetBtn?.visibility = View.GONE
                 }
             }
+            if (secList.isNotEmpty()) secVis()   // v0.12.0 (M2)
         }
         search.addTextChangedListener(object : TextWatcher {
             override fun afterTextChanged(s: Editable?) { try { applySearch(s?.toString() ?: "") } catch (_: Throwable) { } }
@@ -169,6 +201,15 @@ object SettingsGroups {
         // ---- end v0.4.2 registry ----
 
         fun toggle(box: LinearLayout, title: String, key: String, def: Boolean) {
+            if (sink != null) {   // v0.12.0 (M2): real Switch row
+                val built = AppRows.switchRow(ctx, title, SettingsIndex.help(key), { prefs.bool(key, def) }) { nv ->
+                    val old = if (prefs.bool(key, def)) 1 else 0
+                    prefs.setBool(key, nv)
+                    noteChange(key, old)
+                }
+                addRowNew(box, key, title, built, { prefs.setBool(key, it == 1) }, { if (prefs.bool(key, def)) 1 else 0 }, if (def) 1 else 0)
+                return
+            }
             val b = btn("") { v ->
                 val old = if (prefs.bool(key, def)) 1 else 0   // v0.4.2
                 val nv = !prefs.bool(key, def)
@@ -182,6 +223,14 @@ object SettingsGroups {
 
         fun level(box: LinearLayout, title: String, key: String, def: Int, names: Array<String>) {
             fun cur() = prefs.int(key, def).coerceIn(0, names.size - 1)
+            if (sink != null) {   // v0.12.0 (M2): segments (2-4 short options) or value chip
+                val h = SettingsIndex.help(key)
+                val built = if (ChangedPlan.useSegments(names.size, names.sumOf { it.length }))
+                    AppRows.choiceRow(ctx, title, h, { names }, { cur() }) { i -> val old = cur(); prefs.setInt(key, i); noteChange(key, old) }
+                else AppRows.chipRow(ctx, title, h, { names[cur()] }) { val old = cur(); prefs.setInt(key, (old + 1) % names.size); noteChange(key, old) }
+                addRowNew(box, key, title, built, { prefs.setInt(key, it.coerceIn(0, names.size - 1)) }, { cur() }, def.coerceIn(0, names.size - 1))
+                return
+            }
             val b = btn("") { v ->
                 val old = cur()   // v0.4.2
                 val nv = (cur() + 1) % names.size
@@ -194,6 +243,15 @@ object SettingsGroups {
         }
 
         fun cycle(box: LinearLayout, title: String, key: String, names: () -> Array<String>, get: () -> Int, set: (Int) -> Unit, def: Int = 0) {   // v0.4.2: key + def added
+            if (sink != null) {   // v0.12.0 (M2)
+                val h = SettingsIndex.help(key)
+                fun cur() = get().coerceIn(0, names().size - 1)
+                val built = if (ChangedPlan.useSegments(names().size, names().sumOf { it.length }))
+                    AppRows.choiceRow(ctx, title, h, names, { cur() }) { i -> val old = cur(); set(i); noteChange(key, old) }
+                else AppRows.chipRow(ctx, title, h, { names()[cur()] }) { val old = cur(); set((get() + 1) % names().size); noteChange(key, old) }
+                addRowNew(box, key, title, built, { set(it) }, { cur() }, def)
+                return
+            }
             val b = btn("") { v ->
                 val n = names()
                 val old = get().coerceIn(0, n.size - 1)   // v0.4.2
@@ -209,6 +267,15 @@ object SettingsGroups {
 
         // v0.10.25: [-] [title: value] [+] row (same prefs as the in-keyboard Size panel). def = value written by "Reset this group" (-1 = unset = the old default).
         fun stepper(box: LinearLayout, title: String, key: String, min: Int, max: Int, step: Int, unit: String, read: () -> Int, def: Int) {
+            if (sink != null) {   // v0.12.0 (M2): [-] value [+], hold = repeat, ONE undo record per hold
+                var holdOld = 0
+                val built = AppRows.stepperRow(ctx, title, SettingsIndex.help(key), { read().toString() + unit },
+                    { holdOld = read() },
+                    { dir -> prefs.setInt(key, com.mgb.keyboard.typing.SizePct.step(read(), dir, min, max, step)) },
+                    { noteChange(key, holdOld) })
+                addRowNew(box, key, title, built, { prefs.setInt(key, it) }, { read() }, def) { prefs.int(key, -1) }
+                return
+            }
             val line = LinearLayout(ctx)
             line.orientation = LinearLayout.HORIZONTAL
             val mid = TextView(ctx)
@@ -256,8 +323,28 @@ object SettingsGroups {
             val g = Grp(title, head, body)   // v0.4.2
             groups.add(g)
             curGrp = g
+            secBoxes.clear()
+            if (sink != null) {   // v0.12.0 (M2): sections of this page (rows are put into their section box by addRowNew)
+                for (sn in ChangedPlan.sections(title)) {
+                    val hd = AppRows.sectionHeader(ctx, sn)
+                    val bx = LinearLayout(ctx)
+                    bx.orientation = LinearLayout.VERTICAL
+                    body.addView(hd)
+                    body.addView(bx)
+                    secBoxes[sn] = bx
+                    secList.add(Pair(hd, bx))
+                }
+            }
             try { fill(body) } catch (_: Throwable) { }
             curGrp = null
+            if (sink != null) {   // v0.12.0 (M2): buttons / notes added straight to the group (presets, forget, hints) get the new style
+                try {
+                    secVis()
+                    var firstBtn = -1
+                    for (i in 0 until body.childCount) { val v = body.getChildAt(i); if (v is Button) { AppRows.styleAction(ctx, v); if (firstBtn < 0) firstBtn = i } else if (v is TextView) v.setTextColor(AppUi.dim(ctx)) }
+                    if (firstBtn >= 0) body.addView(AppRows.sectionHeader(ctx, "Actions"), firstBtn)
+                } catch (_: Throwable) { }
+            }
             if (g.rows.isNotEmpty()) {   // v0.4.2: Reset this group (two taps)
                 var armed = false
                 val rb = Button(ctx)
@@ -279,6 +366,7 @@ object SettingsGroups {
                         }
                     } catch (_: Throwable) { }
                 }
+                if (sink != null) { try { AppRows.styleAction(ctx, rb) } catch (_: Throwable) { } }   // v0.12.0 (M2)
                 body.addView(rb)
                 g.resetBtn = rb
             }

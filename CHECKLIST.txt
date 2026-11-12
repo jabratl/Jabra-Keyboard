@@ -434,3 +434,14 @@ Z71) v0.11.0 New app screen M1 (Home + pages), OFF by default
  [ ] Preview card visible on Home, Look & Theme, Layout & Size; hidden on the other pages.
  [ ] Data & About: Data & Backup (Backup now, Export, Import, Health check, Privacy) + About section: App theme, Check for updates, emoji buttons, status text. [New app screen: ON] goes back to the old screen.
  [ ] 360 px + 412 px + 1280 px, light + dark, big font: tiles not cut, buttons at least 48 dp. TalkBack reads the tile titles.
+
+Z72) v0.12.0 New app screen M2 (rows + sections), new screen ON only
+ [ ] Layout & Size page: 5 sections (Size, Spacing, Shape, Bottom row, One-hand), every old row is there. Preset buttons under Actions at the end.
+ [ ] Switch rows (Vibrate, Bold letters...): tap anywhere on the switch line toggles, the preview / keyboard follow. Dark mode: switch readable.
+ [ ] Segmented rows (Bangla layout, Mode, Clip lines...): tap an option, the chosen one is filled. Long lists (Theme): value chip, tap = next.
+ [ ] Stepper rows: tap [+] = one step; HOLD [+] = keeps going, faster after a moment; release = stops. Then [Undo last change] goes back to the value BEFORE the hold.
+ [ ] Dot at the left of a row appears after a change and disappears after Reset this row (long-press on the title) or Reset this group. Long-press on [+] is repeat, not reset.
+ [ ] Search on a page: matching rows only, empty section headers are hidden; clear the search: all back.
+ [ ] [Undo last change] and [Recently changed] chips still work with the new rows; Ridmik-style spacing + its Undo update the steppers and dots.
+ [ ] 360 / 412 / 1280 px, light + dark, big font (130%): no cut text, [-] value [+] row readable, touch targets 48 dp. TalkBack reads "title, switch, on / off" and "Increase / Decrease title".
+
