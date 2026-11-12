@@ -97,6 +97,7 @@ class MgbIme : InputMethodService() {
         override fun keyHeightDp(): Int = this@MgbIme.keyDp()
         override fun layoutChanged() { this@MgbIme.applyLayoutPref() }
         override fun fieldText(): String = this@MgbIme.fieldText()   // v0.5.0
+        override fun currentApp(): String = try { currentInputEditorInfo?.packageName ?: "" } catch (_: Throwable) { "" }   // v0.10.18 (W6.1)
     }
 
     override fun onCreateInputView(): View {

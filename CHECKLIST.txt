@@ -687,3 +687,12 @@ Z61) v0.10.17 Theme polish + Look presets (D3)
  [ ] Go back: tap your old theme tile (Look / key border / gap may stay changed: apply Profile "Normal" or change them in Settings).
  [ ] Your saved Profiles: unchanged, list the same.
  [ ] Theme Studio: set Text = a colour close to Keys (for example both FFFFFF) -> orange line "Low contrast" appears; set a dark Text -> line disappears. Save still works with the warning.
+
+Z62) v0.10.18 App > profile list (W6.1; nothing switches yet)
+ [ ] Open a notes / chat app, tap a field, open Profiles: every profile row has a "> App" button; the line below shows "Open app: <package>".
+ [ ] Tap "> App" on one profile: message "<package> > <profile>"; under the list "Apps with a profile (1)" shows it with Remove.
+ [ ] Map a second app (another app, another profile): list shows 2. Remove one: it disappears, the other stays.
+ [ ] Delete that profile (Del, Sure?): the mapping shows "(missing)" in red. Nothing crashes.
+ [ ] Profiles opened with no field (e.g. from the app icon screen is not possible): list and "> App" buttons only appear when something fits; old buttons (Save current, Ren, Del, Undo) work as before.
+ [ ] Apply a profile (tap its name) works as before; ap_json survives Backup now > Restore (Data & Backup).
+ [ ] Typing in any app is unchanged.

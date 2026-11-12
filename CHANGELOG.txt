@@ -1,3 +1,15 @@
+v0.10.18 - NEW: Auto-profile per app, part 1 of 2 (plan W6.1: the app > profile list; switching comes in W6.2)
+- WHY: you want "Novel Writing" in your notes app and "Compact" in chat apps without tapping Profiles every time. The plan splits it: W6.1 = remember which profile belongs to which app (this version), W6.2 = switch automatically when a field opens.
+- What you get: Profiles panel (toolbar > Profiles), only while a text field is open: a "> App" button on every profile (ready ones too) = "use this profile for the app I am typing in". Below the list: "Apps with a profile (n)" with the app package name, the profile, and Remove. A mapping whose profile was deleted later shows "(missing)" in red.
+  NOTHING SWITCHES YET: the list is only stored. The panel says so. The on / off setting (ap_on) and the switching hook arrive in W6.2.
+- Limits: 50 apps. Names are shown as Android package names (for example com.whatsapp). "All other apps" profile exists in the logic (AppProfileMap.other) but has no button yet.
+- Code: typing/AppProfileMap.java (NEW, pure: parse / toJson / put / remove / lookup / withOther / dropMissing, junk = empty map, never throws), JabraExtras.kt (JabraHost.currentApp() default ""), MgbIme.kt (ONE line: host.currentApp() = currentInputEditorInfo.packageName), ProfilePanel.kt (buttons + list, all try/catch), build.gradle.kts 0.10.18.
+- Prefs (new): ap_json (string, NOT in ProfileCodec KEYS, so profiles / Undo never touch it; it is copied by Backup like every pref). Permissions: none (packageName comes with every input field).
+- Tests (new): tools/AppProfileMapTest.java (56 checks: package rule, put / replace / limit 50, cleaned names, immutability, JSON round trip incl. quotes and Bangla, 20 junk inputs, partial files, dropMissing).
+BROKE: nothing intended. Profiles panel looks the same when no field is open (no "> App" buttons, list only if something is mapped). NOT tested: Kotlin compile (GitHub Actions), phone (CHECKLIST Z62), whether every app reports its package name (some fields give an empty name: then no "> App" buttons).
+TESTED here: 57 tools tests PASS / 0 FAIL (56 + AppProfileMapTest).
+Rollback: delete AppProfileMap.java + AppProfileMapTest.java; put back v0.10.17 JabraExtras.kt, MgbIme.kt, ProfilePanel.kt.
+
 v0.10.17 - NEW: Theme polish + Look presets (plan D3)
 - WHY: some themes had text that was hard to read, and choosing a whole "mood" took 4-5 taps.
 - CONTRAST AUDIT (WCAG ratio, want >= 4.5:1), all 20 themes, pairs: key vs letters / function key vs letters / bg vs letters / bg vs small help text. Found 7 problems, fixed:

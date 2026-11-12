@@ -7,6 +7,7 @@ import android.view.View
 import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.TextView
+import com.mgb.keyboard.typing.AppProfileMap
 import com.mgb.keyboard.typing.ProfileCodec
 import com.mgb.keyboard.typing.ProfileCodec.Profile
 import java.io.File
@@ -141,6 +142,17 @@ class ProfilePanel(private val ctx: Context, private val host: JabraHost, privat
         if (store.apply(p)) { undoSnap = before; host.showLetters() } else { msg = "Could not apply"; refresh() }
     }
 
+    // v0.10.18 (W6.1): app -> profile map in pref ap_json (read / written here only; switching on focus comes in W6.2). Every call is try/catch.
+    private fun appMap(): AppProfileMap = try { AppProfileMap.parse(pf.str("ap_json", "")) } catch (_: Throwable) { AppProfileMap.empty() }
+    private fun mapApp(pkg: String, profileName: String) {
+        try {
+            val nm = appMap().put(pkg, profileName)
+            if (nm == null) msg = "Cannot map (max " + AppProfileMap.MAX_APPS + " apps)"
+            else { pf.setStr("ap_json", nm.toJson()); msg = "$pkg > $profileName" }
+        } catch (_: Throwable) { msg = "Could not save the app mapping" }
+        confirmDel = -1; refresh()
+    }
+
     private fun make(): View {
         val root = LinearLayout(ctx)
         root.orientation = LinearLayout.VERTICAL
@@ -176,9 +188,11 @@ class ProfilePanel(private val ctx: Context, private val host: JabraHost, privat
         note.text = if (msg.isNotEmpty()) msg else "Tap a profile = apply. Save current: type a name in the field first (empty = Profile N)."
         root.addView(note)
 
+        val app = try { host.currentApp() } catch (_: Throwable) { "" }   // v0.10.18 (W6.1)
         for (s in ProfileCodec.starters()) {
             val r = row()
             r.addView(btn("● " + s.name + "  (ready)", 1f, 38) { applyProfile(s) })
+            if (app.isNotEmpty()) r.addView(btn("> App", 0.35f, 38) { mapApp(app, s.name) })   // v0.10.18
             root.addView(r)
         }
 
@@ -189,6 +203,7 @@ class ProfilePanel(private val ctx: Context, private val host: JabraHost, privat
             for ((i, p) in saved.withIndex()) {
                 val r = row()
                 r.addView(btn(p.name, 3f, 38) { applyProfile(p) })
+                if (app.isNotEmpty()) r.addView(btn("> App", 1f, 38) { mapApp(app, p.name) })   // v0.10.18 (W6.1)
                 r.addView(btn("Ren", 1f, 38) {
                     val nn = ProfileCodec.cleanName(host.fieldText().lineSequence().firstOrNull() ?: "")
                     val nl = if (nn.isEmpty()) null else ProfileCodec.rename(saved, i, nn)
@@ -204,6 +219,35 @@ class ProfilePanel(private val ctx: Context, private val host: JabraHost, privat
                 root.addView(r)
             }
         }
+        // v0.10.18 (W6.1): list of app > profile mappings (remove row each). Mappings to a deleted profile are shown with "(missing)" and ignored later.
+        try {
+            val am = appMap()
+            val pkgs = am.packages()
+            if (app.isNotEmpty() || pkgs.isNotEmpty()) {
+                val hd = TextView(ctx); hd.textSize = 11f; hd.setTextColor(dim()); hd.setPadding(dp(4), dp(6), dp(4), dp(2))
+                hd.text = (if (app.isNotEmpty()) "Open app: $app. Tap \"> App\" on a profile to use it for this app.\n" else "") +
+                    "Apps with a profile (" + pkgs.size + "). Switching by app is not active yet (next version)."
+                root.addView(hd)
+                val names = ArrayList<String>()
+                for (s in ProfileCodec.starters()) names.add(s.name)
+                if (saved != null) for (p in saved) names.add(p.name)
+                for (pk in pkgs) {
+                    val pn = am.profileOf(pk) ?: ""
+                    val miss = names.none { it.equals(pn, ignoreCase = true) }
+                    val r = row()
+                    val lb = TextView(ctx); lb.textSize = 11f; lb.setTextColor(if (miss) errColor() else dim()); lb.setPadding(dp(4), 0, dp(4), 0)
+                    lb.gravity = android.view.Gravity.CENTER_VERTICAL
+                    lb.text = pk + "\n> " + pn + (if (miss) " (missing)" else "")
+                    lb.layoutParams = LinearLayout.LayoutParams(0, dp(38), 3f)
+                    r.addView(lb)
+                    r.addView(btn("Remove", 1f, 38) {
+                        try { pf.setStr("ap_json", appMap().remove(pk).toJson()); msg = "Removed: $pk" } catch (_: Throwable) { msg = "Could not remove" }
+                        refresh()
+                    })
+                    root.addView(r)
+                }
+            }
+        } catch (_: Throwable) { }
         val bottom = row()
         bottom.addView(btn("ABC", 1f, 38) { host.showLetters() })
         root.addView(bottom)

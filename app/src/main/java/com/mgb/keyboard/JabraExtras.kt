@@ -33,6 +33,7 @@ interface JabraHost {
     fun layoutChanged()              // bn_layout pref changed in the settings panel
     fun pickKeyboard() { }           // v0.0.9: open the phone's keyboard picker (default: does nothing)
     fun fieldText(): String = ""     // v0.5.0: selected text or whole field text ("" in password fields / default)
+    fun currentApp(): String = ""    // v0.10.18 (W6.1): package name of the app that owns the open field ("" = none / unknown)
 }
 
 /** Safe pref reader/writer: every read has a default, nothing ever throws. */
