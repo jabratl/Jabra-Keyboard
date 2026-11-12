@@ -505,6 +505,13 @@ object SettingsGroups {
             cycle(g, "Bangla first", "lang_fav", { Array(3) { i -> com.mgb.keyboard.typing.LangOrder.FAV_NAMES[i] } }, { prefs.int("lang_fav", 0).coerceIn(0, 2) }, { prefs.setInt("lang_fav", it) })   // v0.5.0
             toggle(g, "${com.mgb.keyboard.typing.LangNames.AVRO} available", "lang_avro_on", true)   // v0.5.0
             toggle(g, "${com.mgb.keyboard.typing.LangNames.PROBHAT} available", "lang_probhat_on", true)   // v0.5.0
+            if (sink != null) {   // v0.16.4 (X4): "Open key map" button at the end of the Bangla section (new app screen only); any problem = no button
+                try {
+                    val kb = KeyMapPage.button(ctx)
+                    kb.tag = "secreset"   // reuse of the v0.15.8 rule: not counted as a row, hidden while searching (this is NOT a reset button)
+                    (secBoxes["Bangla"] ?: g).addView(kb)
+                } catch (_: Throwable) { }
+            }
             toggle(g, "Space swipe = language", "space_lang", false)   // v0.8.9
             toggle(g, "Language bubble on swipe", "sp_preview", true)   // v0.9.2 (R3): works only while Space swipe is ON
             toggle(g, "Tick on swipe", "sp_tick", true)   // v0.9.8 (V3): soft tick per language step; works only while Space swipe is ON

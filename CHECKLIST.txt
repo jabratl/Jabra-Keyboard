@@ -609,3 +609,12 @@ Z87) v0.16.3 Ridmik key map in Bangলা mode (X3)
  [ ] While typing a word the Bangla text under the letters (underlined) follows each key; Backspace in the middle of a word still works; space / Enter commit it exactly as before.
  [ ] Settings (app or keyboard gear) > Languages & layouts > "Bangলা key map": [Ridmik] default. Tap it -> [Classic]: now bangla = বাংলা, rongin = রঙিন, kormo = কর্ম, valo = ভালো (old rules). Tap again: Ridmik rules back. The dot / reset in the app puts it back to Ridmik.
  [ ] বাংলা (fixed layout) and English typing are not changed. Password / email / URL fields still type Latin.
+
+Z88) v0.16.4 Bangলা key map page in the app (X4)
+ [ ] App > Typing page > Languages & layouts > section "Bangla": under the rows there is a button "Open key map (all letters, rules, examples)". Type "key map" in the settings search at the top: the button disappears, the row "Bangলা key map" is found (expected). Clear the search: the button is back.
+ [ ] Tap the button: a full-screen page "Bangলা key map" opens, the on-screen keyboard does NOT pop up by itself. Scroll: Vowels + kar, Consonants, Signs, Conjuncts, Rules + examples. Letters are in 2 columns, Bangla big, roman in colour (e.g. ঙ = Ng, ং = ng, ৎ = TH). Signs (ং ঃ ঁ ্) show a small dotted circle in front. Nothing is cut off at 360 dp width / big font.
+ [ ] Search box: type "ng": ং first, then others that contain ng. Type "Ng": ঙ first. Type ঙ (Bangla): the Ng row and conjuncts with ঙ. Type ক্ষ: kkh and kSh. Type "hasanta": the hs row. Type "xyzq": "Nothing found". Clear the box: all blocks are back. Status line under the box follows what you type.
+ [ ] Examples block: spot-check 5 words on the real keyboard in Bangলা mode: oNggo = অঙ্গ | korrmo = কর্ম | caqqd = চাঁদ | bOIShNb = বৈষ্ণব | allahhs = আল্লাহ্‌. They must equal what the page shows.
+ [ ] Dark mode (app Look / Settings > Dark): the page is readable (text, accent colour, cards). Close button and the phone Back key both close the page and you are back on the Typing page where you were.
+ [ ] Rotate the phone with the page open: no crash (the page may close or redraw; the Typing page is still fine).
+ [ ] Old settings screen (if you still open it) has no new button and works as before.
