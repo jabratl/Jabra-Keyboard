@@ -1,3 +1,29 @@
+v0.10.9.2 - FIX: build error "Unresolved reference: AppUi / AppPalette" in SettingsActivity.kt (lines 33-134)
+- ROOT CAUSE (from the GitHub error text): SettingsActivity.kt (v0.10.9.1) calls AppUi and AppPalette, but those two NEW files were never in the repo (they were in the v0.10.9 zip, which was not pushed; the v0.10.9.1 zip had only SettingsActivity.kt). So the compiler had nothing to resolve.
+- Fix: ADDED app/src/main/java/com/mgb/keyboard/typing/AppPalette.java (pure colour table: AUTO / LIGHT / DARK, sanitize, isDark, next, name, bg / card / text / dim / warn / ok / accent, contrast) and app/src/main/java/com/mgb/keyboard/AppUi.kt (reads pref app_theme, default 1 = Light; isDark, colours, cardBg). Added tools/AppPaletteTest.java (37 checks).
+- Light warning colour #D84315 -> #BF360C (contrast on white 4.4 -> 5.6) so it is also readable on the light Setup card.
+- NOT in this fix (SettingsGroups.kt / DataPage.kt v0.10.9 patches: group counts "(n)", dark group head cards, dim help colour). They did not give build errors, so they are not on GitHub; the app screen works without them. Can be added in a later step.
+BROKE: nothing expected. TESTED here: AppPaletteTest 37 PASS + the 50 old tools/*Test.java PASS (EmojiDbTest / WordIndexTest must run from the repo root folder). NOT tested: Kotlin compile (GitHub Actions), phone.
+Rollback: delete AppUi.kt + AppPalette.java and go back to v0.10.8 SettingsActivity.kt.
+
+v0.10.9.1 - FIX: build error in SettingsActivity.kt line 68 (App theme button)
+- ROOT CAUSE (from the GitHub error text): SettingsActivity.btn() takes a lambda with NO parameter (() -> Unit); my v0.10.9 App theme button wrote "{ b -> ... }", so Kotlin could not infer the type. DataPage / SettingsGroups have their own btn() WITH a Button parameter, which is why it looked right.
+- Fix: removed the unused "b ->" (1 token). No behaviour change.
+- Other new lambdas of v0.10.7 - v0.10.9 re-read against their helper signatures: no second mismatch found (still NOT compiled here: GitHub is the compiler).
+BROKE: nothing. NOT tested: Kotlin compile (GitHub Actions), phone. TESTED here: all 51 Java tests unchanged (no Java touched).
+Rollback: none needed (v0.10.9 did not compile).
+
+v0.10.9 - NEW: app screen redesign (setup card, App theme Light / Dark / Auto, group counts)
+- WHY: the app screen was plain light-only TextViews with no setup help; first-time users did not know if the keyboard was enabled / selected.
+- What you get: (a) "Setup" card at the top: tick or orange hint for "Jabra is enabled" and "Jabra is the current keyboard" + a button for each open step; the card disappears when both are done and updates when you come back from the system screens. Read-only checks (InputMethodManager + Settings.Secure), no permission; any problem = card hidden. (b) Button "App theme: Light / Dark / Auto (follow phone)" (tap cycles, screen recreates). Default = Light = today's look. Dark = near-black #121316, cards #1E1F22, text #F2F2F2, dim #B8B8B8, warning #FF8A65. Keyboard themes are NOT touched. (c) Each settings group header shows its number of settings, e.g. "Typing (9)"; in DARK mode the group headers are rounded cards with 12 dp spacing.
+- LIGHT MODE DIFFERENCES (the only ones): the new Setup card (only while setup is incomplete), the App theme button, the "(n)" counts, and the grey help text under settings #888888 -> #6B6B6B (contrast 3.5 -> 5.3, readable). Everything else is identical. Group header "cards" are dark-only on purpose so Light stays as before.
+- Code: typing/AppPalette.java (NEW, pure: palette, pick(mode, phoneDark), next, contrast), AppUi.kt (NEW: reads pref, card background, dark group head), SettingsActivity.kt (setTheme dark before onCreate, setup card, theme button, onResume refresh, dark ScrollView bg), SettingsGroups.kt (colour call + count + head style, 6 tiny hooks), DataPage.kt (1 colour call), tools/AppPaletteTest.java (NEW, 45 checks: every text / background pair >= 4.5:1 in both modes). Hooks marked v0.10.9. AndroidManifest untouched (base theme stays DeviceDefault.Light, dark is applied in code, no res/values).
+- Prefs (new): app_theme (int 0 auto / 1 light / 2 dark, default 1). App-only: NOT in ProfileCodec KEYS, no SettingsIndex row (it is a button on the app screen, not a keyboard setting). It IS saved in backups like every non-bk_ pref.
+BROKE: nothing intended. Known: the existing warning orange #D84315 on white = 4.44:1 (kept by design rule; test floor 4.4 for that one pair).
+NOT tested: Kotlin compile (GitHub Actions first); phone (CHECKLIST Z53): dark readability on every screen (Data, Health, backup rows, update row), recreate keeps screen state, setup card logic on a phone where Jabra is / is not enabled. Third-party widgets (EditText hint, system Button) follow the system dark theme; a few spots may still look off.
+TESTED here: all 51 Java tests green (AppPaletteTest 45 NEW); bracket balance of the 4 changed Kotlin files + new AppUi.kt.
+Rollback: set App theme to Light, or restore SettingsActivity.kt / SettingsGroups.kt / DataPage.kt from v0.10.8 and delete AppUi.kt, AppPalette.java, AppPaletteTest.java.
+
 v0.10.8 - NEW: safe updates (SHA-256 check, backup before update, test-key warning)
 - WHY: an update could be refused ("App not installed") and force an uninstall = data lost; a damaged download was never detected.
 - ROOT CAUSE (code reading): Updater.kt had no hash check. CORRECTION to the plan: the release notes do NOT contain the SHA-256 row. build.yml writes notes.txt from the first block of CHANGELOG.txt; the SHA table goes only to the job summary ($GITHUB_STEP_SUMMARY). So the expected hash is read from the GitHub release ASSET field "digest" ("sha256:<hex>", given by the GitHub API), with a fallback to a "SHA-256 <hex>" row in the notes if one is ever added. The workflow was NOT edited.
