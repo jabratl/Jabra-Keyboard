@@ -1,12 +1,12 @@
-HANDOFF - Jabra-Keyboard - after X12 part 2 = B2 (written 2026-11-12)
+HANDOFF - Jabra-Keyboard - after X14 = PART D (written 2026-11-12)
 =====================================================================
 READ THIS FIRST. Short, only what the next chats need. The big rules + key ids + test commands
 are in HANDOFF_Jabra-Keyboard_v0.16.10.txt (sections 1-6, "RULE 0", touch-listener rule, prefs rule).
 Language with the user: Banglish. Keep answers short. User wants: do the part, give ONE zip with only
 changed files at exact repo paths, say how much is left.
 
-1) STATE NOW (code = v0.16.13, appVersionName "0.16.13")
-  DONE: X1-X10, X11 (parts 1, 2a, 2b: gear + More tiles + in-keyboard search), X12 (B1 toolbar cards, B2 quick toolbar + preview strip + Add tool row), X13 (C1 EditOps, C2 8 toolbar edit items: EditActions.kt + MgbIme.editAction else-branch).
+1) STATE NOW (code = v0.16.14, appVersionName "0.16.14"; X14 changed docs only)
+  DONE: X1-X10, X11 (parts 1, 2a, 2b: gear + More tiles + in-keyboard search), X12 (B1 toolbar cards, B2 quick toolbar + preview strip + Add tool row), X13 (C1 EditOps, C2 8 toolbar edit items: EditActions.kt + MgbIme.editAction else-branch), X14 (D: 90/90 tests green, smoke list section G, docs, CHANGELOG 81 KB). panel_ui default still 0: ASK the user, flip to 1 only after phone OK of X9-X12.
   NOT compiled (Kotlin), NOT phone-tested. All tools/*Test.java green (WordBuildTest needs  -sourcepath app/src/main/java:tools). javac here = java --add-modules jdk.compiler -m jdk.compiler/com.sun.tools.javac.Main
   If GitHub shows errors: EditActions.kt / "v0.16.13 (X13)" lines (MgbIme.kt, Toolbar.kt, JabraIcons.kt), then ToolbarPanel.kt / ToolbarQuick.kt blocks "v0.16.12 (X12)", then JabraExtras.kt "v0.16.11", TypingExtras.kt makeNew(), PanelSearchUi.kt. FIX comes before new work.
   Phone checklist for what is built: CHECKLIST Z92-Z95 (panel_ui = 1) and Z96 (edit items).
@@ -19,7 +19,7 @@ changed files at exact repo paths, say how much is left.
   - User wants the FULL repo zip named after the plan version (Jabra-Keyboard-v<version>.zip) when a step ends.
 
 3) REMAINING PLAN
-  Order = C1, C2, D, E1, E2. (X15 = E1/E2 stays the VERY LAST step.)
+  Order = E1, E2 (C1, C2, D are DONE). (X15 = E1/E2 stays the VERY LAST step.)
 
   ---------------------------------------------------------------
   PART C1  X13 part 1: EditOps (pure logic + tests, NO Kotlin)      size S-M (~25%)      BUMP: no
@@ -32,7 +32,7 @@ changed files at exact repo paths, say how much is left.
   Checks: each action on a multi-line note app + a browser field (phone).
 
   ---------------------------------------------------------------
-  PART D   X14: final check + docs for plan X                         size S (~20%)       BUMP: v0.16.14
+  PART D   X14: (DONE v0.16.14)
   ---------------------------------------------------------------
   Run ALL tests + Kotlin compile of the whole app (tools/KOTLIN_CHECK.txt; needs github.com / kotlinc - if not possible, say so and list the risk). CHECKLIST_SMOKE.txt gets the key lines of X1-X13 (10-minute test). README + HANDOFF refreshed (new HANDOFF_Jabra-Keyboard_v0.16.14.txt, the old name goes into DELETE.txt). CHANGELOG > ~120 KB: move the oldest entries UNCHANGED to docs/ARCHIVE_CHANGELOG.txt (line count checked). If the user phone-tested X9-X12 OK: flip panel_ui default 0 -> 1 (one-line change, CHANGELOG says so). ASK the user before flipping.
   NEEDS: the whole repo zip (this is the one part that needs everything), CHANGELOG.txt, CHECKLIST*.txt.
@@ -49,8 +49,8 @@ changed files at exact repo paths, say how much is left.
 
 4) PROGRESS TABLE
   [x] X11 (all)  [x] A  [x] B1  [x] B2
-  [ ] C1  [ ] C2  [ ] D  X14  [ ] E1  [ ] E2
-  About 5 more chats of size S-M. Order must stay: C1, C2, D, E1, E2.
+  [x] C1  [x] C2  [x] D  X14  [ ] E1  [ ] E2
+  About 2 more chats of size S-M. Order must stay: E1, E2.
 
-5) COPY-PASTE START MESSAGE FOR THE NEXT CHAT (PART D)
-  "Jabra-Keyboard plan X. Read HANDOFF_Jabra-Keyboard_v0.16.13.txt (in the repo zip). Do PART D (X14: final check + docs). I upload the FULL repo zip (input only). Deliver ONLY a patch zip and tell me how much is left. GitHub build of v0.16.13: GREEN / errors pasted below. (If errors: FIX first, they are in EditActions.kt or the lines marked v0.16.13.)"
+5) COPY-PASTE START MESSAGE FOR THE NEXT CHAT (PART E1)
+  "Jabra-Keyboard plan X. Read HANDOFF_Jabra-Keyboard_v0.16.14.txt (in the repo zip). Do PART E1 (X15 part 1: root cause + HoldSelect + tests). I upload the FULL repo zip (input only). Deliver ONLY a patch zip and tell me how much is left. GitHub build of v0.16.14: GREEN / errors pasted below. (If errors: FIX first, they are in EditActions.kt or the lines marked v0.16.13.)"

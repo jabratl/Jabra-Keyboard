@@ -1,7 +1,7 @@
-JABRA KEYBOARD - 10-MINUTE SMOKE TEST (v0.15.9, whole of plan N: N1 - N8)
+JABRA KEYBOARD - 10-MINUTE SMOKE TEST (v0.16.14, plan N: N1 - N8 + plan X: X1 - X13)
 =========================================================================
-Use this FIRST after installing a new build. It touches every new thing of plan N once.
-If all lines are OK, the long lists in CHECKLIST.txt (Z77 - Z84) are only needed when something looks wrong.
+Use this FIRST after installing a new build. It touches every new thing of plan N and plan X once.
+If all lines are OK, the long lists in CHECKLIST.txt (Z77 - Z96) are only needed when something looks wrong.
 If a line fails, send: which line number + what you see (+ screenshot). One bug = one fix version.
 Not tested on a phone by the builder: every line below is still [ ] until you tick it.
 
@@ -32,3 +32,11 @@ F. GENERAL (after the above)
  [ ] 13. App in dark mode: all new buttons / dialogs readable. Rotate the phone: nothing breaks.
  [ ] 14. Type a few words in a real app (English + Bangla Avro): normal typing, suggestions, backspace all feel as before (nothing slower).
  [ ] 15. App > Data & About > Check for updates works (no error).
+
+G. PLAN X (X1 - X13)                                                   [Z85 - Z96]
+ [ ] 16. (X2, X3) Language names show "Bangলা" and "বাংলা". In Bangলা mode type with the Ridmik key map: normal Bangla words come out right. (Setting to go back to Classic rules exists.)
+ [ ] 17. (X4, X5) App > Keys & Gestures: Bangলা key map page opens. Practice page: type a word, it is checked. Keyboard > More > Key map panel opens and closes.
+ [ ] 18. (X6, X7) Toolbar height / icon size and Number row options (height %, digits + symbols, own characters): change one, the keyboard follows; reset puts it back.
+ [ ] 19. (X9 - X12) App > Clipboard & tools > Look of clips > Panel style = New. Clipboard, Vault, Gear panel (tiles + settings search) and Edit toolbar / Quick toolbar open in the new look. Panel style = Classic: all of them are exactly the old panels.
+ [ ] 20. (X13) Edit toolbar > turn on Select word + Delete line + Line end. In a multi-line note: each one works on the line with the cursor. Password field: they do nothing.
+ [ ] 21. After steps 16 - 20: type English + Bangla in a real app again: typing, backspace, clipboard paste feel as before.

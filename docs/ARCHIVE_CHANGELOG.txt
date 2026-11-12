@@ -1,4 +1,233 @@
-ARCHIVE of CHANGELOG.txt: entries older than v0.10.0 (v0.9.x moved unchanged by N9, 2026-11-12; v0.8.9 and older moved unchanged by W10). Newest on top.
+ARCHIVE of CHANGELOG.txt: entries v0.10.19 and older (v0.10.19 - v0.10.1 moved unchanged by X14, 2026-11-12; v0.9.x moved unchanged by N9; v0.8.9 and older moved unchanged by W10). Newest on top.
+
+v0.10.19 - NEW: Auto-profile per app, part 2 of 2 (plan W6.2: the switch)
+- WHY: W6.1 stored which profile belongs to which app; now the keyboard applies it by itself.
+- What you get: Settings > Keys & gestures > "Auto-profile per app" (default OFF). When ON and you open a text field in an app that has a profile (Profiles > "> App"), that profile is applied automatically (the same way tapping it in Profiles does) and the letters are rebuilt ONCE.
+  It does NOT apply when: the toggle is OFF; the app has no mapping; the same profile was already applied for this app; applying would change nothing (no flicker); the profile was deleted (mapping ignored); the app gives no package name.
+  Going to an app WITHOUT a mapping changes nothing (your settings stay as the last profile left them; there is no "go back" profile; use Profiles > Normal). Coming back to a mapped app applies its profile again.
+  Number / phone field (number pad open): prefs change at once, the new look shows when the letters come back.
+  The Profiles panel Undo is not touched by auto-apply.
+- Code: typing/AppProfileApply.java (NEW, pure: pick / find / differs), MgbIme.kt (ONE call at the end of onStartInputView + autoProfile() + apLast, all try/catch), SettingsGroups.kt (1 toggle line), typing/SettingsIndex.java (help line ap_on), ProfilePanel.kt (note text), tools/SettingsIndexTest.java (+ap_on in the help list), build.gradle.kts 0.10.19.
+- Prefs (new): ap_on (bool, default OFF). Not in ProfileCodec KEYS. Permissions: none.
+- Tests (new): tools/AppProfileApplyTest.java (46 checks incl. every ready profile and look preset is idempotent = no second rebuild).
+BROKE: nothing intended; with ap_on OFF the only new work is one pref read per field open. NOT tested: Kotlin compile (GitHub Actions), phone (CHECKLIST Z63): rebuild flicker when switching apps, rotate, stuck bubble, number fields.
+TESTED here: 58 tools tests PASS / 0 FAIL.
+Rollback: delete AppProfileApply.java + AppProfileApplyTest.java; put back v0.10.18 MgbIme.kt, SettingsGroups.kt, SettingsIndex.java, ProfilePanel.kt, SettingsIndexTest.java.
+
+v0.10.18 - NEW: Auto-profile per app, part 1 of 2 (plan W6.1: the app > profile list; switching comes in W6.2)
+- WHY: you want "Novel Writing" in your notes app and "Compact" in chat apps without tapping Profiles every time. The plan splits it: W6.1 = remember which profile belongs to which app (this version), W6.2 = switch automatically when a field opens.
+- What you get: Profiles panel (toolbar > Profiles), only while a text field is open: a "> App" button on every profile (ready ones too) = "use this profile for the app I am typing in". Below the list: "Apps with a profile (n)" with the app package name, the profile, and Remove. A mapping whose profile was deleted later shows "(missing)" in red.
+  NOTHING SWITCHES YET: the list is only stored. The panel says so. The on / off setting (ap_on) and the switching hook arrive in W6.2.
+- Limits: 50 apps. Names are shown as Android package names (for example com.whatsapp). "All other apps" profile exists in the logic (AppProfileMap.other) but has no button yet.
+- Code: typing/AppProfileMap.java (NEW, pure: parse / toJson / put / remove / lookup / withOther / dropMissing, junk = empty map, never throws), JabraExtras.kt (JabraHost.currentApp() default ""), MgbIme.kt (ONE line: host.currentApp() = currentInputEditorInfo.packageName), ProfilePanel.kt (buttons + list, all try/catch), build.gradle.kts 0.10.18.
+- Prefs (new): ap_json (string, NOT in ProfileCodec KEYS, so profiles / Undo never touch it; it is copied by Backup like every pref). Permissions: none (packageName comes with every input field).
+- Tests (new): tools/AppProfileMapTest.java (56 checks: package rule, put / replace / limit 50, cleaned names, immutability, JSON round trip incl. quotes and Bangla, 20 junk inputs, partial files, dropMissing).
+BROKE: nothing intended. Profiles panel looks the same when no field is open (no "> App" buttons, list only if something is mapped). NOT tested: Kotlin compile (GitHub Actions), phone (CHECKLIST Z62), whether every app reports its package name (some fields give an empty name: then no "> App" buttons).
+TESTED here: 57 tools tests PASS / 0 FAIL (56 + AppProfileMapTest).
+Rollback: delete AppProfileMap.java + AppProfileMapTest.java; put back v0.10.17 JabraExtras.kt, MgbIme.kt, ProfilePanel.kt.
+
+v0.10.17 - NEW: Theme polish + Look presets (plan D3)
+- WHY: some themes had text that was hard to read, and choosing a whole "mood" took 4-5 taps.
+- CONTRAST AUDIT (WCAG ratio, want >= 4.5:1), all 20 themes, pairs: key vs letters / function key vs letters / bg vs letters / bg vs small help text. Found 7 problems, fixed:
+    Ocean (12) key 3F89D6 -> 3779BC           key/text 3.65 -> 4.54   (trade-off: key is now closer to the Ocean background, bg/key 1.18)
+    Seaweed Grey (6) bg 5F7369 -> 5C7066       bg/text 4.45 -> 4.65
+    Purple Haze (18) bg2 9C45C2 -> 9944BE      bg2/text 4.49 -> 4.62
+    Coral Sunset (19) text 4A1A22 -> 3D151C    bg2/text 4.18 -> 4.62 (key/text 13.0 -> 14.4)
+    Help text (note colour) was too faint on mid-tone backgrounds: Seaweed Grey 2.56, Ocean 2.71, Silver Grey 3.95, Coral Sunset 3.61 (gradient end 2.17), Purple Haze gradient end 2.62, Moon Blue 5.09 ok.
+      -> LookColors.noteColor(): the OLD rule is kept when it already reads (>= 4.5 on bg and bg2) = Classic and 14 other themes look EXACTLY as before; otherwise theme text colour, else white / black.
+  Theme index and order never changed. Classic (0) untouched. Tiles, themes 0-19 names unchanged.
+- What you get: (1) Theme picker: a row of 4 Look presets above the Custom theme button: AMOLED (Gloss Black, flat keys), Reading (Sandstone, roomy gap), Professional (Ivory), Cyber (Purple Haze, flat, bold letters).
+    One tap = sets theme + look = Jabra + key border + key gap + bold letters, then back to the letters. They are constants: nothing is stored, your Profiles are untouched. Undo = tap your old theme tile (or apply a Profile).
+  (2) Theme Studio: when letters vs key colour is < 4.5:1 a warning line "Low contrast: letters hard to read (x.x:1, want 4.5:1)" appears. It never blocks Save.
+- Code: typing/LookColors.java (+ contrast, luminance, lowContrast, minOnBg, noteColor, MIN_RATIO; pure), typing/LookPresets.java (NEW, pure), ThemeEmojiExtras.kt (4 colour values + noteColor hook with old line as fallback), ThemePanel.kt (preset row, applied with ProfileStore.apply = whitelist path), ThemeStudio.kt (warning line), build.gradle.kts 0.10.17.
+- Tests (new): tools/LookPresetsTest.java (177 checks: contrast math, noteColor, every theme 0-19 on 4 pairs, presets whitelisted / valid / deterministic / file round trip). Prefs: none new. Permissions: none.
+- Image / bubble: bubble and hints read theme text colours; text colours changed only for Coral Sunset (darker = more readable).
+BROKE: nothing intended. Look of Classic and 14 untouched themes identical. NOT tested: Kotlin compile (GitHub Actions), phone (CHECKLIST Z61), the real look of the 4 changed themes and the 4 presets.
+TESTED here: 56 tools tests PASS / 0 FAIL (55 old + LookPresetsTest).
+Rollback: delete LookPresets.java + LookPresetsTest.java; put back v0.10.16 LookColors.java, ThemeEmojiExtras.kt, ThemePanel.kt, ThemeStudio.kt.
+
+v0.10.16 - NEW: Text Tools "More" tab (plan W5): line tools, Bangla <-> English digits, URL, Base64, JSON
+- WHY: the Text Tools panel had only Count / Case / Clean / Repeat / Date. For novel / Bangla work you also need line tools, digit conversion and a few encoders, without leaving the keyboard.
+- What you get: a 6th tab "More" in Text Tools (Keyboard toolbar > Text tools). Group chips: Lines | Digits | Encode | JSON, then the tools of the group.
+  Lines: A-Z, Z-A (case-insensitive), No dupes (blank lines always kept), Reverse, Number ("1. text", blank lines skipped), Trim (every line), Join (one line; tap Join again = next separator: Space / Comma / Semicolon / None).
+  Digits: To 0-9 (Bangla -> English), To ০-৯ (English -> Bangla).
+  Encode: URL enc / URL dec ("+" = space; bad %-code or non-UTF-8 = message), B64 enc / B64 dec (UTF-8; whitespace ignored; padding optional; bad text = message).
+  JSON: Pretty (2 spaces) / Minify. Own strict checker, max 20000 characters, depth 100. Bad JSON = message "Not valid JSON (character N)" and NOTHING is changed.
+  Same flow as Case / Clean: source = selection, else the whole field; Replace (whole field = two taps "Sure?"), Copy, Undo.
+- Line breaks: CRLF / LF / CR kept as they were; a final line break is kept.
+- Limits: line tools input 100000 chars, URL / Base64 input 50000 chars (message, no change when longer).
+- Code: typing/TextTools2.java (NEW, pure; java.util + java.nio.charset only, own Base64 because java.util.Base64 is API 26), TextToolsPanel.kt (tab list + page 5 rows + more(); ABC tab weight 1 -> 0.8 so six tabs fit at 360 dp), build.gradle.kts 0.10.16.
+- Tests (new): tools/TextTools2Test.java (139 checks: empty / null, CRLF, Bangla, emoji, size caps, invalid JSON, invalid %-encoding, invalid Base64, depth cap). Prefs: none new. Permissions: none.
+BROKE: nothing intended. Count / Case / Clean / Repeat / Date unchanged. NOT tested: Kotlin compile (GitHub Actions), phone (CHECKLIST Z60), the 6-tab row width on a real 360 dp screen.
+Rollback: delete TextTools2.java + TextTools2Test.java and put back v0.10.15 TextToolsPanel.kt.
+
+v0.10.15 - D2.5 Toolbar / Quick toolbar / Typing / More panels on the shared UiKit helpers (no look change) = LAST D2 step
+- WHY: plan D2 (one look for all panels). ToolbarPanel, ToolbarQuick (panel), TypingPrefs (Typing panel) and TypingExtras (More panel) each had private pk() / row() / note() copies.
+- What changed: pk() = UiKit.btn (ToolbarPanel + ToolbarQuick: given height, 11sp; TypingPrefs + TypingExtras: key-height tall, 12sp; same 2dp margins, theme style, feedback before click); note() = UiKit.noteText (ToolbarPanel, TypingPrefs, TypingExtras: 11sp, same note colour, 6 / 2dp padding); row() = UiKit.row (all four). Every old body kept as pkOld() / noteOld() / rowOld() = automatic fallback.
+- NOT moved on purpose: EmojiGridPanel.btn() (takes pixel width / height, no text size, hot grid path: UiKit.btn works in dp and would change sizes), ToolbarQuick's icon Button (own icon layout), SpaceHelper.
+- Code: ToolbarPanel.kt, ToolbarQuick.kt, TypingPrefs.kt, TypingExtras.kt, build.gradle.kts 0.10.15. Tests: no Java touched.
+D2 SUMMARY: all panels with a private button helper now go through UiKit except EmojiGridPanel, ThemeStudio, ThemeEmojiExtras, JabraExtras, SettingsActivity (not in D2.1-D2.5 scope / different style).
+BROKE: nothing intended. NOT tested: Kotlin compile (GitHub Actions), phone (CHECKLIST Z59).
+Rollback: put back v0.10.14 of the four .kt files.
+
+v0.10.14 - D2.4 Formatter + Size + Cursor pad panels on the shared UiKit helpers (no look change)
+- WHY: plan D2 (one look for all panels). AUDIT FIRST: FormatterFeature.btn() was ALREADY UiKit.btn since v0.6.5 (only row() left). SizePrefs and PadPanel still had private pk() / row() / note().
+- What changed: SizePrefs + PadPanel: pk() = UiKit.btn (key-height tall via host.keyHeightDp(), 12sp Size / 14sp Pad as before, same 2dp margins, theme style, feedback before click); note() = UiKit.noteText (11sp, same note colour, 6 / 2dp padding); row() = UiKit.row. FormatterFeature: row() = UiKit.row. Every old body is kept as pkOld() / noteOld() / rowOld() = automatic fallback.
+- Not changed on purpose: Formatter paint() colours / 6dp radius, peekView, PadPanel selectLook() (blue Select ON tint), RepeatKeyHelper on held keys.
+- Code: SizePrefs.kt, PadPanel.kt, FormatterFeature.kt, build.gradle.kts 0.10.14. Tests: no Java touched (54 tools tests PASS as in v0.10.11).
+BROKE: nothing intended. NOT tested: Kotlin compile (GitHub Actions), phone (CHECKLIST Z58).
+Rollback: put back v0.10.13 SizePrefs.kt, PadPanel.kt, FormatterFeature.kt.
+
+v0.10.13 - D2.3 Clipboard panel on the shared UiKit helpers (no look change)
+- WHY: plan D2 (one look for all panels). AUDIT FIRST: ClipboardFeature.btn() was ALREADY UiKit.btn since v0.8.7 and ClipCards already uses UiKit.cardBackground (old look kept as oldCardBg()). Only the private row() was left.
+- What changed: ClipboardFeature.row() now calls UiKit.row(ctx); old body kept as rowOld() = automatic fallback. Nothing visible changes.
+- Not changed on purpose: ClipCards own TextViews / bars (card-internal sizes and colours already come from JabraTokens), 2-column layout, select bar.
+- Code: ClipboardFeature.kt (row), build.gradle.kts 0.10.13. Tests: no Java touched.
+BROKE: nothing intended. NOT tested: Kotlin compile (GitHub Actions), phone (CHECKLIST Z57).
+Rollback: put back v0.10.12 ClipboardFeature.kt.
+
+v0.10.12 - D2.2 VaultPanel on the shared UiKit helpers (no look change)
+- WHY: plan D2 (one look for all panels). AUDIT FIRST: VaultPanel.btn() was ALREADY UiKit.btn since v0.6.6 (old body btnOld() kept). The only private layout helper left was row().
+- What changed: VaultPanel.row() now calls UiKit.row(ctx) (same horizontal LinearLayout); old body kept as rowOld() = automatic fallback. 1 tiny patch, nothing visible changes.
+- Deliberately NOT changed: the kind / folder chips keep the "check mark + plain button" style (UiKit.chip has a blue selected fill = visible change), small() 12sp, the 30dp chip height, the entry-row colours (rowInk / rowFill already use JabraTokens), the 11sp preview / meta texts. These stay as they are; moving them is a look decision for the user.
+- Code: VaultPanel.kt (row), build.gradle.kts 0.10.12.
+- Tests: no Java touched; all 54 tools/*Test.java PASS.
+BROKE: nothing intended. NOT tested: Kotlin compile (GitHub Actions), phone (CHECKLIST Z56).
+Rollback: put back v0.10.11 VaultPanel.kt.
+
+v0.10.11 - NEW: shared panel look, step D2.1 (UiKit.header / row, PanelSpec, Theme panel moved to UiKit)
+- WHY: panels each kept private btn() / note() copies, so spacing / heights could drift. D2 moves them to UiKit one group at a time, with NO look change.
+- AUDIT FIRST: TextToolsPanel and ProfilePanel were ALREADY on UiKit.btn since v0.6.7 (btn() -> UiKit, old body kept as btnOld()). Only ThemePanel still had private pk() / note(). So D2.1 = ThemePanel + the shared helpers.
+- What you get: nothing visible. Theme panel buttons (Custom theme, < More settings, ABC apply) and its help text are now built by UiKit.btn / UiKit.noteText with the SAME values as before (40dp, 14sp, 2dp margins, 11sp note, 6 / 2dp padding, same theme style + note colour). Classic stays identical.
+- Code: typing/PanelSpec.java (NEW, pure: spacing 2/4/8/12/16, heights 30/32/36/38/40, text 11/12/14/16, px(), snap, touchOk, backWidthDp), UiKit.kt (+ row(ctx), + header(ctx, p, title, backLabel, feedback, onBack) = back button + bold title, 40dp; header is NOT inserted in any panel yet: it would add height, each D2.x step swaps it in for an existing back row), ThemePanel.kt (pk() / note() call UiKit first, old bodies kept as pkOld() / noteOld() = automatic fallback), build.gradle.kts 0.10.11.
+- Tests (new): tools/PanelSpecTest.java (38). All 54 tools/*Test.java PASS.
+BROKE: nothing intended. NOT tested: Kotlin compile (GitHub Actions), phone (CHECKLIST Z55).
+Rollback: delete PanelSpec.java + PanelSpecTest.java, put back v0.10.10 UiKit.kt and ThemePanel.kt.
+
+v0.10.10 - NEW: Privacy & storage card + clipboard code guard (plan W4)
+- WHY: no single place told you what the keyboard sees, stores and sends, and a copied one-time code (SMS login code) stayed in the clipboard history for good.
+- What you get: (a) Settings app > Data & Backup > new "Privacy & storage" card: permissions in use (Internet only on your tap, Install packages only for an update you approve, Vibrate), what is never used (microphone, contacts, location, storage, accounts), password fields = nothing recorded, the clipboard / learned-words settings right now, the REAL size of Vault, Profiles, Clipboard history, Learned words, downloaded emoji list, backup copies and the settings file + Total, and a two-tap button "Clear clipboard history now" (pinned clips stay). (b) New setting Clipboard & tools > "Clip code guard (2 min)", default OFF: when ON, an unpinned clip that looks like a one-time code (4-8 digits, English or Bangla digits, or a short mixed code like A1B2C3, no spaces, max 10 characters) is removed from the history 2 minutes after it was copied. Sentences, words and long texts are never touched. Pinned clips are never touched. Copying the same code again restarts its 2 minutes.
+- HOW IT RUNS: same trigger as Clip auto-delete: when a clip is added or the clipboard panel is drawn (no timer, no background work). So a code can stay until the next copy / next time you open the clipboard, then it is gone. It only cleans Jabra's own history; the phone's own clipboard is not touched.
+- Code: typing/ClipSensitive.java (NEW, pure: looksLikeCode, isDue, CODE_TTL_MS), typing/PrivacyInfo.java (NEW, pure: bytes -> "12 KB", retention, texts), PrivacyPage.kt (NEW, the card), clip/ClipMeta.java (+remake), ClipboardFeature.kt (ClipStore: expireNow = code guard + old auto-delete, reload(), clearUnpinnedNow, 3 hooks marked v0.10.10), DataPage.kt (1 line), SettingsGroups.kt (1 row), SettingsIndex.java (1 help line). New pref: clip_sens (bool, default OFF). NOT in profiles (like clip_expire). No new permission, no network.
+- Tests (new): tools/ClipSensitiveTest.java (57), tools/PrivacyInfoTest.java (50), ClipMetaTest +3, SettingsIndexTest +1 key.
+BROKE: nothing intended. With the setting OFF the clipboard behaves exactly as v0.10.9.2. NOT tested: Kotlin compile (GitHub Actions), phone (CHECKLIST Z54). TESTED here: 53 tools/*Test.java compile + PASS.
+NOTE: this step was built on top of the repo files as they are on GitHub (v0.10.8 + v0.10.9.2 fix). The v0.10.9 versions of SettingsGroups.kt / DataPage.kt (group counts, dark group cards) are NOT in the repo: do NOT push the old jabra_v0_10_9.zip over these files, it would remove the W4 hooks.
+Rollback: delete PrivacyPage.kt, ClipSensitive.java, PrivacyInfo.java and put back v0.10.9.2 versions of ClipboardFeature.kt, DataPage.kt, SettingsGroups.kt, SettingsIndex.java, ClipMeta.java.
+
+v0.10.9.2 - FIX: build error "Unresolved reference: AppUi / AppPalette" in SettingsActivity.kt (lines 33-134)
+- ROOT CAUSE (from the GitHub error text): SettingsActivity.kt (v0.10.9.1) calls AppUi and AppPalette, but those two NEW files were never in the repo (they were in the v0.10.9 zip, which was not pushed; the v0.10.9.1 zip had only SettingsActivity.kt). So the compiler had nothing to resolve.
+- Fix: ADDED app/src/main/java/com/mgb/keyboard/typing/AppPalette.java (pure colour table: AUTO / LIGHT / DARK, sanitize, isDark, next, name, bg / card / text / dim / warn / ok / accent, contrast) and app/src/main/java/com/mgb/keyboard/AppUi.kt (reads pref app_theme, default 1 = Light; isDark, colours, cardBg). Added tools/AppPaletteTest.java (37 checks).
+- Light warning colour #D84315 -> #BF360C (contrast on white 4.4 -> 5.6) so it is also readable on the light Setup card.
+- NOT in this fix (SettingsGroups.kt / DataPage.kt v0.10.9 patches: group counts "(n)", dark group head cards, dim help colour). They did not give build errors, so they are not on GitHub; the app screen works without them. Can be added in a later step.
+BROKE: nothing expected. TESTED here: AppPaletteTest 37 PASS + the 50 old tools/*Test.java PASS (EmojiDbTest / WordIndexTest must run from the repo root folder). NOT tested: Kotlin compile (GitHub Actions), phone.
+Rollback: delete AppUi.kt + AppPalette.java and go back to v0.10.8 SettingsActivity.kt.
+
+v0.10.9.1 - FIX: build error in SettingsActivity.kt line 68 (App theme button)
+- ROOT CAUSE (from the GitHub error text): SettingsActivity.btn() takes a lambda with NO parameter (() -> Unit); my v0.10.9 App theme button wrote "{ b -> ... }", so Kotlin could not infer the type. DataPage / SettingsGroups have their own btn() WITH a Button parameter, which is why it looked right.
+- Fix: removed the unused "b ->" (1 token). No behaviour change.
+- Other new lambdas of v0.10.7 - v0.10.9 re-read against their helper signatures: no second mismatch found (still NOT compiled here: GitHub is the compiler).
+BROKE: nothing. NOT tested: Kotlin compile (GitHub Actions), phone. TESTED here: all 51 Java tests unchanged (no Java touched).
+Rollback: none needed (v0.10.9 did not compile).
+
+v0.10.9 - NEW: app screen redesign (setup card, App theme Light / Dark / Auto, group counts)
+- WHY: the app screen was plain light-only TextViews with no setup help; first-time users did not know if the keyboard was enabled / selected.
+- What you get: (a) "Setup" card at the top: tick or orange hint for "Jabra is enabled" and "Jabra is the current keyboard" + a button for each open step; the card disappears when both are done and updates when you come back from the system screens. Read-only checks (InputMethodManager + Settings.Secure), no permission; any problem = card hidden. (b) Button "App theme: Light / Dark / Auto (follow phone)" (tap cycles, screen recreates). Default = Light = today's look. Dark = near-black #121316, cards #1E1F22, text #F2F2F2, dim #B8B8B8, warning #FF8A65. Keyboard themes are NOT touched. (c) Each settings group header shows its number of settings, e.g. "Typing (9)"; in DARK mode the group headers are rounded cards with 12 dp spacing.
+- LIGHT MODE DIFFERENCES (the only ones): the new Setup card (only while setup is incomplete), the App theme button, the "(n)" counts, and the grey help text under settings #888888 -> #6B6B6B (contrast 3.5 -> 5.3, readable). Everything else is identical. Group header "cards" are dark-only on purpose so Light stays as before.
+- Code: typing/AppPalette.java (NEW, pure: palette, pick(mode, phoneDark), next, contrast), AppUi.kt (NEW: reads pref, card background, dark group head), SettingsActivity.kt (setTheme dark before onCreate, setup card, theme button, onResume refresh, dark ScrollView bg), SettingsGroups.kt (colour call + count + head style, 6 tiny hooks), DataPage.kt (1 colour call), tools/AppPaletteTest.java (NEW, 45 checks: every text / background pair >= 4.5:1 in both modes). Hooks marked v0.10.9. AndroidManifest untouched (base theme stays DeviceDefault.Light, dark is applied in code, no res/values).
+- Prefs (new): app_theme (int 0 auto / 1 light / 2 dark, default 1). App-only: NOT in ProfileCodec KEYS, no SettingsIndex row (it is a button on the app screen, not a keyboard setting). It IS saved in backups like every non-bk_ pref.
+BROKE: nothing intended. Known: the existing warning orange #D84315 on white = 4.44:1 (kept by design rule; test floor 4.4 for that one pair).
+NOT tested: Kotlin compile (GitHub Actions first); phone (CHECKLIST Z53): dark readability on every screen (Data, Health, backup rows, update row), recreate keeps screen state, setup card logic on a phone where Jabra is / is not enabled. Third-party widgets (EditText hint, system Button) follow the system dark theme; a few spots may still look off.
+TESTED here: all 51 Java tests green (AppPaletteTest 45 NEW); bracket balance of the 4 changed Kotlin files + new AppUi.kt.
+Rollback: set App theme to Light, or restore SettingsActivity.kt / SettingsGroups.kt / DataPage.kt from v0.10.8 and delete AppUi.kt, AppPalette.java, AppPaletteTest.java.
+
+v0.10.8 - NEW: safe updates (SHA-256 check, backup before update, test-key warning)
+- WHY: an update could be refused ("App not installed") and force an uninstall = data lost; a damaged download was never detected.
+- ROOT CAUSE (code reading): Updater.kt had no hash check. CORRECTION to the plan: the release notes do NOT contain the SHA-256 row. build.yml writes notes.txt from the first block of CHANGELOG.txt; the SHA table goes only to the job summary ($GITHUB_STEP_SUMMARY). So the expected hash is read from the GitHub release ASSET field "digest" ("sha256:<hex>", given by the GitHub API), with a fallback to a "SHA-256 <hex>" row in the notes if one is ever added. The workflow was NOT edited.
+- What you get: (1) Download & install: the APK is hashed (SHA-256, streamed, background Thread); mismatch = file deleted, message "Download damaged, nothing installed", installer NOT opened, no browser fallback. No hash published = allowed + a note line (old releases keep working). (2) Before the installer opens, a normal backup is made (and the external-folder copy when W2 folder is set); the result is shown in the status line. (3) Data & Backup top: orange warning when the APK is the DEBUG-key build (ApplicationInfo.FLAG_DEBUGGABLE; the workflow builds assembleDebug only when no keystore secret exists) with the one-time fix (add the 4 secrets).
+- Code: typing/ShaCheck.java (NEW, pure), Updater.kt (Info.sha, fetchLatest reads asset digest, verify()), SettingsActivity.kt (doUpdate: verify, backup, messages), DataPage.kt (warning), tools/ShaCheckTest.java (NEW, 39 checks). Hooks marked v0.10.8.
+- Prefs (new): none. No new permission.
+BROKE: nothing intended. Behaviour change: doUpdate now takes a few seconds longer (hash + backup) before the installer opens.
+NOT tested: Kotlin compile (GitHub Actions first); phone (CHECKLIST Z52). NOT proven: that the GitHub API really returns "digest" for this repo's assets (if it does not, the result is UNKNOWN = update still works, only the check is skipped). NOT testable here: a real install.
+TESTED here: all 50 Java tests green (ShaCheckTest 39 NEW); bracket balance of the 3 changed Kotlin files.
+Rollback: restore Updater.kt / SettingsActivity.kt / DataPage.kt from v0.10.7 and delete ShaCheck.java + ShaCheckTest.java.
+
+v0.10.7 - NEW: backup that survives uninstall (external folder copy) + learned words inside the backup
+- WHY: backups lived only in the app's private folder, so "uninstall and reinstall" (e.g. after an "App not installed" update) deleted the data AND every backup with it. Also the learned-words file (learn_v1.txt) was never in a backup.
+- ROOT CAUSE (code reading): BackupStore.FILES listed only vault_v1.json + profiles_v1.json; backups went only to filesDir/backups. BackupCodec accepts any file name in "files" (no change needed); only BackupStore.restore / fileFromBackup / replaceFile filter by FILES.
+- What you get: (1) every backup now also holds learn_v1.txt (if it exists). (2) Data & Backup: [Choose external backup folder] (system folder picker, no permission), [Backup to folder now], [Turn off external backup], lines "External backup folder: ..." and "Last external backup: ...". Once per day, right after the daily auto backup (same background Thread), the data is also written to jabra_YYYYMMDD.json in that folder (same day = overwritten, read back and checked, newest "Keep newest copies" files kept, other files in the folder are never touched). (3) Health Check: WARN when no copy for 3+ days, when the folder is no longer reachable, or when the Vault has entries and no folder was ever set; OK line when fresh.
+- After a reinstall: open the app > Data & Backup > Import from file > pick jabra_YYYYMMDD.json from your folder > it appears in the list > Restore.
+- Code: typing/BackupPlan.java (NEW, pure), BackupStore.kt (FILES = BackupPlan.FILES, copyExternal / extAccessOk / extLabel / setExtFolder / clearExtFolder, 1 hook in autoIfDue), SettingsActivity.kt (chooseBackupFolder, request code 4103, onFolderPicked), DataPage.kt (3 buttons + 2 info lines + privacy text), typing/HealthCheck.java (4 Input fields + 1 item), HealthPanel.kt (collect: 4 lines), tools/BackupPlanTest.java (NEW, 77 checks). Hooks marked v0.10.7.
+- Prefs (new): bk_ext_uri (str, "" = off), bk_ext_last (str stamp). Both start with bk_ = never saved in a backup / profile (the folder address must not travel to another phone). No new permission (Storage Access Framework tree URI, DocumentsContract, no androidx.documentfile).
+- PRIVACY NOTE: learned words (only when "Learn my words" is ON) now also sit in backups, so they also land in the external folder and in exported files. Folder = the user's own choice; nothing is sent anywhere.
+BROKE: nothing intended. Behaviour change: old v0.10.6 backups have no learn_v1.txt (fine, restore skips missing files). Auto copy needs "Auto backup (daily)" ON; with it OFF use [Backup to folder now].
+NOT tested: Kotlin compile (GitHub Actions first); phone (CHECKLIST Z51): folder picker, file really appears in the Files app, revoked access, cloud-backed folders (Drive may be slow / refuse "wt" overwrite). Restore of learn_v1.txt while the keyboard process is alive: close and reopen the keyboard (same message as today).
+TESTED here: all 49 Java tests green (BackupPlanTest 77 NEW, HealthTest 81 unchanged); bracket balance of the 4 changed Kotlin files.
+Rollback: [Turn off external backup], or restore BackupStore.kt / SettingsActivity.kt / DataPage.kt / HealthPanel.kt / HealthCheck.java from v0.10.6 and delete BackupPlan.java + BackupPlanTest.java. Files already written to the user's folder stay (harmless).
+
+v0.10.6 - NEW: no extra space before , . ! ? after a tapped suggestion
+- WHY: user asked for "your best light and effective improvement". Every suggestion tap adds a space, so "hello" + "," gave "hello ,": the most common small annoyance of a suggestion row. Tiny change, no storage, no list needed.
+- What you get: right after you tap a suggestion, typing , . ! ? ; : ) or the danda removes the space the suggestion added ("hello," not "hello ,"). Only that one space, only right after a tap: anything else typed first (a letter, space, backspace, cursor move) ends the chance, so normal typing never changes. Works for English, Avro, Probhat. Not in password / email / URL / number fields. Setting "Space before , . ! ?" (Settings > Keys and keyboard > Typing options), default ON; OFF = old behaviour.
+- Code: SuggestController.kt (punctFix + pickSpace flag), MgbIme.kt (1 hook in typeText, marked v0.10.6), TypingPrefs.kt + SettingsGroups.kt (switch), typing/SettingsIndex.java (help), tools/SettingsIndexTest.java (+sp_punct), build.gradle.kts version.
+- Pref (new): sp_punct (bool, default ON). NOT in ProfileCodec (same as learn_on / ac_on).
+BROKE: nothing intended. NOT tested: Kotlin compile (GitHub Actions first); phone (CHECKLIST Z50). Not proven: deleteSurroundingText of the space works in every app.
+TESTED here: all 48 Java tests green (SettingsIndexTest 38); bracket balance of the changed Kotlin files.
+Rollback: Settings "Space before , . ! ?" OFF, or remove the one hook line in MgbIme.typeText and restore SuggestController.kt from v0.10.5.
+
+v0.10.5 - FIX: pinned clip not visible in Cards view (the "Pinned" title showed, the card did not)
+- WHY: user screenshots: List view shows the pinned clip, Cards view shows the "Pinned" title and NO card under it (Recent cards are fine). v0.9.10.5 only changed the card colour, it did not find the cause.
+- ROOT CAUSE (code reading, NOT run on a phone): ClipCards.addGrid puts cards 2 per row. With an ODD count (one pinned clip) the empty half was a 1 px high spacer View (weight 1). That row ended up with no real height, so the lone card was squeezed to nothing (a pinned list is usually 1 clip = always odd; Recent with an even count was fine). Same hidden bug hits any odd last row.
+- What changed: the row uses weightSum 2 so a lone card keeps half width without any spacer view; every card also has minimumHeight 72 dp (normal cards are taller, so no look change) as a second guard.
+- Code: ClipCards.kt only (2 lines, marked v0.10.5; spacer() is now unused but kept), build.gradle.kts version.
+BROKE: nothing intended. NOT tested: Kotlin compile (GitHub Actions first); phone (CHECKLIST Z49). If the pinned card is STILL missing, tell me: how many pinned clips, Sort (Newest / ...), and whether Search is empty.
+TESTED here: all 48 Java tests green (no Java change); bracket balance of ClipCards.kt.
+Rollback: restore ClipCards.kt from v0.10.4.
+
+v0.10.4 - FIX: toolbar name tip + "Edit shortcut" bubble were at the bottom of the keyboard; now above the icon
+- WHY: user video: hold a toolbar icon 0.3 s = its name appeared at the very BOTTOM (under the ?123 row); "Edit shortcut" (1.5 s) too. Wanted: just above the icon, like the key bubble.
+- ROOT CAUSE (from the video + code): a PopupWindow of the keyboard window is kept inside / relative to the keyboard window frame, so a bubble that belongs ABOVE the top row (outside the keyboard window) was pushed down to the keyboard's bottom edge. x was right (centred on the icon), only y was wrong. Same cause is the likely reason for the old unexplained V1 note "bubble on the bottom row" (window bubbles of keys without room above).
+- What changed: ToolTip.inScreen(p) (clipping OFF + layout-in-screen ON, set before showAtLocation) used by: ToolTip.show (name tip), ToolbarEdit.show (Edit shortcut), KeyPopup window bubbles (2 places), suggestion grid popup. Timing unchanged: name after 0.3 s, Edit shortcut after 1.5 s.
+- Code: ToolTip.kt (helper + 1 call), ToolbarQuick.kt, KeyPopup.kt, SuggestStrip.kt (1 line each, marked v0.10.4), build.gradle.kts version.
+BROKE: nothing intended. NOT tested: Kotlin compile (GitHub Actions first); phone (CHECKLIST Z48). If a bubble now sits too high / low by the status-bar height, tell me (coordinates are getLocationOnScreen based).
+TESTED here: all 48 Java tests green (no Java change); bracket balance of the changed Kotlin files.
+Rollback: delete the inScreen() lines (5 calls) or restore the 4 Kotlin files from v0.10.3.
+
+v0.10.3 - NEW: Auto-correct (G3.2) - fixes 1-letter English typos on space (OFF by default)
+- WHY: user said "next" = G3.2 of the plan. Auto-correct can change what you write, so it is a switch that is OFF by default.
+- What you get: Settings > Keys (and keyboard > Typing options) > "Auto-correct" (default OFF). ON: when you press space after an English word that is NOT in the word list and NOT a word you learned, and exactly ONE list word is 1 letter away (a letter missing / extra / wrong / two letters swapped, first letter must stay), the word is replaced + space (teh > the, freind > friend, Teh > The). Backspace RIGHT after = your original word comes back (no space) and it is not corrected again. Never touches: Bangla / Avro / Probhat words, words with digits / apostrophe / a capital inside (NASA, iPhone), words under 3 letters, 3-letter words except a swap, anything in password / email / URL / number fields. 2+ possible fixes = no change.
+- Code: typing/AutoCorrect.java (new, pure: fix / eligible / canUndo), SuggestController.kt (autoCorrectOnSpace, undoAutoCorrect, undo memory), MgbIme.kt (2 hooks marked v0.10.3: spaceKey, onBackspace), TypingPrefs.kt + SettingsGroups.kt (switch), typing/SettingsIndex.java (help), tools/AutoCorrectTest.java (34 checks), tools/SettingsIndexTest.java (+ac_on), build.gradle.kts version.
+- Pref (new): ac_on (bool, default OFF). NOT in ProfileCodec (same reason as learn_on). Nothing is stored.
+BROKE: nothing intended. NOTE: the bundled English list is only 569 starter words, so a correct word that is not in the list but is 1 letter from a list word WILL be "fixed" while Auto-correct is ON (Backspace undoes it and it is not touched again). A bigger word list (same format, assets/words/en.txt) makes this much safer: do that before using it every day.
+NOT tested: Kotlin compile (GitHub Actions first); phone (CHECKLIST Z47). Not proven on a phone: deleteSurroundingText replace works in every app; Backspace undo timing; double-space-to-period is skipped for a corrected word.
+TESTED here: all 48 Java test programs green (AutoCorrectTest 34, SettingsIndexTest 38); bracket balance of the changed Kotlin files.
+Rollback: Settings "Auto-correct" OFF (default), or delete AutoCorrect.java + AutoCorrectTest.java and restore SuggestController.kt / MgbIme.kt / TypingPrefs.kt / SettingsGroups.kt / SettingsIndex.java / SettingsIndexTest.java / build.gradle.kts from v0.10.2.
+
+v0.10.2 - NEW: "Learn my words" (G3.1) - the suggestion row remembers words you type (OFF by default)
+- WHY: user asked for G3 ("G3 kore ... follow the plan"). G3 is size L, so the plan splits it: G3.1 = learning (this version), G3.2 = auto-correct (default OFF, later). Storing typed words needs care, so it is an opt-in switch: with the switch OFF (default) NOTHING is stored and nothing runs.
+- What you get: Settings > Keys (and keyboard > Typing options) > "Learn my words" (default OFF). ON: every word you finish (space, comma, full stop, enter) is counted on the phone. A word shows in the suggestion row after you typed it 2 times (one-off typos never show), most used first, before the built-in words. Tapping a suggestion also counts. Works for English, Avro and Probhat (Bangla words match Bangla letters). Nothing is learned in password / email / URL / number fields. "Forget learned words" (tap twice) empties the memory and deletes the file. Max 3000 words (least used / oldest dropped). Words with digits / symbols / 1 letter / 4 same letters in a row are ignored. Capitals: stored in lower case unless a capital sits inside (iPhone); suggestion copies the capital style you typed.
+- Code: typing/UserWords.java (new, pure: learn / lookup / merge / forget / file format "#JABRA-LEARN 1"), LearnStore.kt (new: loads the file on a background thread, saves 8 s after the last new word + when the keyboard closes, AtomicFile filesDir/learn_v1.txt, a broken file is renamed learn_v1.bad), SuggestController.kt (merge learned words + noteTyped + flushLearned + pick counts), MgbIme.kt (2 hooks marked v0.10.2: typeText, onFinishInput), TypingPrefs.kt + SettingsGroups.kt (switch + Forget button), typing/SettingsIndex.java (help line), tools/UserWordsTest.java (109 checks), tools/SettingsIndexTest.java (+learn_on), build.gradle.kts version.
+- Pref (new): learn_on (bool, default OFF). NOT in ProfileCodec on purpose (a profile must not silently switch learning ON). The learned file is NOT in the backup zip / JSON (stays only on the phone).
+BROKE: nothing intended. With learn_on OFF the only change on the key path is a 1-char check in typeText (no pref read for letters).
+NOT tested: Kotlin compile (GitHub Actions first); phone (CHECKLIST Z46). Not proven on a phone: the finished word is read correctly from getTextBeforeCursor in every app; Avro words learn as Bangla; the file is written when the keyboard closes.
+TESTED here: all 47 Java test programs green (UserWordsTest 109, SettingsIndexTest 38, ProfileTest 65, SuggestPlanTest 77, WordIndexTest 73); bracket balance of the changed Kotlin files.
+Rollback: Settings "Learn my words" OFF (nothing is read or written), or delete LearnStore.kt, UserWords.java, UserWordsTest.java and restore SuggestController.kt / MgbIme.kt / TypingPrefs.kt / SettingsGroups.kt / SettingsIndex.java / SettingsIndexTest.java / build.gradle.kts from v0.10.1.
+
+v0.10.1 - NEW: suggestion row at the TOP of the keyboard (G2), like the reference video
+- WHY: user asked for G2 and sent a reference video: the row must be at the top of the keyboard (not under the toolbar), exactly like the video.
+- What you get: the top row of the keyboard shows [tools icon] [suggestion 1] [the word you typed, with "..." dots under it] [suggestion 2] [mic]. It REPLACES the toolbar row. Tap a suggestion = it replaces your word + a space (capital style kept: He > Hello). Tap the middle word = keep your word + a space. Hold a word 0.35 s (or pull it down) = a 3-column grid with up to 18 words covers the keys; slide your finger, release on a word = it is typed (release outside = nothing). Tools icon (left) = the toolbar row appears; the toolbar's first key (<<) brings the suggestions back; a new text field starts with the suggestions again. Mic = voice typing. Row is a fixed 40 dp (no height jump). Password / email / URL / number fields: row stays blank, taps do nothing. Settings > Typing: "Suggestion row" ON / OFF (default ON; OFF = toolbar as before). Nothing you type is stored or sent.
+- Code: typing/SuggestPlan.java (new, pure rules: current word, layout, grid cell from finger position), SuggestStrip.kt + SuggestController.kt (new, view + glue; word lists loaded once on a background thread, 50 ms debounce so a key press only starts a timer), MgbIme.kt (small hooks marked v0.10.1: sg field + sgTools + sgApply, toolbar block skipped while the row shows, attach, first toolbar key = back to suggestions, schedule calls), TypingPrefs.kt / SettingsGroups.kt / typing/SettingsIndex.java / typing/ProfileCodec.java (pref sg_on), tools/SuggestPlanTest.java (77 checks), ProfileTest 53 keys, SettingsIndexTest + sg_on, build.gradle.kts version.
+BROKE: nothing intended. With the row ON the toolbar is one tap away (not always visible); the old fold / unfold key is not reachable while the row is ON (turn the row OFF to get it back). Word lists are small starter lists (569 English / 191 Bangla words): the grid often has fewer than 18 words. No learning, no auto-correct (G3). Look copied from the video by eye only (frames), not pixel-exact.
+NOT tested: Kotlin compile (GitHub Actions first); phone (CHECKLIST Z45). Not proven on a phone: Avro suggestion replaces the composing word correctly; Probhat / English replace via deleteSurroundingText (some apps may refuse); the hold-to-open grid + slide selection (PopupWindow over the keys); mic opens the phone voice typing.
+TESTED here: all 46 Java test programs green (SuggestPlanTest 77, WordIndexTest 73, ProfileTest 53 keys, SettingsIndexTest); bracket balance of the changed Kotlin files.
+Rollback: Settings > Suggestion row OFF; or restore MgbIme.kt / TypingPrefs.kt / SettingsGroups.kt / SettingsIndex.java / ProfileCodec.java from v0.10.0 and delete SuggestStrip.kt, SuggestController.kt, SuggestPlan.java, SuggestPlanTest.java.
+
+v0.10.0 - NEW: offline word index (G1, engine only, NO screen change)
+- WHY: user said YES to the suggestion plan (G1). This is only the engine: nothing in the keyboard uses it yet, so typing looks and works exactly as v0.9.10.5.
+- What you get: a bundled word list (English 569 words, Bangla 191 words, most frequent first) and a lookup "words that start with ..." in frequency order, Latin case-insensitive, Bangla exact. Reader refuses a broken / cut-off file (then the feature just stays off). Nothing you type is stored. No permission, no network.
+- Code: typing/WordIndex.java (new, pure Java), assets/words/en.txt + bn.txt (new, starter lists: small on purpose, G2 / a later data drop can replace them with bigger lists in the same format), tools/WordIndexTest.java (73 checks), build.gradle.kts version. No Kotlin file changed.
+BROKE: nothing intended (no existing file touched except the version line).
+NOT tested: phone (nothing visible yet); Kotlin compile is not affected (no Kotlin change). The starter word lists were written by hand (not from a real frequency corpus): order is approximate.
+TESTED here: all 45 Java test programs green, WordIndexTest 73/73 (10k lookups = ~20 ms).
+Rollback: delete WordIndex.java, assets/words/, WordIndexTest.java; version back to 0.9.10.5.
 
 v0.9.10.5 - FIX: pinned clips not visible in Clipboard "Cards" view
 - WHY: user: in card style the pinned clips are not seen. Code check: pinned data goes to the Pinned group correctly; the only cue on a pinned card was a 1dp grey-blue border (#7A9CC6 vs #C8C8C8) and a tiny filled-head pin icon, and the "Pinned" tag existed only in select mode.

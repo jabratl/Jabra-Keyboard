@@ -692,3 +692,8 @@ Z96) v0.16.13 Toolbar edit items (X13 part 2)  [use a multi-line note app AND a 
  [ ] Duplicate line: the line appears again below, cursor at the end of the copy. Empty field / empty line = a new empty line.
  [ ] Password field: none of the 8 does anything. Emoji in the text is never cut in half. Undo (if on the bar) takes the change back.
  [ ] Browser field / app that gives no text: no crash; Delete word / Delete line still work, the others may do nothing (write the app name).
+
+Z97) v0.16.14 Final check + docs for plan X (X14) - docs only, no screen change
+ [ ] App > Data & About shows version 0.16.14. Check for updates works.
+ [ ] Run CHECKLIST_SMOKE.txt lines 1 - 21 once (10 minutes). Any failing line: send its number + what you see.
+ [ ] panel_ui default is still 0 (Classic) until you say OK to flip it to 1 (New). Set App > Clipboard & tools > Panel style = New to test X9 - X13.
