@@ -130,6 +130,7 @@ object DataPage {
         root.addView(msg)
         root.addView(line("Backups"))
         root.addView(list)
+        try { root.addView(PrivacyPage.build(ctx)) } catch (_: Throwable) { }   // v0.10.10 (W4): Privacy & storage card
         root.addView(line("Privacy"))
         root.addView(line("Everything is saved only on this phone (settings, clips, presets, backups). Nothing is sent anywhere. The only internet use is \"Check for updates\" and \"Update emoji list\" (only when you tap them). Permissions: Internet (update check, emoji list), Install packages (update), Vibrate. Export / Import and the external backup folder use the system pickers, no storage permission. The external copy goes only to the folder you choose."))
         act?.refreshData = { try { fill() } catch (_: Throwable) { } }

@@ -340,6 +340,7 @@ object SettingsGroups {
             level(g, "Clip sort", "clip_sort", 0, com.mgb.keyboard.clip.ClipMeta.SORT_NAMES)   // v0.4.3
             toggle(g, "Clip character count", "clip_count", true)   // v0.4.3
             level(g, "Clip auto-delete (unpinned)", "clip_expire", 0, com.mgb.keyboard.clip.ClipMeta.EXPIRE_NAMES)   // v0.4.3
+            toggle(g, "Clip code guard (2 min)", "clip_sens", false)   // v0.10.10 (W4): copied one-time codes leave the history after 2 minutes (default OFF)
         }
 
         try { group("Data & Backup") { g -> g.addView(DataPage.build(ctx)) } } catch (_: Throwable) { }   // v0.4.1

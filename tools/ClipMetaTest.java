@@ -52,6 +52,17 @@ public class ClipMetaTest {
         check("prune drops missing", p.prune(l.view("")) && p.size() == 1 && p.count("banana") == 2);
         check("prune nothing", !p.prune(l.view("")));
 
+        // v0.10.10 (W4): remake = "copied again" restarts the made time
+        ClipMeta rm = new ClipMeta();
+        rm.made("123456", 1000);
+        rm.remake("123456", 5000);
+        check("remake sets made to now", rm.madeAt("123456") == 5000 && rm.size() == 1);
+        rm.remake("654321", 7000);
+        check("remake creates a missing record", rm.madeAt("654321") == 7000 && rm.size() == 2);
+        rm.used("123456", 9000);
+        rm.remake("123456", 12000);
+        check("remake keeps used / count", rm.usedAt("123456") == 9000 && rm.count("123456") == 1 && rm.madeAt("123456") == 12000);
+
         System.out.println("ClipMetaTest " + ok + "/" + (ok + bad) + (bad == 0 ? " OK" : " FAILED"));
         if (bad > 0) System.exit(1);
     }

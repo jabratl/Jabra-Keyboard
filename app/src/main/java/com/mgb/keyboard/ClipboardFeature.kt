@@ -12,6 +12,7 @@ import android.widget.TextView
 import com.mgb.keyboard.clip.ClipList
 import com.mgb.keyboard.clip.ClipMeta
 import com.mgb.keyboard.typing.ClipSelect
+import com.mgb.keyboard.typing.ClipSensitive   // v0.10.10 (W4)
 
 /*
  * v0.0.6: clipboard history (+ pinned, delete, search). All new code is here; MgbIme.kt has small hooks marked "v0.0.6".
@@ -21,7 +22,28 @@ import com.mgb.keyboard.typing.ClipSelect
 
 /** Saves/loads the history. Never throws. */
 class ClipStore(private val prefs: JabraPrefs) {
-    private val list: ClipList = try { ClipList.parse(prefs.str("clips_v1", "")) } catch (_: Throwable) { ClipList() }
+    private var list: ClipList = try { ClipList.parse(prefs.str("clips_v1", "")) } catch (_: Throwable) { ClipList() }   // v0.10.10: var (reload after "Clear clipboard history now")
+
+    init { live = this }   // v0.10.10 (W4)
+
+    /** v0.10.10 (W4): re-reads the list from prefs (used after the Privacy page cleared it) and drops meta of clips that are gone. */
+    fun reload() { try { list = ClipList.parse(prefs.str("clips_v1", "")); if (meta.prune(list.view(""))) saveMeta() } catch (_: Throwable) { } }
+
+    companion object {   // v0.10.10 (W4)
+        @Volatile private var live: ClipStore? = null
+        /** Deletes all UNPINNED clips straight in prefs (Privacy page has no ClipStore). Keeps pinned. Returns how many were removed. */
+        fun clearUnpinnedNow(prefs: JabraPrefs): Int = try {
+            val l = ClipList.parse(prefs.str("clips_v1", ""))
+            val before = l.size()
+            l.clearUnpinned()
+            prefs.setStr("clips_v1", l.serialize())
+            val m = ClipMeta.parse(prefs.str("clip_meta_v1", ""))
+            m.prune(l.view(""))
+            prefs.setStr("clip_meta_v1", m.serialize())
+            live?.reload()
+            before - l.size()
+        } catch (_: Throwable) { 0 }
+    }
 
     private fun save() { try { prefs.setStr("clips_v1", list.serialize()) } catch (_: Throwable) { } }
 
@@ -40,7 +62,26 @@ class ClipStore(private val prefs: JabraPrefs) {
     fun noteUse(i: ClipList.Item) { try { meta.used(i.text, System.currentTimeMillis()); saveMeta() } catch (_: Throwable) { } }
     fun sorted(l: List<ClipList.Item>, mode: Int): List<ClipList.Item> = try { if (mode == 0) l else meta.sort(l, mode) } catch (_: Throwable) { l }
     /** Auto-delete (pref clip_expire 0..3): unpinned only; runs when the panel opens or a clip is added, never on a timer. Returns how many were removed. */
-    fun expireNow(): Int = try {
+    fun expireNow(): Int = try { expireCodes() + expireOld() } catch (_: Throwable) { 0 }   // v0.10.10 (W4): code guard first, then the old Auto-delete
+
+    /** v0.10.10 (W4): code guard (pref clip_sens, default OFF): an unpinned clip that looks like a one-time code is removed 2 minutes after it was copied. Same trigger as Auto-delete (clip added / panel opened), no timer. */
+    private fun expireCodes(): Int = try {
+        if (!prefs.bool("clip_sens", false)) 0 else {
+            val now = System.currentTimeMillis()
+            var touched = false
+            val gone = list.view("").filter { c ->
+                var m = meta.madeAt(c.text)
+                if (m <= 0L && !c.pinned && ClipSensitive.looksLikeCode(c.text)) { meta.made(c.text, now); touched = true; m = now }
+                ClipSensitive.isDue(c.pinned, c.text, m, now)
+            }
+            val n = if (gone.isNotEmpty()) list.removeAll(gone) else 0
+            if (n > 0) { save(); meta.prune(list.view("")); touched = true }
+            if (touched) saveMeta()
+            n
+        }
+    } catch (_: Throwable) { 0 }
+
+    private fun expireOld(): Int = try {
         val ttl = ClipMeta.ttlMs(prefs.int("clip_expire", 0))
         if (ttl <= 0L) 0 else {
             val before = meta.size()
@@ -53,7 +94,7 @@ class ClipStore(private val prefs: JabraPrefs) {
         }
     } catch (_: Throwable) { 0 }
 
-    fun add(t: String) { try { val isNew = !has(t); if (list.add(t)) save(); if (isNew) { meta.made(t, System.currentTimeMillis()); saveMeta() }; expireNow() } catch (_: Throwable) { } }   // v0.4.3: records "made" for new clips
+    fun add(t: String) { try { val isNew = !has(t); if (list.add(t)) save(); if (isNew) { meta.made(t, System.currentTimeMillis()); saveMeta() } else if (prefs.bool("clip_sens", false) && ClipSensitive.looksLikeCode(t)) { meta.remake(t, System.currentTimeMillis()); saveMeta() }; expireNow() } catch (_: Throwable) { } }   // v0.4.3: records "made" for new clips
     fun view(q: String): List<ClipList.Item> = try { list.view(q) } catch (_: Throwable) { emptyList() }
     fun togglePin(i: ClipList.Item): Boolean = try { val ok = list.togglePin(i); if (ok) save(); ok } catch (_: Throwable) { false }
     fun remove(i: ClipList.Item) { try { if (list.remove(i)) save() } catch (_: Throwable) { } }

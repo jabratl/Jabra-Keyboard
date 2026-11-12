@@ -625,3 +625,18 @@ Z52) v0.10.8 Safe updates
  [ ] Release WITH a hash (digest): no "could not be checked" line (this proves GitHub gives the digest). If the line shows on a new release, tell me: digest field missing.
  [ ] Offline / "up to date": nothing changes compared with v0.10.7.
 
+
+Z54) v0.10.10 Privacy & storage + clip code guard
+ [ ] App screen > Data & Backup: a "Privacy & storage" card above the old "Privacy" text. It lists permissions (Internet only on tap, Install packages, Vibrate), "Not used: microphone, contacts, location, storage, accounts", password fields, and the 2 lines "Clipboard history ..." / "Learned words ...".
+ [ ] "Stored on this phone": Vault, Profiles, Clipboard history, Learned words, Downloaded emoji list, Backup copies in the app, Settings file + Total. Sizes look right (a fresh phone: small KB; "none yet" for a file that does not exist). Compare Total roughly with Android Settings > Apps > Jabra > Storage.
+ [ ] Add one clip, come back to the page (leave and re-open Data & Backup): the Clipboard history size grew.
+ [ ] "Clear clipboard history now": first tap = "Sure? Delete N clips (pinned stay)"; second tap = "Cleared N clips. Pinned clips were kept." Open the keyboard clipboard: pinned clips are still there, the rest is gone, and the old clips do NOT come back after you copy a new text.
+ [ ] No clips to clear (only pinned or empty): the button says "(nothing to clear)" and is greyed out.
+ [ ] Settings > Clipboard & tools > "Clip code guard (2 min)": default OFF. Search "code" in settings search finds it.
+ [ ] Guard OFF: copy "482913" from any app, wait 3 minutes, copy another text, open clipboard: "482913" is still there.
+ [ ] Guard ON: copy "482913" (or from a real SMS), wait about 3 minutes, copy any other text (or open the clipboard panel): "482913" is gone. A sentence like "Meet me at 5" copied at the same time stays. A PINNED code stays.
+ [ ] Guard ON, Bangla digits (e.g. copy "১২৩৪৫৬") and a mixed code "A1B2C3": both are removed after 2 minutes.
+ [ ] Guard ON: a normal word (hello), a phone number with + or spaces, a long text: never removed by this rule.
+ [ ] Guard ON: copy the same code again after 3 minutes: it stays for 2 more minutes (not removed instantly).
+ [ ] Clip auto-delete (1 hour etc.) still works as before, together with the guard.
+ [ ] Backup now > Restore preview still works (clip_sens is just one more setting).

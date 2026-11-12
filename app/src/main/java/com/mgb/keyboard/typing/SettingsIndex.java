@@ -147,6 +147,7 @@ public final class SettingsIndex {
             case "clip_sort": return "Order of clips in the clipboard: Newest, Oldest, A-Z or Most used.";
             case "clip_count": return "Shows the number of characters (and paste count) on each clip.";
             case "clip_expire": return "Deletes unpinned clips after this time. Pinned clips are never deleted.";
+            case "clip_sens": return "Removes copied one-time codes (4-8 digits, short codes) after 2 minutes.";   // v0.10.10
             case "tb_vault": return "Shows the Vault key on the toolbar (saved texts, terms and templates).";   // v0.7.1
             default: return "";
         }

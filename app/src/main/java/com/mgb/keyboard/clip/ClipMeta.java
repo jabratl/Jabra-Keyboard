@@ -41,6 +41,14 @@ public final class ClipMeta {
         if (!map.containsKey(k)) { M m = new M(); m.made = now; map.put(k, m); }
     }
 
+    /** v0.10.10 (W4): a clip copied AGAIN counts as new for the code guard (made = now). Creates the record if missing. */
+    public void remake(String text, long now) {
+        String k = key(text);
+        M m = map.get(k);
+        if (m == null) { m = new M(); map.put(k, m); }
+        m.made = now;
+    }
+
     public void used(String text, long now) {
         String k = key(text);
         M m = map.get(k);
