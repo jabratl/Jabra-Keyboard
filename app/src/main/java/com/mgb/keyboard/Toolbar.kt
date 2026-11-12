@@ -27,7 +27,7 @@ object Toolbar {
         "clip" -> "📋"; "all" -> "All"; "cut" -> "Cut"; "copy" -> "Copy"; "paste" -> "Paste"; "plain" -> "Plain"
         "fmt" -> "Aa"; "mode" -> "PH"
         "emoji" -> "\u263A"; "numpad" -> "123"; "sym" -> "#+="; "gear" -> "\u2699"; "voice" -> "\uD83C\uDFA4"
-        "globe" -> "\uD83C\uDF10"; "theme" -> "Th"; "onehand" -> "1H"; "size" -> "Sz"; "pad" -> "Pad"; "undo" -> "\u21B6"; "redo" -> "\u21B7"; "vault" -> "Vlt"; "tt" -> "Tt"; "profiles" -> "Pf"   // v0.4.4; v0.4.6; v0.5.1
+        "globe" -> "\uD83C\uDF10"; "theme" -> "Th"; "onehand" -> "1H"; "size" -> "Sz"; "pad" -> "Pad"; "undo" -> "\u21B6"; "redo" -> "\u21B7"; "vault" -> "Vlt"; "tt" -> "Tt"; "profiles" -> "Pf"; "keymap" -> "Km"   // v0.16.5: keymap; v0.4.4; v0.4.6; v0.5.1
         else -> id
     }
 
@@ -35,7 +35,7 @@ object Toolbar {
         "fmt" -> "Formatter (Aa)"; "clip" -> "Clipboard"; "mode" -> "Mode (Phone / PC)"; "all" -> "Select all"
         "cut" -> "Cut"; "copy" -> "Copy"; "paste" -> "Paste"; "plain" -> "Paste plain"
         "emoji" -> "Emoji panel"; "numpad" -> "Number pad (123)"; "sym" -> "Symbols"; "gear" -> "Settings (gear)"
-        "voice" -> "Voice typing"; "globe" -> "Next keyboard"; "theme" -> "Theme (cycle)"; "onehand" -> "One-hand (cycle)"; "size" -> "Size page"; "pad" -> "Cursor / select pad"; "undo" -> "Undo"; "redo" -> "Redo"; "vault" -> "Text Vault (snippets / notes / glossary)"; "tt" -> "Text tools (count / case / clean / repeat / date)"; "profiles" -> "Profiles (layout sets)"   // v0.4.4; v0.4.6
+        "voice" -> "Voice typing"; "globe" -> "Next keyboard"; "theme" -> "Theme (cycle)"; "onehand" -> "One-hand (cycle)"; "size" -> "Size page"; "pad" -> "Cursor / select pad"; "undo" -> "Undo"; "redo" -> "Redo"; "vault" -> "Text Vault (snippets / notes / glossary)"; "tt" -> "Text tools (count / case / clean / repeat / date)"; "profiles" -> "Profiles (layout sets)"; "keymap" -> "Key map (Bangla cheat sheet)"   // v0.16.5; v0.4.4; v0.4.6
         else -> id
     }
 

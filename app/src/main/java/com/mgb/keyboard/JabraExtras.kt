@@ -375,6 +375,7 @@ class JabraPanels(private val ctx: Context, private val host: JabraHost) {
         root.addView(r4)
         val r5 = row()   // v0.0.9: second settings page
         r5.addView(pk("More settings  >", 1f) { host.showPanel("more") })
+        try { r5.addView(pk("Key map", 1f) { host.showPanel("keymap") }) } catch (_: Throwable) { }   // v0.16.5 (X5)
         root.addView(r5)
         return root
     }

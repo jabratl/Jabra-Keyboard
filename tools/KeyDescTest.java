@@ -5,7 +5,7 @@ public class KeyDescTest {
     static int ok = 0, bad = 0;
     static void t(String n, boolean c) { if (c) ok++; else { bad++; System.out.println("FAIL: " + n); } }
     static boolean eq(String a, String b) { return a == null ? b == null : a.equals(b); }
-    static final String[] ICONS = { "clip", "all", "cut", "copy", "paste", "plain", "search", "close", "pin", "pinned", "gear", "shift", "back", "enter", "space", "fmt", "globe", "mic", "emoji", "mode_phone", "mode_pc", "numpad", "sym", "theme", "onehand", "size", "pad", "vault", "tt", "profiles" };
+    static final String[] ICONS = { "clip", "all", "cut", "copy", "paste", "plain", "search", "close", "pin", "pinned", "gear", "shift", "back", "enter", "space", "fmt", "globe", "mic", "emoji", "mode_phone", "mode_pc", "numpad", "sym", "theme", "onehand", "size", "pad", "vault", "tt", "profiles", "keymap" };
 
     public static void main(String[] a) {
         t("shift", eq(KeyDesc.describe("⇧"), "Shift"));

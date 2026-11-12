@@ -511,6 +511,11 @@ object SettingsGroups {
                     kb.tag = "secreset"   // reuse of the v0.15.8 rule: not counted as a row, hidden while searching (this is NOT a reset button)
                     (secBoxes["Bangla"] ?: g).addView(kb)
                 } catch (_: Throwable) { }
+                try {   // v0.16.5 (X5): "Practice typing" button right under it
+                    val pb = PracticePage.button(ctx)
+                    pb.tag = "secreset"   // same rule as the key map button
+                    (secBoxes["Bangla"] ?: g).addView(pb)
+                } catch (_: Throwable) { }
             }
             toggle(g, "Space swipe = language", "space_lang", false)   // v0.8.9
             toggle(g, "Language bubble on swipe", "sp_preview", true)   // v0.9.2 (R3): works only while Space swipe is ON

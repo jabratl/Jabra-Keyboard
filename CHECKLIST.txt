@@ -618,3 +618,12 @@ Z88) v0.16.4 Bangলা key map page in the app (X4)
  [ ] Dark mode (app Look / Settings > Dark): the page is readable (text, accent colour, cards). Close button and the phone Back key both close the page and you are back on the Typing page where you were.
  [ ] Rotate the phone with the page open: no crash (the page may close or redraw; the Typing page is still fine).
  [ ] Old settings screen (if you still open it) has no new button and works as before.
+
+Z89) v0.16.5 Practice page + keyboard Key map panel (X5)
+ [ ] App > Typing page > Languages & layouts > section "Bangla": under "Open key map" there is "Practice typing (বাংলা লেখা চর্চা)". Settings search hides both buttons (expected).
+ [ ] Open it: a big Bangla word, a box, "Streak 0   Best N". Type the right letters (e.g. word আমি -> ami): the text turns green "Right! Tap Next.", streak 1. Tap Next: new word, never the same twice in a row.
+ [ ] Type wrong letters: red text shows what they made, streak not counted. Hint shows "Type: ...". Skip = new word, streak 0. Close and open again: Best is kept.
+ [ ] Dark mode: readable. Rotate: no crash. Phone Back / Close returns to the Typing page.
+ [ ] Keyboard gear panel (bottom row): new button "Key map" next to "More settings >": opens the cheat sheet, same height as the letters keyboard. Chips switch the group, long lists scroll, ABC returns to the letters.
+ [ ] Toolbar editor: new extra "Key map (Bangla cheat sheet)" (icon / "Km"), OFF by default; turn it on, tap it on the bar: same panel. Default bar looks exactly as before.
+

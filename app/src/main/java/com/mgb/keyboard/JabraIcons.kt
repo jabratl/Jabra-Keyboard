@@ -21,7 +21,7 @@ object JabraIcons {
 
     val NAMES = listOf(
         "clip", "all", "cut", "copy", "paste", "plain", "search", "close",
-        "pin", "pinned", "gear", "shift", "back", "enter", "space", "fmt", "globe", "mic", "emoji", "mode_phone", "mode_pc", "numpad", "sym", "theme", "onehand", "size", "pad", "vault", "tt", "profiles"   // v0.5.1: profiles; v0.4.6: tt; v0.4.4: vault; v0.1.2; v0.2.2: 5 names; v0.2.3: pad
+        "pin", "pinned", "gear", "shift", "back", "enter", "space", "fmt", "globe", "mic", "emoji", "mode_phone", "mode_pc", "numpad", "sym", "theme", "onehand", "size", "pad", "vault", "tt", "profiles", "keymap"   // v0.16.5: keymap; v0.5.1: profiles; v0.4.6: tt; v0.4.4: vault; v0.1.2; v0.2.2: 5 names; v0.2.3: pad
     )
 
     /**
@@ -255,6 +255,13 @@ object JabraIcons {
                     line(c, s, 0.70f, 0.30f, 0.50f, 0.10f)
                     line(c, s, 0.30f, 0.70f, 0.50f, 0.90f)
                     line(c, s, 0.70f, 0.70f, 0.50f, 0.90f)
+                }
+                "keymap" -> {   // v0.16.5: a keyboard outline with 3 key dots (key map)
+                    rr(c, s, 0.06f, 0.22f, 0.94f, 0.78f, 0.08f)
+                    c.drawCircle(0.26f * s, 0.40f * s, 0.05f * s, f)
+                    c.drawCircle(0.50f * s, 0.40f * s, 0.05f * s, f)
+                    c.drawCircle(0.74f * s, 0.40f * s, 0.05f * s, f)
+                    line(c, s, 0.26f, 0.62f, 0.74f, 0.62f)
                 }
                 "profiles" -> {   // v0.5.1: three stacked cards (layout sets)
                     rr(c, s, 0.10f, 0.10f, 0.90f, 0.32f, 0.06f)

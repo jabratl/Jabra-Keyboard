@@ -57,6 +57,7 @@ public final class KeyDesc {
             case "Vlt": return "Text Vault";
             case "Tt": return "Text tools";
             case "Pf": return "Profiles";
+            case "Km": return "Key map";
             case "Ren": return "Rename";
             case "Del": return "Delete";
             default: return null;
@@ -97,6 +98,7 @@ public final class KeyDesc {
             case "vault": return "Text Vault";
             case "tt": return "Text tools";
             case "profiles": return "Profiles";
+            case "keymap": return "Key map";
             default: return icon;
         }
     }
