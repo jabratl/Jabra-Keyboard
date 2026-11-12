@@ -56,7 +56,7 @@ public final class PagePlan {
 
     public static String layoutSummary(int heightPct, int radiusDp) { return "Height " + heightPct + "%, radius " + radiusDp; }
     public static String lookSummary(String themeName, boolean jabraLook) { return (themeName == null || themeName.isEmpty() ? "Classic" : themeName) + ", " + (jabraLook ? "Jabra look" : "Classic look"); }
-    public static String typingSummary(boolean probhat, boolean spaceSwipe) { return (probhat ? "Probhat" : "Avro") + ", space swipe " + onOff(spaceSwipe); }
+    public static String typingSummary(boolean probhat, boolean spaceSwipe) { return LangNames.summary(probhat) + ", space swipe " + onOff(spaceSwipe); }
     public static String keysSummary(boolean vibrate, boolean sound, boolean popup) { return "Vibrate " + onOff(vibrate) + ", sound " + onOff(sound) + ", popup " + onOff(popup); }
     public static String clipSummary(boolean history, boolean editBar) { return "History " + onOff(history) + ", edit bar " + onOff(editBar); }
     public static String toolsSummary(boolean editBar, boolean formatter) { return "Edit bar " + onOff(editBar) + ", formatter " + onOff(formatter); }   // v0.15.3 (N3)

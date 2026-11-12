@@ -495,13 +495,13 @@ object SettingsGroups {
         }
 
         group("Languages & layouts") { g ->
-            cycle(g, "Bangla layout", "bn_layout", { arrayOf("Avro (phonetic)", "Probhat") },
+            cycle(g, "Bangla layout", "bn_layout", { try { com.mgb.keyboard.typing.LangNames.layoutChoices() } catch (_: Throwable) { arrayOf("Avro (phonetic)", "Probhat") } },   // v0.16.2
                 { if (prefs.str("bn_layout", "avro") == "probhat") 1 else 0 },
                 { prefs.setStr("bn_layout", if (it == 1) "probhat" else "avro") })
             cycle(g, "Language key tap", "lang_tap", { Array(3) { i -> com.mgb.keyboard.typing.LangOrder.TAP_NAMES[i] } }, { prefs.int("lang_tap", 0).coerceIn(0, 2) }, { prefs.setInt("lang_tap", it) })   // v0.5.0
             cycle(g, "Bangla first", "lang_fav", { Array(3) { i -> com.mgb.keyboard.typing.LangOrder.FAV_NAMES[i] } }, { prefs.int("lang_fav", 0).coerceIn(0, 2) }, { prefs.setInt("lang_fav", it) })   // v0.5.0
-            toggle(g, "Avro available", "lang_avro_on", true)   // v0.5.0
-            toggle(g, "Probhat available", "lang_probhat_on", true)   // v0.5.0
+            toggle(g, "${com.mgb.keyboard.typing.LangNames.AVRO} available", "lang_avro_on", true)   // v0.5.0
+            toggle(g, "${com.mgb.keyboard.typing.LangNames.PROBHAT} available", "lang_probhat_on", true)   // v0.5.0
             toggle(g, "Space swipe = language", "space_lang", false)   // v0.8.9
             toggle(g, "Language bubble on swipe", "sp_preview", true)   // v0.9.2 (R3): works only while Space swipe is ON
             toggle(g, "Tick on swipe", "sp_tick", true)   // v0.9.8 (V3): soft tick per language step; works only while Space swipe is ON
@@ -588,7 +588,7 @@ object SettingsGroups {
             // v0.10.27 (P2): bottom row like Ridmik, "..." marks on long-press keys, Probhat home row gap. All default = old look.
             cycle(g, "Bottom row", "bot_style", { arrayOf("Old", "Ridmik-like") }, { prefs.int("bot_style", 0).coerceIn(0, 1) }, { prefs.setInt("bot_style", it) }, 0)
             toggle(g, "Long-press dots", "key_dots", false)
-            toggle(g, "Probhat home row gap", "pb_home_gap", false)
+            toggle(g, "${com.mgb.keyboard.typing.LangNames.PROBHAT} home row gap", "pb_home_gap", false)
             run {   // v0.10.26: one tap = Ridmik-style numbers (height 120 / 100 %, gap 2, edge 1, row gap 2, Shift gap 4). Two taps to apply, one tap to undo.
                 val keys = com.mgb.keyboard.typing.EdgePlan.PRESET_KEYS
                 var sure = false

@@ -590,3 +590,12 @@ Z85) v0.16.1 Clipboard / Vault keep the scroll position (X1)
  [ ] Open the clipboard, scroll down, tap ABC, open the clipboard again: it starts at the top. Edit one clip (Manage > tick one > Edit > Cancel): back in the list at the same place.
  [ ] Clipboard still as tall as the letters keyboard (Z77), no flicker added.
  [ ] Vault (toolbar item Vault, if it is on): 10+ entries, Manage, tick entries at the bottom: list stays. Delete: stays. Folder chips / kind chips / Search: top (expected).
+
+Z86) v0.16.2 New names Bangলা / বাংলা (X2)
+ [ ] Keyboard, language key: English shows EN. Tap it: Bangla on, the key shows "Bangলা" (or "বাংলা" if বাংলা was the last used one). The text fits the key, not cut. Also check Letter size 130 % and landscape.
+ [ ] Long-press the language key: switches between "Bangলা" and "বাংলা" (key text changes). Typing still works like before in both (Bangলা = phonetic, বাংলা = fixed layout).
+ [ ] Settings > Space swipe = language ON: space key shows "◂ Bangলা ▸" / "◂ বাংলা ▸"; swipe on space: the bubble shows English / Bangলা / বাংলা.
+ [ ] App > Typing page > Languages & layouts: row "Bangla layout" choices read "Bangলা (phonetic)" / "বাংলা (fixed)"; toggles "Bangলা available" / "বাংলা available"; Keys page: "বাংলা home row gap". Tap each: the setting still works as before (language key skips a hidden language).
+ [ ] App home (Typing tile summary) shows the new name + ", space swipe on / off". Settings search "bangla": help lines show the new names. Search "avro" / "probhat" find nothing (expected).
+ [ ] Keyboard gear > More: button "Bangla: Bangলা" / "Bangla: বাংলা" switches the layout. Keyboard preview in the app (EN / বাংলা button) shows the new name.
+ [ ] Nothing else changed: saved language kept after update, backup / restore still fine.

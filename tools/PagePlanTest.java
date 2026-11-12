@@ -45,7 +45,7 @@ public class PagePlanTest {
         eq("sum layout", PagePlan.layoutSummary(120, 6), "Height 120%, radius 6");
         eq("sum look", PagePlan.lookSummary("Blue", true), "Blue, Jabra look");
         eq("sum look empty", PagePlan.lookSummary("", false), "Classic, Classic look");
-        eq("sum typing", PagePlan.typingSummary(true, false), "Probhat, space swipe off");
+        eq("sum typing", PagePlan.typingSummary(true, false), "\u09AC\u09BE\u0982\u09B2\u09BE, space swipe off");
         eq("sum keys", PagePlan.keysSummary(true, false, true), "Vibrate on, sound off, popup on");
         eq("sum clip", PagePlan.clipSummary(false, true), "History off, edit bar on");
         eq("sum data", PagePlan.dataSummary(true, "0.11.0"), "Auto backup on, v0.11.0");

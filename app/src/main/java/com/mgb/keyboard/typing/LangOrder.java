@@ -17,9 +17,9 @@ public final class LangOrder {
     private LangOrder() { }
 
     /** tapMode: 0 = EN <-> Bangla (default), 1 = cycle EN > Avro > Probhat, 2 = cycle EN > Probhat > Avro (hidden layouts are skipped). */
-    public static final String[] TAP_NAMES = { "EN <-> Bangla", "Cycle EN > Avro > Probhat", "Cycle EN > Probhat > Avro" };
+    public static final String[] TAP_NAMES = LangNames.tapNames();   // v0.16.2: shown names come from LangNames
     /** fav: which Bangla layout comes first when you tap from EN: 0 = the last used one (default), 1 = Avro, 2 = Probhat. */
-    public static final String[] FAV_NAMES = { "Last used", "Avro", "Probhat" };
+    public static final String[] FAV_NAMES = LangNames.favNames();   // v0.16.2
 
     public static final int MAX_CUSTOM = 10;
 

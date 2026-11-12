@@ -42,8 +42,8 @@ public class LangSwipeTest {
         eq("both off Bangla -> EN", s(LangSwipe.step(true, false, false, false, 1)), "0,0");
         // labels
         eq("label EN", LangSwipe.spaceLabel(false, false), "\u25C2 English \u25B8");
-        eq("name avro", LangSwipe.name(true, false), "\u09AC\u09BE\u0982\u09B2\u09BE (Avro)");
-        eq("name probhat", LangSwipe.name(true, true), "\u09AC\u09BE\u0982\u09B2\u09BE (Probhat)");
+        eq("name avro (v0.16.2: Bangla-lA)", LangSwipe.name(true, false), "Bang\u09B2\u09BE");
+        eq("name probhat (v0.16.2)", LangSwipe.name(true, true), "\u09AC\u09BE\u0982\u09B2\u09BE");
         eq("name EN ignores probhat", LangSwipe.name(false, true), "English");
         // language key visibility
         eq("vis default", LangSwipe.langKeyVisible(true, false), true);
@@ -53,8 +53,8 @@ public class LangSwipeTest {
                 // v0.9.2 (R3): live bubble label + switch
         eq("label EN", LangSwipe.label(false, false), "English");
         eq("label EN (probhat remembered)", LangSwipe.label(false, true), "English");
-        eq("label Avro", LangSwipe.label(true, false), "Avro");
-        eq("label Probhat", LangSwipe.label(true, true), "Probhat");
+        eq("label avro", LangSwipe.label(true, false), "Bang\u09B2\u09BE");
+        eq("label probhat", LangSwipe.label(true, true), "\u09AC\u09BE\u0982\u09B2\u09BE");
         eq("preview ON+ON", LangSwipe.previewOn(true, true), true);
         eq("preview swipe OFF", LangSwipe.previewOn(false, true), false);
         eq("preview pref OFF", LangSwipe.previewOn(true, false), false);
@@ -63,15 +63,15 @@ public class LangSwipeTest {
             int[] st = { 0, 0 };
             StringBuilder seq = new StringBuilder();
             for (int k = 0; k < 4; k++) { st = LangSwipe.step(st[0] == 1, st[1] == 1, true, true, 1); seq.append(LangSwipe.label(st[0] == 1, st[1] == 1)).append(k < 3 ? "," : ""); }
-            eq("right x4 labels", seq.toString(), "Avro,Probhat,English,Avro");
+            eq("right x4 labels", seq.toString(), "Bang\u09B2\u09BE,\u09AC\u09BE\u0982\u09B2\u09BE,English,Bang\u09B2\u09BE");
             st = new int[] { 0, 0 }; seq = new StringBuilder();
             for (int k = 0; k < 3; k++) { st = LangSwipe.step(st[0] == 1, st[1] == 1, true, true, -1); seq.append(LangSwipe.label(st[0] == 1, st[1] == 1)).append(k < 2 ? "," : ""); }
-            eq("left x3 labels", seq.toString(), "Probhat,Avro,English");
+            eq("left x3 labels", seq.toString(), "\u09AC\u09BE\u0982\u09B2\u09BE,Bang\u09B2\u09BE,English");
         }
-        eq("Probhat off: EN +1 shows Avro", LangSwipe.label(LangSwipe.step(false, false, true, false, 1)[0] == 1, LangSwipe.step(false, false, true, false, 1)[1] == 1), "Avro");
-        eq("Avro off: EN +1 shows Probhat", LangSwipe.label(LangSwipe.step(false, false, false, true, 1)[0] == 1, LangSwipe.step(false, false, false, true, 1)[1] == 1), "Probhat");
+        eq("Probhat off: EN +1 shows Avro", LangSwipe.label(LangSwipe.step(false, false, true, false, 1)[0] == 1, LangSwipe.step(false, false, true, false, 1)[1] == 1), "Bang\u09B2\u09BE");
+        eq("Avro off: EN +1 shows Probhat", LangSwipe.label(LangSwipe.step(false, false, false, true, 1)[0] == 1, LangSwipe.step(false, false, false, true, 1)[1] == 1), "\u09AC\u09BE\u0982\u09B2\u09BE");
         eq("labels never empty / short", LangSwipe.label(true, true).length() <= 10 && LangSwipe.label(false, false).length() <= 10, true);
-        eq("label differs from space caption name", LangSwipe.label(true, false).equals(LangSwipe.name(true, false)), false);
+        eq("v0.16.2: bubble label = space caption name (names have no (Avro) / (Probhat) suffix any more)", LangSwipe.label(true, false).equals(LangSwipe.name(true, false)) && LangSwipe.label(true, true).equals(LangSwipe.name(true, true)), true);
         // ---- v0.9.8 (V3) ----
         eq("stepDp small", LangSwipe.stepDp(0), 32f);
         eq("stepDp normal = old 44", LangSwipe.stepDp(1), 44f);

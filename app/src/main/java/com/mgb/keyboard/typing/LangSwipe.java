@@ -35,13 +35,13 @@ public final class LangSwipe {
 
     public static String name(boolean bangla, boolean probhat) {
         if (!bangla) return "English";
-        return probhat ? "\u09AC\u09BE\u0982\u09B2\u09BE (Probhat)" : "\u09AC\u09BE\u0982\u09B2\u09BE (Avro)";
+        return LangNames.name(probhat);   // v0.16.2: "Bang\u09B2\u09BE" / "\u09AC\u09BE\u0982\u09B2\u09BE"
     }
 
     /** v0.9.2 (R3): short name shown in the live bubble while swiping: "English" / "Avro" / "Probhat". */
     public static String label(boolean bangla, boolean probhat) {
         if (!bangla) return "English";
-        return probhat ? "Probhat" : "Avro";
+        return LangNames.bubbleName(probhat);   // v0.16.2
     }
 
     /** v0.9.2 (R3): the live bubble is drawn only when the space swipe is ON and sp_preview is ON. */

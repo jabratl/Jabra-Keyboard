@@ -328,9 +328,9 @@ class JabraPanels(private val ctx: Context, private val host: JabraHost) {
             val nv = if (prefs.str("bn_layout", "avro") == "probhat") "avro" else "probhat"
             prefs.setStr("bn_layout", nv)
             host.layoutChanged()
-            btn.text = "Bangla: " + (if (nv == "probhat") "Probhat" else "Avro")
+            btn.text = "Bangla: " + (try { com.mgb.keyboard.typing.LangNames.name(nv == "probhat") } catch (_: Throwable) { if (nv == "probhat") "Probhat" else "Avro" })   // v0.16.2
         }
-        b.text = "Bangla: " + (if (prefs.str("bn_layout", "avro") == "probhat") "Probhat" else "Avro")
+        b.text = "Bangla: " + (try { com.mgb.keyboard.typing.LangNames.name(prefs.str("bn_layout", "avro") == "probhat") } catch (_: Throwable) { if (prefs.str("bn_layout", "avro") == "probhat") "Probhat" else "Avro" })   // v0.16.2
         b.textSize = 12f
         return b
     }

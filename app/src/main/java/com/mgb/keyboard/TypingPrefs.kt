@@ -338,7 +338,7 @@ class TypingPanel(private val ctx: Context, private val host: JabraHost) {
         root.addView(note("Double-space: tap space twice = \". \" (Bangla mode: \"\u0964 \"). Tab only when the period does not fit. Not used in password / email / web fields. " +
             "Long-press: System = the phone's own time. Cursor speed: drag on the space key. Globe = next keyboard. Voice = the phone's voice typing (no recording by Jabra). " +
             "Keys appear on the bottom row after ABC (apply). Key popup: a bubble above the pressed letter (works at once). Large number row: ABC (apply). " +
-            "Long-press characters: hold a letter key = types its small corner character (English only; not in Avro / Probhat). Hide hints: hides only the small label (ABC apply), long-press still works. " +
+            "Long-press characters: hold a letter key = types its small corner character (English only; not in Bangলা / বাংলা). Hide hints: hides only the small label (ABC apply), long-press still works. " +
             "Char row: type up to 10 characters (e.g. @ # _ - ) in any text field, tap this button = they become an extra row above the numbers (ABC apply). " +
             "Vibration strength: Light / Medium (old) / Strong. Hint override: type pairs like a=@,s=# (letter = one character, max 26) in any text field, tap the button = those letters use your character on long-press (ABC apply)."))
 

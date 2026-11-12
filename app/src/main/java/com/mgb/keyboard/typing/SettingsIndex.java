@@ -88,11 +88,11 @@ public final class SettingsIndex {
     public static String help(String key) {
         if (key == null) return "";
         switch (key) {
-            case "bn_layout": return "Which Bangla keyboard the language key uses: Avro (phonetic) or Probhat (fixed).";
+            case "bn_layout": return "Which Bangla keyboard the language key uses: " + LangNames.AVRO + " (phonetic) or " + LangNames.PROBHAT + " (fixed).";
             case "lang_tap": return "Language key tap: EN <-> Bangla (default), or cycle through all languages.";
             case "lang_fav": return "Which Bangla layout opens first when you tap the language key from English.";
-            case "lang_avro_on": return "OFF hides Avro from the language key (English always stays).";
-            case "lang_probhat_on": return "OFF hides Probhat from the language key (English always stays).";
+            case "lang_avro_on": return "OFF hides " + LangNames.AVRO + " from the language key (English always stays).";
+            case "lang_probhat_on": return "OFF hides " + LangNames.PROBHAT + " from the language key (English always stays).";
             case "numrow": return "Shows a row of digits above the letters.";
             case "numpad_auto": return "Opens the number pad by itself in number and phone fields.";
             case "pc_mode": return "Phone = normal keys. PC = extra Esc / Ctrl / F-keys / arrows rows.";
@@ -115,7 +115,7 @@ public final class SettingsIndex {
             case "sp_preview": return "Shows the active language in a bubble while you swipe on space. Needs Space swipe ON.";
             case "key_lang": return "Hide the language (EN) key. Works only while Space swipe is ON (else the key stays).";
             case "tb_tip": return "Hold a toolbar icon for 0.3 s to see its name above it.";
-            case "numrow_bn": return "Avro / Probhat show Bangla digits on the number row; hold a key for the Latin digit.";
+            case "numrow_bn": return LangNames.AVRO + " / " + LangNames.PROBHAT + " show Bangla digits on the number row; hold a key for the Latin digit.";
             case "hint_digits": return "Number row shows a small Bangla digit; hold the key to type it.";
             case "hint_size_lv": return "Size of the small hint characters (Normal = as before).";
             case "hint_alpha_lv": return "How strong the small hint characters look (Normal = as before).";
@@ -133,7 +133,7 @@ public final class SettingsIndex {
             case "key_radius": return "Roundness of the keys in dp (Jabra look only; Look group). 9 = old, Ridmik is about 6.";   // v0.10.28
             case "bot_style": return "Bottom row widths. Ridmik-like: ?123 and Enter same width, space a bit shorter. Old = as before.";   // v0.10.27
             case "key_dots": return "Three small dots on keys with a long-press action (?123, language key, comma). OFF = none.";   // v0.10.27
-            case "pb_home_gap": return "Probhat home row: half-key gap at the left like Ridmik. The extra key (ৃ / ঞ) becomes half width at the right. Needs Home row side gap ON.";   // v0.10.27
+            case "pb_home_gap": return LangNames.PROBHAT + " home row: half-key gap at the left like Ridmik. The extra key (ৃ / ঞ) becomes half width at the right. Needs Home row side gap ON.";   // v0.10.27
             case "fn_gap": return "Extra space between Shift / Backspace and the letters. 0 = old. Ridmik uses about 4 dp.";   // v0.10.26
             case "letter_pct": return "Letter size. 100% = normal.";   // v0.10.25
             case "letter_bold": return "Bold letters on the keys.";   // v0.10.25
@@ -148,7 +148,7 @@ public final class SettingsIndex {
             case "pop_fast": return "Draws the key bubble inside the keyboard: smoother (needs Key popup ON). OFF = old.";   // v0.9.9
             case "sp_tick": return "Soft tick for every language step while you swipe on space. Needs Space swipe ON.";   // v0.9.8
             case "sp_step": return "How far to swipe on space for one language step: Small, Normal or Large.";   // v0.9.8
-            case "h_lock": return "Keyboard keeps the same height in English, Avro and Probhat (no jump). OFF = old.";   // v0.9.7
+            case "h_lock": return "Keyboard keeps the same height in English, " + LangNames.AVRO + " and " + LangNames.PROBHAT + " (no jump). OFF = old.";   // v0.9.7
             case "key_globe": return "Shows a key to switch to the next keyboard.";
             case "key_voice": return "Shows a key that opens the phone's voice typing.";
             case "key_emoji": return "Shows an emoji key next to the language key.";

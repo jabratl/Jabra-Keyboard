@@ -146,9 +146,9 @@ object KeyboardPreview {
         val r4 = row()
         val bst = BottomPlan.style(p.int("bot_style", 0))   // v0.10.27
         r4.addView(key("?123", BottomPlan.symWeight(bst), 1))
-        r4.addView(key(if (probhat) "\u09AA\u09CD\u09B0\u09AD\u09BE" else "EN", BottomPlan.langWeight(bst), 1))
+        r4.addView(key(if (probhat) com.mgb.keyboard.typing.LangNames.keyLabel(true) else "EN", BottomPlan.langWeight(bst), 1))
         r4.addView(key(",", 1f, 0))
-        val spaceLabel = if (p.bool("space_lang", false)) (if (probhat) "\u09AA\u09CD\u09B0\u09AD\u09BE\u09A4" else "English") else "space"
+        val spaceLabel = if (p.bool("space_lang", false)) (if (probhat) com.mgb.keyboard.typing.LangNames.name(true) else "English") else "space"
         r4.addView(key(spaceLabel, BottomPlan.spaceWeight(bst, BottomPlan.symWeight(bst) + BottomPlan.langWeight(bst) + BottomPlan.enterWeight(bst) + 3f), 2))
         r4.addView(key(if (probhat) "\u0964" else "?", 1f, 0))
         r4.addView(key(".", 1f, 0))
@@ -217,7 +217,7 @@ internal class ThemeTile(c: Context, private val p: JabraPrefs, val idx: Int, va
 
 /**
  * v0.10.25: the card at the TOP of the app screen (outside the scroll area, so it stays visible while you change settings):
- * title + [EN / Probhat] + [view mode], the live keyboard picture, and a strip of theme tiles (tap = choose that theme).
+ * title + [EN / বাংলা] + [view mode], the live keyboard picture, and a strip of theme tiles (tap = choose that theme).
  * Pref pv_mode: 0 = picture + themes (default), 1 = picture only, 2 = hidden (only the title row stays).
  */
 object PreviewCard {
@@ -288,7 +288,7 @@ object PreviewCard {
 
         val langBtn = small("EN") { }
         val modeBtn = small("") { }
-        langBtn.setOnClickListener { try { pro = !pro; langBtn.text = if (pro) "Probhat" else "EN"; redraw() } catch (_: Throwable) { } }
+        langBtn.setOnClickListener { try { pro = !pro; langBtn.text = if (pro) com.mgb.keyboard.typing.LangNames.PROBHAT else "EN"; redraw() } catch (_: Throwable) { } }
         modeBtn.setOnClickListener { try { mode = (mode + 1) % 3; p.setInt("pv_mode", mode); applyMode(langBtn, modeBtn) } catch (_: Throwable) { } }
         head.addView(langBtn)
         head.addView(modeBtn)

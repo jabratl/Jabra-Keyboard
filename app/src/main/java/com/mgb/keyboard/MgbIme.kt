@@ -551,7 +551,7 @@ class MgbIme : InputMethodService() {
         }
     } catch (_: Throwable) { if (pb) View.VISIBLE else View.GONE }
 
-    private fun langLabel(): String = if (!bangla) "EN" else if (probhat) "প্রভা" else "বাং"
+    private fun langLabel(): String = if (!bangla) "EN" else (try { com.mgb.keyboard.typing.LangNames.keyLabel(probhat) } catch (_: Throwable) { if (probhat) "প্রভা" else "বাং" })   // v0.16.2: names from LangNames (old text = fallback)
 
     /** After the language / layout changed: refresh the key captions and letter labels. */
     private fun afterLangChange() {   // v0.9.10 (V5): timing wrapper, body unchanged below
