@@ -139,7 +139,8 @@ class MgbIme : InputMethodService() {
         }
         val lp = LinearLayout.LayoutParams(0, dp(keyDp()), weight)   // v0.0.5: 48dp unless user changed height
         val g = try { dp(com.mgb.keyboard.typing.SizePct.gapDp(prefs.int("key_gap", -1))) } catch (_: Throwable) { dp(2) }   // v0.3.0: key gap setting
-        lp.setMargins(g, g, g, g)
+        val gv = try { dp(com.mgb.keyboard.typing.EdgePlan.vGapDp(prefs.int("row_vgap", -1), com.mgb.keyboard.typing.SizePct.gapDp(prefs.int("key_gap", -1)))) } catch (_: Throwable) { g }   // v0.10.26: up-down gap (unset = same as the key gap = old)
+        lp.setMargins(g, gv, g, gv)
         b.layoutParams = lp
         return b
     }
@@ -930,7 +931,8 @@ class MgbIme : InputMethodService() {
         val root = LinearLayout(this)
         root.orientation = LinearLayout.VERTICAL
         root.setBackgroundColor(Color.parseColor("#DDDDDD"))
-        root.setPadding(dp(2), dp(4), dp(2), dp(4))
+        val edgePx = try { dp(com.mgb.keyboard.typing.EdgePlan.edgeDp(prefs.int("edge_dp", -1))) } catch (_: Throwable) { dp(2) }   // v0.10.26: edge distance (unset = 2 dp = old)
+        root.setPadding(edgePx, dp(4), edgePx, dp(4))
         try { JabraThemes.paint(prefs, root) } catch (_: Throwable) { }   // v0.1.0: theme background (Classic = same grey)   // v0.2.6
 
         try { pcState.setPc(prefs.bool("pc_mode", false)) } catch (_: Throwable) { }   // v0.1.2: pref pc_mode is the one truth
@@ -1010,6 +1012,15 @@ class MgbIme : InputMethodService() {
         val bkb = JabraIcons.putThemed(this, key("⌫", 1.5f) { onBackspace() }, "back")   // v0.0.7
         try { if (prefs.bool("bs_repeat", true)) RepeatKeyHelper({ onBackspace() }, { v -> feedback(v) }, if (prefs.bool("bs_word", true)) ({ onBackspaceWord() }) else null).attach(bkb) } catch (_: Throwable) { }   // v0.0.9: hold = repeat
         r3.addView(fn(bkb))   // v0.1.5
+        try {   // v0.10.26: extra gap beside Shift / Backspace (pref fn_gap, unset = 0 = old). The 2 big keys get a little less weight so z..m keep the width of the row above.
+            val fg = com.mgb.keyboard.typing.EdgePlan.fnGapDp(prefs.int("fn_gap", -1))
+            if (fg > 0) {
+                val sdp = resources.displayMetrics.widthPixels / resources.displayMetrics.density
+                val fw = com.mgb.keyboard.typing.EdgePlan.fnWeight(fg, sdp, com.mgb.keyboard.typing.EdgePlan.edgeDp(prefs.int("edge_dp", -1)))
+                (shb.layoutParams as LinearLayout.LayoutParams).let { it.weight = fw; it.rightMargin += dp(fg) }
+                (bkb.layoutParams as LinearLayout.LayoutParams).let { it.weight = fw; it.leftMargin += dp(fg) }
+            }
+        } catch (_: Throwable) { }
         root.addView(r3)
 
         val r4 = row()

@@ -15,6 +15,7 @@ import android.widget.HorizontalScrollView
 import android.widget.LinearLayout
 import android.widget.TextView
 import com.mgb.keyboard.probhat.ProbhatLayout
+import com.mgb.keyboard.typing.EdgePlan
 import com.mgb.keyboard.typing.RowGap
 import com.mgb.keyboard.typing.SizePct
 
@@ -47,10 +48,14 @@ object KeyboardPreview {
         root.orientation = LinearLayout.VERTICAL
         root.setBackgroundColor(0xFFDDDDDD.toInt())
         try { JabraThemes.paint(p, root) } catch (_: Throwable) { }
-        root.setPadding(px(2f), px(4f * SCALE), px(2f), px(4f * SCALE))
+        val edgeDp = EdgePlan.edgeDp(p.int("edge_dp", -1))   // v0.10.26: same edge distance as the real keyboard (real dp, widths are real)
+        root.setPadding(px(edgeDp.toFloat()), px(4f * SCALE), px(edgeDp.toFloat()), px(4f * SCALE))
 
         val keyH = p.keyHeightDp(false) * SCALE
-        val gap = SizePct.gapDp(p.int("key_gap", -1)) * SCALE
+        val gapRealDp = SizePct.gapDp(p.int("key_gap", -1))
+        val gap = gapRealDp * SCALE   // heights are scaled
+        val gapH = gapRealDp.toFloat()   // v0.10.26: left-right gap is a real width, not scaled (the old picture drew it too narrow)
+        val gapV = EdgePlan.vGapDp(p.int("row_vgap", -1), gapRealDp) * SCALE   // v0.10.26: up-down gap (unset = key gap = old)
         val lpct = p.int("letter_pct", -1)
         val letterSp = (if (SizePct.letterValid(lpct)) SizePct.letterSp(lpct) else 14f) * 0.8f
         val bold = p.bool("letter_bold", false)
@@ -69,7 +74,7 @@ object KeyboardPreview {
             try { if (kind == 1) JabraLook.shape(p, b, JabraLook.FUNC) else if (kind == 2) JabraLook.shape(p, b, JabraLook.PILL) } catch (_: Throwable) { }
             if (bold && kind == 0) b.setTypeface(b.typeface, Typeface.BOLD)
             val lp = LinearLayout.LayoutParams(0, px(h), weight)
-            lp.setMargins(px(gap), px(gap), px(gap), px(gap))
+            lp.setMargins(px(gapH), px(gapV), px(gapH), px(gapV))
             b.layoutParams = lp
             return b
         }
@@ -123,6 +128,15 @@ object KeyboardPreview {
         val bk = key("\u232B", 1.5f, 1)
         try { JabraIcons.putThemed(ctx, bk, "back") } catch (_: Throwable) { }
         r3.addView(bk)
+        try {   // v0.10.26: gap beside Shift / Backspace, same rule as the real keyboard
+            val fg = EdgePlan.fnGapDp(p.int("fn_gap", -1))
+            if (fg > 0) {
+                val sdp = ctx.resources.displayMetrics.widthPixels / d
+                val fw = EdgePlan.fnWeight(fg, sdp, edgeDp)
+                (sh.layoutParams as LinearLayout.LayoutParams).let { it.weight = fw; it.rightMargin += px(fg.toFloat()) }
+                (bk.layoutParams as LinearLayout.LayoutParams).let { it.weight = fw; it.leftMargin += px(fg.toFloat()) }
+            }
+        } catch (_: Throwable) { }
         root.addView(r3)
 
         val r4 = row()

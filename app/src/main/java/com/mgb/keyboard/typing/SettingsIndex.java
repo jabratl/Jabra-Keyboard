@@ -128,6 +128,9 @@ public final class SettingsIndex {
             case "row_gap": return "Home row (a-l): same key width as the row above, half a key of free space on each side. A tap in the free space types the nearest key. ON = default.";   // v0.10.25
             case "kh_pct_p": return "Key height in portrait. 100% = 48 dp. The picture at the top shows it.";   // v0.10.25
             case "key_gap": return "Space between keys in dp. Smaller gap = bigger keys.";   // v0.10.25
+            case "edge_dp": return "Space between the screen edge and the first key. Smaller = wider keys. 2 dp = old.";   // v0.10.26
+            case "row_vgap": return "Up-down space between key rows. Not set = same as Key gap.";   // v0.10.26
+            case "fn_gap": return "Extra space between Shift / Backspace and the letters. 0 = old. Ridmik uses about 4 dp.";   // v0.10.26
             case "letter_pct": return "Letter size. 100% = normal.";   // v0.10.25
             case "letter_bold": return "Bold letters on the keys.";   // v0.10.25
             case "oh_w_p": return "Width of the keyboard in one-hand mode (portrait). Needs One-hand Left or Right.";   // v0.10.25
