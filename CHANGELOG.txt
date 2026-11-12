@@ -1,3 +1,10 @@
+v0.16.11 - MODIFY (PARTIAL, X11 part 1): Gear panel as grouped tile grid (plan X, step X11)
+- Done: typing/PanelTiles.java (pure: 14 tiles in 8 groups, byRoute, search over SettingsIndex) + tools/PanelTilesTest.java (40 checks, NOT run: no javac in this chat). JabraExtras.kt: settingsNew() behind panel_ui = 1 (hook marked "// v0.16.11 (X11)" in settings()); every tile = host.showPanel(old route). Classic = untouched.
+- Also done: 4 quick toggles + "More settings" button on the new gear; help line "now Clipboard + Vault + Gear"; CHECKLIST Z94; version 0.16.11.
+- NOT done yet (X11 part 2): the "More" page as tiles (it holds toggles, kept classic on purpose = nothing removed); in-keyboard search box (needs a keyboard-side entries list + a way to type inside the IME).
+- NOT tested: phone. Kotlin + Java NOT compiled.
+- Rollback: Panel style = Classic. Code: delete PanelTiles.java + PanelTilesTest.java, remove the 3 lines marked "// v0.16.11".
+
 v0.16.10 - MODIFY: Vault panel redesign, "New" style (plan X, step X10)
 - WHY: easier browsing of snippets / notes / glossary. Same pref as the clipboard: App > Clipboard & tools > "Look of clips" > "Panel style" [Classic | New].
 - What you get (Panel style = New): sticky top bar ABC | Search | Add | Folders (select mode: ABC | Search | Done); folder chips with counts (All, Unfiled, your folders); kind chips; info line "12 items" + Sort; card list (bold title = title or line 1, 1-line preview, tag Note / Template / Term, use count); tap = insert; long-press = actions sheet Edit | Move | Delete (two taps) | Select; select mode = bottom bar All | Move | Edit (one picked) | Delete | Done. The list keeps its scroll position (X1).

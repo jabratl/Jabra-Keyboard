@@ -9,6 +9,7 @@ import android.view.View
 import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.TextView
+import com.mgb.keyboard.typing.PanelLayout   // v0.16.11 (X11 part 2)
 
 /*
  * v0.0.9 typing basics. All new code lives here + typing/ShiftState.java + typing/EnterAction.java (pure Java, tested).
@@ -157,7 +158,58 @@ class MorePanel(private val ctx: Context, private val host: JabraHost) {
     /** Returns null on any problem -> keyboard shows normal letters. */
     fun build(): View? = try { make() } catch (_: Throwable) { null }
 
+    // v0.16.11 (X11 part 2): "More settings" as tiles (panel_ui = 1). Same prefs, same panels as the classic page: nothing removed.
+    // A toggle / cycle tile changes the pref, then reopens this page (showPanel("more")) so the tile shows the new value.
+    private fun makeNew(): View? = try {
+        val root = LinearLayout(ctx)
+        root.orientation = LinearLayout.VERTICAL
+        root.setBackgroundColor(Color.parseColor("#DDDDDD"))
+        try { JabraThemes.paint(prefs, root) } catch (_: Throwable) { }
+        root.setPadding(dp(2), dp(4), dp(2), dp(4))
+        val cols = PanelLayout.columns((ctx.resources.displayMetrics.widthPixels / ctx.resources.displayMetrics.density).toInt())
+        fun again() { host.showPanel("more") }
+        fun tog(title: String, key: String, def: Boolean): PanelKit.Tile {
+            val on = prefs.bool(key, def)
+            return PanelKit.Tile(title, if (on) "ON" else "OFF", on) { prefs.setBool(key, !prefs.bool(key, def)); again() }
+        }
+        fun go(label: String, route: String): PanelKit.Tile = PanelKit.Tile(label) { host.showPanel(route) }
+
+        root.addView(PanelKit.sectionLabel(ctx, prefs, "Typing"))
+        root.addView(PanelKit.tileGrid(ctx, prefs, host, cols, listOf(
+            tog("Hold backspace", "bs_repeat", true), tog("Auto caps", "autocap", true),
+            tog("Enter action", "enter_action", true), tog("Word delete", "bs_word", true))))
+
+        val look = ArrayList<PanelKit.Tile>()
+        try {
+            look.add(PanelKit.Tile("Theme", JabraThemes.cur(prefs).name) { prefs.setInt("theme", (JabraThemes.index(prefs) + 1) % JabraThemes.ALL.size); again() })
+            val ohNames = arrayOf("Off", "Left", "Right")
+            look.add(PanelKit.Tile("One-hand", ohNames[JabraOneHand.mode(prefs)]) { prefs.setInt("onehand", (JabraOneHand.mode(prefs) + 1) % 3); again() })
+            look.add(PanelKit.Tile("Look", if (prefs.int("look", 0) == 1) "Jabra" else "Classic") { prefs.setInt("look", if (prefs.int("look", 0) == 1) 0 else 1); again() })
+            look.add(PanelKit.Tile("Key border", if (prefs.int("key_border", 0) == 1) "Borderless" else "Border") { prefs.setInt("key_border", if (prefs.int("key_border", 0) == 1) 0 else 1); again() })
+        } catch (_: Throwable) { }
+        if (look.isNotEmpty()) {
+            root.addView(PanelKit.sectionLabel(ctx, prefs, "Look"))
+            root.addView(PanelKit.tileGrid(ctx, prefs, host, cols, look))
+        }
+
+        root.addView(PanelKit.sectionLabel(ctx, prefs, "PC mode"))
+        root.addView(PanelKit.tileGrid(ctx, prefs, host, cols, listOf(
+            PanelKit.Tile("Mode", if (prefs.bool("pc_mode", false)) "PC" else "Phone") { prefs.setBool("pc_mode", !prefs.bool("pc_mode", false)); again() },
+            tog("Mode key", "mode_key", true), tog("Remember mode", "pc_remember", true))))
+
+        root.addView(PanelKit.sectionLabel(ctx, prefs, "Open"))
+        root.addView(PanelKit.tileGrid(ctx, prefs, host, cols, listOf(
+            go("Typing options", "typing"), go("Size", "size"), go("Edit toolbar", "toolbar"),
+            go("Cursor / select pad", "pad"), go("Theme picker", "themes"), go("Emoji panel", "emoji"),
+            PanelKit.Tile("Switch keyboard") { host.pickKeyboard() })))
+
+        root.addView(note("PC mode adds Esc Tab Ctrl Alt F1-F12 arrows Home End; works only in apps that read key events. Theme / One-hand: tap, then ABC (apply)."))
+        root.addView(PanelKit.stickyBar(ctx, prefs, host, listOf(Pair("< Settings", { host.showPanel("settings") }), Pair("ABC (apply)", { host.showLetters() }))))
+        root
+    } catch (_: Throwable) { null }
+
     private fun make(): View {
+        try { if (PanelLayout.isNewStyle(prefs.int("panel_ui", 0))) { val nv = makeNew(); if (nv != null) return nv } } catch (_: Throwable) { }   // v0.16.11 (X11 part 2): any problem / default 0 = the classic page below, untouched
         val root = LinearLayout(ctx)
         root.orientation = LinearLayout.VERTICAL
         root.setBackgroundColor(Color.parseColor("#DDDDDD"))

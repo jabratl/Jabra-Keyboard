@@ -660,3 +660,10 @@ Z93) v0.16.10 Vault panel redesign, style New (X10)
  [ ] Scroll to the bottom of a long list, tap a card in select mode, long-press, change sort: the list stays where it was (sort / chips go to top on purpose).
  [ ] Search in New style: type letters, results follow the kind chip, folder chips hidden, info line hidden. Search again closes it.
  [ ] Landscape, dark theme, Classic theme. Back to Classic: old list returns at once. No data lost either way (data format untouched).
+
+Z94) v0.16.11 Gear panel as tile grid, style New (X11 part 1)
+ [ ] Panel style = Classic: tap the gear: exactly the old gear panel (toggles, height, layout, More settings, Key map).
+ [ ] Panel style = New: gear shows groups Languages / Typing / Look / Size / Toolbar / Clipboard / Tools / Data as tiles + 4 quick toggles (Number row, Vibrate, Sound, Auto numpad) + bottom bar ABC | More settings.
+ [ ] Tap EVERY tile: Key map, Typing, Formatter, Themes, Theme studio, Emoji, Size, Toolbar editor, Quick toolbar, Clipboard, Vault, Text tools, Pad, Profiles open the same old panel.
+ [ ] More settings (bottom bar) opens the old More page. Window height unchanged, landscape, dark theme OK. Back to Classic: old gear returns at once.
+ [ ] NOT in this part: tiles for the More page, in-keyboard search (X11 part 2).

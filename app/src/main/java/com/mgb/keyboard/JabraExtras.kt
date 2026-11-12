@@ -10,6 +10,8 @@ import android.widget.LinearLayout
 import com.mgb.keyboard.extras.SpaceDrag
 import com.mgb.keyboard.extras.SpaceGesture
 import com.mgb.keyboard.typing.LangSwipe
+import com.mgb.keyboard.typing.PanelLayout   // v0.16.11 (X11)
+import com.mgb.keyboard.typing.PanelTiles   // v0.16.11 (X11)
 
 /*
  * v0.0.5 extras (symbols panel, number pad, in-keyboard quick settings, space-drag cursor, prefs helper).
@@ -335,7 +337,24 @@ class JabraPanels(private val ctx: Context, private val host: JabraHost) {
         return b
     }
 
+    // v0.16.11 (X11): pref panel_ui = 1 -> grouped tile grid (every tile opens the SAME old panel). Any problem / default 0 = the classic gear panel below, untouched.
+    private fun settingsNew(): View? = try {
+        val root = rootView()
+        val cols = PanelLayout.columns((ctx.resources.displayMetrics.widthPixels / ctx.resources.displayMetrics.density).toInt())
+        for (g in PanelTiles.groups()) {
+            root.addView(PanelKit.sectionLabel(ctx, prefs, g))
+            val tiles = ArrayList<PanelKit.Tile>()
+            for (t in PanelTiles.tilesOf(g)) { val route = t.route; tiles.add(PanelKit.Tile(t.label) { host.showPanel(route) }) }
+            root.addView(PanelKit.tileGrid(ctx, prefs, host, cols, tiles))
+        }
+        val q1 = row(); q1.addView(toggleKey("Number row", "numrow", true)); q1.addView(toggleKey("Vibrate", "haptic", true)); root.addView(q1)   // quick toggles stay reachable
+        val q2 = row(); q2.addView(toggleKey("Sound", "sound", false)); q2.addView(toggleKey("Auto numpad", "numpad_auto", true)); root.addView(q2)
+        root.addView(PanelKit.stickyBar(ctx, prefs, host, listOf(Pair("ABC", { host.showLetters() }), Pair("More settings", { host.showPanel("more") }))))
+        root
+    } catch (_: Throwable) { null }
+
     private fun settings(): View {
+        try { if (PanelLayout.isNewStyle(prefs.int("panel_ui", 0))) { val nv = settingsNew(); if (nv != null) return nv } } catch (_: Throwable) { }   // v0.16.11 (X11)
         val root = rootView()
         try {   // v0.5.6: small logo + name on top of the gear panel
             val h = LinearLayout(ctx)
