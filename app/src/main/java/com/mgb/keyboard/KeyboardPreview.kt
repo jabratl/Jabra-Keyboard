@@ -100,9 +100,16 @@ object KeyboardPreview {
         if (p.bool("numrow", true)) {
             val nr = row()
             val large = p.bool("numrow_large", false)
-            val h = if (large) keyH + 12f * SCALE else keyH
+            val h0 = if (large) keyH + 12f * SCALE else keyH
+            val h = try { h0 * com.mgb.keyboard.typing.NumRowPlan.sanitizePct(p.int("nr_hpct", 100)) / 100f } catch (_: Throwable) { h0 }   // v0.16.7 (X7): height % (100 = same)
+            val nrMode = try { com.mgb.keyboard.typing.NumRowPlan.sanitizeMode(p.int("nr_mode", 0)) } catch (_: Throwable) { 0 }
+            if (nrMode != 0) {   // v0.16.7 (X7): digits + symbols (label only) / own characters
+                val labs = com.mgb.keyboard.typing.NumRowPlan.labels(nrMode, p.str("nr_chars", ""))
+                labs.forEach { nr.addView(key(it, 1f, 0, h, if (large) 18f * 0.8f else letterSp)) }
+            } else {
             val digits = if (p.bool("numrow_bn", false)) "১২৩৪৫৬৭৮৯০" else "1234567890"
             digits.forEach { nr.addView(key(it.toString(), 1f, 0, h, if (large) 18f * 0.8f else letterSp)) }
+            }
             root.addView(nr)
         }
 

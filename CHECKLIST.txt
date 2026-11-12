@@ -632,3 +632,10 @@ Z90) v0.16.6 Toolbar size options (X6)
  [ ] Height 70% / 150%: toolbar keys get shorter / taller; keyboard does not jump the app (check in a browser / chat app). Icon size 70% / 150%: keys narrower / wider, text smaller / bigger; bar scrolls sideways when it does not fit.
  [ ] Fold ON, Icons OFF (text labels), Toolbar style = Classic, portrait + landscape: all follow the sizes. Tap the number, type 200: it is set to 150. Reset / undo of the row works.
 
+Z91) v0.16.7 Number row options (X7)
+ [ ] App > Look > "Number row": "Number row height" 100%, "Number row keys" = Digits, "Number row characters" empty. Keyboard number row looks exactly as before (also Large number row ON, Bangla digits ON).
+ [ ] Height 70% / 150%: only the number row gets shorter / taller (with Large ON too). The app preview follows.
+ [ ] Keys = Digits + symbols: tap 1 = 1; hold 1 = !; hold 2 = @ ... hold 0 = ). Small symbol in the key corner. Password field works.
+ [ ] Keys = My characters, characters "()[]{}": 6 keys, each types its character. Clear the characters: back to 1234567890. Try 12 characters (only 10 kept), spaces / repeats (dropped), an emoji.
+ [ ] Landscape, Bangলা mode, dark theme: row fine. Back to Digits: old row (and Bangla digit hints) come back.
+

@@ -989,8 +989,23 @@ class MgbIme : InputMethodService() {
         try {
             if (prefs.bool("numrow", true)) {
                 val nr = row()
-                "1234567890".forEach { d -> nr.addView(key(d.toString(), 1f) { commitWord(); typeText(numDigit(d)) }) }   // v0.9.4: numDigit = Latin unless numrow_bn
-                try {   // v0.8.6: Bangla digit hint on the number row (setting hint_digits, default OFF = nothing attached, old behaviour)
+                val nrMode = try { com.mgb.keyboard.typing.NumRowPlan.sanitizeMode(prefs.int("nr_mode", 0)) } catch (_: Throwable) { 0 }   // v0.16.7 (X7): 0 = old code path
+                if (nrMode == 0) "1234567890".forEach { d -> nr.addView(key(d.toString(), 1f) { commitWord(); typeText(numDigit(d)) }) }   // v0.9.4: numDigit = Latin unless numrow_bn
+                else try {   // v0.16.7 (X7): mode 1 = digits + symbol on long-press, mode 2 = own characters; own keys, no HintKeys / numrow_bn
+                    val nrChars = prefs.str("nr_chars", "")
+                    val labs = com.mgb.keyboard.typing.NumRowPlan.labels(nrMode, nrChars)
+                    val lps = com.mgb.keyboard.typing.NumRowPlan.longPress(nrMode, nrChars)
+                    for (i in labs.indices) {
+                        val lab = labs[i]; val sym = lps[i]
+                        val nk = key(lab, 1f) { commitWord(); typeText(lab) }
+                        if (sym.isNotEmpty()) {
+                            nk.setOnLongClickListener { commitWord(); typeText(sym); try { feedback(nk) } catch (_: Throwable) { }; true }
+                            try { nk.foreground = HintKeys.HintDrawable(sym, try { JabraThemes.iconColor(prefs) } catch (_: Throwable) { android.graphics.Color.parseColor("#222222") }) } catch (_: Throwable) { }
+                        }
+                        nr.addView(nk)
+                    }
+                } catch (_: Throwable) { if (nr.childCount == 0) "1234567890".forEach { d -> nr.addView(key(d.toString(), 1f) { commitWord(); typeText(d.toString()) }) } }
+                if (nrMode == 0) try {   // v0.8.6: Bangla digit hint on the number row (setting hint_digits, default OFF = nothing attached, old behaviour)
                     if (prefs.bool("hint_digits", false) || prefs.bool("numrow_bn", false)) {   // v0.9.4: numrow_bn also needs the hint listener (Latin digit on long-press)
                         for (i in 0 until nr.childCount) { val nb = nr.getChildAt(i) as Button; nb.tag = "1234567890"[i]; numKeys.add(nb); HintKeys.attach(nb, prefs, hintHost); HintKeys.refresh(nb, prefs, hintHost) }
                         relabelNumbers()   // v0.9.4
@@ -1001,6 +1016,10 @@ class MgbIme : InputMethodService() {
                 try { val lp = prefs.int("letter_pct", -1); if (com.mgb.keyboard.typing.SizePct.letterValid(lp)) for (i in 0 until nr.childCount) (nr.getChildAt(i) as Button).textSize = com.mgb.keyboard.typing.SizePct.letterSp(lp) } catch (_: Throwable) { }   // v0.3.4: number row follows Letter size %
                 try { if (prefs.bool("letter_bold", false)) for (i in 0 until nr.childCount) { val nb = nr.getChildAt(i) as Button; nb.setTypeface(nb.typeface, android.graphics.Typeface.BOLD) } } catch (_: Throwable) { }   // v0.3.4: and Bold letters
                 try { if (prefs.bool("numrow_large", false)) for (i in 0 until nr.childCount) { (nr.getChildAt(i).layoutParams as LinearLayout.LayoutParams).height = dp(keyDp() + 12); (nr.getChildAt(i) as Button).textSize = 18f * (try { val lq = prefs.int("letter_pct", -1); if (com.mgb.keyboard.typing.SizePct.letterValid(lq)) lq / 100f else 1f } catch (_: Throwable) { 1f }) } } catch (_: Throwable) { }   // v0.1.3: Large number row (setting numrow_large)
+                try {   // v0.16.7 (X7): height % (100 = nothing changes)
+                    val nrPct = com.mgb.keyboard.typing.NumRowPlan.sanitizePct(prefs.int("nr_hpct", 100))
+                    if (nrPct != 100) { val hpx = dp(com.mgb.keyboard.typing.NumRowPlan.heightDp(keyDp(), prefs.bool("numrow_large", false), nrPct)); for (i in 0 until nr.childCount) (nr.getChildAt(i).layoutParams as LinearLayout.LayoutParams).height = hpx }
+                } catch (_: Throwable) { }
                 root.addView(nr)
             }
         } catch (_: Throwable) { }

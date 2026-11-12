@@ -111,6 +111,9 @@ public final class SettingsIndex {
             case "key_border": return "Draws or removes the border around keys.";
             case "onehand": return "Moves the keyboard to the left or right side.";
             case "icons_on": return "Own drawn icons on function keys. OFF = text labels.";
+            case "nr_hpct": return "Height of the number row. 100% = the old height.";   // v0.16.7
+            case "nr_mode": return "Digits, digits with a symbol on long-press, or your own characters.";   // v0.16.7
+            case "nr_chars": return "Your own number-row characters (up to 10). Used by My characters.";   // v0.16.7
             case "numrow_large": return "Makes the number row a bit taller.";
             case "space_lang": return "Swipe left / right on the space key to switch language at once. Cursor drag on space is off while this is ON.";
             case "sp_preview": return "Shows the active language in a bubble while you swipe on space. Needs Space swipe ON.";

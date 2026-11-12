@@ -568,6 +568,11 @@ object SettingsGroups {
             cycle(g, "One-hand", "onehand", { arrayOf("Off", "Left", "Right") }, { JabraOneHand.mode(prefs) }, { prefs.setInt("onehand", it) })
             toggle(g, "Icons", "icons_on", true)
             toggle(g, "Large number row", "numrow_large", false)
+            stepper(g, "Number row height", "nr_hpct", com.mgb.keyboard.typing.NumRowPlan.H_MIN, com.mgb.keyboard.typing.NumRowPlan.H_MAX, com.mgb.keyboard.typing.NumRowPlan.H_STEP, "%",   // v0.16.7 (X7): 100 = old height
+                { com.mgb.keyboard.typing.NumRowPlan.sanitizePct(prefs.int("nr_hpct", 100)) }, 100)
+            cycle(g, "Number row keys", "nr_mode", { arrayOf("Digits", "Digits + symbols", "My characters") }, { com.mgb.keyboard.typing.NumRowPlan.sanitizeMode(prefs.int("nr_mode", 0)) }, { prefs.setInt("nr_mode", it) })   // v0.16.7 (X7)
+            textRow(g, "Number row characters", "nr_chars", "up to 10 characters, e.g. @#&_-+()/",   // v0.16.7 (X7): used when "Number row keys" = My characters
+                { com.mgb.keyboard.typing.NumRowPlan.sanitizeChars(it) }, "No characters found")
             toggle(g, "Hide long-press hints", "hint_hide", false)
             toggle(g, "Toolbar name tip (hold icon)", "tb_tip", true)   // v0.8.8
             toggle(g, "Bangla digit hints", "hint_digits", false)   // v0.8.6

@@ -1,3 +1,12 @@
+v0.16.7 - MODIFY: number row options: height %, digits + symbols, own characters (plan X, step X7)
+- WHY: you asked that the number row is customizable.
+- What you get (App > Look page > section "Number row"): "Number row height" 70-150 % (100 = exactly the old height; works together with "Large number row"); "Number row keys": Digits (default = today) | Digits + symbols (long-press a digit = ! @ # $ % ^ & * ( ), small symbol shown in the key corner) | My characters (your own 1-10 characters from "Number row characters", e.g. @#&_-+()/; empty = normal digits; 5 characters = 5 wider keys). The app keyboard preview follows height + keys.
+- Old settings unchanged: numrow, numrow_large, numrow_bn (Bangla digits: only in mode Digits), hint_digits. Mode Digits + height 100 runs the OLD code path untouched.
+- Code: NEW typing/NumRowPlan.java (pure) + tools/NumRowPlanTest.java (47 checks). Hooks "// v0.16.7": MgbIme.kt (number row: mode branch + height), SettingsGroups.kt (3 rows), KeyboardPreview.kt, SettingsIndex.java (3 help lines), ProfileCodec.java (3 keys: nr_hpct 70-150, nr_mode 0-2, nr_chars), ChangedPlan.java (section Number row). Tests updated (never weakened): SettingsIndexTest (71 help lines), ProfileTest (59 keys).
+- BROKE: nothing intended. NOT in modes Digits + symbols / My characters: Bangla digit hints and the "feedback at finger-down" tiny listener on those keys (own keys).
+- NOT tested: phone (CHECKLIST Z91). Kotlin NOT compiled (no kotlinc / github.com); bracket balance of 3 changed Kotlin files checked. TESTED here: all 84 tools/*Test.java green.
+- Rollback: version back to 0.16.6, delete NumRowPlan.java + NumRowPlanTest.java, remove the "// v0.16.7" lines.
+
 v0.16.6 - MODIFY: toolbar height + icon / text size options (plan X, step X6)
 - WHY: you asked that the toolbar size is customizable.
 - What you get: App > Tools & Panels > section Toolbar: two new rows "Toolbar height" (tb_hpct) and "Toolbar icon / text size" (tb_ipct), 70-150 % in steps of 5, tap the number to type a value. 100 % = EXACTLY the old toolbar (36 dp high, 44 dp wide keys, text 12 sp, fold key 14 sp). Height changes the key height; icon / text size changes the text size and the key width. The old Classic edit bar (Toolbar style = Classic) uses the same height and text size. The toolbar already scrolls sideways, so big sizes just scroll.
