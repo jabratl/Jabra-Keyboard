@@ -552,3 +552,15 @@ Z82) v0.15.6 Theme grid in the app (N6)
  [ ] Look presets row (AMOLED / Reading / Professional / Cyber): tap one: theme + look change, a toast says Applied; the grid frame and rows follow; the keyboard uses it. Tap your old theme tile to go back.
  [ ] The little theme strip inside the preview card still works as before (blue frame).
  [ ] Global search "theme" still finds the Theme row; long-press it = reset to Classic and the grid follows.
+
+Z83) v0.15.7 Custom theme editor in the app (N7)
+ [ ] Home > Look & Theme > section "Custom theme": mini preview, 5 colour fields, Corner roundness, Key opacity, preset buttons, Save, Save and use, Delete.
+ [ ] Tap "Cyber": fields fill, preview changes, nothing is saved yet (theme grid has no Custom tile yet if none was saved). Tap Save: toast "Saved", the grid shows a "Custom" tile.
+ [ ] Type a wrong colour (e.g. #12G): the field turns red, preview says "Fix the red colours", the message line says nothing is saved. Tap Save: toast "Fix the red colours first", nothing saved. Fix it: preview is back.
+ [ ] Clear "Background 2": no gradient. Type a colour there: gradient preview.
+ [ ] Make text and key colours almost the same: warning line appears. Save still works.
+ [ ] Round + / - and Opacity + / - change the preview (hold = repeat). With Look = Jabra the keyboard shows the roundness and opacity.
+ [ ] "Save and use this theme": theme becomes Custom (grid frame on Custom, Theme row = Custom, preview card updates, keyboard uses it). Page Undo goes back to the old theme.
+ [ ] Change the custom theme in the keyboard (gear > More settings > Themes > Custom theme > Save), go to the app Look page again: fields show the new colours (if you had no unsaved edits).
+ [ ] Delete custom theme: tap once = warning text, tap again within 3 s = deleted; if it was in use the theme goes back to Classic, the Custom tile disappears.
+ [ ] 360 dp phone: fields and buttons fit, no sideways scroll; dark mode readable.

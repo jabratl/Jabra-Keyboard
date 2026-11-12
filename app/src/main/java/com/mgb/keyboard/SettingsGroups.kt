@@ -463,6 +463,17 @@ object SettingsGroups {
                     (secBoxes["Theme & style"] ?: g).addView(gr.view)
                 } catch (_: Throwable) { }
             }
+            if (sink != null) {   // v0.15.7 (N7): custom theme editor in its own section; any problem = no editor
+                try {
+                    val st = AppThemeStudio.build(ctx, prefs) { old ->
+                        if (JabraThemes.index(prefs) != old) noteChange("theme", old)   // Undo of a "Save and use"
+                        try { themeGrid?.refresh?.invoke() } catch (_: Throwable) { }
+                        try { link?.refreshRows?.invoke() } catch (_: Throwable) { }
+                        try { link?.changed?.invoke() } catch (_: Throwable) { }
+                    }
+                    (secBoxes["Custom theme"] ?: g).addView(st.view)
+                } catch (_: Throwable) { }
+            }
             cycle(g, "Look", "look", { arrayOf("Classic", "Jabra") }, { if (prefs.int("look", 0) == 1) 1 else 0 }, { prefs.setInt("look", it) })
             cycle(g, "Key border", "key_border", { arrayOf("Border", "Borderless") }, { if (prefs.int("key_border", 0) == 1) 1 else 0 }, { prefs.setInt("key_border", it) })   // v0.2.6
             cycle(g, "One-hand", "onehand", { arrayOf("Off", "Left", "Right") }, { JabraOneHand.mode(prefs) }, { prefs.setInt("onehand", it) })

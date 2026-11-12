@@ -41,7 +41,7 @@ public class ChangedPlanTest {
             for (String s : ChangedPlan.sections(g)) {
                 boolean used = false;
                 String[] keys = { "kh_pct_p","letter_pct","letter_bold","key_gap","row_gap","edge_dp","row_vgap","fn_gap","key_radius","bot_style","key_dots","pb_home_gap","oh_w_p",
-                    "theme","look","key_border","icons_on","numrow_large","numrow_bn","hint_hide","hint_digits","hint_size_lv","hint_alpha_lv","onehand","tb_tip",
+                    "theme","look","key_border","icons_on","ct_studio","numrow_large","numrow_bn","hint_hide","hint_digits","hint_size_lv","hint_alpha_lv","onehand","tb_tip",
                     "bn_layout","lang_avro_on","lang_probhat_on","lang_tap","lang_fav","space_lang","sp_preview","sp_tick","sp_step","key_lang","numrow","numpad_auto","pc_mode","mode_key","pc_remember",
                     "haptic","fb_down","haptic_native","sound","key_popup","pop_ref","pop_fast","learn_on","sp_punct","ac_on","sg_on","ap_on","qa_on","h_lock","key_globe","key_voice","key_emoji","lp_delay","cursor_speed" };
                 for (String k : keys) if (s.equals(ChangedPlan.sectionOf(g, k))) used = true;
@@ -61,6 +61,9 @@ public class ChangedPlanTest {
         eq("sections typing 3", ChangedPlan.sections("Typing").length, 3);
         eq("sections clip 3", ChangedPlan.sections("Clipboard & tools").length, 3);
         eq("sections tools 3", ChangedPlan.sections("Tools & Panels").length, 3);
+        eq("ct_studio section", ChangedPlan.sectionOf("Look", "ct_studio"), "Custom theme");   // v0.15.7 (N7)
+        eq("look sections 5", ChangedPlan.sections("Look").length, 5);
+        eq("custom theme is 2nd", ChangedPlan.sections("Look")[1], "Custom theme");
         // v0.15.4 (N4): landscape rows sit next to their portrait twins
         eq("kh_pct_l size", ChangedPlan.sectionOf("Layout & size", "kh_pct_l"), "Size");
         eq("oh_w_l one-hand", ChangedPlan.sectionOf("Layout & size", "oh_w_l"), "One-hand");
