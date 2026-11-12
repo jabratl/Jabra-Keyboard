@@ -167,6 +167,8 @@ class MorePanel(private val ctx: Context, private val host: JabraHost) {
         try { JabraThemes.paint(prefs, root) } catch (_: Throwable) { }
         root.setPadding(dp(2), dp(4), dp(2), dp(4))
         val cols = PanelLayout.columns((ctx.resources.displayMetrics.widthPixels / ctx.resources.displayMetrics.density).toInt())
+        val content = LinearLayout(ctx)   // v0.16.11 (X11 part 2b): tiles live in [content]; the search row hides it while typing
+        content.orientation = LinearLayout.VERTICAL
         fun again() { host.showPanel("more") }
         fun tog(title: String, key: String, def: Boolean): PanelKit.Tile {
             val on = prefs.bool(key, def)
@@ -174,8 +176,8 @@ class MorePanel(private val ctx: Context, private val host: JabraHost) {
         }
         fun go(label: String, route: String): PanelKit.Tile = PanelKit.Tile(label) { host.showPanel(route) }
 
-        root.addView(PanelKit.sectionLabel(ctx, prefs, "Typing"))
-        root.addView(PanelKit.tileGrid(ctx, prefs, host, cols, listOf(
+        content.addView(PanelKit.sectionLabel(ctx, prefs, "Typing"))
+        content.addView(PanelKit.tileGrid(ctx, prefs, host, cols, listOf(
             tog("Hold backspace", "bs_repeat", true), tog("Auto caps", "autocap", true),
             tog("Enter action", "enter_action", true), tog("Word delete", "bs_word", true))))
 
@@ -188,22 +190,23 @@ class MorePanel(private val ctx: Context, private val host: JabraHost) {
             look.add(PanelKit.Tile("Key border", if (prefs.int("key_border", 0) == 1) "Borderless" else "Border") { prefs.setInt("key_border", if (prefs.int("key_border", 0) == 1) 0 else 1); again() })
         } catch (_: Throwable) { }
         if (look.isNotEmpty()) {
-            root.addView(PanelKit.sectionLabel(ctx, prefs, "Look"))
-            root.addView(PanelKit.tileGrid(ctx, prefs, host, cols, look))
+            content.addView(PanelKit.sectionLabel(ctx, prefs, "Look"))
+            content.addView(PanelKit.tileGrid(ctx, prefs, host, cols, look))
         }
 
-        root.addView(PanelKit.sectionLabel(ctx, prefs, "PC mode"))
-        root.addView(PanelKit.tileGrid(ctx, prefs, host, cols, listOf(
+        content.addView(PanelKit.sectionLabel(ctx, prefs, "PC mode"))
+        content.addView(PanelKit.tileGrid(ctx, prefs, host, cols, listOf(
             PanelKit.Tile("Mode", if (prefs.bool("pc_mode", false)) "PC" else "Phone") { prefs.setBool("pc_mode", !prefs.bool("pc_mode", false)); again() },
             tog("Mode key", "mode_key", true), tog("Remember mode", "pc_remember", true))))
 
-        root.addView(PanelKit.sectionLabel(ctx, prefs, "Open"))
-        root.addView(PanelKit.tileGrid(ctx, prefs, host, cols, listOf(
+        content.addView(PanelKit.sectionLabel(ctx, prefs, "Open"))
+        content.addView(PanelKit.tileGrid(ctx, prefs, host, cols, listOf(
             go("Typing options", "typing"), go("Size", "size"), go("Edit toolbar", "toolbar"),
             go("Cursor / select pad", "pad"), go("Theme picker", "themes"), go("Emoji panel", "emoji"),
             PanelKit.Tile("Switch keyboard") { host.pickKeyboard() })))
 
-        root.addView(note("PC mode adds Esc Tab Ctrl Alt F1-F12 arrows Home End; works only in apps that read key events. Theme / One-hand: tap, then ABC (apply)."))
+        content.addView(note("PC mode adds Esc Tab Ctrl Alt F1-F12 arrows Home End; works only in apps that read key events. Theme / One-hand: tap, then ABC (apply)."))
+        PanelSearchUi.install(ctx, prefs, host, root, content)   // v0.16.11 (X11 part 2b)
         root.addView(PanelKit.stickyBar(ctx, prefs, host, listOf(Pair("< Settings", { host.showPanel("settings") }), Pair("ABC (apply)", { host.showLetters() }))))
         root
     } catch (_: Throwable) { null }

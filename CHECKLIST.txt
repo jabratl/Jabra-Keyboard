@@ -666,4 +666,6 @@ Z94) v0.16.11 Gear panel as tile grid, style New (X11 part 1)
  [ ] Panel style = New: gear shows groups Languages / Typing / Look / Size / Toolbar / Clipboard / Tools / Data as tiles + 4 quick toggles (Number row, Vibrate, Sound, Auto numpad) + bottom bar ABC | More settings.
  [ ] Tap EVERY tile: Key map, Typing, Formatter, Themes, Theme studio, Emoji, Size, Toolbar editor, Quick toolbar, Clipboard, Vault, Text tools, Pad, Profiles open the same old panel.
  [ ] More settings (bottom bar) opens the old More page. Window height unchanged, landscape, dark theme OK. Back to Classic: old gear returns at once.
- [ ] NOT in this part: tiles for the More page, in-keyboard search (X11 part 2).
+ [ ] More settings (Panel style = New): tiles Typing / Look / PC mode / Open. Tap a toggle tile (Hold backspace, Auto caps, Enter action, Word delete, Mode key, Remember mode): ON/OFF changes and the page redraws. Cycle tiles (Theme, One-hand, Look, Key border, Mode) change value. Each "Open" tile opens its old panel; < Settings and ABC (apply) work.
+ [ ] Search (gear AND More): tap "Search settings", type "height" -> Size is listed first, tap it -> Size panel opens. Also try: "toolbar" -> Toolbar editor / Quick toolbar; "vibrate" -> Typing; "backspace" -> More; "theme" -> Themes / Theme studio; "backup" -> Profiles. Max 8 results; "zzzz" = "No match"; backspace key works; X returns to the tiles.
+ [ ] Window height unchanged while searching (letters keyboard height), landscape OK, dark theme OK, Classic style = no search row at all.

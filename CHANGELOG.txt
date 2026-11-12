@@ -1,10 +1,10 @@
-v0.16.11 - MODIFY (PARTIAL, X11 part 1): Gear panel as grouped tile grid (plan X, step X11)
-- Done: typing/PanelTiles.java (pure: 14 tiles in 8 groups, byRoute, search over SettingsIndex) + tools/PanelTilesTest.java (40 checks, NOT run: no javac in this chat). JabraExtras.kt: settingsNew() behind panel_ui = 1 (hook marked "// v0.16.11 (X11)" in settings()); every tile = host.showPanel(old route). Classic = untouched.
-- Also done: 4 quick toggles + "More settings" button on the new gear; help line "now Clipboard + Vault + Gear"; CHECKLIST Z94; version 0.16.11.
-- NOT done yet (X11 part 2): the "More" page as tiles (it holds toggles, kept classic on purpose = nothing removed); in-keyboard search box (needs a keyboard-side entries list + a way to type inside the IME).
-- NOT tested: phone. Kotlin + Java NOT compiled.
-- Rollback: Panel style = Classic. Code: delete PanelTiles.java + PanelTilesTest.java, remove the 3 lines marked "// v0.16.11".
-
+v0.16.11 - MODIFY (DONE, X11 parts 1 + 2a + 2b): Gear panel + More page as tiles, with in-keyboard settings search (plan X, step X11)
+- What you get (Panel style = New, App > Clipboard & tools > "Look of clips" > "Panel style"): the gear shows 8 groups as tiles (Languages / Typing / Look / Size / Toolbar / Clipboard / Tools / Data), 4 quick toggles and a bottom bar ABC | More settings. Every tile opens the SAME old panel. Classic = old gear, untouched.
+- Part 2a: the More page as tiles (groups Typing / Look / PC mode / Open). Toggle / cycle tile = same pref as before, then the page redraws. Same prefs, same routes, nothing removed.
+- Part 2b: "Search settings" row on top of the new gear AND the new More page. Tap it: tiles hide, a query line + up to 8 results + a tiny letters keyboard appear (same trick as the clipboard search: NO EditText inside the keyboard window). Tap a result = opens the panel that holds the setting (e.g. "height" -> Size). X = back to tiles.
+- Code: NEW typing/PanelSearchData.java (pure list of 51 entries: title + group + route + keywords, Bangla words too) + tools/PanelSearchDataTest.java (49 checks) + PanelSearchUi.kt (search row, shared by gear + More). JabraExtras.kt settingsNew() and TypingExtras.kt makeNew(): tiles now live in one container (hook lines marked "// v0.16.11 (X11 part 2b)"). SettingsIndex help line for panel_ui now says "Clipboard, Vault, Gear, More" (it was 95 chars = SettingsIndexTest failed; now 83) + 1 new SettingsIndexTest check.
+- Tests run here: PanelTilesTest 45 ok, PanelSearchDataTest 49 ok, SettingsIndexTest 39 ok (javac via jdk.compiler). Kotlin NOT compiled (no network for kotlinc), NOT phone-tested.
+- Rollback: Panel style = Classic (no code change). Code: remove the lines marked "// v0.16.11 (X11 part 2b)" and PanelSearchUi.kt.
 v0.16.10 - MODIFY: Vault panel redesign, "New" style (plan X, step X10)
 - WHY: easier browsing of snippets / notes / glossary. Same pref as the clipboard: App > Clipboard & tools > "Look of clips" > "Panel style" [Classic | New].
 - What you get (Panel style = New): sticky top bar ABC | Search | Add | Folders (select mode: ABC | Search | Done); folder chips with counts (All, Unfiled, your folders); kind chips; info line "12 items" + Sort; card list (bold title = title or line 1, 1-line preview, tag Note / Template / Term, use count); tap = insert; long-press = actions sheet Edit | Move | Delete (two taps) | Select; select mode = bottom bar All | Move | Edit (one picked) | Delete | Done. The list keeps its scroll position (X1).

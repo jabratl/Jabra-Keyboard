@@ -341,14 +341,17 @@ class JabraPanels(private val ctx: Context, private val host: JabraHost) {
     private fun settingsNew(): View? = try {
         val root = rootView()
         val cols = PanelLayout.columns((ctx.resources.displayMetrics.widthPixels / ctx.resources.displayMetrics.density).toInt())
+        val content = LinearLayout(ctx)   // v0.16.11 (X11 part 2b): grid lives in [content]; the search row hides it while typing
+        content.orientation = LinearLayout.VERTICAL
         for (g in PanelTiles.groups()) {
-            root.addView(PanelKit.sectionLabel(ctx, prefs, g))
+            content.addView(PanelKit.sectionLabel(ctx, prefs, g))
             val tiles = ArrayList<PanelKit.Tile>()
             for (t in PanelTiles.tilesOf(g)) { val route = t.route; tiles.add(PanelKit.Tile(t.label) { host.showPanel(route) }) }
-            root.addView(PanelKit.tileGrid(ctx, prefs, host, cols, tiles))
+            content.addView(PanelKit.tileGrid(ctx, prefs, host, cols, tiles))
         }
-        val q1 = row(); q1.addView(toggleKey("Number row", "numrow", true)); q1.addView(toggleKey("Vibrate", "haptic", true)); root.addView(q1)   // quick toggles stay reachable
-        val q2 = row(); q2.addView(toggleKey("Sound", "sound", false)); q2.addView(toggleKey("Auto numpad", "numpad_auto", true)); root.addView(q2)
+        val q1 = row(); q1.addView(toggleKey("Number row", "numrow", true)); q1.addView(toggleKey("Vibrate", "haptic", true)); content.addView(q1)   // quick toggles stay reachable
+        val q2 = row(); q2.addView(toggleKey("Sound", "sound", false)); q2.addView(toggleKey("Auto numpad", "numpad_auto", true)); content.addView(q2)
+        PanelSearchUi.install(ctx, prefs, host, root, content)   // v0.16.11 (X11 part 2b)
         root.addView(PanelKit.stickyBar(ctx, prefs, host, listOf(Pair("ABC", { host.showLetters() }), Pair("More settings", { host.showPanel("more") }))))
         root
     } catch (_: Throwable) { null }
