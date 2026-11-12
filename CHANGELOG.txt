@@ -1,3 +1,15 @@
+v0.15.0 - NEW: new app screen, part M5 (personal Home: Favourites + own tiles). New screen only.
+- WHY: plan "App UI" part M5 "personal": Home was the same for everyone. Now the settings you use most are one tap away and the tiles are in your order.
+- What you get: (1) FAVOURITES: every result / list row on Home has a star (empty = not pinned). Tap the star = the setting is pinned in a [Favourites] list right under the search box (max 8, saved order = pin order). Tap a favourite = opens its page, scrolls to the row, flashes it. Star again = unpin. With no favourite a one-line tip is shown. (2) OWN TILES: Home > [Customize Home]: arrows move a tile up / down, [Hide] / [Show] per tile, [Reset Home tiles]. A hidden tile only leaves Home: its settings still open from the search. Data & About can never be hidden (old-screen switch, backup, update), so Home is never empty.
+- Code: typing/PersonalPlan.java (NEW, pure: favourites list, tile order, hidden tiles, texts), tools/PersonalPlanTest.java (NEW, 87 checks), AppSearch.kt (star in rowView, refreshFavs, AppSearchView.favs, onFav), AppHome.kt (favourites under the search box, tiles built by buildTiles() from PersonalPlan, [Customize Home] panel, select() moved up).
+- Prefs (new, plain strings, not in Profiles): fav_keys, tile_order, tile_hide. Permissions: none.
+BROKE: nothing intended. With nothing pinned and nothing customised, Home = v0.14.1 + one tip line.
+NOT compiled: the chat had no internet, the Kotlin compile check (tools/KOTLIN_CHECK.txt) was NOT run for v0.15.0 (only bracket balance). GitHub Actions is the first compile: paste the error lines if it is red.
+NOT tested: nothing seen on a phone (star tap target inside a row, favourites jump, arrows / hide, two panes, TalkBack, 130% font). KNOWN LIMIT: favourites and tile order are NOT part of Backup / Profiles; Data & Backup buttons are not searchable so they cannot be starred.
+TESTED here: all 72 tools/*Test.java PASS (PersonalPlanTest 87).
+Rollback: Customize Home > [Reset Home tiles]; unpin the stars; or revert to v0.14.1.
+NEXT (plan, not built): CHECKLIST Z75 + Z76 on the phone. The "App UI" plan has no more parts.
+
 v0.14.1 - CHANGE: the NEW app screen is now the default. The phone checklist Z71-Z74 was reported OK by the user.
 - WHY: plan "App UI": after M1-M4 passed on the phone the new Home / pages / search is the normal screen.
 - What you get: a fresh install, or a phone that never chose a screen, opens the NEW screen (Home + pages). A phone that already pressed [Old app screen] or [New app screen: ON] keeps its choice (saved pref app_ui wins).

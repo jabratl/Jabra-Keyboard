@@ -477,3 +477,17 @@ Z75) v0.14.1 New app screen is the DEFAULT
  [ ] Update from v0.14.0 where you had chosen the new screen: still new. If you had chosen the old screen (Data & About button), it stays OLD until you press [Try the new app screen (beta)].
  [ ] Data & About > [New app screen: ON] goes to the old screen and the choice is kept after closing and reopening the app.
 
+Z76) v0.15.0 New app screen M5 (Favourites + own tiles)
+ [ ] Home with nothing pinned: under the search box a grey tip "Tip: search a setting and tap the star to pin it here."
+ [ ] Search "vib": each result has a star on the right (empty). Tap the star: it fills (blue) at once, the result stays, the row itself does not open.
+ [ ] Clear the search: Home shows "Favourites (1)" with that setting (title, page name, value). Tap it: the page opens, scrolls to the row, the row flashes.
+ [ ] Pin 3 more settings, close and reopen the app: the favourites are still there in the same order. Tap a filled star in the Favourites list: it disappears from the list.
+ [ ] Pin 8 settings, try a 9th: a short message "Favourites are full (8)..." and nothing is added.
+ [ ] Change a favourite's value on its page, go Back to Home: the value in the Favourites list is the new one.
+ [ ] [Customize Home]: a list of the 6 tiles with up / down arrows and Hide. Move "Clipboard & Tools" up: the tile moves at once. The first row has no active up arrow, the last no active down arrow.
+ [ ] Hide "Look & Theme": the tile is gone from Home, the list says "(hidden)" and shows [Show]. Data & About has NO active Hide button. Search "theme": the setting still opens.
+ [ ] [Reset Home tiles] (only shown when something is changed): the default order and all 6 tiles are back. [Done] closes the panel.
+ [ ] Close and reopen the app: your tile order and hidden tiles stay.
+ [ ] Two panes (landscape / 1280 px): Home on the left follows the order, the open page keeps its frame on its tile; hide the open page's tile: the right side stays open.
+ [ ] TalkBack: the star reads "Pin Vibrate to Home" / "Unpin Vibrate from Home"; the arrows read "Move Typing down". 130% font on 360 px: star and arrow buttons are not cut.
+

@@ -14,6 +14,7 @@ import android.widget.TextView
 import com.mgb.keyboard.typing.AppTokens
 import com.mgb.keyboard.typing.EdgePlan
 import com.mgb.keyboard.typing.PagePlan
+import com.mgb.keyboard.typing.PersonalPlan
 import com.mgb.keyboard.typing.SizePct
 
 /** v0.11.0 (M1): the Home view and a refresh() that redraws the tile summaries (called when Home is shown again).
@@ -65,7 +66,7 @@ object AppHome {
         head.addView(names, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
         col.addView(head)
 
-        try { if (search != null) col.addView(search.view) } catch (_: Throwable) { }   // v0.13.0 (M3): ONE search for all settings, right under the header
+        try { if (search != null) { col.addView(search.view); col.addView(search.favs) } } catch (_: Throwable) { }   // v0.15.0 (M5): favourites right under the search box   // v0.13.0 (M3): ONE search for all settings, right under the header
 
         try {   // warning when the crash guard switched a panel off / backup is old (same text as the old screen)
             val bn = com.mgb.keyboard.typing.HealthCheck.backupNote(prefs.bool("bk_auto", true), prefs.str("bk_last", ""), System.currentTimeMillis())
@@ -156,63 +157,15 @@ object AppHome {
         col.addView(undo)
         col.addView(note)
 
-        // ---- tiles: 2 columns ----
+        // ---- tiles: 2 columns; v0.15.0 (M5): own order + hidden tiles (PersonalPlan) ----
         col.addView(label(act, "Settings", dp(AppTokens.S4)))
-        var rowBox: LinearLayout? = null
-        for (i in PagePlan.ORDER.indices) {
-            val id = PagePlan.ORDER[i]
-            if (i % 2 == 0) {
-                rowBox = LinearLayout(act)
-                rowBox.orientation = LinearLayout.HORIZONTAL
-                col.addView(rowBox)
-            }
-            val tile = LinearLayout(act)
-            tile.orientation = LinearLayout.VERTICAL
-            tile.setPadding(dp(AppTokens.S3), dp(AppTokens.S3), dp(AppTokens.S3), dp(AppTokens.S3))
-            tile.minimumHeight = dp(104)
-            try { tile.background = AppUi.cardBg(act, 12) } catch (_: Throwable) { }
-            tile.isClickable = true
-            tile.isFocusable = true
-            val icon = Button(act)   // JabraIcons draws on a Button; here it is only a picture
-            icon.background = null
-            icon.minWidth = 0; icon.minimumWidth = 0; icon.minHeight = 0; icon.minimumHeight = 0
-            icon.setPadding(0, 0, 0, 0)
-            icon.isClickable = false
-            icon.isFocusable = false
-            try { JabraIcons.apply(icon, PagePlan.icon(id), true, AppUi.accent(act)) } catch (_: Throwable) { }
-            icon.importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
-            tile.addView(icon, LinearLayout.LayoutParams(dp(32), dp(32)))
-            val tt = TextView(act)
-            tt.text = PagePlan.title(id)
-            tt.textSize = 15f
-            tt.setTypeface(null, Typeface.BOLD)
-            try { tt.setTextColor(AppUi.text(act)) } catch (_: Throwable) { }
-            tt.setPadding(0, dp(AppTokens.S2), 0, 0)
-            tile.addView(tt)
-            val sm = TextView(act)
-            sm.textSize = 12f
-            try { sm.setTextColor(AppUi.dim(act)) } catch (_: Throwable) { }
-            sm.text = summary(act, prefs, id)
-            tile.addView(sm)
-            tileSum.add(Pair(id, sm))
-            tile.contentDescription = PagePlan.title(id) + ". " + sm.text   // v0.13.0 (M3)
-            AppA11y.asButton(tile)
-            tileViews[id] = tile
-            tile.setOnClickListener { try { open(id) } catch (_: Throwable) { } }
-            val lp = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
-            lp.setMargins(dp(AppTokens.S1), dp(AppTokens.S1), dp(AppTokens.S1), dp(AppTokens.S1))
-            rowBox?.addView(tile, lp)
-        }
-
-        try {   // v0.13.0 (M3): lists at the end; everything under the search box is hidden while a search text is typed
-            if (search != null) {
-                col.addView(search.lists)
-                val at = col.indexOfChild(search.view)
-                if (at >= 0) search.bindRest((at + 1 until col.childCount).map { col.getChildAt(it) })
-            }
-        } catch (_: Throwable) { }
+        val tilesBox = LinearLayout(act)
+        tilesBox.orientation = LinearLayout.VERTICAL
+        col.addView(tilesBox)
+        var selectedId = ""
 
         fun select(id: String) {   // v0.13.0 (M3): two panes: the tile of the open page gets an accent frame
+            selectedId = id
             for ((tid, tv) in tileViews) {
                 try {
                     if (tid == id) {
@@ -225,6 +178,139 @@ object AppHome {
                 } catch (_: Throwable) { }
             }
         }
+
+        fun buildTiles() {
+            tilesBox.removeAllViews()
+            tileSum.clear()
+            tileViews.clear()
+            val ids = PersonalPlan.visible(prefs.str(PersonalPlan.PREF_ORDER, ""), prefs.str(PersonalPlan.PREF_HIDE, ""))
+            var rowBox: LinearLayout? = null
+            for (i in ids.indices) {
+                val id = ids[i]
+                if (i % 2 == 0) {
+                    rowBox = LinearLayout(act)
+                    rowBox.orientation = LinearLayout.HORIZONTAL
+                    tilesBox.addView(rowBox)
+                }
+                val tile = LinearLayout(act)
+                tile.orientation = LinearLayout.VERTICAL
+                tile.setPadding(dp(AppTokens.S3), dp(AppTokens.S3), dp(AppTokens.S3), dp(AppTokens.S3))
+                tile.minimumHeight = dp(104)
+                try { tile.background = AppUi.cardBg(act, 12) } catch (_: Throwable) { }
+                tile.isClickable = true
+                tile.isFocusable = true
+                val icon = Button(act)   // JabraIcons draws on a Button; here it is only a picture
+                icon.background = null
+                icon.minWidth = 0; icon.minimumWidth = 0; icon.minHeight = 0; icon.minimumHeight = 0
+                icon.setPadding(0, 0, 0, 0)
+                icon.isClickable = false
+                icon.isFocusable = false
+                try { JabraIcons.apply(icon, PagePlan.icon(id), true, AppUi.accent(act)) } catch (_: Throwable) { }
+                icon.importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+                tile.addView(icon, LinearLayout.LayoutParams(dp(32), dp(32)))
+                val tt = TextView(act)
+                tt.text = PagePlan.title(id)
+                tt.textSize = 15f
+                tt.setTypeface(null, Typeface.BOLD)
+                try { tt.setTextColor(AppUi.text(act)) } catch (_: Throwable) { }
+                tt.setPadding(0, dp(AppTokens.S2), 0, 0)
+                tile.addView(tt)
+                val sm = TextView(act)
+                sm.textSize = 12f
+                try { sm.setTextColor(AppUi.dim(act)) } catch (_: Throwable) { }
+                sm.text = summary(act, prefs, id)
+                tile.addView(sm)
+                tileSum.add(Pair(id, sm))
+                tile.contentDescription = PagePlan.title(id) + ". " + sm.text   // v0.13.0 (M3)
+                AppA11y.asButton(tile)
+                tileViews[id] = tile
+                tile.setOnClickListener { try { open(id) } catch (_: Throwable) { } }
+                val lp = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+                lp.setMargins(dp(AppTokens.S1), dp(AppTokens.S1), dp(AppTokens.S1), dp(AppTokens.S1))
+                rowBox?.addView(tile, lp)
+            }
+            if (selectedId.isNotEmpty()) select(selectedId)
+        }
+        buildTiles()
+
+        // ---- v0.15.0 (M5): [Customize Home] = move / hide tiles (Data & About can never be hidden) ----
+        val custom = LinearLayout(act)
+        custom.orientation = LinearLayout.VERTICAL
+        custom.visibility = View.GONE
+        fun mini(label: String, desc: String, on: Boolean, click: () -> Unit): Button {
+            val b = Button(act)
+            b.isAllCaps = false
+            b.text = label
+            b.textSize = 12f
+            b.minWidth = 0; b.minimumWidth = 0
+            b.minHeight = dp(AppTokens.TOUCH); b.minimumHeight = dp(AppTokens.TOUCH)
+            b.contentDescription = desc
+            b.isEnabled = on
+            b.setOnClickListener { try { click() } catch (_: Throwable) { } }
+            return b
+        }
+        fun buildCustom() {
+            custom.removeAllViews()
+            val rawO = prefs.str(PersonalPlan.PREF_ORDER, "")
+            val rawH = prefs.str(PersonalPlan.PREF_HIDE, "")
+            val full = PersonalPlan.order(rawO)
+            val hid = PersonalPlan.hidden(rawH)
+            val hint = TextView(act)
+            hint.text = "Move tiles with the arrows. A hidden tile still opens from the search."
+            hint.textSize = 12f
+            try { hint.setTextColor(AppUi.dim(act)) } catch (_: Throwable) { }
+            hint.setPadding(0, dp(AppTokens.S1), 0, dp(AppTokens.S1))
+            custom.addView(hint)
+            for (id in full) {
+                val isHid = hid.contains(id)
+                val line = LinearLayout(act)
+                line.orientation = LinearLayout.HORIZONTAL
+                line.gravity = Gravity.CENTER_VERTICAL
+                val name = TextView(act)
+                name.text = PagePlan.title(id) + (if (isHid) " (hidden)" else "")
+                name.textSize = 14f
+                try { name.setTextColor(if (isHid) AppUi.dim(act) else AppUi.text(act)) } catch (_: Throwable) { }
+                line.addView(name, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
+                line.addView(mini("\u25B2", "Move " + PagePlan.title(id) + " up", id != full.first()) {
+                    prefs.setStr(PersonalPlan.PREF_ORDER, PersonalPlan.move(rawO, id, -1)); buildTiles(); buildCustom()
+                })
+                line.addView(mini("\u25BC", "Move " + PagePlan.title(id) + " down", id != full.last()) {
+                    prefs.setStr(PersonalPlan.PREF_ORDER, PersonalPlan.move(rawO, id, 1)); buildTiles(); buildCustom()
+                })
+                line.addView(mini(if (isHid) "Show" else "Hide", (if (isHid) "Show " else "Hide ") + PagePlan.title(id) + " on Home", PersonalPlan.canHide(id)) {
+                    prefs.setStr(PersonalPlan.PREF_HIDE, PersonalPlan.toggleHide(rawH, id)); buildTiles(); buildCustom()
+                })
+                custom.addView(line)
+            }
+            if (PersonalPlan.customised(rawO, rawH)) {
+                custom.addView(mini("Reset Home tiles", "Reset the order and show all tiles", true) {
+                    prefs.setStr(PersonalPlan.PREF_ORDER, ""); prefs.setStr(PersonalPlan.PREF_HIDE, ""); buildTiles(); buildCustom()
+                })
+            }
+        }
+        val customBtn = Button(act)
+        customBtn.isAllCaps = false
+        customBtn.text = "Customize Home"
+        customBtn.minHeight = dp(AppTokens.TOUCH)
+        customBtn.minimumHeight = dp(AppTokens.TOUCH)
+        customBtn.setOnClickListener {
+            try {
+                val open2 = custom.visibility != View.VISIBLE
+                if (open2) buildCustom()
+                custom.visibility = if (open2) View.VISIBLE else View.GONE
+                customBtn.text = if (open2) "Done" else "Customize Home"
+            } catch (_: Throwable) { }
+        }
+        col.addView(customBtn)
+        col.addView(custom)
+
+        try {   // v0.13.0 (M3): lists at the end; everything under the search box is hidden while a search text is typed
+            if (search != null) {
+                col.addView(search.lists)
+                val at = col.indexOfChild(search.view)
+                if (at >= 0) search.bindRest((at + 1 until col.childCount).map { col.getChildAt(it) })
+            }
+        } catch (_: Throwable) { }
 
         val sv = ScrollView(act)
         sv.isFillViewport = true

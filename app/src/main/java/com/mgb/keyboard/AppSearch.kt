@@ -17,11 +17,12 @@ import android.widget.TextView
 import com.mgb.keyboard.typing.AppTokens
 import com.mgb.keyboard.typing.HomePlan
 import com.mgb.keyboard.typing.PagePlan
+import com.mgb.keyboard.typing.PersonalPlan
 import com.mgb.keyboard.typing.SettingsIndex
 
 /** v0.13.0 (M3): [view] = search box + results (goes under the header of Home), [lists] = recently changed + changed from default (goes at the end of Home),
  *  [bindRest] = the other Home views that are hidden while a search text is typed, [refresh] = rebuild the lists (Home shown again / a setting changed). */
-class AppSearchView(val view: View, val lists: View, val bindRest: (List<View>) -> Unit, val refresh: () -> Unit)
+class AppSearchView(val view: View, val lists: View, val favs: View, val bindRest: (List<View>) -> Unit, val refresh: () -> Unit)   // v0.15.0 (M5): favs = pinned settings (Home puts it right under the search box)
 
 /**
  * v0.13.0 (M3 of the "App UI" plan): ONE search for all settings on Home, grouped by page. Tap a result = open its page, scroll to the row, flash it.
@@ -58,6 +59,10 @@ object AppSearch {
 
         val lists = LinearLayout(act)
         lists.orientation = LinearLayout.VERTICAL
+
+        val favs = LinearLayout(act)   // v0.15.0 (M5)
+        favs.orientation = LinearLayout.VERTICAL
+        var onFav: () -> Unit = { }    // v0.15.0 (M5): set below; redraws the lists + open results after a pin / unpin
 
         var rest: List<View> = emptyList()
         var changedOpen = false
@@ -116,6 +121,31 @@ object AppSearch {
             safe { vt.setTextColor(if (ch) AppUi.accent(act) else AppUi.dim(act)) }
             if (ch) vt.setTypeface(null, Typeface.BOLD)
             line.addView(vt)
+            safe {   // v0.15.0 (M5): star = pin / unpin this setting on Home
+                val pinned = PersonalPlan.isFav(prefs.str(PersonalPlan.PREF_FAVS, ""), r.key)
+                val star = Button(act)
+                star.isAllCaps = false
+                star.background = null
+                star.text = if (pinned) "\u2605" else "\u2606"
+                star.textSize = 20f
+                star.minWidth = dp(AppTokens.TOUCH); star.minimumWidth = dp(AppTokens.TOUCH)
+                star.minHeight = dp(AppTokens.TOUCH); star.minimumHeight = dp(AppTokens.TOUCH)
+                safe { star.setTextColor(if (pinned) AppUi.accent(act) else AppUi.dim(act)) }
+                star.contentDescription = PersonalPlan.pinLabel(r.title, pinned)
+                star.setOnClickListener {
+                    safe {
+                        val raw = prefs.str(PersonalPlan.PREF_FAVS, "")
+                        val keys = sink.rows.map { it.key }
+                        if (!PersonalPlan.canPin(raw, r.key, keys)) {
+                            android.widget.Toast.makeText(act, PersonalPlan.fullNote(), android.widget.Toast.LENGTH_SHORT).show()
+                            return@safe
+                        }
+                        prefs.setStr(PersonalPlan.PREF_FAVS, PersonalPlan.toggleFav(raw, r.key, keys))
+                        onFav()
+                    }
+                }
+                line.addView(star)
+            }
             line.contentDescription = HomePlan.withValue(r.title, v) + ", " + PagePlan.title(PagePlan.pageOfGroup(r.group)) + (if (ch) ", changed" else "")
             AppA11y.asButton(line)
             line.setOnClickListener { go(r) }
@@ -161,9 +191,29 @@ object AppSearch {
         })
         field.setOnEditorActionListener { _, action, _ -> if (action == EditorInfo.IME_ACTION_SEARCH) { hideKeyboard(); true } else false }
 
+        // ---- v0.15.0 (M5): favourites on Home (pinned settings, tap = jump to the row; the star unpins) ----
+        fun refreshFavs() {
+            favs.removeAllViews()
+            val keys = sink.rows.map { it.key }
+            if (keys.isEmpty()) return
+            val list = PersonalPlan.favs(prefs.str(PersonalPlan.PREF_FAVS, ""), keys)
+            if (list.isEmpty()) {
+                val hint = TextView(act)
+                hint.text = PersonalPlan.favHint()
+                hint.textSize = 12f
+                safe { hint.setTextColor(AppUi.dim(act)) }
+                hint.setPadding(0, dp(AppTokens.S2), 0, 0)
+                favs.addView(hint)
+                return
+            }
+            favs.addView(label(PersonalPlan.favTitle(list.size), false))
+            for (k in list) { val r = sink.rows.firstOrNull { it.key == k } ?: continue; favs.addView(rowView(r, true)) }
+        }
+
         // ---- lists under the tiles: recently changed (chips) + changed from default (collapsed) ----
         fun refreshLists() {
             lists.removeAllViews()
+            safe { refreshFavs() }
             val keys = sink.rows.map { it.key }
             val recent = HomePlan.recentKeys(prefs.str("set_recent", ""), keys)
             if (recent.isNotEmpty()) {
@@ -211,8 +261,12 @@ object AppSearch {
             }
         }
         refreshLists()
+        onFav = {
+            safe { refreshLists() }
+            safe { if (field.text.toString().trim().isNotEmpty()) renderResults(field.text.toString()) }   // stars in open results follow
+        }
 
-        return AppSearchView(box, lists, { l -> rest = l; safe { setActive(field.text.toString().trim().isNotEmpty()) } }) {
+        return AppSearchView(box, lists, favs, { l -> rest = l; safe { setActive(field.text.toString().trim().isNotEmpty()) } }) {
             safe { refreshLists() }
             safe { if (field.text.toString().trim().isNotEmpty()) renderResults(field.text.toString()) }   // values / dots in open results follow
         }
