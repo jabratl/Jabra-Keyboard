@@ -1,4 +1,4 @@
-JABRA KEYBOARD - HANDOFF   code = v0.16.2 (X1 + X2 DONE; plan N finished)   PLAN "X" in progress (clipboard scroll FIX + "Bangলা / বাংলা" names + Ridmik key map engine + key map & practice pages + toolbar / number-row size + panel redesign + new edit shortcuts)
+JABRA KEYBOARD - HANDOFF   code = v0.16.3 (X1 + X2 + X3 DONE; plan N finished)   PLAN "X" in progress (clipboard scroll FIX + "Bangলা / বাংলা" names + Ridmik key map engine + key map & practice pages + toolbar / number-row size + panel redesign + new edit shortcuts)
 Written by a PLANNING chat (2026-11-12, audit read-only, grep + sed ranges only). Paste this file at the start of EVERY chat together with Jabra-Keyboard-main.zip.
 This file REPLACES the file of the same name; the previous full text (plan N, 12 sections) is kept UNCHANGED in docs/ARCHIVE_HANDOFF_v0.15.9_before_plan_X.txt (grep only, never read fully).
 ASSUMPTIONS (1 line each): (a) "Ovro" = Avro (the bn_layout value "avro"); "provat" = Probhat (value "probhat"). Only the DISPLAYED NAMES change, never pref values / storage keys. (b) "clipboard manage / select" = ClipPanel select mode (Manage button, long-press, check boxes). (c) The user wants the Ridmik key map to be the DEFAULT typing of "Bangলা" mode, with a setting to go back to the old Avro rules. (d) "toolbar" = the row above the letters (Toolbar.kt custom toolbar, or the old edit bar); "edit shortcuts" = All / Cut / Copy / Paste / Plain / Undo / Redo items.
@@ -15,7 +15,7 @@ ASSUMPTIONS (1 line each): (a) "Ovro" = Avro (the bn_layout value "avro"); "prov
   Package com.mgb.keyboard (NEVER change). Prefs file "jabra" (JabraPrefs). minSdk 24, target/compile 34, only dependency androidx.core-ktx. res/ has NO values: ALL UI is built in Kotlin code.
   Build = push to GitHub main -> Actions -> APK -> in-app updater. Workflow applies every *_vX_Y_Z.zip in the repo root in version order (zip root folder Jabra-Keyboard-main/, must contain app/build.gradle.kts when it changes code; DELETE.txt inside a zip = files to remove). Docs-only zips have NO version digits (jabra_<topic>_docs.zip).
   Permissions: INTERNET (updater only), REQUEST_INSTALL_PACKAGES, VIBRATE. NO new permission without ASKING.
-  Version = ONE line "appVersionName" in app/build.gradle.kts (now "0.16.2"; versionCode = GitHub run number).
+  Version = ONE line "appVersionName" in app/build.gradle.kts (now "0.16.3"; versionCode = GitHub run number).
   EXCLUDED BY USER (never plan/build): diff checker, calculator, keyboard wallpaper / photo background, key customize, Store, cloud sync, clipboard images, volume-key cursor, split keyboard, Bangla suggestions / next-word / learning / typed-word preview / suggestion bar (dropped v0.0.9), auto-correct.
 
 2) USER REQUEST (2026-11-12) AND AUDIT RESULT (read-only)
@@ -62,7 +62,7 @@ ASSUMPTIONS (1 line each): (a) "Ovro" = Avro (the bn_layout value "avro"); "prov
   Panels w/ own prefs: SizePrefs.kt | TypingPrefs.kt | Toolbar.kt (KEY_H 36) + ToolbarPanel.kt + ToolbarQuick.kt + typing/ToolbarOrder.java (DEFAULT / EXTRAS) + AppToolbarEditor.kt | VaultPanel.kt (K 708) + VaultStore.kt + vault/VaultList.java | ThemePanel.kt + ThemeStudio.kt + ThemeEmojiExtras.kt + typing/CustomTheme*.java | TextToolsPanel.kt + typing/TextTools*.java | PadPanel.kt (cursor pad) + typing/PadState.java | PcMode.kt
   App screen: SettingsActivity.kt | SettingsGroups.kt (K ~707, group(title) blocks) | AppHome.kt | AppPages.kt | AppRows.kt | AppSearch.kt | AppWizard.kt | AppMotion.kt | AppUi.kt | DataPage.kt | KeyboardPreview.kt | AppThemeGrid.kt | AppThemeStudio.kt
   App-screen logic (J): typing/PagePlan.java (ORDER typing look layout keys clip data tools) | HomePlan | ChangedPlan | PersonalPlan | SettingsIndex | AppTokens | AppPalette | WizardPlan | EditPlan | ProfileCodec (KEYS whitelist = SETTINGS only)
-  Docs in repo root: CHANGELOG.txt, CHECKLIST.txt (last Z86), CHECKLIST_SMOKE.txt, REVERT.txt, README.txt, docs/ARCHIVE_*.txt, tools/KOTLIN_CHECK.txt (HOW to compile ALL Kotlin in a chat). ~70 old HANDOFF_* files + HANDOFF.txt (header v0.2.3) in the repo root are STALE: the user deletes them by hand; never read them.
+  Docs in repo root: CHANGELOG.txt, CHECKLIST.txt (last Z87), CHECKLIST_SMOKE.txt, REVERT.txt, README.txt, docs/ARCHIVE_*.txt, tools/KOTLIN_CHECK.txt (HOW to compile ALL Kotlin in a chat). ~70 old HANDOFF_* files + HANDOFF.txt (header v0.2.3) in the repo root are STALE: the user deletes them by hand; never read them.
 
 5) KEY IDS / DATA SHAPES (never change meaning)
   Panel routes: clipboard format more emoji settings typing size themes tstudio vault tt profiles numpad symbols tbquick toolbar pad (letters = showLetters()). New routes in this plan: "keymap" (X5).
@@ -102,7 +102,7 @@ ASSUMPTIONS (1 line each): (a) "Ovro" = Avro (the bn_layout value "avro"); "prov
       Dependencies: none. Design note: language key text must fit the key at 11-12 sp (check "Bangলা" 6 chars at Letter size 130 %); mixed Latin + Bangla text needs no extra font.
       Checks: grep -rn "Avro\|Probhat" app/src/main must show ONLY pref values / code comments / class names; all tests green; phone: language key, long-press language list, swipe on space, app Typing page, Settings search "bangla".
 
-  [ ] X3  v0.16.3  Ridmik key map engine for "Bangলা" mode (R4)      mode BUILD      size M (~45%)
+  [x] X3  v0.16.3  (DONE 2026-11-12: phonetic/RidmikMap.java + RidmikMapTest 183 checks (all 42 txt examples + screenshot rows); hook MgbIme.toBangla; row "Bangলা key map" [Ridmik / Classic] pref bn_map default 1; ProfileCodec + Migrate + ChangedPlan + SettingsIndex + 3 tests updated; CHECKLIST Z87; all 80 tests green; Kotlin NOT compiled (no network); phone NOT tested)  Ridmik key map engine for "Bangলা" mode (R4)      mode BUILD      size M (~45%)
       Goal: typing in Bangলা mode follows the Ridmik key map (2 screenshots + "key-map and বাংলা লেখা চর্চা.txt"), including TH HH qq/cb hs rr rri Z OI OU kSh gg nj nc and "o" to break a conjunct; setting to go back to the Classic Avro rules.
       Add: phonetic/RidmikMap.java (pure; public static String convert(String roman); own token table; longest match 3 letters; kinds like AvroPhonetic; rules: rri before rr before r; "ng" always ং; "Ng" ঙ; "NG" ঞ; nj / nc special; rr = র + ্ then the next consonant joins WITHOUT a second hasanta; rr before a vowel or at the end = plain র; Z after a vowel = ্য; TH = ৎ; HH = ঃ; qq / cb = ঁ; hs = ্ + ZWNJ (U+200C) when it ends the word, else ্; unknown capital falls back to small letter like today; never throws) + tools/RidmikMapTest.java (>= 90 checks: EVERY example of the txt file with its expected Bangla (garite, TiTu, hoTaTH, bangla, oNggo, miNGa, SwaSwoto, SwaSwt, bybohar, bzbohar, bZbohar, oZanimeSon, rriN, brritto, korrmo, urrdi, nirrmol, caqqd, chOqqya, duHHkh, allahhs, goNtontr, goNotontro, kkh, kSh, kkhN, gg, NGc, ShN, hm, nj, nc, lokkhNOU, korrtrritw, shikSha, shikkha, chatro, bOIShNb, somudro, ridmik, brohmputro, moymonosingoh, shomvUgonj) + every letter row of the two screenshots + odd input (empty, null, digits, "rrrr", "qqq", "HHH") never crashes).
       Modify (patch only): MgbIme.kt L841: one line -> if prefs.int("bn_map", 1) == 1 then RidmikMap.convert(roman) else AvroPhonetic.convert(roman), both inside the existing try/catch (fallback chain: Ridmik -> Avro -> Latin). SettingsGroups.kt: 1 cycle row "Bangলা key map" [Ridmik / Classic] in "Languages & layouts" + SettingsIndex help + ProfileCodec.SPEC + ProfileTest + ChangedPlan default + SettingsIndexTest counts.
@@ -190,9 +190,14 @@ ASSUMPTIONS (1 line each): (a) "Ovro" = Avro (the bn_layout value "avro"); "prov
   ORDER NOTE: X1 first (the bug the user feels every day). X2-X5 = language work (X3 needs X2). X6 / X7 are independent and can be moved earlier if the user asks. X8-X13 = panel work (X9-X12 need X8). Never start a step before the previous one is green on GitHub, unless the user says so.
 
 8) STATUS
-  Code = v0.16.2 (plan N N1-N9 DONE; plan X: X1 + X2 DONE, X3-X14 planned). Phone checklists Z75-Z86 still open (CHECKLIST_SMOKE.txt first; line 3b = X1; Z86 = X2). GitHub build of v0.16.2: ASK the user (GREEN or pasted errors -> a FIX comes first). Kotlin compile was NOT run in the X1 and X2 chats (no github.com access): if GitHub shows errors, they are in lines marked "// v0.16.1" or "// v0.16.2".
-  X2 note: display names now live ONLY in typing/LangNames.java (AVRO = "Bangলা", PROBHAT = "বাংলা"). LangSwipe.name / label no longer have the "(Avro)" suffix, so label == name. Settings search for "avro" / "probhat" finds nothing now (the words are gone from titles + help lines); if the user misses that, add the old words as hidden search keywords (idea, ask first).
-  NEXT STEP: X3 - Ridmik key map engine for "Bangলা" mode (v0.16.3).
+  Code = v0.16.3 (plan N N1-N9 DONE; plan X: X1 + X2 + X3 DONE, X4-X14 planned). Phone checklists Z75-Z87 still open (CHECKLIST_SMOKE.txt first; line 3b = X1; Z86 = X2; Z87 = X3). GitHub build of v0.16.3: ASK the user (GREEN or pasted errors -> a FIX comes first). Kotlin compile was NOT run in the X1, X2, X3 chats (no github.com access): if GitHub shows errors, they are in lines marked "// v0.16.1", "// v0.16.2" or "// v0.16.3".
+  X2 note: display names live ONLY in typing/LangNames.java (AVRO = "Bangলা", PROBHAT = "বাংলা"). Settings search for "avro" / "probhat" finds nothing now (idea: hidden search keywords, ask first).
+  X3 notes (decisions the user can still change):
+   (1) JOIN RULE: RidmikMap joins consonant + consonant only when the pair / 3-letter cluster is in its own table of real Bengali conjuncts (PAIRS, TRIPLES, + any consonant + র / য rule). Reason: the txt examples need it (goNtontr = গণতন্ত্র: ণ ত apart; brohmputro: হ্ম then প apart; bOIShNb: ষ্ণ then ব apart). If a real word does not join, add the pair to PAIRS in RidmikMap.java (one line) + a test line; the user can always force a join with hs.
+   (2) The txt example "garite = গাড়িতে" is a typo (r = র, ড় = R): engine gives গারিতে, test uses gaRite.
+   (3) Strict Ridmik: lowercase oi / ou = অ + ই / উ; aa ii ee oo uu not aliases; no AUTO whole-word list (valo, tomar ...); ng always ং (ঙ = Ng); kormo = করম (korrmo = কর্ম). Classic = bn_map 0 keeps all old behaviour. Extras kept: chh f q x. 'o' right after ং / ঃ / ঁ is silent (moymonosingoh = ময়মনসিংহ).
+   (4) bn_map is in ProfileCodec (range 0..1) and Migrate; ChangedPlan section "Bangla"; row title "Bangলা key map".
+  NEXT STEP: X4 - Key map reference page in the app (v0.16.4). KeyMapData rows must be verified against RidmikMap.convert in its test (so the page cannot lie).
 
 9) STANDING RULES (every chat)
   - RULE 0: never break / rename / slow any existing feature, setting, storage key or build flow. No clean-up / refactor unless the step says so. If a new change breaks something old, it is a bug: fix it in the same step.
@@ -211,6 +216,7 @@ ASSUMPTIONS (1 line each): (a) "Ovro" = Avro (the bn_layout value "avro"); "prov
   2026-11-12 PLAN X DONE audit (read-only) + this handoff + docs/ARCHIVE_HANDOFF_v0.15.9_before_plan_X.txt (no code changed) -> jabra_plan_x_docs.zip
   2026-11-12 X1 DONE ScrollKeep.java + ScrollKeepTest.java (new), ClipboardFeature.kt + VaultPanel.kt patches, version 0.16.1, CHANGELOG, CHECKLIST Z85, CHECKLIST_SMOKE 3b, HANDOFF renamed -> jabra_v0_16_1.zip
   2026-11-12 X2 DONE LangNames.java + LangNamesTest.java (new), display places patched, LangSwipeTest + PagePlanTest updated, version 0.16.2, CHANGELOG, CHECKLIST Z86, README, HANDOFF renamed -> jabra_v0_16_2.zip
+  2026-11-12 X3 DONE RidmikMap.java + RidmikMapTest.java (new), MgbIme.toBangla hook, SettingsGroups row, SettingsIndex help, ProfileCodec + Migrate (bn_map 0..1), ChangedPlan, ProfileTest / ChangedPlanTest / SettingsIndexTest updated, version 0.16.3, CHANGELOG, CHECKLIST Z87, HANDOFF renamed -> jabra_v0_16_3.zip
 
 11) NEXT (ideas, NOT planned, ask the user first)
   - Clipboard: quick-paste popup on long-press of the clipboard toolbar icon (top 5 pinned); "remove duplicates" button; clip templates with {date} / {clipboard} (VarFill exists).
@@ -221,7 +227,6 @@ ASSUMPTIONS (1 line each): (a) "Ovro" = Avro (the bn_layout value "avro"); "prov
   - Clipboard select without rebuild (no flicker) if X1 stretch was not done.
 
 12) KICKOFF for the next chat. Attach THIS handoff + Jabra-Keyboard-main.zip (+ pasted GitHub error lines if the last build failed). Do NOT attach the plan zip as code.
-  NEXT STEP NAME: X3 - Ridmik key map engine for "Bangলা" mode (v0.16.3)
+  NEXT STEP NAME: X4 - Key map reference page in the app (v0.16.4)
   EXACT KICKOFF LINE (copy-paste; replace the bracket):
-  PROJECT: Jabra Keyboard. Step: X3. Mode: BUILD. Prev version: v0.16.2. Attached: HANDOFF_Jabra-Keyboard_v0.16.2.txt + Jabra-Keyboard-main.zip + "key-map and বাংলা লেখা চর্চা.txt" + the 2 key map screenshots. Goal: phonetic/RidmikMap.java + bn_map pref (see R4 + step X3). Done: plan N, X1, X2. GitHub build of v0.16.2: [GREEN | ERRORS: paste the lines].
-  NOTE for X3: the txt file and the 2 screenshots are NOT in the repo zip; attach them in the X3 chat (the handoff only has the gap list).
+  PROJECT: Jabra Keyboard. Step: X4. Mode: BUILD. Prev version: v0.16.3. Attached: HANDOFF_Jabra-Keyboard_v0.16.3.txt + Jabra-Keyboard-main.zip. Goal: app page "Bangলা key map" with tables + search, rows verified against RidmikMap (see R4 + step X4). Done: plan N, X1, X2, X3. GitHub build of v0.16.3: [GREEN | ERRORS: paste the lines].

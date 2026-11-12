@@ -38,7 +38,8 @@ public final class ProfileCodec {
         "h_lock:b",   // v0.9.7
         "sp_tick:b", "sp_step:i",   // v0.9.8
         "pop_fast:b",   // v0.9.9
-        "sg_on:b"   // v0.10.1
+        "sg_on:b",   // v0.10.1
+        "bn_map:i"   // v0.16.3
     };
     public static final String[] KEYS = new String[SPEC.length];
     private static final char[] TYPE = new char[SPEC.length];
@@ -77,6 +78,7 @@ public final class ProfileCodec {
             if (d != Math.rint(d) || d < -1 || d > 1000) return INVALID;
             int n = (int) d;
             if (key.equals("theme") && (n < 0 || n > 20)) return INVALID;
+            if (key.equals("bn_map") && (n < 0 || n > 1)) return INVALID;   // v0.16.3
             if ((key.equals("onehand") || key.equals("lang_tap") || key.equals("lang_fav")) && (n < 0 || n > 2)) return INVALID;
             return Integer.valueOf(n);
         }

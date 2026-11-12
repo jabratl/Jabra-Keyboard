@@ -48,6 +48,7 @@ public final class Migrate {
                 else {
                     int n = (Integer) v;
                     if (k.equals("theme") && (n < 0 || n > 20)) bad = true;
+                    else if (k.equals("bn_map") && (n < 0 || n > 1)) bad = true;   // v0.16.3
                     else if ((k.equals("onehand") || k.equals("lang_tap") || k.equals("lang_fav")) && (n < 0 || n > 2)) bad = true;
                 }
             } else if (t == 's') {

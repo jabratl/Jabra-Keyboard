@@ -599,3 +599,13 @@ Z86) v0.16.2 New names Bangলা / বাংলা (X2)
  [ ] App home (Typing tile summary) shows the new name + ", space swipe on / off". Settings search "bangla": help lines show the new names. Search "avro" / "probhat" find nothing (expected).
  [ ] Keyboard gear > More: button "Bangla: Bangলা" / "Bangla: বাংলা" switches the layout. Keyboard preview in the app (EN / বাংলা button) shows the new name.
  [ ] Nothing else changed: saved language kept after update, backup / restore still fine.
+
+Z87) v0.16.3 Ridmik key map in Bangলা mode (X3)
+ [ ] Language key until it shows "Bangলা" (long-press switches to বাংলা: that one is the fixed layout, not changed). Open any text field. Type each word, then space: garite NOT needed, use gaRite = গাড়িতে | TiTu = টিটু | hoTaTH = হটাৎ | bangla = বাংলা | oNggo = অঙ্গ | miNGa = মিঞা | SwaSwoto = শ্বাশ্বত.
+ [ ] bybohar / bzbohar / bZbohar = ব্যবহার | oZanimeSon = অ্যানিমেশন | rriN = ঋণ | brritto = বৃত্ত | korrmo = কর্ম | urrdi = উর্দি | nirrmol = নির্মল.
+ [ ] caqqd = চাঁদ | chOqqya = ছোঁয়া | duHHkh = দুঃখ | allahhs = আল্লাহ্‌ (space: no visible gap after the hasanta) | goNtontr = গণতন্ত্র | goNotontro = গণতন্ত্র.
+ [ ] kkh = ক্ষ | kSh = ক্ষ | kkhN = ক্ষ্ণ | gg = জ্ঞ | NGc = ঞ্চ | ShN = ষ্ণ | hm = হ্ম | nj = ঞ্জ | nc = ঞ্চ | lokkhNOU = লক্ষ্ণৌ | korrtrritw = কর্তৃত্ব | shikSha = শিক্ষা | shikkha = শিক্ষা.
+ [ ] chatro = ছাত্র | bOIShNb = বৈষ্ণব | somudro = সমুদ্র | ridmik = রিদ্মিক | brohmputro = ব্রহ্মপুত্র | moymonosingoh = ময়মনসিংহ | shomvUgonj = শম্ভূগঞ্জ.
+ [ ] While typing a word the Bangla text under the letters (underlined) follows each key; Backspace in the middle of a word still works; space / Enter commit it exactly as before.
+ [ ] Settings (app or keyboard gear) > Languages & layouts > "Bangলা key map": [Ridmik] default. Tap it -> [Classic]: now bangla = বাংলা, rongin = রঙিন, kormo = কর্ম, valo = ভালো (old rules). Tap again: Ridmik rules back. The dot / reset in the app puts it back to Ridmik.
+ [ ] বাংলা (fixed layout) and English typing are not changed. Password / email / URL fields still type Latin.

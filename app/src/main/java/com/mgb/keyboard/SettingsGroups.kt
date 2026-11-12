@@ -498,6 +498,9 @@ object SettingsGroups {
             cycle(g, "Bangla layout", "bn_layout", { try { com.mgb.keyboard.typing.LangNames.layoutChoices() } catch (_: Throwable) { arrayOf("Avro (phonetic)", "Probhat") } },   // v0.16.2
                 { if (prefs.str("bn_layout", "avro") == "probhat") 1 else 0 },
                 { prefs.setStr("bn_layout", if (it == 1) "probhat" else "avro") })
+            cycle(g, "${com.mgb.keyboard.typing.LangNames.AVRO} key map", "bn_map", { arrayOf("Ridmik", "Classic") },   // v0.16.3 (X3): 1 = Ridmik key map (default), 0 = Classic Avro rules
+                { if (prefs.int("bn_map", 1) == 0) 1 else 0 },
+                { prefs.setInt("bn_map", if (it == 1) 0 else 1) })
             cycle(g, "Language key tap", "lang_tap", { Array(3) { i -> com.mgb.keyboard.typing.LangOrder.TAP_NAMES[i] } }, { prefs.int("lang_tap", 0).coerceIn(0, 2) }, { prefs.setInt("lang_tap", it) })   // v0.5.0
             cycle(g, "Bangla first", "lang_fav", { Array(3) { i -> com.mgb.keyboard.typing.LangOrder.FAV_NAMES[i] } }, { prefs.int("lang_fav", 0).coerceIn(0, 2) }, { prefs.setInt("lang_fav", it) })   // v0.5.0
             toggle(g, "${com.mgb.keyboard.typing.LangNames.AVRO} available", "lang_avro_on", true)   // v0.5.0

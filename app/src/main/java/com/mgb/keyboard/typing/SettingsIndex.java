@@ -89,6 +89,7 @@ public final class SettingsIndex {
         if (key == null) return "";
         switch (key) {
             case "bn_layout": return "Which Bangla keyboard the language key uses: " + LangNames.AVRO + " (phonetic) or " + LangNames.PROBHAT + " (fixed).";
+            case "bn_map": return LangNames.AVRO + " typing rules: Ridmik key map (default) or the Classic phonetic rules.";   // v0.16.3
             case "lang_tap": return "Language key tap: EN <-> Bangla (default), or cycle through all languages.";
             case "lang_fav": return "Which Bangla layout opens first when you tap the language key from English.";
             case "lang_avro_on": return "OFF hides " + LangNames.AVRO + " from the language key (English always stays).";

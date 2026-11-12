@@ -837,8 +837,12 @@ class MgbIme : InputMethodService() {
         renderWord()
     }
 
-    private fun toBangla(roman: String): String =
-        try { AvroPhonetic.convert(roman) } catch (_: Throwable) { roman } // fallback: show Latin letters
+    private fun toBangla(roman: String): String {
+        try {   // v0.16.3 (X3): pref bn_map 1 (default) = Ridmik key map; any problem falls back to the Classic Avro rules below
+            if (prefs.int("bn_map", 1) != 0) return com.mgb.keyboard.phonetic.RidmikMap.convert(roman)
+        } catch (_: Throwable) { }
+        return try { AvroPhonetic.convert(roman) } catch (_: Throwable) { roman } // fallback: show Latin letters
+    }
 
     private fun renderWord() {
         val ic = currentInputConnection ?: return

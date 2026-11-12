@@ -66,7 +66,7 @@ public final class ChangedPlan {
             if (in(key, "hint_hide", "hint_digits", "hint_size_lv", "hint_alpha_lv")) return "Hints";
             if (in(key, "onehand", "tb_tip")) return "Other";
         } else if (group.equals("Languages & layouts")) {
-            if (in(key, "bn_layout", "lang_avro_on", "lang_probhat_on")) return "Bangla";
+            if (in(key, "bn_layout", "bn_map", "lang_avro_on", "lang_probhat_on")) return "Bangla";
             if (in(key, "lang_tap", "lang_fav", "space_lang", "sp_preview", "sp_tick", "sp_step", "key_lang")) return "Switching";
             if (in(key, "numrow", "numpad_auto", "pc_mode", "mode_key", "pc_remember")) return "Number row & mode";
         } else if (group.equals("Keys & gestures")) {
