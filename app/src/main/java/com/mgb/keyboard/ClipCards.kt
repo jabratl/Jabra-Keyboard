@@ -39,27 +39,29 @@ object ClipCards {
         pinned: List<ClipList.Item>, recent: List<ClipList.Item>,
         showHeaders: Boolean, lines: Int,
         onPin: (ClipList.Item) -> Unit, onDel: (ClipList.Item) -> Unit,
-        sm: SelectMode = SelectMode()   // v0.2.5.3: select mode (default = off = part 2 behaviour)
+        sm: SelectMode = SelectMode(),   // v0.2.5.3: select mode (default = off = part 2 behaviour)
+        recentFirst: Boolean = false,   // v0.15.2 (N2): true = Recent section above Pinned (pref clip_order); default = old order
+        onHeader: (() -> Unit)? = null   // v0.15.2: tap on a section header swaps the order (null = headers are plain text as before)
     ): View? = try {
         val lv = lines.coerceIn(0, 2)
         val col = LinearLayout(ctx)
         col.orientation = LinearLayout.VERTICAL
-        if (pinned.isNotEmpty()) {
-            if (showHeaders) col.addView(header(ctx, "Pinned"))
-            addGrid(ctx, host, col, pinned, lv, onPin, onDel, sm)
-        }
-        if (recent.isNotEmpty()) {
-            if (showHeaders) col.addView(header(ctx, "Recent"))
-            addGrid(ctx, host, col, recent, lv, onPin, onDel, sm)
+        val secs = if (recentFirst) listOf(Pair("Recent", recent), Pair("Pinned", pinned)) else listOf(Pair("Pinned", pinned), Pair("Recent", recent))   // v0.15.2
+        var firstHdr = true
+        for (sec in secs) {
+            if (sec.second.isEmpty()) continue
+            if (showHeaders) { col.addView(header(ctx, sec.first, onHeader, firstHdr)); firstHdr = false }
+            addGrid(ctx, host, col, sec.second, lv, onPin, onDel, sm)
         }
         col
     } catch (_: Throwable) { null }
 
     private fun dp(ctx: Context, v: Int): Int = (v * ctx.resources.displayMetrics.density).toInt()
 
-    private fun header(ctx: Context, label: String): View {
+    private fun header(ctx: Context, label: String, onTap: (() -> Unit)? = null, arrow: Boolean = false): View {   // v0.15.2: onTap = swap Pinned / Recent order; arrow only on the first header
         val h = TextView(ctx)
-        h.text = label
+        h.text = if (arrow) label + "  \u21C5" else label
+        if (onTap != null) { h.minimumHeight = dp(ctx, 30); h.gravity = android.view.Gravity.CENTER_VERTICAL; h.setOnClickListener { try { onTap() } catch (_: Throwable) { } } }
         h.textSize = 12f
         h.setTypeface(h.typeface, Typeface.BOLD)
         h.setTextColor(try { JabraTokens.dimText(JabraPrefs(ctx)) } catch (_: Throwable) { Color.DKGRAY })   // v0.8.7

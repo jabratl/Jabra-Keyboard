@@ -500,3 +500,13 @@ Z77) v0.15.1 Clipboard keeps the keyboard height (N1)
  [ ] Rotate to landscape: clipboard opens in the landscape keyboard height.
  [ ] Settings > Clipboard & Tools > [Clipboard follows keyboard height] OFF: clipboard is exactly the old fixed size. ON again: fits again.
  [ ] Empty history ("Nothing copied yet"): panel still keeps the height.
+
+Z78) v0.15.2 Clipboard order: Pinned first / Recent first (N2)
+ [ ] Pin 2 clips and copy 3 other texts. Open the clipboard (List view): "Pinned" section on top, "Recent" below, as before. The first header shows a small up-down arrow.
+ [ ] Tap a section header: the order swaps at once (Recent on top, Pinned below). Tap again: back.
+ [ ] Switch View to Cards: the same order is used. Tap a header in Cards: it swaps too.
+ [ ] Settings > Clipboard & Tools > [Clip order]: Pinned first / Recent first. Change it in the app, open the clipboard: it follows. Change it with the header tap: the app row shows the new value.
+ [ ] Sort button (Newest / Oldest / A-Z / Used): still sorts inside each group, order of groups stays.
+ [ ] Search: type a letter: no headers (as before), groups still in the chosen order. Clear search: headers are back.
+ [ ] Only pinned clips or only recent clips: no headers, no arrow, nothing crashes. Manage (select) mode and pin / delete / Undo work in both orders.
+ [ ] Close and reopen the keyboard: the chosen order stays. Default on a fresh install = Pinned first.

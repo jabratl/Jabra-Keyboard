@@ -544,6 +544,7 @@ object SettingsGroups {
             level(g, "Clip lines", "clip_lines", 0, arrayOf("2 lines", "4 lines", "6 lines"))   // v0.2.5.1
             level(g, "Clipboard view", "clip_view", 0, arrayOf("List", "Cards"))   // v0.2.5.2
             level(g, "Clip sort", "clip_sort", 0, com.mgb.keyboard.clip.ClipMeta.SORT_NAMES)   // v0.4.3
+            level(g, "Clip order", "clip_order", 0, com.mgb.keyboard.typing.ClipOrder.NAMES)   // v0.15.2 (N2): which group is shown first, List + Cards
             toggle(g, "Clip character count", "clip_count", true)   // v0.4.3
             level(g, "Clip auto-delete (unpinned)", "clip_expire", 0, com.mgb.keyboard.clip.ClipMeta.EXPIRE_NAMES)   // v0.4.3
             toggle(g, "Clipboard follows keyboard height", "clip_fit", true)   // v0.15.1 (N1): OFF = old fixed clipboard size

@@ -159,6 +159,7 @@ public final class SettingsIndex {
             case "fmt_on": return "Shows the Aa novel formatter button.";
             case "clip_lines": return "How many lines of each clip are shown in the clipboard.";
             case "clip_view": return "Clipboard as a list or as 2-column cards.";
+            case "clip_order": return "Which group comes first in the clipboard: Pinned or Recent (List and Cards).";   // v0.15.2
             case "clip_sort": return "Order of clips in the clipboard: Newest, Oldest, A-Z or Most used.";
             case "clip_count": return "Shows the number of characters (and paste count) on each clip.";
             case "clip_expire": return "Deletes unpinned clips after this time. Pinned clips are never deleted.";

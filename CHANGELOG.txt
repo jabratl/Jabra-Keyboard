@@ -1,3 +1,13 @@
+v0.15.2 - NEW: clipboard order option, Pinned first or Recent first (plan N, step N2)
+- WHY: the clipboard always showed Pinned above Recent. Now you choose which group comes first, in List view and in Cards view.
+- What you get: (1) Settings > Clipboard & Tools > [Clip order]: Pinned first (default = as before) | Recent first (pref clip_order). (2) Inside the keyboard: tap a section header ("Pinned" / "Recent", the first one has a small up-down arrow) = the order swaps at once. Headers are shown only when both groups have clips and you are not searching (same rule as before); the order also applies while searching and in select mode. Clip sort still sorts inside each group.
+- Code: NEW typing/ClipOrder.java (pure: sanitize, next, labels, groups, showHeaders) + tools/ClipOrderTest.java (21 checks). ClipCards.kt: build() got 2 trailing parameters with defaults (recentFirst = false, onHeader = null) so old callers are unchanged; header() can be tappable. ClipboardFeature.kt: the list branch builds the two groups through ClipOrder; sectionHeader() can be tappable; hooks marked "v0.15.2". SettingsGroups.kt row + typing/SettingsIndex.java help line + tools/SettingsIndexTest.java (52 help lines).
+- ProfileCodec: NOT changed on purpose (no other clip_* pref is in profiles).
+BROKE: nothing intended. Default 0 (or any bad value) = the old order; a failed swap click is caught and does nothing.
+TESTED here: all 74 tools/*Test.java compile + PASS (ClipOrderTest 21/21, SettingsIndexTest 38/38); Kotlin compile check (tools/KOTLIN_CHECK.txt) = 0 errors on the whole app.
+NOT tested: on a phone (CHECKLIST Z78). Header tap target is 30 dp high (small on purpose, the header line is already crowded); the app row is the other way to change it.
+Rollback: Settings > Clip order = Pinned first (no code change). Code level: delete typing/ClipOrder.java + tools/ClipOrderTest.java, remove the lines marked "v0.15.2" (ClipboardFeature.kt, ClipCards.kt, SettingsGroups.kt, SettingsIndex.java, SettingsIndexTest.java), version back to 0.15.1.
+
 v0.15.1 - FIX: clipboard panel keeps the height of the letters keyboard (plan N, step N1)
 - WHY: opening the clipboard made the keyboard smaller. ROOT CAUSE: the clip list had a FIXED height (176 dp, 88 dp while searching), so the whole panel was about 262 dp whatever the Key height % was; the letters keyboard is taller at 100-120%, so the window shrank and jumped.
 - What you get: the clipboard (List, Cards, Search, Manage, edit screen) is as tall as the letters keyboard, in portrait and landscape. It never gets shorter than before (a low keyboard keeps the old size). New row Settings > Clipboard & Tools > [Clipboard follows keyboard height] (pref clip_fit, default ON); OFF = exactly the old fixed size.

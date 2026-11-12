@@ -12,6 +12,7 @@ import android.widget.TextView
 import com.mgb.keyboard.clip.ClipList
 import com.mgb.keyboard.clip.ClipMeta
 import com.mgb.keyboard.typing.ClipSelect
+import com.mgb.keyboard.typing.ClipOrder   // v0.15.2 (N2)
 import com.mgb.keyboard.typing.ClipSensitive   // v0.10.10 (W4)
 
 /*
@@ -303,7 +304,9 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
         // v0.2.5.1: "Pinned" / "Recent" header lines (only when both groups have items and not searching)
         val pinnedItems = store.sorted(store.pinnedView(query), sortLv)   // v0.4.3 (Newest = unchanged)
         val recentItems = store.sorted(store.recentView(query), sortLv)
-        val showHeaders = !searching && pinnedItems.isNotEmpty() && recentItems.isNotEmpty()
+        val showHeaders = ClipOrder.showHeaders(searching, pinnedItems.size, recentItems.size)   // v0.15.2 (same rule as before)
+        val ordMode = try { ClipOrder.sanitize(JabraPrefs(ctx).int("clip_order", 0)) } catch (_: Throwable) { 0 }   // v0.15.2 (N2): 0 = Pinned first (old), 1 = Recent first
+        val ordSwap: () -> Unit = { try { JabraPrefs(ctx).setInt("clip_order", ClipOrder.next(ordMode)) } catch (_: Throwable) { }; confirmClear = false; refresh() }   // v0.15.2: tap on a section header
         // v0.2.5.2: Cards view (clip_view = 1); any problem -> null -> the old List code below
         val lines = try { JabraPrefs(ctx).int("clip_lines", 0).coerceIn(0, 2) } catch (_: Throwable) { 0 }
         val cards: View? = if (cardsOn && items.isNotEmpty()) {
@@ -311,15 +314,18 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
                 { it2 -> store.togglePin(it2); refresh() },
                 { it2 -> keepUndo(listOf(it2)); store.remove(it2); refresh() },
                 SelectMode(selOn, { x -> sel.isSelected(x) }, { x -> sel.toggle(x); confirmDel = false; refresh() }, { x -> sel.enterWith(x); confirmDel = false; refresh() },
-                    { x -> store.noteUse(x) }, { x -> infoLine(x) }))   // v0.4.3
+                    { x -> store.noteUse(x) }, { x -> infoLine(x) }), ClipOrder.recentFirst(ordMode), ordSwap)   // v0.4.3; v0.15.2: order + header tap
         } else null
         if (cards != null) {
             col.addView(cards)
         } else {
-            if (showHeaders) col.addView(sectionHeader("Pinned"))
-            for (entry in pinnedItems) col.addView(itemRow(entry))
-            if (showHeaders) col.addView(sectionHeader("Recent"))
-            for (entry in recentItems) col.addView(itemRow(entry))
+            // v0.15.2 (N2): groups in the order of pref clip_order (default Pinned first = as before); header tap swaps (arrow on the first one)
+            val ordLabels = ClipOrder.labels(ordMode)
+            val ordGroups = ClipOrder.groups(pinnedItems, recentItems, ordMode)
+            for (gi in 0..1) {
+                if (showHeaders) col.addView(sectionHeader(ordLabels[gi], gi == 0, ordSwap))
+                for (entry in ordGroups[gi]) col.addView(itemRow(entry))
+            }
         }
         sv.addView(col)
         root.addView(sv)
@@ -535,9 +541,10 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
         return colAll
     }
 
-    private fun sectionHeader(label: String): View {
+    private fun sectionHeader(label: String, arrow: Boolean = false, onTap: (() -> Unit)? = null): View {   // v0.15.2: onTap = swap Pinned / Recent order
         val h = TextView(ctx)
-        h.text = label
+        h.text = if (arrow) label + "  \u21C5" else label
+        if (onTap != null) { h.minimumHeight = dp(30); h.gravity = Gravity.CENTER_VERTICAL; h.setOnClickListener { try { onTap() } catch (_: Throwable) { } } }
         h.textSize = 12f
         h.setTypeface(h.typeface, android.graphics.Typeface.BOLD)
         h.setTextColor(dim())
