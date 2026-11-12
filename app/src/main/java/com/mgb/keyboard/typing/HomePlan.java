@@ -6,7 +6,7 @@ import java.util.List;
 
 /**
  * v0.13.0 (M3 of the "App UI" plan): pure rules for the new Home. No Android classes.
- *  - DEFAULT_APP_UI: which app screen opens when pref app_ui is not set (0 = old, 1 = new). Flip to 1 ONLY after the phone checklist Z71 + Z72 + Z73 is green.
+ *  - DEFAULT_APP_UI: which app screen opens when pref app_ui is not set (0 = old, 1 = new). v0.14.1: now 1 (phone checklist Z71-Z74 green).
  *  - Panes: width >= 600 dp = two panes (Home on the left, the open page on the right). Landscape phones are usually wider than 600 dp too.
  *  - Global search: every row of every page, grouped by page (order of PagePlan.ORDER), best title match first.
  *  - Lists on Home: recently changed (pref set_recent) and changed-from-default.
@@ -14,8 +14,8 @@ import java.util.List;
 public final class HomePlan {
     private HomePlan() { }
 
-    /** M3: stays 0 (old screen) until the phone checklist is green. Flip = change this ONE number to 1. */
-    public static final int DEFAULT_APP_UI = 0;
+    /** v0.14.1: flipped to 1 (new screen) after the phone checklist Z71-Z74 was green. Back = change this ONE number to 0. A saved pref app_ui (0 or 1) always wins. */
+    public static final int DEFAULT_APP_UI = 1;
 
     // ---- panes ----
     public static final int PANE_MIN_DP = 600, SHORT_DP = 480, LEFT_MIN_DP = 300, LEFT_MAX_DP = 380, RIGHT_MIN_DP = 300;

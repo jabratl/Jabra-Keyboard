@@ -11,7 +11,7 @@ public class HomePlanTest {
     static void eq(String n, Object a, Object b) { if (java.util.Objects.equals(a, b)) ok++; else { bad++; System.out.println("FAIL " + n + ": " + a + " != " + b); } }
     static SettingsIndex.Entry e(String key, String title, String help, String group) { return new SettingsIndex.Entry(key, title, help, group); }
     public static void main(String[] x) {
-        eq("default ui stays old", HomePlan.DEFAULT_APP_UI, 0);
+        eq("default ui is the new screen (v0.14.1)", HomePlan.DEFAULT_APP_UI, 1);
         // panes
         eq("360 one pane", HomePlan.twoPane(360), false);
         eq("599 one pane", HomePlan.twoPane(599), false);

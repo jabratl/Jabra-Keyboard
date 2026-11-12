@@ -472,3 +472,8 @@ Z74) v0.14.0 New app screen M4 (tokens + smooth), new screen ON only
  [ ] The screen looks the same as in v0.13.0 (spacing, tile size, buttons 48 dp): compare with Z71-Z73 screens.
  [ ] Landscape / 600 dp two panes: tap another tile on the left: the right side fades in, the left side does not move.
 
+Z75) v0.14.1 New app screen is the DEFAULT
+ [ ] Settings > Apps > Jabra > Clear data (first Backup now if you want to keep data), open Jabra: the NEW Home opens with the setup wizard, no old accordion screen.
+ [ ] Update from v0.14.0 where you had chosen the new screen: still new. If you had chosen the old screen (Data & About button), it stays OLD until you press [Try the new app screen (beta)].
+ [ ] Data & About > [New app screen: ON] goes to the old screen and the choice is kept after closing and reopening the app.
+

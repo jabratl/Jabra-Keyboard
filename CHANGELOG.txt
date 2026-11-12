@@ -1,3 +1,13 @@
+v0.14.1 - CHANGE: the NEW app screen is now the default. The phone checklist Z71-Z74 was reported OK by the user.
+- WHY: plan "App UI": after M1-M4 passed on the phone the new Home / pages / search is the normal screen.
+- What you get: a fresh install, or a phone that never chose a screen, opens the NEW screen (Home + pages). A phone that already pressed [Old app screen] or [New app screen: ON] keeps its choice (saved pref app_ui wins).
+- Code: typing/HomePlan.java DEFAULT_APP_UI 0 > 1 (one number), tools/HomePlanTest.java (default check now expects 1). Nothing else changed. The old screen stays in the app: Data & About > [New app screen: ON] switches back, the old screen has [Try the new app screen (beta)].
+- Prefs: none new. Permissions: none.
+BROKE: nothing intended. Rollback: Data & About switch, or set DEFAULT_APP_UI back to 0.
+NOT compiled here (no internet; one-number change). NOT tested: a fresh install on a phone that never opened the app (first-run wizard + new screen).
+TESTED here: all 71 tools/*Test.java PASS.
+NEXT (plan, not built): keep the old-screen switch for one more version, then decide; M5 personal (optional).
+
 v0.14.0 - NEW: new app screen, part M4 (tokens + smooth). Only with the new screen ON (pref app_ui = 1). Default stays OLD screen. Built BEFORE the phone checklist Z71-Z73 on the user's request.
 - WHY: plan "App UI" part M4: the numbers of the new screen were typed again and again in 5 files, and pages just popped in.
 - What you get (new screen only): (1) a page fades in with a small rise (180 ms) when you open another page; the search results fade in (140 ms). (2) If the phone has animations OFF (Developer options > Animator duration scale = off) there is NO motion at all. (3) Spacing / touch size numbers (4 / 8 / 12 / 16 dp, 48 dp touch) now come from ONE place, AppTokens. Same values as before = the screen looks the same.
