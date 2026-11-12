@@ -9,6 +9,7 @@ import android.widget.Button
 import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.TextView
+import com.mgb.keyboard.typing.AppTokens
 import com.mgb.keyboard.typing.WizardPlan
 
 class AppWizardView(val view: View, val refresh: () -> Unit)
@@ -36,10 +37,10 @@ object AppWizard {
 
             val card = LinearLayout(act)
             card.orientation = LinearLayout.VERTICAL
-            card.setPadding(dp(12), dp(12), dp(12), dp(12))
+            card.setPadding(dp(AppTokens.S3), dp(AppTokens.S3), dp(AppTokens.S3), dp(AppTokens.S3))
             card.background = AppUi.cardBg(act, 12)
             val lp = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
-            lp.topMargin = dp(12); lp.bottomMargin = dp(12)
+            lp.topMargin = dp(AppTokens.S3); lp.bottomMargin = dp(AppTokens.S3)
             card.layoutParams = lp
 
             val head = TextView(act)
@@ -50,19 +51,19 @@ object AppWizard {
             card.addView(head)
             val prog = TextView(act)
             prog.setTextColor(AppUi.accent(act))
-            prog.setPadding(0, dp(4), 0, 0)
+            prog.setPadding(0, dp(AppTokens.S1), 0, 0)
             card.addView(prog)
             val body = TextView(act)
             body.setTextColor(AppUi.text(act))
-            body.setPadding(0, dp(8), 0, dp(4))
+            body.setPadding(0, dp(AppTokens.S2), 0, dp(AppTokens.S1))
             card.addView(body)
             val test = EditText(act)
             test.hint = "Type here to test the keyboard"
-            test.minHeight = dp(48)
+            test.minHeight = dp(AppTokens.TOUCH)
             card.addView(test)
             val btn = Button(act)
             btn.isAllCaps = false
-            btn.minHeight = dp(48); btn.minimumHeight = dp(48)
+            btn.minHeight = dp(AppTokens.TOUCH); btn.minimumHeight = dp(AppTokens.TOUCH)
             card.addView(btn, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
 
             var step = WizardPlan.ENABLE

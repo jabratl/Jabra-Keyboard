@@ -14,6 +14,7 @@ import android.widget.EditText
 import android.widget.HorizontalScrollView
 import android.widget.LinearLayout
 import android.widget.TextView
+import com.mgb.keyboard.typing.AppTokens
 import com.mgb.keyboard.typing.HomePlan
 import com.mgb.keyboard.typing.PagePlan
 import com.mgb.keyboard.typing.SettingsIndex
@@ -46,7 +47,7 @@ object AppSearch {
         field.hint = "Search all settings (vibrate, theme, gap...)"
         field.isSingleLine = true
         field.imeOptions = EditorInfo.IME_ACTION_SEARCH
-        field.minHeight = dp(48)
+        field.minHeight = dp(AppTokens.TOUCH)
         field.contentDescription = "Search all settings"
         box.addView(field, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
 
@@ -76,7 +77,7 @@ object AppSearch {
             t.textSize = if (accent) 13f else 16f
             t.setTypeface(null, Typeface.BOLD)
             safe { t.setTextColor(if (accent) AppUi.accent(act) else AppUi.text(act)) }
-            t.setPadding(0, dp(if (accent) 12 else 16), 0, dp(4))
+            t.setPadding(0, dp(if (accent) 12 else 16), 0, dp(AppTokens.S1))
             safe { t.isAccessibilityHeading = true }
             return t
         }
@@ -86,8 +87,8 @@ object AppSearch {
             val line = LinearLayout(act)
             line.orientation = LinearLayout.HORIZONTAL
             line.gravity = android.view.Gravity.CENTER_VERTICAL
-            line.setPadding(dp(12), dp(6), dp(12), dp(6))
-            line.minimumHeight = dp(48)
+            line.setPadding(dp(AppTokens.S3), dp(6), dp(AppTokens.S3), dp(6))
+            line.minimumHeight = dp(AppTokens.TOUCH)
             safe { line.background = AppUi.cardBg(act, 10) }
             line.isClickable = true
             line.isFocusable = true
@@ -110,7 +111,7 @@ object AppSearch {
             val vt = TextView(act)
             vt.text = v
             vt.textSize = 13f
-            vt.setPadding(dp(8), 0, 0, 0)
+            vt.setPadding(dp(AppTokens.S2), 0, 0, 0)
             val ch = try { r.changed() } catch (_: Throwable) { false }
             safe { vt.setTextColor(if (ch) AppUi.accent(act) else AppUi.dim(act)) }
             if (ch) vt.setTypeface(null, Typeface.BOLD)
@@ -126,7 +127,7 @@ object AppSearch {
 
         fun setActive(on: Boolean) {
             for (v in rest) safe { v.visibility = if (on) View.GONE else View.VISIBLE }
-            safe { results.visibility = if (on) View.VISIBLE else View.GONE }
+            safe { val was = results.visibility == View.VISIBLE; results.visibility = if (on) View.VISIBLE else View.GONE; if (on && !was) AppMotion.fadeIn(results, AppTokens.FADE_MS, false) }   // v0.14.0 (M4)
         }
 
         fun renderResults(q: String) {
@@ -141,7 +142,7 @@ object AppSearch {
             info.text = HomePlan.resultLine(n, q)
             info.textSize = 12f
             safe { info.setTextColor(AppUi.dim(act)) }
-            info.setPadding(0, dp(8), 0, 0)
+            info.setPadding(0, dp(AppTokens.S2), 0, 0)
             info.importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_YES
             results.addView(info)
             for (g in groups) {
@@ -177,7 +178,7 @@ object AppSearch {
                     b.isAllCaps = false
                     b.text = r.title
                     b.textSize = 12f
-                    b.minHeight = dp(48); b.minimumHeight = dp(48); b.minWidth = 0; b.minimumWidth = 0
+                    b.minHeight = dp(AppTokens.TOUCH); b.minimumHeight = dp(AppTokens.TOUCH); b.minWidth = 0; b.minimumWidth = 0
                     b.contentDescription = "Open " + r.title
                     b.setOnClickListener { go(r) }
                     row.addView(b)
@@ -192,7 +193,7 @@ object AppSearch {
                 head.isAllCaps = false
                 head.text = HomePlan.changedTitle(order.size, changedOpen)
                 head.gravity = android.view.Gravity.START or android.view.Gravity.CENTER_VERTICAL
-                head.minHeight = dp(48); head.minimumHeight = dp(48)
+                head.minHeight = dp(AppTokens.TOUCH); head.minimumHeight = dp(AppTokens.TOUCH)
                 head.contentDescription = "Changed from default, " + order.size + (if (changedOpen) ", expanded" else ", collapsed")
                 lists.addView(head)
                 val body = LinearLayout(act)

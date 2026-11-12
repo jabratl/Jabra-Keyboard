@@ -463,3 +463,12 @@ Z73) v0.13.0 New app screen M3 (search, two panes, wizard), new screen ON only
  [ ] 130% font on 360 px: tiles, Quick looks, result rows, wizard card: no cut text, every button at least 48 dp tall.
  [ ] 360 / 412 / 640 / 1280 px, light + dark: no overlap, left pane about 300-380 dp, right pane at least 300 dp.
  [ ] Data & About > [New app screen: ON] goes to the old screen; the old screen has [Try the new app screen (beta)]. Default is still the OLD screen after a fresh install.
+
+Z74) v0.14.0 New app screen M4 (tokens + smooth), new screen ON only
+ [ ] Open a page from Home (tap a tile): it fades in with a small rise, about a fifth of a second. Back to Home: Home fades in too. No flicker, no jump.
+ [ ] Home search: type "vib": the results fade in once (not again on every letter). Clear the text: Home is back, nothing stuck half see-through.
+ [ ] Open pages fast, many times (tile, Back, tile, Back): the screen never stays faint or shifted down.
+ [ ] Phone Settings > Developer options > Animation scales: set "Animator duration scale" OFF. Open pages: they just appear, no fade. Set it back to 1x.
+ [ ] The screen looks the same as in v0.13.0 (spacing, tile size, buttons 48 dp): compare with Z71-Z73 screens.
+ [ ] Landscape / 600 dp two panes: tap another tile on the left: the right side fades in, the left side does not move.
+

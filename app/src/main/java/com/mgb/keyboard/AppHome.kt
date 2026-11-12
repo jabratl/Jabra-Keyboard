@@ -11,6 +11,7 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
+import com.mgb.keyboard.typing.AppTokens
 import com.mgb.keyboard.typing.EdgePlan
 import com.mgb.keyboard.typing.PagePlan
 import com.mgb.keyboard.typing.SizePct
@@ -35,7 +36,7 @@ object AppHome {
 
         val col = LinearLayout(act)
         col.orientation = LinearLayout.VERTICAL
-        col.setPadding(dp(16), dp(12), dp(16), dp(24))
+        col.setPadding(dp(AppTokens.S4), dp(AppTokens.S3), dp(AppTokens.S4), dp(24))
 
         // ---- header: logo + name + version ----
         val head = LinearLayout(act)
@@ -49,7 +50,7 @@ object AppHome {
         } catch (_: Throwable) { }
         val names = LinearLayout(act)
         names.orientation = LinearLayout.VERTICAL
-        names.setPadding(dp(12), 0, 0, 0)
+        names.setPadding(dp(AppTokens.S3), 0, 0, 0)
         val title = TextView(act)
         title.text = "Jabra Keyboard"
         title.textSize = 22f
@@ -69,7 +70,7 @@ object AppHome {
         try {   // warning when the crash guard switched a panel off / backup is old (same text as the old screen)
             val bn = com.mgb.keyboard.typing.HealthCheck.backupNote(prefs.bool("bk_auto", true), prefs.str("bk_last", ""), System.currentTimeMillis())
             val w = listOf(PanelGuard.note(act), bn).filter { it.isNotEmpty() }.joinToString("\n")
-            if (w.isNotEmpty()) { val wt = TextView(act); wt.text = w; wt.setTextColor(AppUi.warn(act)); wt.setPadding(0, dp(8), 0, 0); col.addView(wt) }
+            if (w.isNotEmpty()) { val wt = TextView(act); wt.text = w; wt.setTextColor(AppUi.warn(act)); wt.setPadding(0, dp(AppTokens.S2), 0, 0); col.addView(wt) }
         } catch (_: Throwable) { }
 
         try { if (setupCard != null) { (setupCard.parent as? ViewGroup)?.removeView(setupCard); col.addView(setupCard) } } catch (_: Throwable) { }   // ONE setup card (the 2 duplicate buttons are not in the new screen)
@@ -79,7 +80,7 @@ object AppHome {
         col.addView(test)
 
         // ---- Quick looks ----
-        col.addView(label(act, "Quick looks", dp(12)))
+        col.addView(label(act, "Quick looks", dp(AppTokens.S3)))
         val keys = EdgePlan.PRESET_KEYS
         fun curVals(): IntArray = IntArray(keys.size) { if (EdgePlan.isBool(it)) (if (prefs.bool(keys[it], false)) 1 else 0) else prefs.int(keys[it], -1) }
         fun write(v: IntArray) { for (i in keys.indices) { if (EdgePlan.isBool(i)) prefs.setBool(keys[i], v[i] == 1) else prefs.setInt(keys[i], v[i]) } }
@@ -87,12 +88,12 @@ object AppHome {
         val note = TextView(act)
         try { note.setTextColor(AppUi.dim(act)) } catch (_: Throwable) { }
         note.textSize = 12f
-        note.setPadding(0, dp(4), 0, 0)
+        note.setPadding(0, dp(AppTokens.S1), 0, 0)
         val undo = Button(act)
         undo.isAllCaps = false
         undo.text = "Undo last look"
-        undo.minHeight = dp(48)
-        undo.minimumHeight = dp(48)
+        undo.minHeight = dp(AppTokens.TOUCH)
+        undo.minimumHeight = dp(AppTokens.TOUCH)
         fun hasUndo(): Boolean = EdgePlan.decodeUpTo(prefs.str("geo_prev", ""), keys.size) != null
         undo.visibility = if (hasUndo()) View.VISIBLE else View.GONE
 
@@ -119,8 +120,8 @@ object AppHome {
             b.isAllCaps = false
             b.text = PagePlan.quickLabel(id)
             b.textSize = 12f
-            b.minHeight = dp(48)
-            b.minimumHeight = dp(48)
+            b.minHeight = dp(AppTokens.TOUCH)
+            b.minimumHeight = dp(AppTokens.TOUCH)
             b.minWidth = 0
             b.minimumWidth = 0
             b.contentDescription = "Quick look: " + PagePlan.quickLabel(id)
@@ -156,7 +157,7 @@ object AppHome {
         col.addView(note)
 
         // ---- tiles: 2 columns ----
-        col.addView(label(act, "Settings", dp(16)))
+        col.addView(label(act, "Settings", dp(AppTokens.S4)))
         var rowBox: LinearLayout? = null
         for (i in PagePlan.ORDER.indices) {
             val id = PagePlan.ORDER[i]
@@ -167,7 +168,7 @@ object AppHome {
             }
             val tile = LinearLayout(act)
             tile.orientation = LinearLayout.VERTICAL
-            tile.setPadding(dp(12), dp(12), dp(12), dp(12))
+            tile.setPadding(dp(AppTokens.S3), dp(AppTokens.S3), dp(AppTokens.S3), dp(AppTokens.S3))
             tile.minimumHeight = dp(104)
             try { tile.background = AppUi.cardBg(act, 12) } catch (_: Throwable) { }
             tile.isClickable = true
@@ -186,7 +187,7 @@ object AppHome {
             tt.textSize = 15f
             tt.setTypeface(null, Typeface.BOLD)
             try { tt.setTextColor(AppUi.text(act)) } catch (_: Throwable) { }
-            tt.setPadding(0, dp(8), 0, 0)
+            tt.setPadding(0, dp(AppTokens.S2), 0, 0)
             tile.addView(tt)
             val sm = TextView(act)
             sm.textSize = 12f
@@ -199,7 +200,7 @@ object AppHome {
             tileViews[id] = tile
             tile.setOnClickListener { try { open(id) } catch (_: Throwable) { } }
             val lp = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
-            lp.setMargins(dp(4), dp(4), dp(4), dp(4))
+            lp.setMargins(dp(AppTokens.S1), dp(AppTokens.S1), dp(AppTokens.S1), dp(AppTokens.S1))
             rowBox?.addView(tile, lp)
         }
 
@@ -217,7 +218,7 @@ object AppHome {
                     if (tid == id) {
                         val g = GradientDrawable()
                         g.setColor(com.mgb.keyboard.typing.AppPalette.card(dark))
-                        g.cornerRadius = dp(12).toFloat()
+                        g.cornerRadius = dp(AppTokens.S3).toFloat()
                         g.setStroke(dp(2), AppUi.accent(act))
                         tv.background = g
                     } else tv.background = AppUi.cardBg(act, 12)

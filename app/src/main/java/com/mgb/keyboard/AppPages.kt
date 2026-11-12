@@ -11,6 +11,7 @@ import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
+import com.mgb.keyboard.typing.AppTokens
 import com.mgb.keyboard.typing.HomePlan
 import com.mgb.keyboard.typing.PagePlan
 
@@ -60,10 +61,12 @@ class AppPages(private val act: SettingsActivity, private val sink: PageSink, pr
         if (twoPane && id == PagePlan.HOME) id = HomePlan.firstPage(lastPage)   // v0.13.0 (M3): the right pane has no Home page
         try {
             val v: View = if (id == PagePlan.HOME) home else (views[id] ?: build(id).also { views[id] = it })
+            val moved = id != current   // v0.14.0 (M4): fade only when another page appears
             frame.removeAllViews()
             (v.parent as? ViewGroup)?.removeView(v)
             frame.addView(v, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
             current = id
+            if (moved) AppMotion.fadeIn(v)
             if (id != PagePlan.HOME) { lastPage = id; attachTop(id) }
             try { onShown(id) } catch (_: Throwable) { }
         } catch (_: Throwable) {
@@ -123,7 +126,7 @@ class AppPages(private val act: SettingsActivity, private val sink: PageSink, pr
             val old = v.background
             val g = GradientDrawable()
             g.setColor((AppUi.accent(act) and 0x00FFFFFF) or 0x40000000)
-            g.cornerRadius = dp(8).toFloat()
+            g.cornerRadius = dp(AppTokens.S2).toFloat()
             v.background = g
             v.postDelayed({ try { v.background = old } catch (_: Throwable) { } }, 1100)
         } catch (_: Throwable) { }
@@ -133,10 +136,10 @@ class AppPages(private val act: SettingsActivity, private val sink: PageSink, pr
     private fun errorCard(id: String): View {
         val card = LinearLayout(act)
         card.orientation = LinearLayout.VERTICAL
-        card.setPadding(dp(16), dp(16), dp(16), dp(16))
+        card.setPadding(dp(AppTokens.S4), dp(AppTokens.S4), dp(AppTokens.S4), dp(AppTokens.S4))
         try { card.background = AppUi.cardBg(act, 12) } catch (_: Throwable) { }
         val lp = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
-        lp.setMargins(dp(16), dp(16), dp(16), dp(16))
+        lp.setMargins(dp(AppTokens.S4), dp(AppTokens.S4), dp(AppTokens.S4), dp(AppTokens.S4))
         card.layoutParams = lp
         val t = TextView(act)
         t.text = "Could not open this page"
@@ -148,20 +151,20 @@ class AppPages(private val act: SettingsActivity, private val sink: PageSink, pr
         val m = TextView(act)
         m.text = "Your settings are safe. You can go back, or use the old app screen."
         try { m.setTextColor(AppUi.text(act)) } catch (_: Throwable) { }
-        m.setPadding(0, dp(6), 0, dp(8))
+        m.setPadding(0, dp(6), 0, dp(AppTokens.S2))
         card.addView(m)
         if (!twoPane) {
             val b = Button(act)
             b.text = "Back to Home"
             b.isAllCaps = false
-            b.minHeight = dp(48); b.minimumHeight = dp(48)
+            b.minHeight = dp(AppTokens.TOUCH); b.minimumHeight = dp(AppTokens.TOUCH)
             b.setOnClickListener { try { show(PagePlan.HOME) } catch (_: Throwable) { } }
             card.addView(b)
         }
         val o = Button(act)
         o.text = "Use the old app screen"
         o.isAllCaps = false
-        o.minHeight = dp(48); o.minimumHeight = dp(48)
+        o.minHeight = dp(AppTokens.TOUCH); o.minimumHeight = dp(AppTokens.TOUCH)
         o.setOnClickListener { try { oldScreen() } catch (_: Throwable) { } }
         card.addView(o)
         return card
@@ -186,28 +189,28 @@ class AppPages(private val act: SettingsActivity, private val sink: PageSink, pr
         val bar = LinearLayout(act)
         bar.orientation = LinearLayout.HORIZONTAL
         bar.gravity = Gravity.CENTER_VERTICAL
-        bar.setPadding(dp(8), dp(4), dp(16), dp(4))
+        bar.setPadding(dp(AppTokens.S2), dp(AppTokens.S1), dp(AppTokens.S4), dp(AppTokens.S1))
         val backBtn = Button(act)
         backBtn.text = "← Back"
         backBtn.isAllCaps = false
-        backBtn.minHeight = dp(48)
-        backBtn.minimumHeight = dp(48)
+        backBtn.minHeight = dp(AppTokens.TOUCH)
+        backBtn.minimumHeight = dp(AppTokens.TOUCH)
         backBtn.contentDescription = "Back to home"
         backBtn.setOnClickListener { try { back() } catch (_: Throwable) { } }
-        if (!twoPane) bar.addView(backBtn, LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, dp(48)))   // v0.13.0 (M3): no Back button in two panes (Home is always visible)
+        if (!twoPane) bar.addView(backBtn, LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, dp(AppTokens.TOUCH)))   // v0.13.0 (M3): no Back button in two panes (Home is always visible)
         val title = TextView(act)
         title.text = PagePlan.title(id)
         title.textSize = 20f
         title.setTypeface(null, Typeface.BOLD)
         try { title.setTextColor(AppUi.text(act)) } catch (_: Throwable) { }
-        title.setPadding(if (twoPane) dp(16) else dp(8), 0, 0, 0)
+        title.setPadding(if (twoPane) dp(AppTokens.S4) else dp(AppTokens.S2), 0, 0, 0)
         try { title.isAccessibilityHeading = true } catch (_: Throwable) { }
         bar.addView(title, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
         outer.addView(bar)
 
         val col = LinearLayout(act)
         col.orientation = LinearLayout.VERTICAL
-        col.setPadding(dp(16), dp(4), dp(16), dp(24))
+        col.setPadding(dp(AppTokens.S4), dp(AppTokens.S1), dp(AppTokens.S4), dp(24))
 
         val known = PagePlan.groupsOf(id).filter { sink.bodies.containsKey(it) }
         val extra = sink.bodies.keys.filter { PagePlan.pageOfGroup(it) == id && !known.contains(it) }
@@ -240,7 +243,7 @@ class AppPages(private val act: SettingsActivity, private val sink: PageSink, pr
         t.textSize = 16f
         t.setTypeface(null, Typeface.BOLD)
         try { t.setTextColor(AppUi.accent(act)) } catch (_: Throwable) { }
-        t.setPadding(0, dp(16), 0, dp(4))
+        t.setPadding(0, dp(AppTokens.S4), 0, dp(AppTokens.S1))
         try { t.isAccessibilityHeading = true } catch (_: Throwable) { }
         return t
     }

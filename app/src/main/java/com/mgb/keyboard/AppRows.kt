@@ -13,6 +13,7 @@ import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.Switch
 import android.widget.TextView
+import com.mgb.keyboard.typing.AppTokens
 import com.mgb.keyboard.typing.ChangedPlan
 
 /**
@@ -48,7 +49,7 @@ object AppRows {
     private fun chipBg(c: Context, selected: Boolean): GradientDrawable {
         val g = GradientDrawable()
         g.setColor(if (selected) AppUi.accent(c) else com.mgb.keyboard.typing.AppPalette.card(AppUi.isDark(c)))
-        g.cornerRadius = dp(c, 12).toFloat()
+        g.cornerRadius = dp(c, AppTokens.S3).toFloat()
         return g
     }
 
@@ -59,7 +60,7 @@ object AppRows {
         b.background = chipBg(c, selected)
         b.setTextColor(if (selected) onAccent(c) else AppUi.text(c))
         b.minWidth = 0; b.minimumWidth = 0
-        b.minHeight = dp(c, 48); b.minimumHeight = dp(c, 48)
+        b.minHeight = dp(c, AppTokens.TOUCH); b.minimumHeight = dp(c, AppTokens.TOUCH)
         b.stateListAnimator = null
     }
 
@@ -72,7 +73,7 @@ object AppRows {
         sw.textSize = 15f
         sw.setTextColor(AppUi.text(c))
         sw.minHeight = dp(c, 56)
-        sw.setPadding(0, dp(c, 4), 0, dp(c, 4))
+        sw.setPadding(0, dp(c, AppTokens.S1), 0, dp(c, AppTokens.S1))
         var quiet = false
         sw.isChecked = isOn()
         sw.setOnCheckedChangeListener { _, v -> if (!quiet) safe { onSet(v) } }
@@ -86,7 +87,7 @@ object AppRows {
         val box = LinearLayout(c)
         box.orientation = LinearLayout.VERTICAL
         val t = titleView(c, title)
-        t.setPadding(0, dp(c, 8), 0, dp(c, 4))
+        t.setPadding(0, dp(c, AppTokens.S2), 0, dp(c, AppTokens.S1))
         box.addView(t)
         val seg = LinearLayout(c)
         seg.orientation = LinearLayout.HORIZONTAL
@@ -104,7 +105,7 @@ object AppRows {
             btns.add(b)
         }
         box.addView(seg)
-        help(c, help)?.let { it.setPadding(0, dp(c, 4), 0, dp(c, 6)); box.addView(it) }
+        help(c, help)?.let { it.setPadding(0, dp(c, AppTokens.S1), 0, dp(c, 6)); box.addView(it) }
         paint(c, btns, names, cur)
         return Built(box) { paint(c, btns, names, cur) }
     }
@@ -134,12 +135,12 @@ object AppRows {
         chip.textSize = 13f
         chip.maxLines = 2
         flat(c, chip, false)
-        chip.setPadding(dp(c, 12), 0, dp(c, 12), 0)
+        chip.setPadding(dp(c, AppTokens.S3), 0, dp(c, AppTokens.S3), 0)
         chip.setOnClickListener { safe { onNext(); chip.text = value(); chip.contentDescription = title + ": " + value() } }
         chip.text = value()
         chip.contentDescription = title + ": " + value()
-        val lp = LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, dp(c, 48))
-        lp.leftMargin = dp(c, 8)
+        val lp = LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, dp(c, AppTokens.TOUCH))
+        lp.leftMargin = dp(c, AppTokens.S2)
         line.addView(chip, lp)
         box.addView(line)
         help(c, help)?.let { box.addView(it) }
@@ -191,9 +192,9 @@ object AppRows {
             b.setOnTouchListener { _, e -> if (e.action == MotionEvent.ACTION_UP || e.action == MotionEvent.ACTION_CANCEL) stopHold(); false }
             return b
         }
-        line.addView(mk("−", -1, "Decrease"), LinearLayout.LayoutParams(dp(c, 48), dp(c, 48)))
+        line.addView(mk("−", -1, "Decrease"), LinearLayout.LayoutParams(dp(c, AppTokens.TOUCH), dp(c, AppTokens.TOUCH)))
         line.addView(val0, LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT))
-        line.addView(mk("+", 1, "Increase"), LinearLayout.LayoutParams(dp(c, 48), dp(c, 48)))
+        line.addView(mk("+", 1, "Increase"), LinearLayout.LayoutParams(dp(c, AppTokens.TOUCH), dp(c, AppTokens.TOUCH)))
         box.addView(line)
         help(c, help)?.let { box.addView(it) }
         show()
@@ -213,9 +214,9 @@ object AppRows {
         g.shape = GradientDrawable.OVAL
         g.setColor(AppUi.accent(c))
         dot.background = g
-        val dlp = LinearLayout.LayoutParams(dp(c, 8), dp(c, 8))
+        val dlp = LinearLayout.LayoutParams(dp(c, AppTokens.S2), dp(c, AppTokens.S2))
         dlp.topMargin = dp(c, 24)
-        dlp.rightMargin = dp(c, 8)
+        dlp.rightMargin = dp(c, AppTokens.S2)
         outer.addView(dot, dlp)
         outer.addView(content, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
         fun upd() { safe { dot.visibility = if (changed()) View.VISIBLE else View.INVISIBLE } }
@@ -235,7 +236,7 @@ object AppRows {
         t.setTypeface(null, Typeface.BOLD)
         t.letterSpacing = 0.08f
         t.setTextColor(AppUi.dim(c))
-        t.setPadding(0, dp(c, 16), 0, dp(c, 4))
+        t.setPadding(0, dp(c, AppTokens.S4), 0, dp(c, AppTokens.S1))
         safe { t.isAccessibilityHeading = true }
         box.addView(t)
         val line = View(c)
@@ -249,7 +250,7 @@ object AppRows {
         safe {
             flat(c, b, false)
             val lp = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
-            lp.topMargin = dp(c, 8)
+            lp.topMargin = dp(c, AppTokens.S2)
             b.layoutParams = lp
         }
         return b
