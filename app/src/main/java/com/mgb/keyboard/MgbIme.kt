@@ -123,6 +123,7 @@ class MgbIme : InputMethodService() {
         b.minimumWidth = 0
         b.setPadding(0, 0, 0, 0)
         try { JabraThemes.style(prefs, b) } catch (_: Throwable) { }   // v0.1.0: theme colours (Classic = no change)
+        try { com.mgb.keyboard.typing.KeyDesc.describe(label)?.let { b.contentDescription = it } } catch (_: Throwable) { }   // v0.10.20 (W7): spoken name for symbol keys (letters / digits: null = unchanged)
         b.setOnClickListener {
             val ps = KeyCfg.pStart()   // v0.9.10 (V5): meter (OFF = 0)
             try { if (KeyCfg.clickBuzz(b)) feedback(b) } catch (_: Throwable) { }   // v0.0.5: haptic/sound (own try, never blocks typing); v0.9.1: skipped when fb_down already buzzed at finger-down
@@ -525,7 +526,7 @@ class MgbIme : InputMethodService() {
     private fun afterLangChange0() {
         try { sg.schedule() } catch (_: Throwable) { }   // v0.10.1 (G2): other language = other word list
         langBtn?.text = langLabel()
-        try { if (prefs.bool("space_lang", false)) spaceBtn?.text = com.mgb.keyboard.typing.LangSwipe.spaceLabel(bangla, probhat) } catch (_: Throwable) { }   // v0.8.9
+        try { if (prefs.bool("space_lang", false)) { spaceBtn?.text = com.mgb.keyboard.typing.LangSwipe.spaceLabel(bangla, probhat); spaceBtn?.contentDescription = com.mgb.keyboard.typing.KeyDesc.spaceDesc(spaceBtn?.text?.toString()) } } catch (_: Throwable) { }   // v0.8.9; v0.10.20 spoken name
         dandaBtn?.text = if (bangla) "।" else "?"
         refreshLetters()
     }
@@ -991,7 +992,7 @@ class MgbIme : InputMethodService() {
         try { JabraLook.shape(prefs, sb, JabraLook.PILL) } catch (_: Throwable) { }   // v0.1.5: pill space key
         val spaceLangOn = try { prefs.bool("space_lang", false) } catch (_: Throwable) { false }   // v0.8.9
         spaceBtn = if (spaceLangOn) sb else null
-        if (spaceLangOn) { try { sb.text = com.mgb.keyboard.typing.LangSwipe.spaceLabel(bangla, probhat) } catch (_: Throwable) { } }
+        if (spaceLangOn) { try { sb.text = com.mgb.keyboard.typing.LangSwipe.spaceLabel(bangla, probhat); sb.contentDescription = com.mgb.keyboard.typing.KeyDesc.spaceDesc(sb.text.toString()) } catch (_: Throwable) { } }   // v0.10.20: "Space, English"
         // v0.0.5: drag on space = move cursor. If attaching fails, the normal click above still types a space.
         try {   // v0.1.1: cursor speed (setting cursor_speed); v0.8.9: space_lang ON = swipe at once = language (v0.9.3: no hold)
             val sdh = SpaceDragHelper(resources.displayMetrics.density, { n -> moveCursor(n) }, { spaceAction() }, { v -> feedback(v) }, com.mgb.keyboard.typing.TypingLevels.stepDp(prefs.int("cursor_speed", com.mgb.keyboard.typing.TypingLevels.CS_DEFAULT)))

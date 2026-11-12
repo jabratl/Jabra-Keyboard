@@ -162,6 +162,7 @@ object UiKit {
         b.minWidth = 0
         b.minimumWidth = 0
         b.setPadding(0, 0, 0, 0)
+        try { com.mgb.keyboard.typing.KeyDesc.describe(label)?.let { b.contentDescription = it } } catch (_: Throwable) { }   // v0.10.20 (W7): spoken name for symbol labels
         b.setOnClickListener {
             try { feedback?.invoke(b) } catch (_: Throwable) { }
             try { onClick(b) } catch (_: Throwable) { }

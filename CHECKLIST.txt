@@ -706,3 +706,13 @@ Z63) v0.10.19 Auto-profile per app (W6.2)
  [ ] Delete a mapped profile: opening that app does nothing, no crash.
  [ ] Rotate the phone in a mapped app: keyboard height OK, no stuck key bubble. Number field in a mapped app: number pad stays, letters later show the profile.
  [ ] Profiles > Undo still goes back to the state before YOUR last manual apply.
+
+Z64) v0.10.20 Spoken names (W7)  (turn TalkBack ON: Settings > Accessibility; double-tap to press while it is on)
+ [ ] TalkBack OFF: keyboard looks and feels exactly as before (all keys, toolbar, panels).
+ [ ] TalkBack ON, letters row: a letter key speaks its letter. Shift says "Shift", Backspace says "Backspace", Enter says "Enter".
+ [ ] Bottom row: "Numbers and symbols", language key (EN), "Comma", "Space", "Period".
+ [ ] Settings > "Space shows language" ON: space key says "Space, English" / "Space, Avro"; after a language change it follows.
+ [ ] Toolbar icons say their names (Clipboard, Select all, Paste as plain text, Text Vault, Settings ...). Fold key: "Toolbar: open or close".
+ [ ] Panels: a "< More settings" style button says "Back, More settings"; Profiles "> App" says "Use this profile for this app".
+ [ ] Icons OFF (Settings > Icons): keys with symbols still speak their word.
+ [ ] Typing speed feels the same as before (nothing new on key press).

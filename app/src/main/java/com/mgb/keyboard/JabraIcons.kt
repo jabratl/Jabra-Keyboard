@@ -33,7 +33,8 @@ object JabraIcons {
         return try {
             if (name !in NAMES) return false
             val d = IconDrawable(name, color)
-            b.contentDescription = b.text   // keep the old label for accessibility
+            val old = b.text?.toString() ?: ""
+            b.contentDescription = try { com.mgb.keyboard.typing.KeyDesc.describe(old) ?: (if (old.isBlank()) com.mgb.keyboard.typing.KeyDesc.iconName(name) else old) } catch (_: Throwable) { b.text }   // v0.10.20 (W7): spoken name (was: raw label)
             b.text = ""
             b.foreground = d                // API 23+ (minSdk is 24)
             true

@@ -66,6 +66,7 @@ object Toolbar {
         bar.orientation = LinearLayout.HORIZONTAL
         val fold = host.makeKey("fold") ?: return null
         fold.layoutParams = fixed()
+        try { fold.contentDescription = "Toolbar: open or close" } catch (_: Throwable) { }   // v0.10.20 (W7)
         bar.addView(fold)
 
         val strip = LinearLayout(ctx)
@@ -75,6 +76,7 @@ object Toolbar {
             try { k0 = host.makeKey(id) } catch (_: Throwable) { }
             val k = k0 ?: continue
             k.layoutParams = fixed()
+            try { k.contentDescription = title(id) } catch (_: Throwable) { }   // v0.10.20 (W7): spoken name = the name from the toolbar editor
             strip.addView(k)
         }
         val hs = HorizontalScrollView(ctx)

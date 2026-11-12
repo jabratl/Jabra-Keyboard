@@ -1,3 +1,15 @@
+v0.10.20 - NEW: Spoken names for TalkBack (plan W7)
+- WHY: symbol keys and icon buttons were read badly or not at all by a screen reader (for example the raw symbol of Shift or Backspace, or "Th" for Theme).
+- What you get (nothing changes on screen): with TalkBack ON the keys say: Shift, Backspace, Enter, Space (or "Space, English" when the space key shows the language), Numbers and symbols, Letters, Comma, Period, Emoji, Next keyboard, Voice typing, Undo / Redo, Plus / Minus. Toolbar icons say the name from the toolbar editor ("Select all", "Paste as plain text", "Text Vault" ...), the fold key says "Toolbar: open or close". Panel buttons with symbols say words ("< More settings" = "Back, More settings", "> App" = "Use this profile for this app").
+  Icon buttons without text now use the icon name when the text is empty (before: the raw label).
+- On purpose NOT changed: letters and digits (TalkBack already speaks them, also Bangla; their label changes with Shift / Probhat, so a fixed description would go stale), the "?" / danda key and the language key (relabelled while they live).
+- No speed cost: descriptions are set only when a key / button is BUILT, never on a key press. TalkBack OFF = nothing different to see or feel.
+- Code: typing/KeyDesc.java (NEW, pure: describe / iconName / spaceDesc), MgbIme.kt (key(): 1 line; space label: 2 places), JabraIcons.kt (description = spoken name), UiKit.kt (btn base: 1 line), Toolbar.kt (2 lines), build.gradle.kts 0.10.20.
+- Prefs: none. Permissions: none. Tests (new): tools/KeyDescTest.java (135 checks).
+BROKE: nothing intended. NOT tested: Kotlin compile (GitHub Actions), phone with TalkBack (CHECKLIST Z64). Not covered yet: buttons whose text is a normal word (they are read as they are written), the emoji grid cells, Theme Studio hex keys.
+TESTED here: 59 tools tests PASS / 0 FAIL.
+Rollback: delete KeyDesc.java + KeyDescTest.java; put back v0.10.19 MgbIme.kt, JabraIcons.kt, UiKit.kt, Toolbar.kt.
+
 v0.10.19 - NEW: Auto-profile per app, part 2 of 2 (plan W6.2: the switch)
 - WHY: W6.1 stored which profile belongs to which app; now the keyboard applies it by itself.
 - What you get: Settings > Keys & gestures > "Auto-profile per app" (default OFF). When ON and you open a text field in an app that has a profile (Profiles > "> App"), that profile is applied automatically (the same way tapping it in Profiles does) and the letters are rebuilt ONCE.
