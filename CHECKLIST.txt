@@ -716,3 +716,11 @@ Z64) v0.10.20 Spoken names (W7)  (turn TalkBack ON: Settings > Accessibility; do
  [ ] Panels: a "< More settings" style button says "Back, More settings"; Profiles "> App" says "Use this profile for this app".
  [ ] Icons OFF (Settings > Icons): keys with symbols still speak their word.
  [ ] Typing speed feels the same as before (nothing new on key press).
+
+Z65) v0.10.21 Big font + wide screens (D4)
+ [ ] Default font size: every panel looks exactly as before (Clipboard, Vault, Text tools, Profiles, Themes, Size, Settings).
+ [ ] Phone Settings > Display > Font size = Largest: open Vault, Profiles, Text tools, Themes: button labels are fully readable (not cut), a little bigger than normal is fine.
+ [ ] Largest font: keyboard height does not change when you open a panel; panels still scroll where they did before.
+ [ ] Landscape (rotate): panels fine, key bubble stays on screen at the left / right edge keys (q, p).
+ [ ] Tablet / fold unfolded / split-screen window wider than ~700dp (if you have one): letters keyboard full width as before, panels in the middle with side space. Back / ABC buttons still work.
+ [ ] One-hand mode still works with panels open.

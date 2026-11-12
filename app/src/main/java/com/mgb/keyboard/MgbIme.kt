@@ -747,7 +747,8 @@ class MgbIme : InputMethodService() {
         try { JabraOneHand.apply(this, prefs, v) } catch (_: Throwable) { }   // v0.1.0
         try { if (!inPanel && c.height > 0) lettersH = c.height } catch (_: Throwable) { }   // v0.3.3: remember the letters-keyboard height
         inPanel = true
-        val shown = try { capTall(name, v, c) } catch (_: Throwable) { v }   // v0.3.3: tall panel = scrolls, window never grows
+        val shown0 = try { capTall(name, v, c) } catch (_: Throwable) { v }   // v0.3.3: tall panel = scrolls, window never grows
+        val shown = try { fitWide(shown0, c) } catch (_: Throwable) { shown0 }   // v0.10.21 (D4): window wider than 700dp = centred 600dp column
         c.removeAllViews()
         c.addView(shown)
     }
@@ -757,6 +758,20 @@ class MgbIme : InputMethodService() {
     // the letters-keyboard height and scrolls inside. Panels that already fit are NOT wrapped (no change).
     private var inPanel = false
     private var lettersH = 0
+    /** v0.10.21 (D4): tablet / fold / split screen wider than 700dp: panel content in a centred 600dp column (letters keyboard untouched). Phones: returns v itself. */
+    private fun fitWide(v: View, c: FrameLayout): View {
+        val wDp = if (c.width > 0) (c.width / resources.displayMetrics.density).toInt() else resources.configuration.screenWidthDp
+        if (!com.mgb.keyboard.typing.FitPlan.shouldWrap(wDp)) return v
+        val h = v.layoutParams?.height ?: FrameLayout.LayoutParams.WRAP_CONTENT
+        val box = FrameLayout(this)
+        box.layoutParams = FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, h)
+        val lp = FrameLayout.LayoutParams(dp(com.mgb.keyboard.typing.FitPlan.maxContentWidthDp(wDp)), h)
+        lp.gravity = android.view.Gravity.CENTER_HORIZONTAL
+        v.layoutParams = lp
+        box.addView(v)
+        return box
+    }
+
     private fun capTall(name: String, v: View, c: FrameLayout): View {
         if (name != "settings" && name != "more" && name != "typing" && name != "size" && name != "themes" && name != "vault" && name != "tt" && name != "profiles" && name != "tstudio") return v
         val cap = if (lettersH > 0) maxOf(lettersH, dp(keyDp() * 4 + 16)) else dp(38 + 5 * (keyDp() + 4))

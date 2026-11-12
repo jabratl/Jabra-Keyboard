@@ -1,3 +1,17 @@
+v0.10.21 - FIX/NEW: big font + wide screens (plan D4)
+- AUDIT (grep, read-only) and what it found:
+  1. Panel buttons (UiKit.btn / chip) have FIXED dp heights (30-40dp) but text in sp: at phone font size "Largest" (1.3-2.0x) the label is cut. REAL problem -> fixed below.
+  2. Small help texts (UiKit.noteText) grow with the font and push panels taller. Same fix.
+  3. Panels have no width logic: on a tablet / fold / split screen (> 700dp) rows stretch over the whole width. REAL -> fixed below.
+  4. Key bubble at screen edges: KeyPopup (screen width clamp) and TipPlace / BubblePlan (tested) already keep it on screen in landscape: NO change.
+  5. Letter keys, hint letters, suggestion strip, toolbar: sized by the user's own settings (key height %, letter size %); NOT touched. Landscape keeps its own prefs (kh_l / oh_w_l).
+- What changed: (a) panel button / chip / help-text size follows the phone font size only up to 1.15x (FitPlan.cappedSp); at font scale <= 1.15 NOTHING is changed (setTextSize is not even called). (b) when the keyboard window is wider than 700dp every PANEL (not the letters) is shown in a centred 600dp column.
+- Code: typing/FitPlan.java (NEW, pure: needsCap, cappedSp, shouldWrap, maxContentWidthDp, clamp, clampLeft), UiKit.kt (capFont() + 3 one-line calls in btn / chip / noteText), MgbIme.kt (fitWide() + 2 lines in showPanel), build.gradle.kts 0.10.21.
+- Prefs: none. Permissions: none. Tests (new): tools/FitPlanTest.java (31 checks).
+BROKE: nothing intended. Default phone (font 1.0, width < 700dp) = identical. NOT tested: Kotlin compile (GitHub Actions), phone / emulator (CHECKLIST Z65). Not fixed: fixed-height buttons made by code outside UiKit (ClipCards, SettingsActivity app screen, EmojiGridPanel); text inside letter keys at large font (set by the user's letter-size setting).
+TESTED here: 60 tools tests PASS / 0 FAIL.
+Rollback: delete FitPlan.java + FitPlanTest.java; put back v0.10.20 UiKit.kt, MgbIme.kt.
+
 v0.10.20 - NEW: Spoken names for TalkBack (plan W7)
 - WHY: symbol keys and icon buttons were read badly or not at all by a screen reader (for example the raw symbol of Shift or Backspace, or "Th" for Theme).
 - What you get (nothing changes on screen): with TalkBack ON the keys say: Shift, Backspace, Enter, Space (or "Space, English" when the space key shows the language), Numbers and symbols, Letters, Comma, Period, Emoji, Next keyboard, Voice typing, Undo / Redo, Plus / Minus. Toolbar icons say the name from the toolbar editor ("Select all", "Paste as plain text", "Text Vault" ...), the fold key says "Toolbar: open or close". Panel buttons with symbols say words ("< More settings" = "Back, More settings", "> App" = "Use this profile for this app").

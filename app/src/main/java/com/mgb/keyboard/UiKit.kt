@@ -34,6 +34,7 @@ object UiKit {
         return try {
             val b = base(ctx, label, weight, hDp, feedback, onClick)
             if (textSp > 0f) b.textSize = textSp
+            capFont(ctx, b, if (textSp > 0f) textSp else 14f)   // v0.10.21 (D4)
             try { JabraThemes.style(p, b) } catch (_: Throwable) { }
             b
         } catch (_: Throwable) {
@@ -52,6 +53,7 @@ object UiKit {
         return try {
             val b = base(ctx, label, 0f, hDp, feedback, onClick)
             b.textSize = JabraTokens.T_BTN
+            capFont(ctx, b, JabraTokens.T_BTN)   // v0.10.21 (D4)
             val side = JabraTokens.dp(ctx, 10)
             if (selected) {
                 val r = JabraTokens.dp(ctx, JabraTokens.R_SM).toFloat()
@@ -85,6 +87,7 @@ object UiKit {
         try {
             t.text = text
             t.textSize = JabraTokens.T_NOTE
+            capFont(ctx, t, JabraTokens.T_NOTE)   // v0.10.21 (D4)
             t.setTextColor(JabraTokens.note(p))
             t.setPadding(JabraTokens.dp(ctx, 6), JabraTokens.dp(ctx, 2), JabraTokens.dp(ctx, 6), JabraTokens.dp(ctx, 2))
         } catch (_: Throwable) {
@@ -176,6 +179,14 @@ object UiKit {
         lp.setMargins(m, m, m, m)
         b.layoutParams = lp
         return b
+    }
+
+    /** v0.10.21 (D4): panel buttons have fixed dp heights, so their text may grow with the phone's font size only up to 1.15x. At font scale <= 1.15 nothing is touched. */
+    private fun capFont(ctx: Context, t: TextView, sp: Float) {
+        try {
+            val fs = ctx.resources.configuration.fontScale
+            if (com.mgb.keyboard.typing.FitPlan.needsCap(fs)) t.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, com.mgb.keyboard.typing.FitPlan.cappedSp(sp, fs))
+        } catch (_: Throwable) { }
     }
 
     /** Last-resort button: no theme, no layout params, still clickable. */
