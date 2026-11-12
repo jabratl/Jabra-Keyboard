@@ -9,10 +9,12 @@ import android.view.Gravity
 import android.view.MotionEvent
 import android.view.View
 import android.widget.Button
+import android.widget.HorizontalScrollView   // v0.16.12 (X12)
 import android.widget.LinearLayout
 import android.widget.PopupWindow
 import android.widget.ScrollView
 import android.widget.TextView
+import com.mgb.keyboard.typing.PanelLayout   // v0.16.12 (X12)
 import com.mgb.keyboard.typing.ToolbarOrder
 
 /**
@@ -204,6 +206,8 @@ class ToolbarQuickPanel(private val ctx: Context, private val host: JabraHost) {
     fun build(): View? = try { make() } catch (_: Throwable) { null }
 
     private fun make(): View {
+        // v0.16.12 (X12): pref panel_ui = 1 -> header + preview strip of the real bar (makeNew below). Default 0 / any problem = the classic page that follows, untouched.
+        try { if (PanelLayout.isNewStyle(prefs.int("panel_ui", 0))) { val nv = makeNew(); if (nv != null) return nv } } catch (_: Throwable) { }
         val root = LinearLayout(ctx)
         root.orientation = LinearLayout.VERTICAL
         root.setBackgroundColor(Color.parseColor("#DDDDDD"))
@@ -244,6 +248,39 @@ class ToolbarQuickPanel(private val ctx: Context, private val host: JabraHost) {
         rb.addView(pk("Order  >", 1f, 40) { scrollY = 0; host.showPanel("toolbar") })
         rb.addView(pk("Done", 1f, 40) { scrollY = 0; host.showLetters() })
         root.addView(rb)
+        return root
+    }
+
+    // ===================== v0.16.12 (X12): NEW quick toolbar page (pref panel_ui = 1) =====================
+    private fun makeNew(): View? {
+        val root = LinearLayout(ctx)
+        root.orientation = LinearLayout.VERTICAL
+        root.setBackgroundColor(Color.parseColor("#DDDDDD"))
+        try { JabraThemes.paint(prefs, root) } catch (_: Throwable) { }
+        root.setPadding(dp(2), dp(4), dp(2), dp(4))
+        val iconColor = try { JabraThemes.iconColor(prefs) } catch (_: Throwable) { Color.parseColor("#222222") }
+
+        root.addView(PanelKit.header(ctx, prefs, host, "Edit shortcuts", "<", listOf(Pair("Order >") { scrollY = 0; host.showPanel("toolbar") })) { scrollY = 0; host.showLetters() })
+        root.addView(ToolbarPreview.strip(ctx, prefs))
+        root.addView(PanelKit.sectionLabel(ctx, prefs, "Tap an icon to add / remove it"))
+
+        val sv = ScrollView(ctx)
+        val col = LinearLayout(ctx)
+        col.orientation = LinearLayout.VERTICAL
+        val ids = ToolbarOrder.parse(prefs.str("tb_order", ""))
+        var i = 0
+        while (i < ids.size) {
+            val r = row()
+            for (c in 0 until 4) { val idx = i + c; if (idx < ids.size) r.addView(chip(ids[idx], sv, iconColor)) else r.addView(spacer()) }
+            col.addView(r)
+            i += 4
+        }
+        sv.addView(col)
+        sv.layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(2 * 74 + 37))
+        root.addView(sv)
+        sv.post { try { sv.scrollTo(0, scrollY) } catch (_: Throwable) { } }
+
+        root.addView(PanelKit.stickyBar(ctx, prefs, host, listOf(Pair("Done") { scrollY = 0; host.showLetters() })))
         return root
     }
 
@@ -297,5 +334,50 @@ class ToolbarQuickPanel(private val ctx: Context, private val host: JabraHost) {
             try { toggle(id, sv) } catch (_: Throwable) { }
         }
         return c
+    }
+}
+
+/**
+ * v0.16.12 (X12): preview strip = the REAL toolbar order as small icons (same prefs tb_order / tb_hidden / tb_on; Formatter / Mode also need fmt_on / mode_key).
+ * Shared by the New "Edit toolbar" page and the New quick page. Never throws: a failure gives an empty row.
+ */
+object ToolbarPreview {
+    /** Ids that really show on the bar, in bar order. */
+    fun ids(prefs: JabraPrefs): List<String> {
+        val out = ArrayList<String>()
+        try {
+            for (id in ToolbarOrder.visible(prefs.str("tb_order", ""), prefs.str("tb_hidden", ""), prefs.str("tb_on", ""))) {
+                if (id == "fmt" && !prefs.bool("fmt_on", true)) continue
+                if (id == "mode" && !prefs.bool("mode_key", true)) continue
+                out.add(id)
+            }
+        } catch (_: Throwable) { }
+        return out
+    }
+
+    fun strip(ctx: Context, prefs: JabraPrefs): View {
+        val hs = HorizontalScrollView(ctx)
+        try {
+            val d = ctx.resources.displayMetrics.density
+            hs.isHorizontalScrollBarEnabled = false
+            val r = LinearLayout(ctx)
+            r.orientation = LinearLayout.HORIZONTAL
+            r.setPadding((4 * d).toInt(), (2 * d).toInt(), (4 * d).toInt(), (2 * d).toInt())
+            for (id in ids(prefs)) {
+                val b = Button(ctx)
+                b.isAllCaps = false; b.minWidth = 0; b.minimumWidth = 0; b.minHeight = 0; b.minimumHeight = 0
+                b.setPadding(0, 0, 0, 0); b.textSize = 10f
+                b.text = Toolbar.label(id)
+                try { JabraThemes.style(prefs, b) } catch (_: Throwable) { }
+                try { JabraIcons.putThemed(ctx, b, Toolbar.icon(id)) } catch (_: Throwable) { }
+                b.isClickable = false; b.isFocusable = false
+                val lp = LinearLayout.LayoutParams((38 * d).toInt(), (34 * d).toInt())
+                lp.setMargins((2 * d).toInt(), (2 * d).toInt(), (2 * d).toInt(), (2 * d).toInt())
+                r.addView(b, lp)
+            }
+            hs.addView(r)
+            hs.layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, (40 * d).toInt())
+        } catch (_: Throwable) { }
+        return hs
     }
 }

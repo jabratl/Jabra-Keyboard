@@ -204,6 +204,24 @@ class ToolbarPanel(private val ctx: Context, private val host: JabraHost) {
         val custom = prefs.bool("tb_custom", true)
         root.addView(PanelKit.segmented(ctx, prefs, host, listOf("Classic", "Custom"), if (custom) 1 else 0) { i -> prefs.setBool("tb_custom", i == 1); host.showPanel("toolbar") })
         root.addView(PanelKit.tileGrid(ctx, prefs, host, 2, listOf(toggleTile("Most used to front", "tb_auto", false), toggleTile("Name tip (hold icon)", "tb_tip", true))))
+        root.addView(ToolbarPreview.strip(ctx, prefs))   // v0.16.12 (X12 part 2): the real bar
+        try {   // "Add tool": extras that are OFF, one tap = on (same pref tb_on as the Show button)
+            val offExtras = ToolbarOrder.EXTRAS.filter { ToolbarOrder.off(prefs.str("tb_hidden", ""), prefs.str("tb_on", ""), it) }
+            root.addView(PanelKit.sectionLabel(ctx, prefs, "Add tool"))
+            if (offExtras.isEmpty()) root.addView(note("All extra tools are on the bar."))
+            else {
+                val hs = android.widget.HorizontalScrollView(ctx)
+                hs.isHorizontalScrollBarEnabled = false
+                val rw = row()
+                for (id in offExtras) rw.addView(UiKit.chip(ctx, prefs, "+ " + Toolbar.title(id), false, 40, { v -> host.feedback(v) }) {
+                    prefs.setStr("tb_on", ToolbarOrder.setOn(prefs.str("tb_on", ""), id, true))
+                    resetAsk = false
+                    host.showPanel("toolbar")
+                })
+                hs.addView(rw)
+                root.addView(hs)
+            }
+        } catch (_: Throwable) { }
 
         val sv = ScrollView(ctx)
         val col = LinearLayout(ctx)
@@ -225,7 +243,7 @@ class ToolbarPanel(private val ctx: Context, private val host: JabraHost) {
             i += 2
         }
         sv.addView(col)
-        sv.layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(4 * 44))
+        sv.layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(3 * 44))
         root.addView(sv)
         sv.post { try { sv.scrollTo(0, scrollY) } catch (_: Throwable) { } }
 

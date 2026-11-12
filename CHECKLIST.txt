@@ -670,9 +670,12 @@ Z94) v0.16.11 Gear panel as tile grid, style New (X11 part 1)
  [ ] Search (gear AND More): tap "Search settings", type "height" -> Size is listed first, tap it -> Size panel opens. Also try: "toolbar" -> Toolbar editor / Quick toolbar; "vibrate" -> Typing; "backspace" -> More; "theme" -> Themes / Theme studio; "backup" -> Profiles. Max 8 results; "zzzz" = "No match"; backspace key works; X returns to the tiles.
  [ ] Window height unchanged while searching (letters keyboard height), landscape OK, dark theme OK, Classic style = no search row at all.
 
-Z95) v0.16.12 Toolbar editor as cards, style New (X12 part 1)
- [ ] Panel style = Classic: More > Edit toolbar = exactly the old list.
- [ ] Panel style = New: header < | Edit toolbar | ABC, Classic | Custom switch (changes the bar after ABC), tiles Most used to front / Name tip (ON/OFF flips at once).
- [ ] Cards, 2 per row: icon + name + "On bar"/"Hidden". [First] moves the item to the front, up / down move one step, Hide / Show flips it (extras: Show turns them on). List keeps its scroll position.
- [ ] Reset toolbar: first tap = "Sure? reset all", second tap resets; tapping First / up / down / Hide in between cancels the question.
- [ ] The app screen toolbar editor shows the same order / hidden items. < goes to More, ABC applies. Window height not taller than the classic page, landscape and dark theme OK.
+Z95) v0.16.12 Toolbar editor + Quick toolbar, style New (X12)
+ [ ] Panel style = Classic: More > Edit toolbar and the Edit shortcut page = exactly the old pages.
+ [ ] Panel style = New, Edit toolbar: header < | Edit toolbar | ABC, Classic | Custom switch (changes the bar after ABC), tiles Most used to front / Name tip (ON/OFF flips at once).
+ [ ] Preview strip shows the real bar order; Hide / Show / First / up / down change it at once. Hide Formatter or turn Formatter OFF: it leaves the strip.
+ [ ] "Add tool" row: extras that are off (Emoji, Numpad, ...): tap "+ Emoji" = it appears in the strip and the chip goes away; all on = "All extra tools are on the bar."
+ [ ] Cards, 2 per row: icon + name + "On bar"/"Hidden", [First] [up] [down] [Hide / Show]; the list keeps its scroll position.
+ [ ] Reset toolbar: first tap = "Sure? reset all", second tap resets; tapping First / up / down / Hide / an Add chip in between cancels the question.
+ [ ] Quick toolbar (hold an icon 1.5 s, tap Edit shortcut): header with Order >, preview strip, tap an icon = add / remove (strip updates), Done = letters.
+ [ ] The app screen toolbar editor shows the same order / hidden items. Window height not taller than the classic page, landscape and dark theme OK.
