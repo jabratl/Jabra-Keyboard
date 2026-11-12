@@ -141,7 +141,13 @@ class ToolbarQuickPanel(private val ctx: Context, private val host: JabraHost) {
 
     private fun dp(v: Int): Int = (v * ctx.resources.displayMetrics.density).toInt()
 
+    // v0.10.15 (D2.5): pk() = UiKit.btn (given height, 11sp, same 2dp margins, theme style, feedback before click). Old body kept as pkOld() = fallback.
     private fun pk(label: String, weight: Float, heightDp: Int, onClick: (Button) -> Unit): Button {
+        try { return UiKit.btn(ctx, prefs, label, weight, heightDp, 11f, { v -> host.feedback(v) }, onClick) } catch (_: Throwable) { }
+        return pkOld(label, weight, heightDp, onClick)
+    }
+
+    private fun pkOld(label: String, weight: Float, heightDp: Int, onClick: (Button) -> Unit): Button {
         val b = Button(ctx)
         b.text = label
         b.isAllCaps = false
@@ -160,7 +166,13 @@ class ToolbarQuickPanel(private val ctx: Context, private val host: JabraHost) {
         return b
     }
 
+    // v0.10.15 (D2.5): row() = UiKit.row (same horizontal LinearLayout). Old body kept as rowOld() = automatic fallback.
     private fun row(): LinearLayout {
+        try { return UiKit.row(ctx) } catch (_: Throwable) { }
+        return rowOld()
+    }
+
+    private fun rowOld(): LinearLayout {
         val r = LinearLayout(ctx)
         r.orientation = LinearLayout.HORIZONTAL
         return r

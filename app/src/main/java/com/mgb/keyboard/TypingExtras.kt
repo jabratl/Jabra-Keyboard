@@ -90,7 +90,13 @@ class MorePanel(private val ctx: Context, private val host: JabraHost) {
 
     private fun dp(v: Int): Int = (v * ctx.resources.displayMetrics.density).toInt()
 
+    // v0.10.15 (D2.5): pk() = UiKit.btn (key-height tall, 12sp, same 2dp margins, theme style, feedback before click). Old body kept as pkOld() = fallback.
     private fun pk(label: String, weight: Float, onClick: (Button) -> Unit): Button {
+        try { return UiKit.btn(ctx, prefs, label, weight, host.keyHeightDp(), 12f, { v -> host.feedback(v) }, onClick) } catch (_: Throwable) { }
+        return pkOld(label, weight, onClick)
+    }
+
+    private fun pkOld(label: String, weight: Float, onClick: (Button) -> Unit): Button {
         val b = Button(ctx)
         b.text = label
         b.isAllCaps = false
@@ -109,7 +115,13 @@ class MorePanel(private val ctx: Context, private val host: JabraHost) {
         return b
     }
 
+    // v0.10.15 (D2.5): row() = UiKit.row (same horizontal LinearLayout). Old body kept as rowOld() = automatic fallback.
     private fun row(): LinearLayout {
+        try { return UiKit.row(ctx) } catch (_: Throwable) { }
+        return rowOld()
+    }
+
+    private fun rowOld(): LinearLayout {
         val r = LinearLayout(ctx)
         r.orientation = LinearLayout.HORIZONTAL
         return r
@@ -127,7 +139,13 @@ class MorePanel(private val ctx: Context, private val host: JabraHost) {
         return b
     }
 
+    // v0.10.15 (D2.5): note() = UiKit.noteText (11sp, note colour, 6 / 2dp padding). Old body kept as noteOld() = fallback.
     private fun note(text: String): TextView {
+        try { return UiKit.noteText(ctx, prefs, text) } catch (_: Throwable) { }
+        return noteOld(text)
+    }
+
+    private fun noteOld(text: String): TextView {
         val t = TextView(ctx)
         t.text = text
         t.textSize = 11f

@@ -179,7 +179,13 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
         return b
     }
 
+    // v0.10.13 (D2.3): row() = UiKit.row (same horizontal LinearLayout). Old body kept as rowOld() = automatic fallback.
     private fun row(): LinearLayout {
+        try { return UiKit.row(ctx) } catch (_: Throwable) { }
+        return rowOld()
+    }
+
+    private fun rowOld(): LinearLayout {
         val r = LinearLayout(ctx)
         r.orientation = LinearLayout.HORIZONTAL
         return r

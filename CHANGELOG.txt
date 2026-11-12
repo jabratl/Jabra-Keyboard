@@ -1,3 +1,28 @@
+v0.10.15 - D2.5 Toolbar / Quick toolbar / Typing / More panels on the shared UiKit helpers (no look change) = LAST D2 step
+- WHY: plan D2 (one look for all panels). ToolbarPanel, ToolbarQuick (panel), TypingPrefs (Typing panel) and TypingExtras (More panel) each had private pk() / row() / note() copies.
+- What changed: pk() = UiKit.btn (ToolbarPanel + ToolbarQuick: given height, 11sp; TypingPrefs + TypingExtras: key-height tall, 12sp; same 2dp margins, theme style, feedback before click); note() = UiKit.noteText (ToolbarPanel, TypingPrefs, TypingExtras: 11sp, same note colour, 6 / 2dp padding); row() = UiKit.row (all four). Every old body kept as pkOld() / noteOld() / rowOld() = automatic fallback.
+- NOT moved on purpose: EmojiGridPanel.btn() (takes pixel width / height, no text size, hot grid path: UiKit.btn works in dp and would change sizes), ToolbarQuick's icon Button (own icon layout), SpaceHelper.
+- Code: ToolbarPanel.kt, ToolbarQuick.kt, TypingPrefs.kt, TypingExtras.kt, build.gradle.kts 0.10.15. Tests: no Java touched.
+D2 SUMMARY: all panels with a private button helper now go through UiKit except EmojiGridPanel, ThemeStudio, ThemeEmojiExtras, JabraExtras, SettingsActivity (not in D2.1-D2.5 scope / different style).
+BROKE: nothing intended. NOT tested: Kotlin compile (GitHub Actions), phone (CHECKLIST Z59).
+Rollback: put back v0.10.14 of the four .kt files.
+
+v0.10.14 - D2.4 Formatter + Size + Cursor pad panels on the shared UiKit helpers (no look change)
+- WHY: plan D2 (one look for all panels). AUDIT FIRST: FormatterFeature.btn() was ALREADY UiKit.btn since v0.6.5 (only row() left). SizePrefs and PadPanel still had private pk() / row() / note().
+- What changed: SizePrefs + PadPanel: pk() = UiKit.btn (key-height tall via host.keyHeightDp(), 12sp Size / 14sp Pad as before, same 2dp margins, theme style, feedback before click); note() = UiKit.noteText (11sp, same note colour, 6 / 2dp padding); row() = UiKit.row. FormatterFeature: row() = UiKit.row. Every old body is kept as pkOld() / noteOld() / rowOld() = automatic fallback.
+- Not changed on purpose: Formatter paint() colours / 6dp radius, peekView, PadPanel selectLook() (blue Select ON tint), RepeatKeyHelper on held keys.
+- Code: SizePrefs.kt, PadPanel.kt, FormatterFeature.kt, build.gradle.kts 0.10.14. Tests: no Java touched (54 tools tests PASS as in v0.10.11).
+BROKE: nothing intended. NOT tested: Kotlin compile (GitHub Actions), phone (CHECKLIST Z58).
+Rollback: put back v0.10.13 SizePrefs.kt, PadPanel.kt, FormatterFeature.kt.
+
+v0.10.13 - D2.3 Clipboard panel on the shared UiKit helpers (no look change)
+- WHY: plan D2 (one look for all panels). AUDIT FIRST: ClipboardFeature.btn() was ALREADY UiKit.btn since v0.8.7 and ClipCards already uses UiKit.cardBackground (old look kept as oldCardBg()). Only the private row() was left.
+- What changed: ClipboardFeature.row() now calls UiKit.row(ctx); old body kept as rowOld() = automatic fallback. Nothing visible changes.
+- Not changed on purpose: ClipCards own TextViews / bars (card-internal sizes and colours already come from JabraTokens), 2-column layout, select bar.
+- Code: ClipboardFeature.kt (row), build.gradle.kts 0.10.13. Tests: no Java touched.
+BROKE: nothing intended. NOT tested: Kotlin compile (GitHub Actions), phone (CHECKLIST Z57).
+Rollback: put back v0.10.12 ClipboardFeature.kt.
+
 v0.10.12 - D2.2 VaultPanel on the shared UiKit helpers (no look change)
 - WHY: plan D2 (one look for all panels). AUDIT FIRST: VaultPanel.btn() was ALREADY UiKit.btn since v0.6.6 (old body btnOld() kept). The only private layout helper left was row().
 - What changed: VaultPanel.row() now calls UiKit.row(ctx) (same horizontal LinearLayout); old body kept as rowOld() = automatic fallback. 1 tiny patch, nothing visible changes.

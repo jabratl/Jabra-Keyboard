@@ -651,3 +651,19 @@ Z56) v0.10.12 Vault panel D2.2 (should look and work EXACTLY like v0.10.11)
  [ ] Keyboard > Vault: kind chips (All / Snippets / Notes / Glossary), folder chips, entries, buttons look the same (Classic + Dark).
  [ ] Chips switch the list; + Add, edit, paste, move, folders, select mode still work; back to letters works; keyboard height does not change.
 
+Z57) v0.10.13 Clipboard panel D2.3 (should look and work EXACTLY like v0.10.12)
+ [ ] Keyboard > Clipboard: list / cards view, buttons, search, pin, select mode, edit look the same (Classic + Dark).
+ [ ] Paste a clip, pin, delete (two-tap), copy to Vault, back to letters: all work; keyboard height does not change.
+
+Z58) v0.10.14 Formatter / Size / Cursor pad D2.4 (should look and work EXACTLY like v0.10.13)
+ [ ] Size panel (toolbar Size): buttons, [-][n][+] steppers, notes look the same (Classic + Dark); height changes still apply; Reset works.
+ [ ] Cursor pad: arrows, Home / End, Select ON (blue) / OFF, held arrow keys repeat while pressed; look the same.
+ [ ] Formatter panel: presets, Format, Undo, two-tap safety look and work the same.
+ [ ] Buttons in Size / Pad are as tall as a letter key as before; opening them does not change the keyboard height.
+
+Z59) v0.10.15 Toolbar / Typing / More panels D2.5 (should look and work EXACTLY like v0.10.14)
+ [ ] More settings panel: all toggle buttons (Name: ON / OFF), notes, back buttons look the same (Classic + Dark) and still toggle.
+ [ ] Typing panel: toggle / level buttons cycle as before; button height = a letter key.
+ [ ] Edit toolbar (order panel): up / down / show / hide buttons work, list position kept; Quick toolbar panel works.
+ [ ] No panel changes the keyboard height when opened. Emoji panel unchanged (not touched).
+

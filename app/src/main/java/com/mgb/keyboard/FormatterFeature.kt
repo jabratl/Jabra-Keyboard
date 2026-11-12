@@ -289,7 +289,13 @@ class FormatterPanel(private val ctx: Context, private val host: JabraHost, priv
         } catch (_: Throwable) { }
     }
 
+    // v0.10.14 (D2.4): row() = UiKit.row (same horizontal LinearLayout). Old body kept as rowOld() = automatic fallback.
     private fun row(): LinearLayout {
+        try { return UiKit.row(ctx) } catch (_: Throwable) { }
+        return rowOld()
+    }
+
+    private fun rowOld(): LinearLayout {
         val r = LinearLayout(ctx)
         r.orientation = LinearLayout.HORIZONTAL
         return r
