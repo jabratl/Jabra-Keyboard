@@ -325,6 +325,27 @@ class SettingsActivity : Activity() {
         } catch (_: Throwable) { dataMsg?.invoke("Could not open the folder picker") }
     }
 
+    // v0.17.66 (R6): pick the folder for Clipboard > Export > Save (request code 4104, no storage permission)
+    fun chooseClipFolder() {
+        try {
+            val i = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE)
+            i.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION or Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION)
+            startActivityForResult(i, 4104)
+        } catch (_: Throwable) { dataMsg?.invoke("Could not open the folder picker") }
+    }
+
+    private fun onClipFolderPicked(resultCode: Int, data: Intent?) {
+        try {
+            if (resultCode != RESULT_OK) return
+            val uri = data?.data ?: return
+            try { contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION) }
+            catch (_: Throwable) { dataMsg?.invoke("This folder cannot be kept. Choose another folder (not the top of the storage)."); return }
+            ClipFolder.set(applicationContext, uri)
+            dataMsg?.invoke("Clip export folder: " + ClipFolder.label(applicationContext))
+            refreshData?.invoke()
+        } catch (_: Throwable) { }
+    }
+
     private fun onFolderPicked(resultCode: Int, data: Intent?) {   // v0.10.7
         try {
             if (resultCode != RESULT_OK) return
@@ -346,6 +367,7 @@ class SettingsActivity : Activity() {
         super.onActivityResult(requestCode, resultCode, data)
         try {
             if (requestCode == 4103) { onFolderPicked(resultCode, data); return }   // v0.10.7
+            if (requestCode == 4104) { onClipFolderPicked(resultCode, data); return }   // v0.17.66 (R6)
             if ((requestCode != 4101 && requestCode != 4102) || resultCode != RESULT_OK) return
             val uri = data?.data ?: return
             val app = applicationContext

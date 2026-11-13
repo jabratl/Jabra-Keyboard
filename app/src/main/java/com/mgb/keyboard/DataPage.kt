@@ -61,6 +61,7 @@ object DataPage {
                 val last = prefs.str("bk_last", "")
                 info.addView(line("External backup folder: " + BackupStore.extLabel(ctx) + (if (prefs.str("bk_ext_uri", "").isNotEmpty() && !BackupStore.extAccessOk(ctx)) "  (NOT reachable)" else "")))   // v0.10.7
                 val extLast = prefs.str("bk_ext_last", "")
+                info.addView(line("Clip export folder: " + ClipFolder.label(ctx) + (if (ClipFolder.isSet(ctx) && !ClipFolder.accessOk(ctx)) "  (NOT reachable - Downloads is used)" else "")))   // v0.17.66 (R6)
                 info.addView(line("Last external backup: " + (if (extLast.isEmpty()) "none yet" else extLast + (com.mgb.keyboard.typing.HealthCheck.ago(com.mgb.keyboard.typing.HealthCheck.daysSince(extLast, System.currentTimeMillis())).let { if (it.isEmpty()) "" else "  ($it)" }))))   // v0.10.7
                 info.addView(line("Last backup: " + (if (last.isEmpty()) "none yet" else last + (com.mgb.keyboard.typing.HealthCheck.ago(com.mgb.keyboard.typing.HealthCheck.daysSince(last, System.currentTimeMillis())).let { if (it.isEmpty()) "" else "  ($it)" }))))   // v0.5.9: + "(today)"
             } catch (_: Throwable) { }
@@ -131,6 +132,10 @@ object DataPage {
         root.addView(msg)
         root.addView(line("Backups"))
         root.addView(list)
+        root.addView(dpHead("Clipboard export"))   // v0.17.66 (R6): folder for Clipboard > Export > Save
+        root.addView(line("Clipboard > Export > Save puts the .txt / .docx / .zip file in this folder. Default = Downloads."))
+        root.addView(btn("Choose export folder") { act?.chooseClipFolder() ?: run { msg.text = "Not available here" } })
+        root.addView(btn("Use Downloads (default)") { ClipFolder.clear(ctx); msg.text = "Export folder: Downloads"; fill() })
         root.addView(dpHead("Health"))   // v0.15.3 (N3): Health Check moved below the backup list so each section is in one block
         try { root.addView(HealthPanel.build(ctx)) } catch (_: Throwable) { }   // v0.5.3 Jabra Health Check
         root.addView(dpHead("Privacy"))

@@ -1,0 +1,6 @@
+HANDOFF Jabra-Keyboard v0.17.66 (R6)
+DONE: v0.17.63 R3 export rename + ZIP | v0.17.64 R4 Home polish | v0.17.65 R5 jump bar | v0.17.66 R6 export folder chooser. CURRENT: 0.17.66
+CHANGED: ClipFolder.kt (NEW), ClipExporter.kt, SettingsActivity.kt, DataPage.kt, ClipboardFeature.kt, app/build.gradle.kts, CHANGELOG.txt.
+CHECKS: bracket balance; Java suite green.
+NOT TESTED: Kotlin never compiled in these chats (R3-R6): if the GitHub build fails send the error log -> FIX first. Phone: R3 export flow, R4 Home look, R5 chips, R6 folder pick + Save into folder + fallback.
+NEXT: R7 = phone-check results / FIX, or help-text shortening + search result look.

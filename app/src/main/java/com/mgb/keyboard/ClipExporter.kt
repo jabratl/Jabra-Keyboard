@@ -21,6 +21,7 @@ object ClipExporter {
     private const val KEEP_MS = 2L * 24L * 60L * 60L * 1000L
 
     fun canSave(): Boolean = Build.VERSION.SDK_INT >= 29
+    fun canSave(ctx: Context): Boolean = canSave() || ClipFolder.accessOk(ctx)   // v0.17.66 (R6): a chosen folder works on any Android version
 
     fun share(ctx: Context, name: String, mime: String, bytes: ByteArray): String = try {
         val dir = File(ctx.cacheDir, DIR)
@@ -41,8 +42,11 @@ object ClipExporter {
         "Share sheet opened: $name"
     } catch (_: Throwable) { "Could not open the share sheet" + (if (canSave()) " - try Save" else "") }
 
-    fun saveToDownloads(ctx: Context, name: String, mime: String, bytes: ByteArray): String =
-        if (Build.VERSION.SDK_INT >= 29) save29(ctx, name, mime, bytes) else "Save needs Android 10+ - use Share"
+    fun saveToDownloads(ctx: Context, name: String, mime: String, bytes: ByteArray): String {
+        try { ClipFolder.save(ctx, name, mime, bytes)?.let { return it } } catch (_: Throwable) { }   // v0.17.66 (R6): chosen folder first
+        val warn = if (ClipFolder.isSet(ctx)) "Chosen folder not reachable - " else ""
+        return warn + (if (Build.VERSION.SDK_INT >= 29) save29(ctx, name, mime, bytes) else "Save needs Android 10+ - use Share")
+    }
 
     @androidx.annotation.RequiresApi(29)
     private fun save29(ctx: Context, name: String, mime: String, bytes: ByteArray): String = try {

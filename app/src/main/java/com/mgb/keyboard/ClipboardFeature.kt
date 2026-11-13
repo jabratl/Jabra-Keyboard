@@ -928,13 +928,23 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
         nameRow.addView(btn("Rename", 1f, t40) { renText = if (expName.isNotEmpty()) expName else auto; renPos = renText.length; renCaps = false; renaming = true; expMsg = ""; refresh() })
         if (expName.isNotEmpty()) nameRow.addView(btn("Auto", 0.8f, t40) { expName = ""; expMsg = ""; refresh() })
         outer.addView(nameRow)
+        try {   // v0.17.66 (R6): where Save puts the file + where to change it
+            if (ClipExporter.canSave(ctx)) {
+                val wh = TextView(ctx)
+                wh.text = "Save to: " + (if (ClipFolder.accessOk(ctx)) ClipFolder.label(ctx) else "Downloads") + "  (change: Jabra app > Data & About > Clipboard export)"
+                wh.textSize = fs(11f)
+                wh.setTextColor(hush())
+                wh.setPadding(dp(8), 0, dp(8), dp(4))
+                outer.addView(wh)
+            }
+        } catch (_: Throwable) { }
 
         val share = row()
         share.addView(btn(if (zipOn) "Share ZIP .txt" else "Share .txt", 1f, t40) { doExport(false, false) })
         val shDocx = btn(if (zipOn) "Share ZIP .docx" else "Share .docx", 1f, t40) { doExport(true, false) }
         share.addView(if (nl()) ClipBar.on(ctx, pf, shDocx) else shDocx)   // v0.17.58 (C4): primary button
         outer.addView(share)
-        if (ClipExporter.canSave()) {
+        if (ClipExporter.canSave(ctx)) {   // v0.17.66 (R6)
             val save = row()
             save.addView(btn(if (zipOn) "Save ZIP .txt" else "Save .txt", 1f, t40) { doExport(false, true) })
             save.addView(btn(if (zipOn) "Save ZIP .docx" else "Save .docx", 1f, t40) { doExport(true, true) })

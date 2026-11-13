@@ -1,3 +1,12 @@
+v0.17.66 - BUILD (R6): choose the folder for Clipboard export (Save)
+- WHY: Save always put the file in Downloads; user wants to pick the folder in the app.
+- What you get: Jabra app > Data & About > new section "Clipboard export": [Choose export folder] (system folder picker) and [Use Downloads (default)]. The Data page info shows "Clip export folder: ...". In Clipboard > Export, the Save buttons write into that folder (.txt, .docx, .zip) and the screen shows "Save to: <folder>". Folder missing / permission lost / write fails = automatic fallback to Downloads with the message "Chosen folder not reachable - ...". Share is unchanged. With a chosen folder the Save buttons also appear on Android 9 and older (before: Android 10+ only).
+- Code: ClipFolder.kt (NEW), ClipExporter.kt (canSave(ctx), saveToDownloads tries the folder first), SettingsActivity.kt (chooseClipFolder, onClipFolderPicked, request code 4104), DataPage.kt (new section + info line), ClipboardFeature.kt (canSave(ctx), "Save to" line), app/build.gradle.kts 0.17.66. New pref clip_exp_uri (string; not in backup / profile lists). // v0.17.66 marks hooks. No manifest change, no new permission (system folder picker).
+- BROKE: nothing known. The folder permission is not released when you change folders (it may also be the backup folder). Same file name twice = the folder app adds " (1)" (system behaviour).
+- TESTED here: bracket balance of the 5 Kotlin files OK; Java suite unchanged.
+- NOT tested: Kotlin NOT compiled; phone: picker opens, folder kept after reboot, Save .txt / .docx / .zip lands in the folder (SD card / Documents / Downloads subfolder), "top of storage" folder refused message, fallback when the folder is deleted, Android 9 or older.
+- Rollback: restore ClipExporter.kt, SettingsActivity.kt, DataPage.kt, ClipboardFeature.kt from v0.17.65 and delete ClipFolder.kt.
+
 v0.17.65 - MODIFY (R5): Settings pages: "jump to section" bar (easy to browse long pages)
 - WHY: pages like Layout & size (6 sections), Look (5), Keys & gestures (5) are long; to reach "Bottom row" or "Hints" you had to scroll a lot.
 - What you get: on any page with 3+ visible sections, a row of small chips (one per section) is fixed under the title. Tap a chip = the page scrolls to that section. The row itself scrolls sideways. Pages with fewer sections look as before.
