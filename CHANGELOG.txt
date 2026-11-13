@@ -1,3 +1,13 @@
+v0.17.67 - MODIFY (R7): Clipboard options as dropdown menus (UI only, same actions)
+- WHY: the "..." tray was one crowded row of cycle buttons (tap "Newest" to see "Oldest" - you could not see the choices) and the select-mode "More" tray was two rows of unrelated buttons.
+- What you get: (1) header "..." = a dropdown menu card: "Sort" shows all 4 choices (Newest / Oldest / A-Z / Used, the chosen one has a tick and the blue look), "View" shows List / Cards, "Do" has Manage / Export all / Clear (Clear stays the warning colour). The menu stays open while you pick Sort / View and closes by itself on Manage / Export all / Clear or tapping "..." again. (2) select-mode "More" = a grouped dropdown: "Select" All + None (None is new), "Change" Edit / Merge / Unpin, "Send" Paste 1 line / To Vault / Export. Every old action is still there; labels "Merge -> 1 clip" and "Paste in 1 line" are shorter ("Merge", "Paste 1 line") to fit three columns.
+- Code: ClipboardFeature.kt only (menuCard / menuRow / menuPill helpers, the 2 old trays replaced), app/build.gradle.kts 0.17.67. // v0.17.67 marks hooks. No pref, key or action changed (clip_sort 0-3 and clip_view 0/1 as before). Classic (new look OFF) header with its own Sort / View / Clear buttons is untouched.
+- BROKE: nothing known. The Select menu is one row taller than the old More tray (3 rows instead of 2); the filter chips are hidden while it is open, as before.
+- TESTED here: bracket balance OK; Java suite unchanged.
+- NOT tested: Kotlin NOT compiled; phone: menu look at 360 / 1280 dp dark + light, with clip_btn_pct 70 / 140, 3 columns fit the labels, ticks show, Sort / View apply at once and the menu stays open, Manage / Export all / Clear close it, select More menu: None clears the selection, Merge / Edit / Unpin / Paste 1 line / To Vault / Export behave as before.
+- NEXT (not built): filter chips as a dropdown (5 chips now), a tap-outside-closes overlay (needs a FrameLayout around the panel).
+- Rollback: restore ClipboardFeature.kt from v0.17.66.
+
 v0.17.66 - BUILD (R6): choose the folder for Clipboard export (Save)
 - WHY: Save always put the file in Downloads; user wants to pick the folder in the app.
 - What you get: Jabra app > Data & About > new section "Clipboard export": [Choose export folder] (system folder picker) and [Use Downloads (default)]. The Data page info shows "Clip export folder: ...". In Clipboard > Export, the Save buttons write into that folder (.txt, .docx, .zip) and the screen shows "Save to: <folder>". Folder missing / permission lost / write fails = automatic fallback to Downloads with the message "Chosen folder not reachable - ...". Share is unchanged. With a chosen folder the Save buttons also appear on Android 9 and older (before: Android 10+ only).

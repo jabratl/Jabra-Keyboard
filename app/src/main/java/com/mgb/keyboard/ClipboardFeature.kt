@@ -586,25 +586,23 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
             }
             root.addView(head)
             if (nlOn && !selOn && ovOpen && !confirmClear) {   // v0.17.58 (C3): overflow tray = every rare action in one place
-                val tray = row()
-                fun tp(label: String, w: Float, onClick: () -> Unit): Button {
-                    val b = btn(label, w, 34) { onClick() }
-                    b.textSize = fs(12f)
-                    b.setPadding(dp(6), 0, dp(6), 0)
-                    return ClipBar.pill(pf, b)
-                }
-                tray.addView(tp("Manage", 1f) { ovOpen = false; sel.enter(); confirmClear = false; confirmDel = false; refresh() })
-                tray.addView(tp("\u2195 " + arrayOf("Newest", "Oldest", "A-Z", "Used")[sortLv], 1.2f) {
-                    try { JabraPrefs(ctx).setInt("clip_sort", (sortLv + 1) % 4) } catch (_: Throwable) { }
-                    refreshTop()
-                })
-                tray.addView(tp(if (cardsOn) "View: Cards" else "View: List", 1.3f) {
-                    try { JabraPrefs(ctx).setInt("clip_view", if (cardsOn) 0 else 1) } catch (_: Throwable) { }
-                    refreshTop()
-                })
-                tray.addView(tp("Export all", 1.2f) { ovOpen = false; expSel = emptyList(); expScope = 1; expMsg = ""; expName = ""; renaming = false; exporting = true; moreOpen = false; confirmDel = false; refresh() })
-                tray.addView(ClipBar.danger(pf, tp("Clear", 0.9f) { ovOpen = false; confirmClear = true; refresh() }))
-                root.addView(tray)
+                // v0.17.66 -> v0.17.67 (R7): the "..." tray is now a dropdown menu card: Sort + View show ALL choices (the chosen one is ticked), actions below
+                val menu = menuCard()
+                val sortNames = arrayOf("Newest", "Oldest", "A-Z", "Used")
+                menu.addView(menuRow("Sort", 4, *Array<View>(4) { i ->
+                    menuPill((if (i == sortLv) "\u2713 " else "") + sortNames[i], i == sortLv) {
+                        try { JabraPrefs(ctx).setInt("clip_sort", i) } catch (_: Throwable) { }
+                        refreshTop()
+                    }
+                }))
+                menu.addView(menuRow("View", 4,
+                    menuPill((if (!cardsOn) "\u2713 " else "") + "List", !cardsOn) { try { JabraPrefs(ctx).setInt("clip_view", 0) } catch (_: Throwable) { }; refreshTop() },
+                    menuPill((if (cardsOn) "\u2713 " else "") + "Cards", cardsOn) { try { JabraPrefs(ctx).setInt("clip_view", 1) } catch (_: Throwable) { }; refreshTop() }))
+                menu.addView(menuRow("Do", 4,
+                    menuPill("Manage") { ovOpen = false; sel.enter(); confirmClear = false; confirmDel = false; refresh() },
+                    menuPill("Export all") { ovOpen = false; expSel = emptyList(); expScope = 1; expMsg = ""; expName = ""; renaming = false; exporting = true; moreOpen = false; confirmDel = false; refresh() },
+                    ClipBar.danger(pf, menuPill("Clear") { ovOpen = false; confirmClear = true; refresh() })))
+                root.addView(menu)
             }
         }
 
@@ -696,23 +694,56 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
         return root
     }
 
+    // ---- v0.17.67 (R7): dropdown menu pieces (a card, labelled rows with equal columns, pill buttons; the chosen choice is ticked + blue) ----
+    private fun menuCard(): LinearLayout {
+        val c = LinearLayout(ctx)
+        c.orientation = LinearLayout.VERTICAL
+        c.setPadding(dp(8), dp(4), dp(8), dp(4))
+        try { if (nl()) c.background = UiKit.cardBackground(ctx, pf) } catch (_: Throwable) { }
+        c.layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).also { it.setMargins(dp(4), dp(2), dp(4), dp(2)) }
+        return c
+    }
+
+    /** One menu row: small label + [cols] equal columns (missing items = empty space, so every row lines up). */
+    private fun menuRow(label: String, cols: Int, vararg items: View): LinearLayout {
+        val r = LinearLayout(ctx)
+        r.orientation = LinearLayout.HORIZONTAL
+        r.gravity = Gravity.CENTER_VERTICAL
+        val l = TextView(ctx)
+        l.text = label
+        l.textSize = fs(11f)
+        l.setTextColor(hush())
+        l.maxLines = 1
+        l.layoutParams = LinearLayout.LayoutParams(dp(50), LinearLayout.LayoutParams.WRAP_CONTENT)
+        r.addView(l)
+        for (v in items) r.addView(v)
+        for (i in items.size until cols) { val f = View(ctx); f.layoutParams = LinearLayout.LayoutParams(0, dp(sz(34)), 1f); r.addView(f) }
+        return r
+    }
+
+    private fun menuPill(label: String, selected: Boolean = false, onClick: () -> Unit): Button {
+        val b = btn(label, 1f, 34) { onClick() }
+        b.textSize = fs(12f)
+        b.setPadding(dp(4), 0, dp(4), 0)
+        b.maxLines = 1
+        return if (selected) ClipBar.on(ctx, pf, b) else ClipBar.pill(pf, b)
+    }
+
     /** v0.16.9 (X9): bottom bar of the NEW panel in select mode: "N selected" + Pin | Delete | Paste | More; the More tray holds All / Unpin / Merge / Edit / Paste in 1 line / To Vault (every classic action stays reachable). */
     private fun selectBarNew(visible: List<ClipList.Item>): View {
         val t40 = PanelLayout.MIN_TOUCH   // btn() scales it (v0.17.32 UI8)
         val all = LinearLayout(ctx)
         all.orientation = LinearLayout.VERTICAL
-        if (moreOpen) {
-            all.addView(PanelKit.stickyBar(ctx, pf, host, listOf<Pair<String, () -> Unit>>(
-                "All" to { sel.selectAll(visible); confirmDel = false; refresh() },
-                "Unpin" to { actPin(false) },
-                "Merge → 1 clip" to { actMerge() }), listOf(1f, 1f, 1.8f)))
-            val acts = ArrayList<Pair<String, () -> Unit>>()
-            val ws = ArrayList<Float>()
-            acts.add("Edit" to { actEdit() }); ws.add(0.8f)
-            acts.add("Paste in 1 line" to { actPaste(true) }); ws.add(1.6f)
-            if (toVault != null) { acts.add("To Vault" to { actToVault() }); ws.add(1f) }
-            acts.add("Export" to { actExport() }); ws.add(1f)   // v0.17.57 (C2)
-            all.addView(PanelKit.stickyBar(ctx, pf, host, acts, ws))
+        if (moreOpen) {   // v0.17.67 (R7): grouped dropdown menu (same actions as before + "None")
+            val menu = menuCard()
+            menu.addView(menuRow("Select", 3, menuPill("All") { sel.selectAll(visible); confirmDel = false; refresh() }, menuPill("None") { sel.clear(); confirmDel = false; refresh() }))
+            menu.addView(menuRow("Change", 3, menuPill("Edit") { actEdit() }, menuPill("Merge") { actMerge() }, menuPill("Unpin") { actPin(false) }))
+            val send = ArrayList<View>()
+            send.add(menuPill("Paste 1 line") { actPaste(true) })
+            if (toVault != null) send.add(menuPill("To Vault") { actToVault() })
+            send.add(menuPill("Export") { actExport() })   // v0.17.57 (C2)
+            menu.addView(menuRow("Send", 3, *send.toTypedArray()))
+            all.addView(menu)
         }
         val n = sel.count()
         val allPinned = n > 0 && sel.pinnedCount() == n

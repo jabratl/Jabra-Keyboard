@@ -1,0 +1,6 @@
+HANDOFF Jabra-Keyboard v0.17.67 (R7)
+DONE: R3 export rename+ZIP (0.17.63) | R4 Home polish (64) | R5 jump bar (65) | R6 export folder (66) | R7 Clipboard dropdown menus (67). CURRENT: 0.17.67
+CHANGED: ClipboardFeature.kt (menuCard/menuRow/menuPill; header "..." menu; select More menu), app/build.gradle.kts, CHANGELOG.txt.
+CHECKS: bracket balance; Java suite green.
+NOT TESTED: Kotlin never compiled in these chats (R3-R7): if GitHub build fails send the error log -> FIX first. Phone: R3 export, R4 Home, R5 chips, R6 folder, R7 menus (look, columns fit, actions).
+NEXT: R8 = FIX from build log / phone check, or filter chips as dropdown + tap-outside overlay.
