@@ -97,6 +97,7 @@ public final class SettingsIndex {
             case "numrow": return "Shows a row of digits above the letters.";
             case "numpad_auto": return "Opens the number pad by itself in number and phone fields.";
             case "bn_hints": return "ON = Bangla (phonetic) keys show small 1-0 and signs like the Ridmik Avro keyboard; hold a key to type it. OFF = no hints in Bangla.";   // v0.17.54 (M2)
+            case "bn_numpage": return "ON = in Bangla (phonetic) the number page (?123) has Bengali digits and the Ridmik Avro signs; hold a key for the small sign. OFF = the normal number page.";   // v0.17.55 (M3)
             case "tools_keep": return "ON = the tools row (or the suggestion row) stays on top when you open the number / symbol page (?123). OFF = the page covers it.";   // v0.17.53 (M1)
             case "pc_mode": return "Phone = normal keys. PC = extra Esc / Ctrl / F-keys / arrows rows.";
             case "mode_key": return "Shows the Phone / PC switch key in the edit bar.";

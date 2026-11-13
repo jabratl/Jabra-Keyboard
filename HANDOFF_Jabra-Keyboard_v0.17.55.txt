@@ -1,0 +1,21 @@
+HANDOFF Jabra-Keyboard v0.17.55 (M3 done = Avro look plan M1-M3 complete)  -  paste this + PLAN_AVRO_LOOK.txt at the start of the next chat
+
+DONE LIST
+- P1-P5 v0.17.44-48 | PC1-PC4 v0.17.49-52 | Avro look plan: M1 v0.17.53 (tools row on number page) | M2 v0.17.54 (Bangla letter hints) | M3 v0.17.55 (Bangla number page, this step)
+- Current version: v0.17.55. Kotlin NEVER compiled yet; nothing phone-tested for v0.17.44-55.
+
+WHAT CHANGED (file: 1 line each)
+- typing/AvroNumPage.java (NEW): rows of the Ridmik number page (Bengali digits + hold digits, sign rows + holds), switch label, gate active(setting, banglaPhonetic, symPage).
+- JabraExtras.kt: JabraHost.isBanglaPhonetic() (default false); JabraPanels.bnNumberPage() (4 rows, hold hints with HintDrawable); backToLetters() + bnPageOn() (ABC resets the page when the new page is on); symbols() tries the new page first.
+- MgbIme.kt: isBanglaPhonetic override (phoneticOn()). SettingsGroups.kt / typing/SettingsIndex.java / typing/ChangedPlan.java: toggle "Avro number page (Bangla)" (bn_numpage, default ON).
+- tools/AvroNumPageTest.java (NEW, 150 checks). build.gradle.kts 0.17.55. CHANGELOG, CHECKLIST_SMOKE (39), PLAN status.
+
+CHECKS DONE: bash tools/run_tests.sh = 127/127 green; bracket balance of JabraExtras.kt, MgbIme.kt, SettingsGroups.kt OK.
+
+NOT TESTED (needs real use)
+- Kotlin compile of ALL v0.17.44-55 (build error log -> FIX mode first).
+- Phone: CHECKLIST_SMOKE 37 (tools row on number page), 38 (Bangla hints), 39 (Bangla number page); look at 360 / 1280 dp, dark + light.
+- Known limits: Bangla number page has no gear / 123 keys; custom layout editor does not control it; digits typed are Bengali (hold = English); Ridmik colours, emoji key, "Done" label, "avro" space label not done (not in plan).
+
+NEXT: send the Gradle build error log if the build fails (FIX mode). If green: phone-test items 37-39, report what looks different from Ridmik (spacing, hint size, key widths) -> one polish step per finding.
+Start line for the next chat: "FIX: build error log" or "polish: <what you see>".

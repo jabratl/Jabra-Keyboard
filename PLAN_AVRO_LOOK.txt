@@ -21,7 +21,7 @@ M2  v0.17.54  MODIFY  DONE  Bangla letter legends (Ridmik table)  [done as plann
     - layout/LayoutDefaults.java letters("av"): same table (grep: LongPressHints.hintFor at ~183) so the custom-keyboard path matches.
     - Long-press types the hint after commitWord() (same path as English hints). Settings toggle + help + ChangedPlan key.
     - Check: Java tests; av layer ids unchanged; English / Probhat hints unchanged (test).
-M3  v0.17.55  MODIFY  Bangla number page (Ridmik sign set)
+M3  v0.17.55  MODIFY  DONE  Bangla number page (Ridmik sign set)  [built as JabraExtras.bnNumberPage, no separate BnNumberPage.kt]
     - NEW typing/AvroNumPage.java (pure): rows r1-r3 (key text, hint, long-press text); tools/AvroNumPageTest.java.
     - NEW BnNumberPage.kt (or a function in JabraExtras.kt): 4 rows, hints drawn with HintKeys.HintDrawable, tap = Bengali digit / sign, hold = hint; "=\<" = next page (existing SymbolPages 1 and 2 keep working), ABC , space . Enter (bottom row).
     - JabraExtras.symbols(): first line "if Bangla phonetic && bn_numpage -> new page, any problem -> old page". JabraHost gets isBanglaPhonetic() (default false), MgbIme overrides. Pref bn_numpage (default ON).
@@ -33,3 +33,5 @@ NOT in this plan (assumptions, say if you want them later)
 - Bangla-fixed (Probhat) and English number pages keep today's look (only the tools row from M1 applies).
 
 RULES FOR EVERY STEP: patch only; grep first, view only the range; plan <= 5 lines; node-style checks = bash tools/run_tests.sh + bracket balance of changed Kotlin; bump version + CHANGELOG + handoff; zip with ONLY changed / new files; reply < 10 lines. Kotlin is still NEVER compiled here: if GitHub build fails, next chat = FIX with the error log.
+
+STATUS: M1 v0.17.53, M2 v0.17.54, M3 v0.17.55 all done (not compiled, not phone-tested). Next = FIX with the build log, then phone-test with CHECKLIST_SMOKE items 37-39.

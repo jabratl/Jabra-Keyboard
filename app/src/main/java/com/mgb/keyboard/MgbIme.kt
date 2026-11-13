@@ -121,6 +121,7 @@ class MgbIme : InputMethodService() {
         override fun enter() { this@MgbIme.doEnter() }   // v0.0.9: was sendDownUpKeyEvents(ENTER) - now uses the app's Send/Search/Go action when it has one
         override fun pickKeyboard() { this@MgbIme.pickKeyboard() }   // v0.0.9
         override fun runAction(a: String) { this@MgbIme.atAction(a) }   // v0.17.21 (L5b)
+        override fun isBanglaPhonetic(): Boolean = try { this@MgbIme.phoneticOn() } catch (_: Throwable) { false }   // v0.17.55 (M3)
         override fun showLetters() { this@MgbIme.showLetters() }
         override fun showPanel(name: String) { this@MgbIme.showPanel(name) }
         override fun feedback(v: View) { this@MgbIme.feedback(v) }

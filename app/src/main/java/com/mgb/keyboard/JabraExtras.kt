@@ -33,6 +33,7 @@ interface JabraHost {
     fun feedback(v: View)            // haptic / sound on key press
     fun keyHeightDp(): Int
     fun layoutChanged()              // bn_layout pref changed in the settings panel
+    fun isBanglaPhonetic(): Boolean = false   // v0.17.55 (M3): Bangla (phonetic) is the active typing language (default false = old pages)
     fun pickKeyboard() { }           // v0.0.9: open the phone's keyboard picker (default: does nothing)
     fun fieldText(): String = ""     // v0.5.0: selected text or whole field text ("" in password fields / default)
     fun currentApp(): String = ""    // v0.10.18 (W6.1): package name of the app that owns the open field ("" = none / unknown)
@@ -236,7 +237,7 @@ class JabraPanels(private val ctx: Context, private val host: JabraHost) {
 
     private fun bottomRow(withNumpadKey: Boolean): LinearLayout {
         val r = row()
-        r.addView(pk("ABC", 1.5f) { host.showLetters() })
+        r.addView(pk("ABC", 1.5f) { backToLetters() })   // v0.17.55 (M3)
         r.addView(JabraIcons.putThemed(ctx, pk("⚙", 1f) { host.showPanel("settings") }, "gear"))   // v0.0.7
         if (withNumpadKey) r.addView(pk("123", 1f) { host.showPanel("numpad") })
         r.addView(pk(",", 1f) { sym(",") })
@@ -281,7 +282,7 @@ class JabraPanels(private val ctx: Context, private val host: JabraHost) {
                     symPage = com.mgb.keyboard.typing.SymbolPages.next(symPage)
                     host.showPanel("symbols")
                 })
-            else fit(pk(if (lab.isNotEmpty()) lab else "ABC", w) { host.showLetters() })
+            else fit(pk(if (lab.isNotEmpty()) lab else "ABC", w) { backToLetters() })   // v0.17.55 (M3)
             "backspace" -> fit(repeatable(JabraIcons.putThemed(ctx, pk("\u232B", w) { host.backspace() }, "back")))
             "enter" -> fit(JabraIcons.putThemed(ctx, pk("\u23CE", w) { host.commitWord(); host.enter() }, "enter"))
             "space" -> fit(pk(if (lab.isNotEmpty()) lab else "space", w) { sym(" ") })
@@ -321,7 +322,57 @@ class JabraPanels(private val ctx: Context, private val host: JabraHost) {
         return root
     }
 
+    /** v0.17.55 (M3): ABC. With the Bangla number page on, the next ?123 opens that page again (not the last symbol page); otherwise exactly as before. */
+    private fun backToLetters() {
+        try { if (bnPageOn()) symPage = 0 } catch (_: Throwable) { }
+        host.showLetters()
+    }
+
+    private fun bnPageOn(): Boolean = com.mgb.keyboard.typing.AvroNumPage.active(prefs.bool("bn_numpage", true), host.isBanglaPhonetic(), 0)
+
+    /** v0.17.55 (M3): Ridmik Avro number / sign page for Bangla (phonetic): Bengali digits + signs, hold = the small hint. null = not this page (old pages). */
+    private fun bnNumberPage(): View? {
+        if (!com.mgb.keyboard.typing.AvroNumPage.active(prefs.bool("bn_numpage", true), host.isBanglaPhonetic(), symPage)) return null
+        val root = rootView()
+        val hintOn = prefs.bool("hint_on", true)
+        val hintShow = hintOn && !prefs.bool("hint_hide", false)
+        val col = try { JabraThemes.iconColor(prefs) } catch (_: Throwable) { Color.parseColor("#222222") }
+        val al = try { com.mgb.keyboard.typing.HintStyle.alpha(prefs.int("hint_alpha_lv", com.mgb.keyboard.typing.HintStyle.LV_DEFAULT)) } catch (_: Throwable) { 170 }
+        val sz = try { prefs.int("hint_size_lv", com.mgb.keyboard.typing.HintStyle.LV_DEFAULT) } catch (_: Throwable) { com.mgb.keyboard.typing.HintStyle.LV_DEFAULT }
+        fun key(k: Array<String>): Button {
+            val b = cs(pk(k[0], 1f) { sym(k[1]) })
+            val hold = k[2]
+            if (hold.isNotEmpty() && hintOn) {
+                b.setOnLongClickListener { try { host.feedback(b) } catch (_: Throwable) { }; sym(hold); true }
+                if (hintShow) { try { b.foreground = HintKeys.HintDrawable(hold, col, al, sz) } catch (_: Throwable) { } }
+            }
+            return b
+        }
+        for (ri in 0..1) {
+            val r = row()
+            for (k in com.mgb.keyboard.typing.AvroNumPage.row(ri)) r.addView(key(k))
+            root.addView(r)
+        }
+        val r3 = row()
+        r3.addView(pk(com.mgb.keyboard.typing.AvroNumPage.SWITCH_LABEL, 1.5f) {
+            symPage = com.mgb.keyboard.typing.SymbolPages.next(symPage)
+            host.showPanel("symbols")
+        })
+        for (k in com.mgb.keyboard.typing.AvroNumPage.row(2)) r3.addView(key(k))
+        r3.addView(repeatable(JabraIcons.putThemed(ctx, pk("⌫", 1.5f) { host.backspace() }, "back")))
+        root.addView(r3)
+        val r4 = row()
+        r4.addView(pk("ABC", 1.5f) { backToLetters() })
+        r4.addView(pk(",", 1f) { sym(",") })
+        r4.addView(pk("space", 5f) { sym(" ") })
+        r4.addView(pk(".", 1f) { sym(".") })
+        r4.addView(JabraIcons.putThemed(ctx, pk("⏎", 1.5f) { host.commitWord(); host.enter() }, "enter"))
+        root.addView(r4)
+        return root
+    }
+
     private fun symbols(): View {
+        try { val bv = bnNumberPage(); if (bv != null) return bv } catch (_: Throwable) { }   // v0.17.55 (M3): any problem = the old pages below
         try { val mv = symbolsFromModel(); if (mv != null) return mv } catch (_: Throwable) { }   // v0.17.12 (K8)
         val root = rootView()
         val pages: Array<String> = try { com.mgb.keyboard.typing.SymbolPages.page(symPage) } catch (_: Throwable) {   // v0.9.5: 3 pages from SymbolPages; old 2 pages = fallback

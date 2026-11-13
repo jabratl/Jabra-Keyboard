@@ -537,6 +537,7 @@ object SettingsGroups {
             toggle(g, "Auto numpad (number / phone fields)", "numpad_auto", true)
             toggle(g, "Tools row on number page", "tools_keep", true)   // v0.17.53 (M1)
             toggle(g, "Avro hints on Bangla keys", "bn_hints", true)   // v0.17.54 (M2)
+            toggle(g, "Avro number page (Bangla)", "bn_numpage", true)   // v0.17.55 (M3)
             cycle(g, "Mode", "pc_mode", { arrayOf("Phone", "PC") }, { if (prefs.bool("pc_mode", false)) 1 else 0 }, { prefs.setBool("pc_mode", it == 1) })
             toggle(g, "Mode key", "mode_key", true)
             toggle(g, "Remember mode", "pc_remember", true)
