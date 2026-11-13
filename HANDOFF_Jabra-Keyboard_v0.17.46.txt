@@ -1,0 +1,6 @@
+HANDOFF Jabra-Keyboard v0.17.46 (P3)
+Done: P1 popup stem + 2-row grid (v0.17.44) | P2 key outline in theme studio (v0.17.45) | P3 accents + , . symbol grid + 16 hold options (v0.17.46). Current: v0.17.46.
+Changed: layout/LpAccents.java (new data) | layout/LayoutDefaults.java (options + hooks) | layout/LayoutText.java (limit 16) | LayoutStore.kt (read prefs) | SettingsGroups.kt (2 toggles) | typing/SettingsIndex.java (help) | tools/LpAccentsTest.java (new) | tools/LpBarPlanTest.java, tools/LayoutOpsTest.java (limit) | app/build.gradle.kts | CHANGELOG.txt
+Checks: Java suite 121/121, bracket balance of 2 Kotlin files.
+NOT tested: Kotlin compile, phone (grid on hold, shift + accents, rebuild on switch, edited layouts).
+NEXT P4: upper-case accents when Shift is on + outline in keyboard-side ThemeStudio preview + key gap/shadow option.

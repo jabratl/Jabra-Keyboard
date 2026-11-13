@@ -13,7 +13,7 @@ import java.util.Set;
 public final class LayoutText {
     private LayoutText() { }
 
-    public static final int MAX_OUT = 16, MAX_LABEL = 6, MAX_LP = 16, MAX_COMBO = 24, MAX_ID = 16, MAX_LPLIST = 8;
+    public static final int MAX_OUT = 16, MAX_LABEL = 6, MAX_LP = 16, MAX_COMBO = 24, MAX_ID = 16, MAX_LPLIST = 16;   // v0.17.46 (P3): 8 -> 16 (2-row grid of 8)
 
     /** ACTION key ids (kind ACTION). Same functions the bottom row / toolbar already call. */
     public static final Set<String> ACTIONS = new HashSet<String>(Arrays.asList(

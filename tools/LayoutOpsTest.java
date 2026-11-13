@@ -125,7 +125,7 @@ public class LayoutOpsTest {
         eq("setSwipe bad dir refused", LayoutOps.setSwipe(m, "q", 4, "1") == m, true);
         eq("setSwipe control chars removed", key(LayoutOps.setSwipe(m, "q", 1, "a\u0001b"), "q").sw[1], "ab");
         eq("setLpList keeps good items", key(LayoutOps.setLpList(m, "q", Arrays.asList("1", "", "@hack", "@tab", "2")), "q").lpList.toString(), "[1, @tab, 2]");
-        eq("setLpList max 8", key(LayoutOps.setLpList(m, "q", Arrays.asList("1","2","3","4","5","6","7","8","9","0")), "q").lpList.size(), 8);
+        eq("setLpList max 16", key(LayoutOps.setLpList(m, "q", Arrays.asList("1","2","3","4","5","6","7","8","9","0","a","b","c","d","e","f","g","h")), "q").lpList.size(), 16);   // v0.17.46: 8 -> 16
         eq("setLpList null = empty, no change", LayoutOps.setLpList(m, "q", null) == m, true);
         LayoutDef ac = LayoutOps.setAction(m, "q", "tab");
         eq("setAction -> ACTION", key(ac, "q").kind, KeyDef.ACTION);

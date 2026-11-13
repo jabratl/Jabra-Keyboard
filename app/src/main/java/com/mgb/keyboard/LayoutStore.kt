@@ -70,6 +70,7 @@ object LayoutStore {
         try { o.numRow = prefs.bool("numrow", true) } catch (_: Throwable) { }
         try { o.keyDp = prefs.keyHeightDp(JabraPrefs.isLand(ctx)) } catch (_: Throwable) { }
         try { o.hints = prefs.bool("hint_on", true); o.hintCustom = prefs.str("hint_custom", "") } catch (_: Throwable) { }
+        try { o.accents = prefs.bool("lp_accents", false); o.punct = prefs.bool("lp_punct", false) } catch (_: Throwable) { }   // v0.17.46 (P3)
         try { o.nrMode = com.mgb.keyboard.typing.NumRowPlan.sanitizeMode(prefs.int("nr_mode", 0)); o.nrChars = prefs.str("nr_chars", "") } catch (_: Throwable) { }
         try { o.nrHpct = prefs.int("nr_hpct", 100); o.numRowLarge = prefs.bool("numrow_large", false) } catch (_: Throwable) { }
         try { o.pbHomeGap = prefs.bool("pb_home_gap", false) } catch (_: Throwable) { }

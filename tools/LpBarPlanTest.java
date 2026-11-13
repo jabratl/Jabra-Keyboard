@@ -19,7 +19,7 @@ public class LpBarPlanTest {
         eq("lp + list", LpBarPlan.options(key("x", "y", "z")), Arrays.asList("x", "y", "z"));
         eq("duplicates dropped", LpBarPlan.options(key("x", "x", "y")), Arrays.asList("x", "y"));
         eq("empty items dropped", LpBarPlan.options(key("", "", "y", "z")), Arrays.asList("y", "z"));
-        eq("max 8", LpBarPlan.options(key("1", "2", "3", "4", "5", "6", "7", "8", "9", "10")).size(), 8);
+        eq("max 16", LpBarPlan.options(key("1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18")).size(), 16);
         eq("useBar 1", LpBarPlan.useBar(key("x")), false);
         eq("useBar list of 1", LpBarPlan.useBar(key("", "x")), false);
         eq("useBar 2", LpBarPlan.useBar(key("", "x", "y")), true);
@@ -54,7 +54,7 @@ public class LpBarPlanTest {
         eq("parse null", LpBarPlan.parse(null).size(), 0);
         eq("parse unknown action dropped", LpBarPlan.parse("a @nope @tab"), Arrays.asList("a", "@tab"));
         eq("parse bangla conjunct kept", LpBarPlan.parse("\u0995\u09CD\u09B7 \u0983").get(0), "\u0995\u09CD\u09B7");
-        eq("parse max 8", LpBarPlan.parse("1 2 3 4 5 6 7 8 9 10").size(), 8);
+        eq("parse max 16", LpBarPlan.parse("1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18").size(), 16);
         eq("parse cuts long item", LpBarPlan.parse("abcdefghijklmnopqrstuvwxyz").get(0).length(), 16);
         eq("join", LpBarPlan.join(Arrays.asList("a", "b")), "a b");
         eq("join null", LpBarPlan.join(null), "");

@@ -42,6 +42,8 @@ public final class LayoutDefaults {
         public int spWpct = 100, spHpct = 100; // sp_wpct, sp_hpct
         public boolean hints = true;           // hint_on
         public String hintCustom = "";         // hint_custom
+        public boolean accents = false;        // lp_accents (v0.17.46 P3): accent letters on hold
+        public boolean punct = false;          // lp_punct (v0.17.46 P3): symbol options on the , and . keys
         public int keyDp = 48;                 // key height in dp (for the number row height)
         public float rowDp = 360f;             // real row width in dp (only used by the space bar width %)
     }
@@ -131,6 +133,7 @@ public final class LayoutDefaults {
                 String h = LongPressHints.hintFor(c, o.numRow, o.hintCustom);
                 if (h != null) k.lp = h;
             }
+            if (english && o.accents && !layer.equals("pb")) k.lpList.addAll(LpAccents.accents(c));   // v0.17.46 (P3): hint (if any) stays the first option
             r.keys.add(k);
         }
     }
@@ -209,12 +212,14 @@ public final class LayoutDefaults {
         if (o.keyEmoji) r.keys.add(act("b_emoji", "emoji", 1f, "☺", "emoji"));
         KeyDef comma = KeyDef.ch("b_comma", ",", 1f);
         comma.lp = "@emoji";
+        if (o.punct) comma.lpList.addAll(LpAccents.comma());   // v0.17.46 (P3)
         r.keys.add(comma);
         KeyDef space = act("b_space", "space", 1f, "space", "");
         r.keys.add(space);
         if (o.qmShown) r.keys.add(KeyDef.ch("b_qm", "?", 1f));
         KeyDef period = KeyDef.ch("b_period", ".", 1f);
         if (!o.qmShown) period.lp = "?";
+        if (o.punct) period.lpList.addAll(LpAccents.period());   // v0.17.46 (P3)
         r.keys.add(period);
         r.keys.add(act("b_enter", "enter", BottomPlan.enterWeight(st), "⏎", "enter"));
         // space bar weight: the classic rules first, then the width % (same order as MgbIme)
