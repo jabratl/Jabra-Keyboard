@@ -36,6 +36,7 @@ interface JabraHost {
     fun pickKeyboard() { }           // v0.0.9: open the phone's keyboard picker (default: does nothing)
     fun fieldText(): String = ""     // v0.5.0: selected text or whole field text ("" in password fields / default)
     fun currentApp(): String = ""    // v0.10.18 (W6.1): package name of the app that owns the open field ("" = none / unknown)
+    fun runAction(a: String) { }     // v0.17.21 (L5b): run a layout @action (@tab, @undo, @redo ...) from a panel (default: does nothing)
 }
 
 /** Safe pref reader/writer: every read has a default, nothing ever throws. */
@@ -285,6 +286,9 @@ class JabraPanels(private val ctx: Context, private val host: JabraHost) {
             "period" -> fit(pk(if (lab.isNotEmpty()) lab else ".", w) { sym(".") })
             "emoji" -> fit(JabraIcons.putThemed(ctx, pk("\u263A", w) { host.showPanel("emoji") }, "emoji"))
             "clip" -> fit(JabraIcons.putThemed(ctx, pk("\u2398", w) { host.showPanel("clipboard") }, "clip"))
+            "tab" -> fit(JabraIcons.putThemed(ctx, pk(if (lab.isNotEmpty()) lab else "Tab", w) { host.runAction("@tab") }, "tab"))   // v0.17.21 (L5b)
+            "undo" -> fit(pk(if (lab.isNotEmpty()) lab else "\u21B6", w) { host.runAction("@undo") })   // v0.17.21 (L5b)
+            "redo" -> fit(pk(if (lab.isNotEmpty()) lab else "\u21B7", w) { host.runAction("@redo") })   // v0.17.21 (L5b)
             else -> null   // other function keys are not run by this panel (the picker does not offer them here)
         }
     }

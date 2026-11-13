@@ -1,3 +1,12 @@
+v0.17.21 - NEW (L5b): Tab / Undo / Redo keys now work on the symbols panel (custom keyboard)
+- WHY: plan L5b. The symbols panel had no action runner, so an action key (Tab, Undo, Redo) placed on a symbol page (layers s1 - s3) stayed inert. The keyboard already ran these actions on the letter rows.
+- What you get: custom keyboard ON. Editor > symbol page > make a key an action key "tab" / "undo" / "redo". On the keyboard, in the symbols panel, the key works: Tab = Tab key event, Undo = Ctrl+Z, Redo = Ctrl+Shift+Z (same as the letters rows). An own label on the key is shown.
+- Code (hooks marked v0.17.21): JabraExtras.kt (JabraHost.runAction default no-op; JabraPanels.symKey: branches tab / undo / redo), MgbIme.kt (host.runAction -> atAction). No Java change, no format change, no new pref.
+- NOT built (L5b.2, next): swipe / long-press options on the keys of the symbols panel; L5c Ridmik-like symbols preset.
+- BROKE: nothing known. Classic panels and layouts without these keys are unchanged.
+- NOT tested: Kotlin NOT compiled here (no javac / kotlinc in this sandbox; brackets balanced only); NOT phone-tested (CHECKLIST Z119). Java untouched, so the CI Java tests stay as in v0.17.20 (109).
+- Rollback: remove the Tab / Undo / Redo key from the symbol page, or push the v0.17.20 JabraExtras.kt + MgbIme.kt back.
+
 v0.17.20 - NEW (L5a): long-press OPTIONS bar (slide to pick) on custom keys
 - WHY: plan L5 (Ridmik-like symbol popup). KeyDef.lpList (several long-press options) existed in the model since K3 but the keyboard only typed the first one. L5 is split in 3 versions: L5a = this popup bar; L5b = Tab / Undo keys + swipe / long-press on the symbols panel; L5c = Ridmik-like symbols page preset.
 - What you get: custom keyboard ON. Editor > select a key > new field "Long-press options" (2 or more texts separated by spaces, e.g. "1 2 3" or "@paste @copy"). On the keyboard: hold the key = a bar with the options shows above it; slide the finger over a cell (blue = selected), lift = that text is typed. Lift without moving = the first option (same as the old single long-press). With only 1 option nothing changes (old behaviour). The long-press text (if set) counts as the first option. @actions work in the options too. Max 8 options, each <= 16 characters, no spaces inside one option.

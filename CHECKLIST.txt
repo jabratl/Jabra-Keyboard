@@ -882,3 +882,9 @@ Z118 (v0.17.20, L5a: long-press options bar)
  [ ] 4. Hold "a" on the top letter row and at the far left / far right of the screen: the bar stays fully visible.
  [ ] 5. Options "@paste @copy": slide to a cell and lift = that action runs. Short tap still types the letter. Swipe texts still work.
  [ ] 6. Empty the options field: the key long-press works as before (single long-press text). Rotate / dark theme: bar readable.
+
+Z119 (v0.17.21, L5b: Tab / Undo / Redo on the symbols panel)
+ [ ] 1. Custom keyboard ON. Editor > symbol page 1 > select a key > make it an action key "tab". Open a text field (Termux or a browser), press ?123: the Tab key shows.
+ [ ] 2. Tap it: the Tab key event is sent (app that handles Tab moves focus / inserts a tab). Same for "undo" (Ctrl+Z) and "redo" (Ctrl+Shift+Z).
+ [ ] 3. Classic panels (custom keyboard OFF) and symbol pages without these keys look and work as before. Page key, backspace, enter, space still work.
+
