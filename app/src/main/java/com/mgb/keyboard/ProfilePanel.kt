@@ -191,7 +191,7 @@ class ProfilePanel(private val ctx: Context, private val host: JabraHost, privat
         val app = try { host.currentApp() } catch (_: Throwable) { "" }   // v0.10.18 (W6.1)
         for (s in ProfileCodec.starters()) {
             val r = row()
-            r.addView(btn("● " + s.name + "  (ready)", 1f, 38) { applyProfile(s) })
+            r.addView(btn("● " + Glyphs.KEEP + s.name + "  (ready)", 1f, 38) { applyProfile(s) })
             if (app.isNotEmpty()) r.addView(btn("> App", 0.35f, 38) { mapApp(app, s.name) })   // v0.10.18
             root.addView(r)
         }
@@ -202,7 +202,7 @@ class ProfilePanel(private val ctx: Context, private val host: JabraHost, privat
         } else {
             for ((i, p) in saved.withIndex()) {
                 val r = row()
-                r.addView(btn(p.name, 3f, 38) { applyProfile(p) })
+                r.addView(btn(Glyphs.KEEP + p.name, 3f, 38) { applyProfile(p) })   // v0.17.68 (S1)
                 if (app.isNotEmpty()) r.addView(btn("> App", 1f, 38) { mapApp(app, p.name) })   // v0.10.18 (W6.1)
                 r.addView(btn("Ren", 1f, 38) {
                     val nn = ProfileCodec.cleanName(host.fieldText().lineSequence().firstOrNull() ?: "")

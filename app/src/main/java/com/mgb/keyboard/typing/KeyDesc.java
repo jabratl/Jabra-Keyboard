@@ -79,6 +79,18 @@ public final class KeyDesc {
         if (icon == null) return "";
         switch (icon) {
             case "clip": return "Clipboard";
+            case "tick": return "Selected";   // v0.17.68 (S1)
+            case "undo": return "Undo";
+            case "sort": return "Sort";
+            case "checkon": return "Checked";
+            case "checkoff": return "Not checked";
+            case "dot": return "Ready";
+            case "prev": return "Previous";
+            case "next": return "Next";
+            case "caret": return "Open list";
+            case "edit": return "Edit";
+            case "more": return "More options";
+            case "up": return "Close menu";
             case "all": return "Select all";
             case "cut": return "Cut";
             case "copy": return "Copy";

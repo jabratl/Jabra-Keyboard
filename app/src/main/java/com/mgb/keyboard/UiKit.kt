@@ -36,6 +36,7 @@ object UiKit {
             if (textSp > 0f) b.textSize = textSp
             capFont(ctx, b, if (textSp > 0f) textSp else 14f)   // v0.10.21 (D4)
             try { JabraThemes.style(p, b) } catch (_: Throwable) { }
+            Glyphs.dress(b)   // v0.17.68 (S1): own drawn signs instead of emoji / text signs
             b
         } catch (_: Throwable) {
             plain(ctx, label, onClick)
@@ -75,6 +76,7 @@ object UiKit {
                 try { JabraThemes.style(p, b) } catch (_: Throwable) { }
             }
             b.setPadding(side, 0, side, 0)
+            Glyphs.dress(b)   // v0.17.68 (S1)
             b
         } catch (_: Throwable) {
             plain(ctx, label, onClick)

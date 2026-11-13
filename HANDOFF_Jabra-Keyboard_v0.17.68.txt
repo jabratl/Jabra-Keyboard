@@ -1,0 +1,6 @@
+HANDOFF Jabra-Keyboard v0.17.68 (S1)
+DONE: R3-R7 (0.17.63-67) | S1 own drawn signs instead of emoji in Clipboard / Vault / Text tools / Profiles (68). CURRENT: 0.17.68
+CHANGED: Glyphs.kt NEW (turns leading/trailing emoji signs of a button/text into JabraIcons; KEEP = user content untouched) | JabraIcons.kt (12 new icons) | UiKit.kt (btn + chip call Glyphs.dress) | KeyDesc.java (spoken names) | ClipboardFeature.kt, VaultPanel.kt, ClipCards.kt, ProfilePanel.kt, PanelSearchUi.kt (KEEP guard / relabel / dress, 1-2 lines each) | app/build.gradle.kts | CHANGELOG.txt.
+CHECKS: bracket balance (10 files); icon shapes rendered; Java suite unchanged.
+NOT TESTED: Kotlin NOT compiled (if GitHub build fails send the log -> FIX first). Phone: icon size/colour at clip_btn_pct 70/140, 360 + 1280 dp, dark + light, tick on selected pill, select-mode check boxes + star, Vault caret / search line, icons_on OFF = old text.
+NEXT: S2 = same signs for Toolbar.kt / MgbIme.kt clip fallback, ToolbarQuick, AppToolbarEditor, ThemeStudio arrows.

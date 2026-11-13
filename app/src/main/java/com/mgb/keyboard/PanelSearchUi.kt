@@ -36,7 +36,7 @@ object PanelSearchUi {
                 query = ""
                 content.visibility = if (searching) View.GONE else View.VISIBLE
                 box.visibility = if (searching) View.VISIBLE else View.GONE
-                (top.getChildAt(0) as? Button)?.text = if (searching) "✕ Search" else "🔍 Search settings"
+                (top.getChildAt(0) as? Button)?.let { Glyphs.relabel(it, if (searching) "✕ Search" else "🔍 Search settings") }   // v0.17.68 (S1)
                 rebuild()
             }
             top.addView(toggle)

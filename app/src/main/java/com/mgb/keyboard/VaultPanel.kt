@@ -323,9 +323,10 @@ class VaultPanel(private val ctx: Context, private val host: JabraHost, private 
 
         if (searching) {
             val q = TextView(ctx)
-            q.text = "🔍 " + query + "▏"
+            q.text = "🔍 " + Glyphs.KEEP + query + "▏"
             q.textSize = 15f
             q.setTextColor(ink())   // v0.6.6
+            Glyphs.dress(q)   // v0.17.68 (S1): drawn search sign instead of the emoji
             q.setPadding(dp(8), dp(2), dp(8), dp(2))
             root.addView(q)
         }
@@ -706,10 +707,11 @@ class VaultPanel(private val ctx: Context, private val host: JabraHost, private 
         colL.setPadding(dp(8), dp(3), dp(4), dp(3))
         colL.layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
         val title = TextView(ctx)
-        title.text = (if (picked) "✓ " else "") + e.title
+        title.text = (if (picked) "✓ " else "") + Glyphs.KEEP + e.title
         title.textSize = 14f
         title.setTypeface(title.typeface, android.graphics.Typeface.BOLD)
         title.setTextColor(rowInk())   // v0.6.6
+        Glyphs.dress(title)   // v0.17.68 (S1): drawn tick instead of the text sign (title text itself is never touched: KEEP)
         title.maxLines = 1
         title.ellipsize = TextUtils.TruncateAt.END
         colL.addView(title)
@@ -794,7 +796,7 @@ class VaultPanel(private val ctx: Context, private val host: JabraHost, private 
         targets.add("")
         targets.addAll(l.folders())
         for (f in targets) {
-            val b = btn(folderName(f) + "  (" + l.countIn(f) + ")", 0f, 38) {
+            val b = btn(Glyphs.KEEP + folderName(f) + "  (" + l.countIn(f) + ")", 0f, 38) {   // v0.17.68 (S1): KEEP = folder name is user content
                 val n = l.move(ArrayList(sel), f)
                 if (saved()) msg = "Moved " + n + " to " + folderName(f)
                 leaveSel(); scr = Scr.LIST; refresh()

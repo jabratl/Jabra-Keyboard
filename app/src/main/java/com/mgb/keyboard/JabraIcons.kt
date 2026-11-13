@@ -23,7 +23,8 @@ object JabraIcons {
         "clip", "all", "cut", "copy", "paste", "plain", "search", "close",
         "pin", "pinned", "gear", "shift", "back", "enter", "space", "fmt", "globe", "mic", "emoji", "mode_phone", "mode_pc", "numpad", "sym", "theme", "onehand", "size", "pad", "vault", "tt", "profiles", "keymap",
         "selword", "selline", "delword", "delline", "linestart", "lineend", "dupline", "selnone",   // v0.16.13 (X13): 8 edit items
-        "tab"   // v0.17.7 (K5b)
+        "tab",   // v0.17.7 (K5b)
+        "tick", "undo", "sort", "checkon", "checkoff", "dot", "prev", "next", "caret", "edit", "more", "up"   // v0.17.68 (S1): own signs for Clipboard / Vault / Text tools options (were cheap emoji)
         // v0.16.5: keymap; v0.5.1: profiles; v0.4.6: tt; v0.4.4: vault; v0.1.2; v0.2.2: 5 names; v0.2.3: pad
     )
 
@@ -339,6 +340,61 @@ object JabraIcons {
                     line(c, s, 0.24f, 0.66f, 0.08f, 0.50f)
                     line(c, s, 0.76f, 0.34f, 0.92f, 0.50f)
                     line(c, s, 0.76f, 0.66f, 0.92f, 0.50f)
+                }
+                "tick" -> {   // v0.17.68 (S1)
+                    line(c, s, 0.12f, 0.54f, 0.38f, 0.8f)
+                    line(c, s, 0.38f, 0.8f, 0.9f, 0.22f)
+                }
+                "undo" -> {   // v0.17.68 (S1)
+                    line(c, s, 0.08f, 0.3f, 0.62f, 0.3f)
+                    line(c, s, 0.08f, 0.3f, 0.3f, 0.1f)
+                    line(c, s, 0.08f, 0.3f, 0.3f, 0.52f)
+                    c.drawArc(RectF(0.34f * s, 0.3f * s, 0.9f * s, 0.86f * s), -90f, 180f, false, p)
+                    line(c, s, 0.62f, 0.86f, 0.28f, 0.86f)
+                }
+                "sort" -> {   // v0.17.68 (S1)
+                    line(c, s, 0.08f, 0.22f, 0.92f, 0.22f)
+                    line(c, s, 0.08f, 0.5f, 0.66f, 0.5f)
+                    line(c, s, 0.08f, 0.78f, 0.4f, 0.78f)
+                }
+                "checkon" -> {   // v0.17.68 (S1)
+                    rr(c, s, 0.1f, 0.1f, 0.9f, 0.9f, 0.18f)
+                    line(c, s, 0.28f, 0.52f, 0.44f, 0.68f)
+                    line(c, s, 0.44f, 0.68f, 0.74f, 0.32f)
+                }
+                "checkoff" -> {   // v0.17.68 (S1)
+                    rr(c, s, 0.1f, 0.1f, 0.9f, 0.9f, 0.18f)
+                }
+                "dot" -> {   // v0.17.68 (S1)
+                    c.drawCircle(0.5f * s, 0.5f * s, 0.22f * s, f)
+                }
+                "prev" -> {   // v0.17.68 (S1)
+                    line(c, s, 0.64f, 0.14f, 0.3f, 0.5f)
+                    line(c, s, 0.3f, 0.5f, 0.64f, 0.86f)
+                }
+                "next" -> {   // v0.17.68 (S1)
+                    line(c, s, 0.36f, 0.14f, 0.7f, 0.5f)
+                    line(c, s, 0.7f, 0.5f, 0.36f, 0.86f)
+                }
+                "caret" -> {   // v0.17.68 (S1)
+                    line(c, s, 0.14f, 0.34f, 0.5f, 0.7f)
+                    line(c, s, 0.5f, 0.7f, 0.86f, 0.34f)
+                }
+                "edit" -> {   // v0.17.68 (S1)
+                    line(c, s, 0.62f, 0.14f, 0.86f, 0.38f)
+                    line(c, s, 0.62f, 0.14f, 0.14f, 0.62f)
+                    line(c, s, 0.86f, 0.38f, 0.38f, 0.86f)
+                    line(c, s, 0.14f, 0.62f, 0.1f, 0.9f)
+                    line(c, s, 0.1f, 0.9f, 0.38f, 0.86f)
+                }
+                "more" -> {   // v0.17.68 (S1)
+                    c.drawCircle(0.16f * s, 0.5f * s, 0.1f * s, f)
+                    c.drawCircle(0.5f * s, 0.5f * s, 0.1f * s, f)
+                    c.drawCircle(0.84f * s, 0.5f * s, 0.1f * s, f)
+                }
+                "up" -> {   // v0.17.68 (S1)
+                    line(c, s, 0.14f, 0.66f, 0.5f, 0.3f)
+                    line(c, s, 0.5f, 0.3f, 0.86f, 0.66f)
                 }
                 "space" -> {  // open bracket shape
                     val path = Path()

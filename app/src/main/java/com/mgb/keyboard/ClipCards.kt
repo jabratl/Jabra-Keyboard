@@ -232,6 +232,7 @@ object ClipCards {
             ck.text = if (picked) "☑" else "☐"
             ck.textSize = 18f
             ck.setTextColor(try { if (picked) JabraTokens.cardStroke(pf!!, true, false) else JabraTokens.onCardDim(pf!!) } catch (_: Throwable) { if (picked) Color.parseColor("#2F6FD0") else Color.DKGRAY })
+            Glyphs.dress(ck)   // v0.17.68 (S1): own drawn check box instead of the text sign
             ck.setPadding(dp(ctx, 8), 0, 0, 0)
             ck.layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, dp(ctx, 30))
             ck.gravity = Gravity.CENTER_VERTICAL
@@ -247,6 +248,7 @@ object ClipCards {
                 tag.text = "★ Pinned"
                 tag.textSize = 11f
                 tag.setTextColor(try { JabraTokens.onCardDim(pf!!) } catch (_: Throwable) { Color.DKGRAY })
+                Glyphs.dress(tag)   // v0.17.68 (S1): own drawn pin instead of the star
                 tag.setPadding(0, 0, dp(ctx, 8), 0)
                 bar.addView(tag)
             }

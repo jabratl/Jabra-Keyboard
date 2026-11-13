@@ -1386,7 +1386,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
                 pasteItem(item, false)   // v0.17.37 (M4); v0.17.41 (M8): plain or with format (ClipPasteMode)
             }
         }
-        val t = btn(prefix + item.text.replace("\n", " ⏎ "), 1f, rowH) { act() }
+        val t = btn(prefix + Glyphs.KEEP + item.text.replace("\n", " ⏎ "), 1f, rowH) { act() }   // v0.17.68 (S1): KEEP = clip text is never turned into an icon
         if (picked) t.setBackgroundColor(try { JabraTokens.rowPicked(pf) } catch (_: Throwable) { Color.parseColor("#CFE0F5") })
         val held = ClipHold.attach(t, clipHoldMs(), selOn, { sel.enterWith(item); confirmDel = false; refresh() }, { act() }, { try { host.feedback(t) } catch (_: Throwable) { } })   // v0.16.16 (E2): hold = select mode
         if (!held) t.setOnLongClickListener {   // v0.2.5.3: long-press = select mode with this clip selected (old way, used when clip_hold = System)
