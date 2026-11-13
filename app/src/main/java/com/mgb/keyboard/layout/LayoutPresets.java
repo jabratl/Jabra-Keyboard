@@ -12,14 +12,15 @@ import java.util.List;
 public final class LayoutPresets {
     private LayoutPresets() { }
 
-    public static final int COUNT = 5;
-    private static final String[] TITLES = { "Classic (today)", "Ridmik-like + Tab", "Coder", "Big keys", "Bangla fast" };
+    public static final int COUNT = 6;   // v0.17.23 (L5c): + Ridmik symbols
+    private static final String[] TITLES = { "Classic (today)", "Ridmik-like + Tab", "Coder", "Big keys", "Bangla fast", "Ridmik symbols" };
     private static final String[] NOTES = {
             "Exactly today's keyboard (default settings).",
             "Ridmik-style bottom row (wide ?123 and Enter) and a Tab key next to the comma.",
             "No number row, Tab key, swipe DOWN on a / z / x / c / v = Select all / Undo / Cut / Copy / Paste.",
             "All rows 25 % taller, easier to hit.",
-            "Bangla (fixed) gets one extra row: danda, taka and the Bangla digits 0-9." };
+            "Bangla (fixed) gets one extra row: danda, taka and the Bangla digits 0-9.",
+            "Symbols page 1 like Ridmik: Tab ~ \\ < > _ = [ ] / @ # taka % & * - + ( ) / ! \" ' : ; / ?. Letters unchanged." };   // v0.17.23 (L5c)
 
     public static String title(int i) { return i >= 0 && i < COUNT ? TITLES[i] : ""; }
 
@@ -35,6 +36,7 @@ public final class LayoutPresets {
                 case 1: m = ridmik(); break;
                 case 2: m = coder(); break;
                 case 3: m = big(); break;
+                case 5: m = ridmikSymbols(); break;   // v0.17.23 (L5c)
                 default: m = banglaFast(); break;
             }
             if (m == null || LayoutOps.valid(m) != null || LayoutOps.fatal(m).size() > 0) return null;
@@ -90,6 +92,40 @@ public final class LayoutPresets {
         for (int i = 0; i < signs.length; i++) r.keys.add(KeyDef.ch("pb_f" + (i + 1), signs[i], 1f));
         pb.rows.add(pb.rows.size() - 1, r);   // before the shared bottom row
         return LayoutOps.normalize(m);
+    }
+
+    /** v0.17.23 (L5c): symbols page 1 in the Ridmik order (video reference): [Tab ~ \\ < > _ = [ ]] / [@ # taka % & * - + ( )] / [page ! " ' : ; / ? backspace]. Letters, bottom row and pages 2 / 3 stay as in the default. */
+    private static LayoutDef ridmikSymbols() {
+        LayoutDef m = LayoutDefaults.build().copy();
+        LayerDef s1 = m.layer("s1");
+        if (s1 == null || s1.rows.size() < 3) return null;
+        List<KeyDef> r1 = s1.rows.get(0).keys;
+        r1.clear();
+        KeyDef tab = KeyDef.act("s1_tab", "tab", 1f);
+        tab.label[0] = "Tab";
+        r1.add(tab);
+        String[] a = { "~", "\\", "<", ">", "_", "=", "[", "]" };
+        for (int i = 0; i < a.length; i++) r1.add(KeyDef.ch("s1_r1_" + (i + 2), a[i], 1f));
+        String[] b = { "@", "#", "\u09F3", "%", "&", "*", "-", "+", "(", ")" };
+        if (!setChars(s1.rows.get(1).keys, b)) return null;
+        String[] c = { "!", "\"", "'", ":", ";", "/", "?" };
+        List<KeyDef> r3 = s1.rows.get(2).keys;
+        int n = 0;
+        for (KeyDef k : r3) if (k.kind == KeyDef.CHAR) n++;
+        if (n != c.length) return null;
+        int j = 0;
+        for (KeyDef k : r3) if (k.kind == KeyDef.CHAR) { k.out[0] = c[j]; k.label[0] = ""; j++; }
+        return LayoutOps.normalize(m);
+    }
+
+    /** Sets the output of the CHAR keys of a row in order (false when the count differs). */
+    private static boolean setChars(List<KeyDef> keys, String[] outs) {
+        int n = 0;
+        for (KeyDef k : keys) if (k.kind == KeyDef.CHAR) n++;
+        if (n != outs.length) return false;
+        int j = 0;
+        for (KeyDef k : keys) if (k.kind == KeyDef.CHAR) { k.out[0] = outs[j]; k.label[0] = ""; j++; }
+        return true;
     }
 
     /** A Tab key (action "tab") before the comma of the shared bottom row; the space bar gives up the same width (never below 2). */

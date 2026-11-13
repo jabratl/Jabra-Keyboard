@@ -1,3 +1,12 @@
+v0.17.23 - NEW (L5c): preset "Ridmik symbols" (symbols page 1 in the Ridmik order)
+- WHY: plan L5c. The user's Ridmik reference (video) has symbol page 1 = [Tab ~ \\ < > _ = [ ]] / [@ # taka % & * - + ( )] / [page ! " ' : ; / ? backspace]. The default symbols page is different.
+- What you get: Editor > Presets > 6th item "Ridmik symbols". It is saved as a NEW named layout (an existing layout is never overwritten). Symbols page 1 shows the Ridmik order with a Tab key at the start of row 1 (uses the L5b.1 Tab key). Letters, bottom row, symbol pages 2 and 3 are exactly the default. Turn Custom keyboard ON to see it.
+- Code: layout/LayoutPresets.java (COUNT 5 -> 6, TITLES / NOTES, case 5, ridmikSymbols, setChars), tools/LayoutPresetsTest.java (counts 6, 7 new checks, helper same / sig). No Kotlin change (the preset list in the editor reads COUNT), no format, no pref change.
+- BROKE: nothing known. Presets 0 - 4 unchanged.
+- TESTED here: javac of ALL app Java (works in the sandbox through java -m jdk.compiler/com.sun.tools.javac.Main) + LayoutPresetsTest 145, ActionPlanTest 72, LayoutCheckTest 81, LayoutBookTest 73, LayoutCodecTest 79, LayoutDefaultsTest 98 all green. Rest left to CI.
+- NOT tested: NOT phone-tested (CHECKLIST Z121). Kotlin of v0.17.21 / v0.17.22 still NOT compiled.
+- Rollback: delete the saved layout "Ridmik symbols", or push the v0.17.22 LayoutPresets.java + LayoutPresetsTest.java back.
+
 v0.17.22 - NEW (L5b.2): long-press options bar + swipe texts on the keys of the symbols panel (custom keyboard)
 - WHY: plan L5b.2. Character keys on symbol pages (layers s1 - s3) only had a plain tap; the long-press / swipe / options fields set in the editor worked on the letter rows only.
 - What you get: custom keyboard ON. Editor > symbol page > select a key > "Long-press options" / long-press text / swipe texts. In the symbols panel: hold = text, or a slide-to-pick bar when 2 or more options; swipe up / down / left / right = that text; a text starting with @ (@tab, @undo, @paste ...) runs the action. Short tap = the symbol as before. Keys without any of these have no new listener = unchanged.

@@ -23,10 +23,10 @@ public class LayoutPresetsTest {
     }
 
     public static void main(String[] a) {
-        t("5 presets", LayoutPresets.COUNT == 5);
-        t("title out of range", LayoutPresets.title(-1).equals("") && LayoutPresets.title(5).equals(""));
+        t("6 presets", LayoutPresets.COUNT == 6);
+        t("title out of range", LayoutPresets.title(-1).equals("") && LayoutPresets.title(6).equals(""));
         t("note out of range", LayoutPresets.note(99).equals(""));
-        t("build out of range = null", LayoutPresets.build(-1) == null && LayoutPresets.build(5) == null && LayoutPresets.text(7) == null);
+        t("build out of range = null", LayoutPresets.build(-1) == null && LayoutPresets.build(6) == null && LayoutPresets.text(7) == null);
         Set<String> names = new HashSet<String>();
         for (int i = 0; i < LayoutPresets.COUNT; i++) {
             String ti = LayoutPresets.title(i);
@@ -98,8 +98,39 @@ public class LayoutPresetsTest {
         t("headerName leading blank lines", LayoutBook.headerName("\n JKL1 abc\nL en").equals("") || LayoutBook.headerName("\n JKL1 abc\nL en").equals("abc"));
         t("named text passes gate", LayoutGuard.gate(named).ok());
         t("named text in a book", LayoutBook.empty().saveAs("X", named).textOf("X").equals(named));
+        // v0.17.23 (L5c) ridmik symbols
+        LayoutDef rs = LayoutPresets.build(5);
+        LayoutDef dd = LayoutDefaults.build();
+        t("rsym: title", LayoutPresets.title(5).equals("Ridmik symbols"));
+        t("rsym: tab key first on s1", key(rs, "s1_tab") != null && key(rs, "s1_tab").action.equals("tab") && rs.layer("s1").rows.get(0).keys.get(0).id.equals("s1_tab"));
+        StringBuilder r1 = new StringBuilder();
+        for (KeyDef k : rs.layer("s1").rows.get(0).keys) if (k.kind == KeyDef.CHAR) r1.append(k.out[0]);
+        t("rsym: row 1 = ~ \\ < > _ = [ ]", r1.toString().equals("~\\<>_=[]"));
+        StringBuilder r2 = new StringBuilder();
+        for (KeyDef k : rs.layer("s1").rows.get(1).keys) r2.append(k.out[0]);
+        t("rsym: row 2 = @ # taka % & * - + ( )", r2.toString().equals("@#\u09F3%&*-+()"));
+        StringBuilder r3 = new StringBuilder();
+        for (KeyDef k : rs.layer("s1").rows.get(2).keys) if (k.kind == KeyDef.CHAR) r3.append(k.out[0]);
+        t("rsym: row 3 = ! \" ' : ; / ?", r3.toString().equals("!\"':;/?"));
+        t("rsym: page key + backspace kept", key(rs, "s1_page") != null && key(rs, "s1_bksp") != null && key(rs, "s1_abc") != null);
+        t("rsym: pages 2 / 3, letters, bottom row unchanged", same(rs.layer("s2"), dd.layer("s2")) && same(rs.layer("s3"), dd.layer("s3")) && same(rs.layer("en"), dd.layer("en")) && same(rs.layer("bot"), dd.layer("bot")));
         System.out.println("LayoutPresetsTest: " + ok + " ok, " + bad + " bad");
         if (bad > 0) System.exit(1);
+    }
+
+    /** v0.17.23: layers have no equals(): compare id / kind / outputs / action / weight / height of every key. */
+    static boolean same(LayerDef a, LayerDef b) {
+        if (a == null || b == null) return a == b;
+        return sig(a).equals(sig(b));
+    }
+
+    static String sig(LayerDef l) {
+        StringBuilder sb = new StringBuilder();
+        for (RowDef r : l.rows) {
+            sb.append('|').append(r.heightPct);
+            for (KeyDef k : r.keys) sb.append(',').append(k.id).append(':').append(k.kind).append(':').append(k.out[0]).append(':').append(k.action).append(':').append(k.weight);
+        }
+        return sb.toString();
     }
 
     static boolean noCode(LayoutDef m, String code) {

@@ -894,3 +894,8 @@ Z120 (v0.17.22, L5b.2: long-press options + swipe on the symbols panel)
  [ ] 3. Give a symbol key a swipe-up text "!": swipe up on it = "!" typed, no tap. A text "@paste" runs paste.
  [ ] 4. Top row of the symbols panel: the bar stays visible. Keys without extras, page key, backspace, enter work as before. Classic panels unchanged.
 
+Z121 (v0.17.23, L5c: preset "Ridmik symbols")
+ [ ] 1. App > Layout & Size > Edit layout > Presets: 6 items, the last = "Ridmik symbols". Pick it: a NEW saved layout appears (your old layouts stay).
+ [ ] 2. Custom keyboard ON, press ?123: row 1 = Tab ~ \\ < > _ = [ ], row 2 = @ # taka % & * - + ( ), row 3 = page key, ! " ' : ; / ?, backspace.
+ [ ] 3. Tap Tab (in Termux or a browser): Tab is sent. Letters, bottom row, symbol pages 2 and 3 look as before. Switch back to your old layout: nothing changed.
+
