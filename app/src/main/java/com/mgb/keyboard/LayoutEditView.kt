@@ -25,6 +25,9 @@ class LayoutEditView(ctx: Context) : View(ctx) {
     var selectedId: String = ""
         set(v) { field = v; announce(); invalidate() }
     var onSelect: ((String) -> Unit)? = null
+    /** v0.17.10 (K7): keys that belong to a warning get the orange (warn) outline; the selected key keeps the accent outline. */
+    var warnIds: Set<String> = emptySet()
+        set(v) { field = v; invalidate() }
 
     private val d = ctx.resources.displayMetrics.density
     private val sp = ctx.resources.displayMetrics.scaledDensity
@@ -87,8 +90,9 @@ class LayoutEditView(ctx: Context) : View(ctx) {
                     fill.style = Paint.Style.FILL
                     fill.color = if (k.kind == KeyDef.ACTION) fnFill else keyFill
                     c.drawRoundRect(rect, 6f * d, 6f * d, fill)
-                    line.style = Paint.Style.STROKE; line.strokeWidth = (if (sel) 2.5f else 1f) * d
-                    line.color = if (sel) acc else edge
+                    val wn = !sel && warnIds.contains(k.id)
+                    line.style = Paint.Style.STROKE; line.strokeWidth = (if (sel) 2.5f else if (wn) 2f else 1f) * d
+                    line.color = if (sel) acc else if (wn) AppUi.warn(context) else edge
                     c.drawRoundRect(rect, 6f * d, 6f * d, line)
                     val label = LayoutEditPlan.shownLabel(k, shift)
                     if (label.isNotEmpty()) {
