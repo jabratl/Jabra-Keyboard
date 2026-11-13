@@ -3,6 +3,7 @@ package com.mgb.keyboard
 import android.content.Context
 import android.os.Handler
 import android.os.Looper
+import com.mgb.keyboard.layout.LayoutBook
 import com.mgb.keyboard.layout.LayoutCodec
 import com.mgb.keyboard.layout.LayoutDef
 import com.mgb.keyboard.layout.LayoutDefaults
@@ -20,6 +21,8 @@ object LayoutStore {
     private const val K_GOOD = "good_v1"
     private const val K_SAFE = "safe_n"
     private const val K_BUILT = "built_v"      // v0.17.6: version stamp of a layout built from the settings (see LayoutRoute.needsRebuild)
+    private const val K_BOOK = "book_v1"       // v0.17.13 (K9): all named layouts (LayoutBook text)
+    private const val K_ACTIVE = "active"      // v0.17.13 (K9): name of the active saved layout
     private const val K_EDITED = "edited"      // v0.17.6: set by the editor (K6) so a user's own layout is never rebuilt
 
     @Volatile private var cacheText: String? = null
@@ -140,5 +143,132 @@ object LayoutStore {
         if (!LayoutGuard.customOn(prefs.int("kb_custom", 0))) return "Custom layout: off (classic keyboard)"
         val m = load(ctx, prefs)
         return if (m != null) "Custom layout: OK" else "Custom layout invalid, classic keyboard used (" + lastProblem + ")"
+    }
+
+    // ---------- v0.17.13 (K9): named layouts, import / export, backup pack ----------
+    private fun putBook(ctx: Context, b: LayoutBook) { sp(ctx).edit().putString(K_BOOK, b.encode()).putString(K_ACTIVE, b.active()).apply() }
+
+    /** All saved named layouts (never null). */
+    fun book(ctx: Context): LayoutBook = try { LayoutBook.decode(sp(ctx).getString(K_BOOK, null)) } catch (_: Throwable) { LayoutBook.empty() }
+
+    /** The active layout text when it passes the load gate, else null. */
+    fun currentText(ctx: Context): String? = try {
+        val t = sp(ctx).getString(K_LAYOUT, null)
+        if (LayoutGuard.gate(t).ok()) t else null
+    } catch (_: Throwable) { null }
+
+    /** True when the active layout differs from the saved copy under the active name (or has no name): switching would lose edits. */
+    fun hasUnsavedChanges(ctx: Context): Boolean = try {
+        val b = book(ctx)
+        val cur = sp(ctx).getString(K_LAYOUT, null) ?: ""
+        b.active().isEmpty() || b.textOf(b.active()) != cur
+    } catch (_: Throwable) { true }
+
+    /** Saves the active layout under [name] (same name = replaces that one) and makes it the active name. "" = done, else the reason. */
+    fun saveCurrentAs(ctx: Context, name: String): String {
+        try {
+            val text = currentText(ctx) ?: return "the current layout is not valid"
+            val b = book(ctx)
+            val why = b.saveProblem(name, text)
+            if (why.isNotEmpty()) return why
+            putBook(ctx, b.saveAs(name, text))
+            return ""
+        } catch (_: Throwable) { return "could not save" }
+    }
+
+    /** Makes the saved layout [name] the active layout (checked by the load gate first). "" = done, else the reason. */
+    fun switchTo(ctx: Context, name: String): String {
+        try {
+            val b = book(ctx)
+            if (!b.has(name)) return "no such saved layout"
+            val text = b.textOf(name)
+            if (!LayoutGuard.gate(text).ok()) return "that saved layout is damaged"
+            sp(ctx).edit().putString(K_LAYOUT, text).putString(K_GOOD, text).putInt(K_BUILT, LayoutRoute.BUILT_VERSION).putBoolean(K_EDITED, true).putInt(K_SAFE, 0).apply()
+            putBook(ctx, b.setActive(name))
+            cacheText = null; cacheModel = null; lastProblem = ""
+            return ""
+        } catch (_: Throwable) { return "could not switch" }
+    }
+
+    fun renameSaved(ctx: Context, old: String, new: String): String {
+        try {
+            val b = book(ctx)
+            val nb = b.rename(old, new)
+            if (nb === b) return if (LayoutBook.cleanName(new).isEmpty()) "type a name" else "that name is taken"
+            putBook(ctx, nb); return ""
+        } catch (_: Throwable) { return "could not rename" }
+    }
+
+    fun duplicateSaved(ctx: Context, name: String): String {
+        try {
+            val b = book(ctx)
+            val nb = b.duplicate(name)
+            if (nb === b) return "could not duplicate (at most " + LayoutBook.MAX_LAYOUTS + " layouts)"
+            putBook(ctx, nb); return ""
+        } catch (_: Throwable) { return "could not duplicate" }
+    }
+
+    fun deleteSaved(ctx: Context, name: String): String {
+        try {
+            val b = book(ctx)
+            val nb = b.delete(name)
+            if (nb === b) return "no such saved layout"
+            putBook(ctx, nb); return ""
+        } catch (_: Throwable) { return "could not delete" }
+    }
+
+    /** Export = the active layout as text (for the clipboard), or null. */
+    fun exportText(ctx: Context): String? = currentText(ctx)
+
+    /** Import: [text] must pass the load gate; it is added as a NEW saved layout [name] (same name = replaced); the active layout is NOT changed. "" = done. */
+    fun importText(ctx: Context, text: String?, name: String): String {
+        try {
+            val t = text?.trim() ?: ""
+            if (t.isEmpty()) return "the clipboard has no text"
+            val g = LayoutGuard.gate(t)
+            if (!g.ok()) return "not a valid layout (" + g.reason + ")"
+            val b = book(ctx)
+            val why = b.saveProblem(name, t)
+            if (why.isNotEmpty()) return why
+            putBook(ctx, b.add(name, t))
+            return ""
+        } catch (_: Throwable) { return "could not import" }
+    }
+
+    /** Backup: the data of file jabra_layouts as one text (LayoutBook.pack), or null when nothing is saved. */
+    fun packForBackup(ctx: Context): String? = try {
+        val s = sp(ctx)
+        val kv = LinkedHashMap<String, String>()
+        s.getString(K_LAYOUT, null)?.let { kv[K_LAYOUT] = it }
+        s.getString(K_BOOK, null)?.let { kv[K_BOOK] = it }
+        s.getString(K_ACTIVE, null)?.let { kv[K_ACTIVE] = it }
+        kv[K_EDITED] = if (s.getBoolean(K_EDITED, false)) "1" else "0"
+        kv[K_BUILT] = s.getInt(K_BUILT, 0).toString()
+        if (kv.containsKey(K_LAYOUT) || kv.containsKey(K_BOOK)) LayoutBook.pack(kv) else null
+    } catch (_: Throwable) { null }
+
+    /** Restore: every layout goes through the load gate, invalid ones are dropped. Returns "" or a short note. */
+    fun restorePack(ctx: Context, text: String): String {
+        try {
+            val kv = LayoutBook.unpack(text) ?: return ""
+            var note = ""
+            val e = sp(ctx).edit()
+            val cur = kv[K_LAYOUT]
+            if (cur != null) {
+                if (LayoutGuard.gate(cur).ok()) {
+                    e.putString(K_LAYOUT, cur).putString(K_GOOD, cur).putInt(K_BUILT, LayoutRoute.BUILT_VERSION).putBoolean(K_EDITED, kv[K_EDITED] == "1").putInt(K_SAFE, 0)
+                } else note = " The saved keyboard layout was damaged and was not restored."
+            }
+            val bt = kv[K_BOOK]
+            if (bt != null) {
+                val full = LayoutBook.decode(bt)
+                val clean = full.dropInvalid()
+                e.putString(K_BOOK, clean.encode()).putString(K_ACTIVE, clean.active())
+                if (clean.size() < full.size()) note += " " + (full.size() - clean.size()) + " damaged saved layout(s) were dropped."
+            }
+            e.apply()
+            cacheText = null; cacheModel = null; lastProblem = ""
+            return note
+        } catch (_: Throwable) { return "" }
     }
 }

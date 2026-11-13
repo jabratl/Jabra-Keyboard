@@ -817,3 +817,13 @@ Z110. v0.17.12 (K8) layout editor: number row, bottom row, symbol pages, functio
  [ ] Symbols 1 tab: change one symbol, make one key empty, widen one key. Open ?123 on the keyboard: the panel shows the change. Gear and 123 keys still work.
  [ ] Page key (=<) goes to page 2 / 3 and back; ABC returns to the letters.
  [ ] Custom keyboard OFF: ?123 panel is exactly the old one.
+
+Z111. v0.17.13 (K9) saved layouts (NOT phone-tested)
+ [ ] Editor > "Saved layouts" card shows "Active layout: not saved under a name (0 saved)".
+ [ ] Save as... "Work": status shows Work (1 saved). Change a key, Save as... "Work" again: asks Replace.
+ [ ] Save as "Other", Switch... to Work: editor reopens with the Work layout (asks first if the current one is unsaved).
+ [ ] Rename Other > "Test"; Duplicate Test > "Test 2"; Delete Test 2 (asks).
+ [ ] Export (copy), paste into a note: long text starting with a layout. Import (paste) as "Imported": saved, NOT switched. Switch to it: works.
+ [ ] Copy some normal text (not a layout), Import: refused with a message, nothing changes.
+ [ ] Reset to default: asks, then the classic keyboard layout is back; saved layouts are still listed.
+ [ ] Data backup, then change/delete layouts, then Restore: saved layouts and the active layout come back.

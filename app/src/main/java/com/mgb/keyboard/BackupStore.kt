@@ -23,6 +23,7 @@ import java.util.Locale
  */
 object BackupStore {
     /** Extra data files (filesDir) included in a backup when they exist. New stores add their name here. */
+    private const val LAYOUTS_NAME = "layouts_v1.txt"   // v0.17.13 (K9): virtual backup file (not in BackupPlan.FILES: it is not a filesDir file)
     private val FILES = BackupPlan.FILES   // v0.10.7: vault_v1.json, profiles_v1.json, learn_v1.txt (list lives in typing/BackupPlan.java)
     private const val DIR = "backups"
 
@@ -49,6 +50,7 @@ object BackupStore {
         for ((k, v) in sp(ctx).all) if (v != null && !isSkipped(k)) prefs[k] = v
         val files = LinkedHashMap<String, String>()
         for (n in FILES) { val f = File(ctx.filesDir, n); if (f.exists()) read(f)?.let { files[n] = it } }
+        try { LayoutStore.packForBackup(ctx)?.let { files[LAYOUTS_NAME] = it } } catch (_: Throwable) { }   // v0.17.13 (K9): the layouts live in prefs file jabra_layouts, packed as one text
         BackupCodec.build(prefs, files, BuildConfig.VERSION_NAME, System.currentTimeMillis())
     } catch (_: Throwable) { null }
 
@@ -133,11 +135,13 @@ object BackupStore {
                 }
             }
             if (!e.commit()) return "Restore failed while saving settings. A safety copy exists."
+            var layoutNote = ""
             for ((n, t) in BackupCodec.files(text)) {
+                if (n == LAYOUTS_NAME) { layoutNote = LayoutStore.restorePack(ctx, t); continue }   // v0.17.13 (K9)
                 if (n !in FILES) continue
                 if (!write(File(ctx.filesDir, n), t)) return "Restore: file $n could not be saved. A safety copy exists."
             }
-            return "Restored. Close and reopen the keyboard."
+            return "Restored. Close and reopen the keyboard." + layoutNote
         } catch (_: Throwable) { return "Restore failed. A safety copy may exist." }
     }
 

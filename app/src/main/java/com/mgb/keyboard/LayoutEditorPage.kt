@@ -66,6 +66,7 @@ class LayoutEditorPage(private val act: Activity, private val prefs: JabraPrefs,
     private var warnBox: LinearLayout? = null
     private var chipTitle: TextView? = null
     private var chipBox: LinearLayout? = null
+    private var layoutsNote: TextView? = null          // v0.17.13 (K9)
     private var after = ""                           // message for the note after a structure change (or the reason of a refusal)
 
     private fun dp(v: Int) = (v * act.resources.displayMetrics.density).toInt()
@@ -141,6 +142,8 @@ class LayoutEditorPage(private val act: Activity, private val prefs: JabraPrefs,
             col.addView(off)
             col.addView(btn("Turn the custom keyboard ON") { prefs.setInt("kb_custom", 1); off.text = "Custom keyboard is ON. Reopen the keyboard to see your layout." })
         }
+
+        layoutsCard(dlg, col, ink, dim)   // v0.17.13 (K9)
 
         // layer tabs
         val tabRow = LinearLayout(act)
@@ -295,6 +298,138 @@ class LayoutEditorPage(private val act: Activity, private val prefs: JabraPrefs,
         finish(dlg, root, col)
         dlg.setOnDismissListener { try { flushPending() } catch (_: Throwable) { }; try { onClose() } catch (_: Throwable) { } }
         selectTab(0)
+    }
+
+
+    // ---------- v0.17.13 (K9): saved layouts, export / import, reset ----------
+    private fun reopen(dlg: Dialog) { dlg.dismiss(); LayoutEditorPage(act, prefs, onClose).show() }
+
+    private fun askName(title: String, initial: String, onOk: (String) -> Unit) {
+        val et = EditText(act)
+        et.setText(initial); et.setSelection(et.text.length)
+        et.setSingleLine(true)
+        et.filters = arrayOf(InputFilter.LengthFilter(com.mgb.keyboard.layout.LayoutBook.MAX_NAME))
+        AlertDialog.Builder(act).setTitle(title).setView(et)
+            .setPositiveButton("OK") { _, _ -> onOk(et.text.toString()) }
+            .setNegativeButton("Cancel", null).show()
+    }
+
+    private fun sure(title: String, msg: String, yes: String, onYes: () -> Unit) {
+        AlertDialog.Builder(act).setTitle(title).setMessage(msg)
+            .setPositiveButton(yes) { _, _ -> onYes() }
+            .setNegativeButton("Cancel", null).show()
+    }
+
+    private fun savedNames(): Array<String> = LayoutStore.book(act).names().toTypedArray()
+
+    private fun pickSaved(title: String, onPick: (String) -> Unit) {
+        val names = savedNames()
+        if (names.isEmpty()) { say("No saved layouts yet. Use Save as first.", true); return }
+        AlertDialog.Builder(act).setTitle(title).setItems(names) { _, i -> onPick(names[i]) }
+            .setNegativeButton("Cancel", null).show()
+    }
+
+    private fun say(msg: String, warn: Boolean) {
+        layoutsNote?.setTextColor(if (warn) AppUi.warn(act) else AppUi.dim(act))
+        layoutsNote?.text = msg
+    }
+
+    private fun layoutsStatus() {
+        val b = LayoutStore.book(act)
+        val a = b.active()
+        layoutsNote?.setTextColor(AppUi.dim(act))
+        layoutsNote?.text = (if (a.isEmpty()) "Active layout: not saved under a name" else "Active layout: " + a) + " (" + b.size() + " saved)"
+    }
+
+    private fun layoutsCard(dlg: Dialog, col: LinearLayout, ink: Int, dim: Int) {
+        val card = LinearLayout(act)
+        card.orientation = LinearLayout.VERTICAL
+        card.setPadding(dp(AppTokens.S3), dp(AppTokens.S2), dp(AppTokens.S3), dp(AppTokens.S2))
+        try { card.background = AppUi.cardBg(act, 12) } catch (_: Throwable) { }
+        card.addView(txt("Saved layouts", 14f, ink, true))
+        val nt = txt("", 12f, dim)
+        layoutsNote = nt
+        card.addView(nt)
+        addRowOf(card,
+            mini("Save as...") {
+                flushPending()
+                askName("Save current layout as", LayoutStore.book(act).let { b -> if (b.active().isNotEmpty()) b.active() else b.uniqueName("My layout") }) { nm ->
+                    val b = LayoutStore.book(act)
+                    val doSave = {
+                        val r = LayoutStore.saveCurrentAs(act, nm)
+                        if (r.isEmpty()) layoutsStatus() else say("Not saved: $r", true)
+                    }
+                    if (b.has(nm)) sure("Replace \"" + nm + "\"?", "A saved layout with this name exists. It will be replaced by the current layout.", "Replace") { doSave() } else doSave()
+                }
+            },
+            mini("Switch...") {
+                flushPending()
+                pickSaved("Switch to") { nm ->
+                    val go = {
+                        val r = LayoutStore.switchTo(act, nm)
+                        if (r.isEmpty()) reopen(dlg) else say("Not switched: $r", true)
+                    }
+                    if (LayoutStore.hasUnsavedChanges(act)) sure("Switch to \"" + nm + "\"?", "Your current layout is not saved under its name, so switching replaces it. Use Save as first to keep it.", "Switch") { go() } else go()
+                }
+            },
+            mini("Rename...") {
+                pickSaved("Rename which layout?") { old ->
+                    askName("New name for \"" + old + "\"", old) { nn ->
+                        val r = LayoutStore.renameSaved(act, old, nn)
+                        if (r.isEmpty()) layoutsStatus() else say("Not renamed: $r", true)
+                    }
+                }
+            })
+        addRowOf(card,
+            mini("Duplicate...") {
+                pickSaved("Duplicate which layout?") { nm ->
+                    val r = LayoutStore.duplicateSaved(act, nm)
+                    if (r.isEmpty()) layoutsStatus() else say("Not duplicated: $r", true)
+                }
+            },
+            mini("Delete...") {
+                pickSaved("Delete which layout?") { nm ->
+                    sure("Delete \"" + nm + "\"?", "The saved copy is removed. Your active layout stays as it is.", "Delete") {
+                        val r = LayoutStore.deleteSaved(act, nm)
+                        if (r.isEmpty()) layoutsStatus() else say("Not deleted: $r", true)
+                    }
+                }
+            })
+        addRowOf(card,
+            mini("Export (copy)") {
+                flushPending()
+                val t = LayoutStore.exportText(act)
+                if (t == null) say("Nothing to export: the layout is not valid.", true) else try {
+                    val cm = act.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                    cm.setPrimaryClip(android.content.ClipData.newPlainText("Jabra layout", t))
+                    say("Layout copied (" + t.length + " characters). Paste it into a note to keep it.", false)
+                } catch (_: Throwable) { say("Could not copy.", true) }
+            },
+            mini("Import (paste)") {
+                flushPending()
+                val txtIn = try {
+                    val cm = act.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                    cm.primaryClip?.takeIf { it.itemCount > 0 }?.getItemAt(0)?.coerceToText(act)?.toString()
+                } catch (_: Throwable) { null }
+                if (txtIn.isNullOrBlank()) { say("The clipboard has no text. Copy an exported layout first.", true); return@mini }
+                val chk = com.mgb.keyboard.layout.LayoutGuard.gate(txtIn.trim())
+                if (!chk.ok()) { say("Not imported: not a valid layout (" + chk.reason + ").", true); return@mini }
+                askName("Import as", LayoutStore.book(act).uniqueName("Imported")) { nm ->
+                    val b = LayoutStore.book(act)
+                    val doIt = {
+                        val r = LayoutStore.importText(act, txtIn, nm)
+                        if (r.isEmpty()) { layoutsStatus(); layoutsNote?.append(". Imported as \"" + nm + "\". Use Switch to use it.") } else say("Not imported: $r", true)
+                    }
+                    if (b.has(nm)) sure("Replace \"" + nm + "\"?", "A saved layout with this name exists. It will be replaced by the imported one.", "Replace") { doIt() } else doIt()
+                }
+            },
+            mini("Reset to default") {
+                sure("Reset the layout?", "The active layout becomes today's classic keyboard again (built from your settings). Saved layouts stay.", "Reset") {
+                    if (LayoutStore.rebuildFromSettings(act, prefs)) reopen(dlg) else say("Could not reset.", true)
+                }
+            })
+        col.addView(card, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
+        layoutsStatus()
     }
 
     private fun finish(dlg: Dialog, root: LinearLayout, col: LinearLayout) {

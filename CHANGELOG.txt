@@ -1,3 +1,13 @@
+v0.17.13 - NEW (K9, plan K): saved layouts, export / import, reset, backup of the layouts
+- WHY: step 9. You can keep several keyboard layouts under names, move one to another phone as text, and a backup now keeps them.
+- What you get (editor > new card "Saved layouts"): Save as... (name, same name = replace after a "Replace" question) | Switch... (asks first when your current layout is not saved under a name) | Rename... | Duplicate... | Delete... (asks) | Export (copies the active layout text to the clipboard) | Import (paste) (reads the clipboard, checks it, saves it as a NEW named layout, does NOT switch; a broken text is refused with a message) | Reset to default (asks; saved layouts stay). Up to 12 layouts, names up to 24 letters.
+- Backup / restore: the layouts (active layout, all saved ones, active name) are inside every data backup (virtual file layouts_v1.txt). Restore checks every layout and drops damaged ones with a message.
+- NOT built (moved on): Health-check line "Custom layout: OK" (the app page already shows the status line), search entry for the editor, presets gallery + test pad (K9b), per-language layout sets.
+- Code: layout/LayoutBook.java (new, pure) + tools/LayoutBookTest.java (73 checks); LayoutStore.kt (book, saveCurrentAs, switchTo, rename / duplicate / delete, importText, exportText, packForBackup, restorePack); BackupStore.kt (2 hooks); LayoutEditorPage.kt (card).
+- BROKE: nothing known.
+- TESTED here: javac of all app Java + LayoutBookTest 73 green + LayoutEditPlanTest 193 green. Kotlin NOT compiled; NOT phone-tested.
+- Rollback: put back LayoutEditorPage.kt, LayoutStore.kt, BackupStore.kt of v0.17.12 and delete layout/LayoutBook.java + tools/LayoutBookTest.java.
+
 v0.17.12 - NEW (K8, plan K): number row, bottom row and symbol pages in the layout editor + function-key picker; the symbols panel follows your layout
 - WHY: step 8. You can now edit every row of the keyboard from the app, not only the letter rows.
 - What you get: (1) editor tabs (scroll sideways): English, Avro, Probhat, Numbers, Bottom row, Symbols 1-3. (2) Button "Function key": turns the selected key into Tab, Undo, Redo, Clipboard, Emoji, Globe, Voice, Language, Comma, Period, ?123 / ABC, Shift, Backspace, Enter or Space (one undo step). To remove the "?" key: Bottom row tab > tap it > Delete. (3) With the custom keyboard ON the symbols panel is drawn from layers s1-s3 of your layout (chars, empty spots, widths, row heights, function keys). The gear and 123 keys stay (added after the first key of the last row). Old panel = fallback if anything is wrong.
