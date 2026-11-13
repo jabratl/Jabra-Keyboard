@@ -211,6 +211,30 @@ public final class LayoutBook {
         } catch (Throwable t) { return empty(); }
     }
 
+    // ---------- v0.17.14 (K9b): "JKL1 <name>" header so a pasted layout is recognisable ----------
+    /** Layout text with the header line "JKL1 <name>" (the codec ignores what follows JKL1). Not a JKL1 text / no usable name = unchanged. */
+    public static String withName(String text, String name) {
+        try {
+            String n = cleanName(name);
+            if (text == null || n.length() == 0 || !text.startsWith(LayoutCodec.HEADER)) return text;
+            int nl = text.indexOf('\n');
+            String rest = nl < 0 ? "" : text.substring(nl);
+            return LayoutCodec.HEADER + " " + n + rest;
+        } catch (Throwable t) { return text; }
+    }
+
+    /** The name in the header line of a layout text ("JKL1 My layout"), or "" when there is none. */
+    public static String headerName(String text) {
+        try {
+            if (text == null) return "";
+            String t = text.trim();
+            if (!t.startsWith(LayoutCodec.HEADER)) return "";
+            int nl = t.indexOf('\n');
+            String first = nl < 0 ? t : t.substring(0, nl);
+            return cleanName(first.substring(LayoutCodec.HEADER.length()));
+        } catch (Throwable t) { return ""; }
+    }
+
     // ---------- backup pack ----------
     /** Pack of the jabra_layouts keys (only PACK_KEYS, null values skipped). */
     public static String pack(Map<String, String> kv) {

@@ -144,6 +144,8 @@ class LayoutEditorPage(private val act: Activity, private val prefs: JabraPrefs,
         }
 
         layoutsCard(dlg, col, ink, dim)   // v0.17.13 (K9)
+        try { presetsCard(dlg, col, ink, dim) } catch (_: Throwable) { }   // v0.17.14 (K9b)
+        try { testPadCard(col, ink, dim) } catch (_: Throwable) { }        // v0.17.14 (K9b)
 
         // layer tabs
         val tabRow = LinearLayout(act)
@@ -414,7 +416,8 @@ class LayoutEditorPage(private val act: Activity, private val prefs: JabraPrefs,
                 if (txtIn.isNullOrBlank()) { say("The clipboard has no text. Copy an exported layout first.", true); return@mini }
                 val chk = com.mgb.keyboard.layout.LayoutGuard.gate(txtIn.trim())
                 if (!chk.ok()) { say("Not imported: not a valid layout (" + chk.reason + ").", true); return@mini }
-                askName("Import as", LayoutStore.book(act).uniqueName("Imported")) { nm ->
+                val hdr = com.mgb.keyboard.layout.LayoutBook.headerName(txtIn)   // v0.17.14: name from the "JKL1 <name>" header
+                askName("Import as", LayoutStore.book(act).uniqueName(if (hdr.isNotEmpty()) hdr else "Imported")) { nm ->
                     val b = LayoutStore.book(act)
                     val doIt = {
                         val r = LayoutStore.importText(act, txtIn, nm)
@@ -430,6 +433,68 @@ class LayoutEditorPage(private val act: Activity, private val prefs: JabraPrefs,
             })
         col.addView(card, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
         layoutsStatus()
+    }
+
+    // ---------- v0.17.14 (K9b): presets gallery + test pad ----------
+    private fun presetsCard(dlg: Dialog, col: LinearLayout, ink: Int, dim: Int) {
+        val card = LinearLayout(act)
+        card.orientation = LinearLayout.VERTICAL
+        card.setPadding(dp(AppTokens.S3), dp(AppTokens.S2), dp(AppTokens.S3), dp(AppTokens.S2))
+        try { card.background = AppUi.cardBg(act, 12) } catch (_: Throwable) { }
+        card.addView(txt("Presets", 14f, ink, true))
+        card.addView(txt("Ready layouts to start from. A preset is added as a NEW saved layout; nothing is overwritten and your active layout does not change until you switch.", 12f, dim))
+        val n = com.mgb.keyboard.layout.LayoutPresets.COUNT
+        val items = Array(n) { i -> com.mgb.keyboard.layout.LayoutPresets.title(i) + "\n" + com.mgb.keyboard.layout.LayoutPresets.note(i) }
+        addRowOf(card, mini("Choose a preset...") {
+            flushPending()
+            AlertDialog.Builder(act).setTitle("Add which preset?").setItems(items) { _, i ->
+                val nm = LayoutStore.book(act).uniqueName(com.mgb.keyboard.layout.LayoutPresets.title(i))
+                val r = LayoutStore.addPreset(act, i, nm)
+                if (r.isNotEmpty()) { say("Preset not added: $r", true); return@setItems }
+                layoutsStatus()
+                layoutsNote?.append(". Preset added as \"" + nm + "\".")
+                val go = {
+                    val s = LayoutStore.switchTo(act, nm)
+                    if (s.isEmpty()) reopen(dlg) else say("Not switched: $s", true)
+                }
+                AlertDialog.Builder(act).setTitle("Use \"" + nm + "\" now?")
+                    .setMessage(if (LayoutStore.hasUnsavedChanges(act)) "Your current layout is not saved under a name, so switching replaces it. Use Save as first to keep it." else "Your current layout stays saved. You can switch back any time with Switch...")
+                    .setPositiveButton("Switch now") { _, _ -> go() }
+                    .setNegativeButton("Later", null).show()
+            }.setNegativeButton("Cancel", null).show()
+        })
+        col.addView(card, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
+    }
+
+    private fun testPadCard(col: LinearLayout, ink: Int, dim: Int) {
+        val card = LinearLayout(act)
+        card.orientation = LinearLayout.VERTICAL
+        card.setPadding(dp(AppTokens.S3), dp(AppTokens.S2), dp(AppTokens.S3), dp(AppTokens.S2))
+        try { card.background = AppUi.cardBg(act, 12) } catch (_: Throwable) { }
+        card.addView(txt("Test pad", 14f, ink, true))
+        val note = txt("Type here with the real Jabra keyboard to try the active layout. Jabra must be your chosen keyboard and the custom keyboard must be ON.", 12f, dim)
+        card.addView(note)
+        val et = EditText(act)
+        et.hint = "Try here"
+        et.setTextColor(AppUi.text(act))
+        try { et.setHintTextColor(dim) } catch (_: Throwable) { }
+        et.minLines = 2
+        et.inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_MULTI_LINE
+        card.addView(et, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
+        addRowOf(card,
+            mini("Open test pad") {
+                flushPending()
+                if (prefs.int("kb_custom", 0) != 1) { note.setTextColor(AppUi.warn(act)); note.text = "The custom keyboard is OFF: the keyboard will not use this layout. Turn it ON above first." }
+                et.requestFocus()
+                Handler(Looper.getMainLooper()).postDelayed({
+                    try {
+                        val imm = act.getSystemService(android.content.Context.INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager
+                        imm.showSoftInput(et, android.view.inputmethod.InputMethodManager.SHOW_IMPLICIT)
+                    } catch (_: Throwable) { }
+                }, 150L)
+            },
+            mini("Clear") { et.setText("") })
+        col.addView(card, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
     }
 
     private fun finish(dlg: Dialog, root: LinearLayout, col: LinearLayout) {

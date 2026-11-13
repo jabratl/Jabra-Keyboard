@@ -827,3 +827,11 @@ Z111. v0.17.13 (K9) saved layouts (NOT phone-tested)
  [ ] Copy some normal text (not a layout), Import: refused with a message, nothing changes.
  [ ] Reset to default: asks, then the classic keyboard layout is back; saved layouts are still listed.
  [ ] Data backup, then change/delete layouts, then Restore: saved layouts and the active layout come back.
+
+Z112. v0.17.14 (K9b) presets + test pad (NOT phone-tested)
+ [ ] Editor > "Presets" card > Choose a preset...: pick "Coder": it is added as "Coder" (Saved layouts count +1), asks "Use it now?". Switch now: the editor reopens with no number row and a Tab key in the bottom row.
+ [ ] Open the keyboard: Coder shows no number row; Tab key types a tab; swipe DOWN on "v" pastes, on "z" undoes, on "c" copies.
+ [ ] "Ridmik-like + Tab": wide ?123 and Enter, Tab key before the comma, space bar still wide. "Big keys": all rows taller. "Bangla fast": switch to Bangla fixed (Probhat): extra row with danda, taka and digits above the bottom row.
+ [ ] Pick the same preset again: added as "Coder 2" (nothing replaced). Switch back to Classic (today) any time with Switch...
+ [ ] "Test pad" card: Open test pad shows the Jabra keyboard under the box; typing works with the active layout. With the custom keyboard OFF the card says so.
+ [ ] Export (copy), paste in a note: the first line is "JKL1 <name>". Import (paste): the name box is already filled with that name.

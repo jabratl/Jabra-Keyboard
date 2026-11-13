@@ -8,6 +8,7 @@ import com.mgb.keyboard.layout.LayoutCodec
 import com.mgb.keyboard.layout.LayoutDef
 import com.mgb.keyboard.layout.LayoutDefaults
 import com.mgb.keyboard.layout.LayoutGuard
+import com.mgb.keyboard.layout.LayoutPresets
 import com.mgb.keyboard.layout.LayoutRoute
 
 /**
@@ -217,8 +218,26 @@ object LayoutStore {
         } catch (_: Throwable) { return "could not delete" }
     }
 
-    /** Export = the active layout as text (for the clipboard), or null. */
-    fun exportText(ctx: Context): String? = currentText(ctx)
+    /** Export = the active layout as text (for the clipboard), or null. v0.17.14: header "JKL1 <active name>" when the layout has a name. */
+    fun exportText(ctx: Context): String? = try {
+        val t = currentText(ctx)
+        val n = book(ctx).active()
+        if (t != null && n.isNotEmpty()) LayoutBook.withName(t, n) else t
+    } catch (_: Throwable) { currentText(ctx) }
+
+    /** v0.17.14 (K9b): adds preset [i] as a NEW saved layout [name] (never replaces: a taken name is refused). The active layout is NOT changed. "" = done, else the reason. */
+    fun addPreset(ctx: Context, i: Int, name: String): String {
+        try {
+            val text = LayoutPresets.text(i) ?: return "that preset is not available"
+            if (!LayoutGuard.gate(text).ok()) return "that preset is not available"
+            val b = book(ctx)
+            if (b.has(name)) return "that name is taken"
+            val why = b.saveProblem(name, text)
+            if (why.isNotEmpty()) return why
+            putBook(ctx, b.add(name, text))
+            return ""
+        } catch (_: Throwable) { return "could not add the preset" }
+    }
 
     /** Import: [text] must pass the load gate; it is added as a NEW saved layout [name] (same name = replaced); the active layout is NOT changed. "" = done. */
     fun importText(ctx: Context, text: String?, name: String): String {
