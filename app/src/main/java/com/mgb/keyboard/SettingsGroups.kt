@@ -92,6 +92,7 @@ object SettingsGroups {
                 var any = false
                 for (i in 0 until bx.childCount) { val v = bx.getChildAt(i); if (v.tag != "secreset" && v.visibility == View.VISIBLE) any = true }   // v0.15.8: the reset button does not count as a row
                 hd.visibility = if (any) View.VISIBLE else View.GONE
+                bx.visibility = if (any) View.VISIBLE else View.GONE   // v0.18: no empty outlined card
                 for (i in 0 until bx.childCount) { val v = bx.getChildAt(i); if (v.tag == "secreset") v.visibility = if (any && !searchOn) View.VISIBLE else View.GONE }   // v0.15.8
             }
         }
@@ -419,6 +420,15 @@ object SettingsGroups {
                     val hd = AppRows.sectionHeader(ctx, sn)
                     val bx = LinearLayout(ctx)
                     bx.orientation = LinearLayout.VERTICAL
+                    try {   // v0.18 (easy browse): every section is one outlined card, so the rows of a section read as one block
+                        val dn = ctx.resources.displayMetrics.density
+                        val sg = android.graphics.drawable.GradientDrawable()
+                        sg.setColor(android.graphics.Color.TRANSPARENT)
+                        sg.cornerRadius = 12f * dn
+                        sg.setStroke(Math.max(1, dn.toInt()), (AppUi.dim(ctx) and 0x00FFFFFF) or 0x40000000)
+                        bx.background = sg
+                        bx.setPadding((12 * dn).toInt(), (4 * dn).toInt(), (12 * dn).toInt(), (8 * dn).toInt())
+                    } catch (_: Throwable) { }
                     body.addView(hd)
                     body.addView(bx)
                     secBoxes[sn] = bx

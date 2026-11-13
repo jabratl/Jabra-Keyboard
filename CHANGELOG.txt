@@ -1,3 +1,11 @@
+v0.17.25 - NEW (UI1): easier-to-browse app screen (look only, no setting changed)
+- WHY: the Home screen had two small tiles per row with cut-off summaries, Quick looks and the test field above the settings list, and plain section headings on the pages.
+- What you get: (1) Home order is now: setup card > Settings list > Customize Home > Quick looks > Try the keyboard. (2) The 7 pages are one full-width list row each: icon on a soft square, title, one-line summary, arrow. (3) Every settings section on a page is one outlined card (empty cards stay hidden, also while searching). (4) Page title bar: "< Home" link in the accent colour + thin line under the bar. (5) Quick look buttons, Undo and Customize Home use the same rounded button style as the rest of the app.
+- Code: AppHome.kt (order, list rows, styleAction on buttons), AppPages.kt (title bar, group heading gap), SettingsGroups.kt (section card background + secVis hides an empty card). No Java, no pref, no format change.
+- BROKE: nothing known.
+- NOT tested: Kotlin NOT compiled here (no kotlinc, no network; brackets balanced, API names checked by reading); NOT phone-tested.
+- Rollback: push the v0.17.24 AppHome.kt, AppPages.kt, SettingsGroups.kt back.
+
 v0.17.24 - NEW (L4): named custom themes ("Saved themes") in the app Theme Studio
 - WHY: plan L4. The custom theme had ONE slot (theme 21, pref ct_json): a new design overwrote the old one.
 - What you get: App > Look & Theme > Custom theme (Theme Studio), new block at the bottom "Saved themes (up to 12)": type a name + [Save as (name above)] keeps the colours of the editor under that name. Each saved theme has [Use] (switches the keyboard to it = writes ct_json and turns the custom theme ON), [Edit] (loads it into the editor, not saved yet), [Rename] (uses the name field) and [Delete] (two taps, "Sure?"). The one in use shows "(in use)". Same name = replaced. Backup / restore carry the list without any change.

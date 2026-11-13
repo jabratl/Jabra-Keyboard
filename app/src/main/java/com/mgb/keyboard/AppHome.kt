@@ -7,6 +7,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
 import android.widget.EditText
+import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ScrollView
@@ -76,12 +77,17 @@ object AppHome {
 
         try { if (setupCard != null) { (setupCard.parent as? ViewGroup)?.removeView(setupCard); col.addView(setupCard) } } catch (_: Throwable) { }   // ONE setup card (the 2 duplicate buttons are not in the new screen)
 
-        val test = EditText(act)
-        test.hint = "Type here to test the keyboard"
-        col.addView(test)
+        // ---- v0.18 (easy browse): the Settings list comes first, then Customize, then Quick looks, then the test field ----
+        col.addView(label(act, "Settings", dp(AppTokens.S4)))
+        val tilesBox = LinearLayout(act)
+        tilesBox.orientation = LinearLayout.VERTICAL
+        col.addView(tilesBox)
+        val customBox = LinearLayout(act)
+        customBox.orientation = LinearLayout.VERTICAL
+        col.addView(customBox)
 
         // ---- Quick looks ----
-        col.addView(label(act, "Quick looks", dp(AppTokens.S3)))
+        col.addView(label(act, "Quick looks", dp(AppTokens.S4)))
         val keys = EdgePlan.PRESET_KEYS
         fun curVals(): IntArray = IntArray(keys.size) { if (EdgePlan.isBool(it)) (if (prefs.bool(keys[it], false)) 1 else 0) else prefs.int(keys[it], -1) }
         fun write(v: IntArray) { for (i in keys.indices) { if (EdgePlan.isBool(i)) prefs.setBool(keys[i], v[i] == 1) else prefs.setInt(keys[i], v[i]) } }
@@ -97,6 +103,7 @@ object AppHome {
         undo.minimumHeight = dp(AppTokens.TOUCH)
         fun hasUndo(): Boolean = EdgePlan.decodeUpTo(prefs.str("geo_prev", ""), keys.size) != null
         undo.visibility = if (hasUndo()) View.VISIBLE else View.GONE
+        try { AppRows.styleAction(act, undo) } catch (_: Throwable) { }
 
         val tileSum = ArrayList<Pair<String, TextView>>()
         val tileViews = HashMap<String, View>()   // v0.13.0 (M3)
@@ -126,6 +133,7 @@ object AppHome {
             b.minWidth = 0
             b.minimumWidth = 0
             b.contentDescription = "Quick look: " + PagePlan.quickLabel(id)
+            try { AppRows.styleAction(act, b) } catch (_: Throwable) { }
             b.setOnClickListener {
                 try {
                     val old = curVals()
@@ -157,11 +165,12 @@ object AppHome {
         col.addView(undo)
         col.addView(note)
 
-        // ---- tiles: 2 columns; v0.15.0 (M5): own order + hidden tiles (PersonalPlan) ----
-        col.addView(label(act, "Settings", dp(AppTokens.S4)))
-        val tilesBox = LinearLayout(act)
-        tilesBox.orientation = LinearLayout.VERTICAL
-        col.addView(tilesBox)
+        col.addView(label(act, "Try the keyboard", dp(AppTokens.S4)))
+        val test = EditText(act)
+        test.hint = "Type here to test the keyboard"
+        col.addView(test)
+
+        // ---- tiles: one list row per page (icon, title, short summary, arrow); v0.15.0 (M5): own order + hidden tiles (PersonalPlan) ----
         var selectedId = ""
 
         fun select(id: String) {   // v0.13.0 (M3): two panes: the tile of the open page gets an accent frame
@@ -184,21 +193,24 @@ object AppHome {
             tileSum.clear()
             tileViews.clear()
             val ids = PersonalPlan.visible(prefs.str(PersonalPlan.PREF_ORDER, ""), prefs.str(PersonalPlan.PREF_HIDE, ""))
-            var rowBox: LinearLayout? = null
             for (i in ids.indices) {
                 val id = ids[i]
-                if (i % 2 == 0) {
-                    rowBox = LinearLayout(act)
-                    rowBox.orientation = LinearLayout.HORIZONTAL
-                    tilesBox.addView(rowBox)
-                }
                 val tile = LinearLayout(act)
-                tile.orientation = LinearLayout.VERTICAL
+                tile.orientation = LinearLayout.HORIZONTAL
+                tile.gravity = Gravity.CENTER_VERTICAL
                 tile.setPadding(dp(AppTokens.S3), dp(AppTokens.S3), dp(AppTokens.S3), dp(AppTokens.S3))
-                tile.minimumHeight = dp(104)
+                tile.minimumHeight = dp(72)
                 try { tile.background = AppUi.cardBg(act, 12) } catch (_: Throwable) { }
                 tile.isClickable = true
                 tile.isFocusable = true
+                // icon on a soft accent square
+                val chip = FrameLayout(act)
+                try {
+                    val cg = GradientDrawable()
+                    cg.setColor((AppUi.accent(act) and 0x00FFFFFF) or 0x26000000)
+                    cg.cornerRadius = dp(10).toFloat()
+                    chip.background = cg
+                } catch (_: Throwable) { }
                 val icon = Button(act)   // JabraIcons draws on a Button; here it is only a picture
                 icon.background = null
                 icon.minWidth = 0; icon.minimumWidth = 0; icon.minHeight = 0; icon.minimumHeight = 0
@@ -207,27 +219,42 @@ object AppHome {
                 icon.isFocusable = false
                 try { JabraIcons.apply(icon, PagePlan.icon(id), true, AppUi.accent(act)) } catch (_: Throwable) { }
                 icon.importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
-                tile.addView(icon, LinearLayout.LayoutParams(dp(32), dp(32)))
+                val ilp = FrameLayout.LayoutParams(dp(26), dp(26))
+                ilp.gravity = Gravity.CENTER
+                chip.addView(icon, ilp)
+                chip.importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+                tile.addView(chip, LinearLayout.LayoutParams(dp(44), dp(44)))
+                // title + one-line summary
+                val texts = LinearLayout(act)
+                texts.orientation = LinearLayout.VERTICAL
+                texts.setPadding(dp(AppTokens.S3), 0, dp(AppTokens.S2), 0)
                 val tt = TextView(act)
                 tt.text = PagePlan.title(id)
-                tt.textSize = 15f
+                tt.textSize = 16f
                 tt.setTypeface(null, Typeface.BOLD)
                 try { tt.setTextColor(AppUi.text(act)) } catch (_: Throwable) { }
-                tt.setPadding(0, dp(AppTokens.S2), 0, 0)
-                tile.addView(tt)
+                texts.addView(tt)
                 val sm = TextView(act)
-                sm.textSize = 12f
+                sm.textSize = 13f
                 try { sm.setTextColor(AppUi.dim(act)) } catch (_: Throwable) { }
                 sm.text = summary(act, prefs, id)
-                tile.addView(sm)
+                texts.addView(sm)
+                tile.addView(texts, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
+                // arrow
+                val arrow = TextView(act)
+                arrow.text = "\u203A"
+                arrow.textSize = 26f
+                try { arrow.setTextColor(AppUi.dim(act)) } catch (_: Throwable) { }
+                arrow.importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+                tile.addView(arrow)
                 tileSum.add(Pair(id, sm))
                 tile.contentDescription = PagePlan.title(id) + ". " + sm.text   // v0.13.0 (M3)
                 AppA11y.asButton(tile)
                 tileViews[id] = tile
                 tile.setOnClickListener { try { open(id) } catch (_: Throwable) { } }
-                val lp = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
-                lp.setMargins(dp(AppTokens.S1), dp(AppTokens.S1), dp(AppTokens.S1), dp(AppTokens.S1))
-                rowBox?.addView(tile, lp)
+                val lp = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+                lp.setMargins(0, dp(AppTokens.S1), 0, dp(AppTokens.S1))
+                tilesBox.addView(tile, lp)
             }
             if (selectedId.isNotEmpty()) select(selectedId)
         }
@@ -293,6 +320,7 @@ object AppHome {
         customBtn.text = "Customize Home"
         customBtn.minHeight = dp(AppTokens.TOUCH)
         customBtn.minimumHeight = dp(AppTokens.TOUCH)
+        try { AppRows.styleAction(act, customBtn) } catch (_: Throwable) { }
         customBtn.setOnClickListener {
             try {
                 val open2 = custom.visibility != View.VISIBLE
@@ -301,8 +329,8 @@ object AppHome {
                 customBtn.text = if (open2) "Done" else "Customize Home"
             } catch (_: Throwable) { }
         }
-        col.addView(customBtn)
-        col.addView(custom)
+        customBox.addView(customBtn)
+        customBox.addView(custom)
 
         try {   // v0.13.0 (M3): lists at the end; everything under the search box is hidden while a search text is typed
             if (search != null) {

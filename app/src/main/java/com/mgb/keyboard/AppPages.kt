@@ -191,8 +191,11 @@ class AppPages(private val act: SettingsActivity, private val sink: PageSink, pr
         bar.gravity = Gravity.CENTER_VERTICAL
         bar.setPadding(dp(AppTokens.S2), dp(AppTokens.S1), dp(AppTokens.S4), dp(AppTokens.S1))
         val backBtn = Button(act)
-        backBtn.text = "← Back"
+        backBtn.text = "\u2039 Home"
         backBtn.isAllCaps = false
+        backBtn.background = null
+        backBtn.stateListAnimator = null
+        try { backBtn.setTextColor(AppUi.accent(act)) } catch (_: Throwable) { }
         backBtn.minHeight = dp(AppTokens.TOUCH)
         backBtn.minimumHeight = dp(AppTokens.TOUCH)
         backBtn.contentDescription = "Back to home"
@@ -207,6 +210,11 @@ class AppPages(private val act: SettingsActivity, private val sink: PageSink, pr
         try { title.isAccessibilityHeading = true } catch (_: Throwable) { }
         bar.addView(title, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
         outer.addView(bar)
+        try {   // thin line under the title bar
+            val rule = View(act)
+            rule.setBackgroundColor((AppUi.dim(act) and 0x00FFFFFF) or 0x30000000)
+            outer.addView(rule, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(1)))
+        } catch (_: Throwable) { }
 
         val col = LinearLayout(act)
         col.orientation = LinearLayout.VERTICAL
@@ -243,7 +251,7 @@ class AppPages(private val act: SettingsActivity, private val sink: PageSink, pr
         t.textSize = 16f
         t.setTypeface(null, Typeface.BOLD)
         try { t.setTextColor(AppUi.accent(act)) } catch (_: Throwable) { }
-        t.setPadding(0, dp(AppTokens.S4), 0, dp(AppTokens.S1))
+        t.setPadding(0, dp(AppTokens.S4) + dp(AppTokens.S2), 0, dp(AppTokens.S1))
         try { t.isAccessibilityHeading = true } catch (_: Throwable) { }
         return t
     }
