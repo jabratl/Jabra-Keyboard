@@ -73,6 +73,29 @@ public class LayoutRouteTest {
         RowDef first = new RowDef();
         first.keys.add(KeyDef.ch("x", "a", 1f));
         t("mode key index 0 when first is a char", LayoutRoute.modeKeyIndex(first) == 0);
+        // v0.17.18 (L1): danda-dot rule
+        final String D = "\u0964";
+        t("default ON", LayoutRoute.DANDA_DEF);
+        t("rule needs ? key hidden", LayoutRoute.dandaDot(true, false) && !LayoutRoute.dandaDot(true, true) && !LayoutRoute.dandaDot(false, false));
+        t("classic tap bangla = danda", LayoutRoute.dotTap(true, true).equals(D));
+        t("classic tap english = dot", LayoutRoute.dotTap(true, false).equals("."));
+        t("classic tap rule off = dot", LayoutRoute.dotTap(false, true).equals("."));
+        t("classic long bangla rule on = dot", LayoutRoute.dotLong(true, true).equals("."));
+        t("classic long bangla rule off = danda (old)", LayoutRoute.dotLong(false, true).equals(D));
+        t("classic long english = ? (old)", LayoutRoute.dotLong(true, false).equals("?") && LayoutRoute.dotLong(false, false).equals("?"));
+        t("classic label", LayoutRoute.dotLabel(true, true).equals(D) && LayoutRoute.dotLabel(true, false).equals(".") && LayoutRoute.dotLabel(false, true).equals("."));
+        t("custom tap bangla", LayoutRoute.mapDot("b_period", ".", true, true).equals(D));
+        t("custom long bangla", LayoutRoute.mapDot("b_period", "?", true, true).equals("."));
+        t("custom english unchanged", LayoutRoute.mapDot("b_period", ".", false, true).equals(".") && LayoutRoute.mapDot("b_period", "?", false, true).equals("?"));
+        t("custom rule off = old mapQm", LayoutRoute.mapDot("b_period", "?", true, false).equals(D) && LayoutRoute.mapDot("b_period", ".", true, false).equals("."));
+        t("custom user text untouched", LayoutRoute.mapDot("b_period", ";", true, true).equals(";") && LayoutRoute.mapDot("b_period", D, true, true).equals(D));
+        t("custom other key untouched", LayoutRoute.mapDot("b_comma", ".", true, true).equals(".") && LayoutRoute.mapDot("b_qm", "?", true, true).equals(D));
+        t("custom null", LayoutRoute.mapDot("b_period", null, true, true).equals(""));
+        t("custom label", LayoutRoute.dotLabel("b_period", ".", true, true, true).equals(D) && LayoutRoute.dotLabel("b_period", ".", true, false, true).equals(".")
+                && LayoutRoute.dotLabel("b_qm", "?", true, true, true).equals(D) && LayoutRoute.dotLabel("b_comma", ",", true, true, true).equals(","));
+        // factory default layout really has the keys the rule looks for (b_period "." with long-press "?")
+        { LayoutDef dm = LayoutDefaults.build(); KeyDef pk = find(dm, "bot", "b_period");
+          t("default b_period is '.' + lp '?'", pk != null && pk.out[0].equals(".") && pk.lp.equals("?")); }
         System.out.println("LayoutRouteTest: " + ok + " ok, " + bad + " bad");
         if (bad > 0) System.exit(1);
     }

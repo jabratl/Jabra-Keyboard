@@ -160,6 +160,7 @@ public final class SettingsIndex {
             case "sp_anim": return "The language name slides with your finger on space. Needs Space swipe ON.";   // v0.17.2 (K2)
             case "kb_custom": return "Experimental: English letter rows from the saved layout. Off = the normal keyboard.";   // v0.17.5 (K5a.1)
             case "key_qm": return "Shows a ? key (Bangla: ।) before the dot. OFF = wider space; long-press the dot for it.";   // v0.17.1 (K1)
+            case "danda_key": return "Bangla: the dot key is ।, long-press gives the full stop. Needs the ? / । key hidden.";   // v0.17.18 (L1)
             case "key_emoji": return "Shows an emoji key next to the language key.";
             case "lp_delay": return "How long you must hold a key for a long-press.";
             case "cursor_speed": return "How fast the cursor moves when you drag on the space key.";

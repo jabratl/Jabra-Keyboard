@@ -67,6 +67,9 @@ class LayoutEditorPage(private val act: Activity, private val prefs: JabraPrefs,
     private var chipTitle: TextView? = null
     private var chipBox: LinearLayout? = null
     private var layoutsNote: TextView? = null          // v0.17.13 (K9)
+    private var statusHead: TextView? = null           // v0.17.18 (L2): "Current layout" bar
+    private var statusUse: TextView? = null
+    private var statusWarn: TextView? = null
     private var after = ""                           // message for the note after a structure change (or the reason of a refusal)
 
     private fun dp(v: Int) = (v * act.resources.displayMetrics.density).toInt()
@@ -143,6 +146,7 @@ class LayoutEditorPage(private val act: Activity, private val prefs: JabraPrefs,
             col.addView(btn("Turn the custom keyboard ON") { prefs.setInt("kb_custom", 1); off.text = "Custom keyboard is ON. Reopen the keyboard to see your layout." })
         }
 
+        try { statusCard(col, ink, dim) } catch (_: Throwable) { }   // v0.17.18 (L2)
         layoutsCard(dlg, col, ink, dim)   // v0.17.13 (K9)
         try { presetsCard(dlg, col, ink, dim) } catch (_: Throwable) { }   // v0.17.14 (K9b)
         try { rulesCard(col, ink, dim) } catch (_: Throwable) { }          // v0.17.17 (K13)
@@ -338,7 +342,50 @@ class LayoutEditorPage(private val act: Activity, private val prefs: JabraPrefs,
         layoutsNote?.text = msg
     }
 
+    // ---------- v0.17.18 (L2): "Current layout" bar: name, saved / unsaved, in use, one-tap Save, Save & use ----------
+    private fun statusCard(col: LinearLayout, ink: Int, dim: Int) {
+        val card = LinearLayout(act)
+        card.orientation = LinearLayout.VERTICAL
+        card.setPadding(dp(AppTokens.S3), dp(AppTokens.S2), dp(AppTokens.S3), dp(AppTokens.S2))
+        try { card.background = AppUi.cardBg(act, 12) } catch (_: Throwable) { }
+        card.addView(txt("Current layout", 12f, dim))
+        val hd = txt("", 16f, ink, true); statusHead = hd; card.addView(hd)
+        val us = txt("", 12f, dim); statusUse = us; card.addView(us)
+        val wn = txt("", 12f, AppUi.warn(act)); statusWarn = wn; card.addView(wn)
+        addRowOf(card,
+            mini("Save") {
+                flushPending()
+                val r = LayoutStore.saveActive(act)
+                if (r.isEmpty()) { layoutsStatus(); say("Saved as \"" + LayoutStore.book(act).active() + "\".", false) } else say("Not saved: $r", true)
+            },
+            mini("Save & use...") {
+                flushPending()
+                askName("Save and use as", com.mgb.keyboard.layout.LayoutStatus.suggestName(LayoutStore.book(act))) { nm ->
+                    val go = {
+                        val r = LayoutStore.saveAndUse(act, prefs, nm)
+                        if (r.isEmpty()) { layoutsStatus(); say("Saved as \"" + nm + "\" and in use. Open the keyboard to see it.", false) } else say("Not saved: $r", true)
+                    }
+                    if (LayoutStore.book(act).has(nm) && !nm.equals(LayoutStore.book(act).active(), ignoreCase = true))
+                        sure("Replace \"" + nm + "\"?", "A saved layout with this name exists. It will be replaced by the current layout.", "Replace") { go() } else go()
+                }
+            })
+        col.addView(card, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
+        statusRefresh()
+    }
+
+    private fun statusRefresh() {
+        try {
+            val b = LayoutStore.book(act)
+            statusHead?.text = com.mgb.keyboard.layout.LayoutStatus.headline(b.active(), LayoutStore.hasUnsavedChanges(act))
+            statusUse?.text = com.mgb.keyboard.layout.LayoutStatus.useLine(prefs.int("kb_custom", 0) == 1)
+            val w = com.mgb.keyboard.layout.LayoutStatus.ruleWarning(b.active(), LayoutStore.ruleNames(act))
+            statusWarn?.text = w
+            statusWarn?.visibility = if (w.isEmpty()) android.view.View.GONE else android.view.View.VISIBLE
+        } catch (_: Throwable) { }
+    }
+
     private fun layoutsStatus() {
+        statusRefresh()   // v0.17.18 (L2)
         val b = LayoutStore.book(act)
         val a = b.active()
         layoutsNote?.setTextColor(AppUi.dim(act))
@@ -904,6 +951,7 @@ class LayoutEditorPage(private val act: Activity, private val prefs: JabraPrefs,
     }
 
     private fun updateTitleAndWidth() {
+        statusRefresh()   // v0.17.18 (L2): every edit / undo ends here: "unsaved changes" shows at once
         val m = model
         val layer = LayoutEditPlan.editTabId(tab)
         val k = LayoutEditPlan.findKey(m, layer, selected)

@@ -234,6 +234,29 @@ object LayoutStore {
         } catch (_: Throwable) { return "could not save" }
     }
 
+    /** v0.17.18 (L2): one-tap Save = the active layout replaces its own saved copy (same name). "" = done, else the reason. */
+    fun saveActive(ctx: Context): String {
+        val a = try { book(ctx).active() } catch (_: Throwable) { "" }
+        if (!com.mgb.keyboard.layout.LayoutStatus.canQuickSave(a)) return "this layout has no name yet, use Save & use or Save as"
+        return saveCurrentAs(ctx, a)
+    }
+
+    /** v0.17.18 (L2): Save under [name] AND make sure the keyboard uses it (custom keyboard ON). "" = done, else the reason (nothing is switched on when the save fails). */
+    fun saveAndUse(ctx: Context, prefs: JabraPrefs, name: String): String {
+        val r = saveCurrentAs(ctx, name)
+        if (r.isNotEmpty()) return r
+        try { if (prefs.int("kb_custom", 0) != 1) prefs.setInt("kb_custom", 1) } catch (_: Throwable) { return "saved, but could not turn the custom keyboard on" }
+        return ""
+    }
+
+    /** v0.17.18 (L2): names the layout rules point at (for the "rules override your edits" warning). */
+    fun ruleNames(ctx: Context): List<String> = try {
+        val r = rules(ctx)
+        val l = ArrayList<String>()
+        for (i in 0 until r.size()) l.add(r.name(i))
+        l
+    } catch (_: Throwable) { emptyList() }
+
     /** Makes the saved layout [name] the active layout (checked by the load gate first). "" = done, else the reason. */
     fun switchTo(ctx: Context, name: String): String {
         try {

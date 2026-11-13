@@ -44,7 +44,7 @@ public final class ProfileCodec {
         "nr_hpct:i", "nr_mode:i", "nr_chars:s",   // v0.16.7
         "panel_ui:i",   // v0.16.9
         "clip_hold:i",   // v0.16.16 (E2)
-        "key_qm:b",   // v0.17.1 (K1)
+        "key_qm:b", "danda_key:b",   // v0.17.1 (K1); v0.17.18 (L1)
         "sp_wpct:i", "sp_hpct:i", "sp_anim:b",   // v0.17.2 (K2)
         "kb_custom:i"   // v0.17.5 (K5a.1)
     };

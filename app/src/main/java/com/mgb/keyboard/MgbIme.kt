@@ -66,6 +66,9 @@ class MgbIme : InputMethodService() {
     private var langBtn: Button? = null
     private var spaceBtn: Button? = null   // v0.8.9: space key (shows the language name when space_lang is ON)
     private var dandaBtn: Button? = null
+    private var periodBtn: Button? = null   // v0.17.18 (L1): classic dot key (label follows the danda-dot rule)
+    /** v0.17.18 (L1): Bangla dot key = danda, long-press = full stop (pref danda_key, default ON; off while the separate ? / danda key is shown). */
+    private fun dandaDot(): Boolean = try { com.mgb.keyboard.layout.LayoutRoute.dandaDot(prefs.bool("danda_key", com.mgb.keyboard.layout.LayoutRoute.DANDA_DEF), prefs.bool("key_qm", false)) } catch (_: Throwable) { false }
 
     // v0.0.4 Probhat + v0.0.5 extras state (all new; old fields untouched)
     private var probhat = false                // prefs key "bn_layout" = "probhat"
@@ -579,7 +582,7 @@ class MgbIme : InputMethodService() {
             if (layer == "nr" || layer == "bot") {   // v0.17.6: number row / bottom row = finish the word, then type (same as the classic keys)
                 commitWord()
                 val o = k.out[0]
-                val t = if (layer == "nr") numCustom(o) else com.mgb.keyboard.layout.LayoutRoute.mapQm(k.id, o, bangla && !latinOnly)
+                val t = if (layer == "nr") numCustom(o) else com.mgb.keyboard.layout.LayoutRoute.mapDot(k.id, o, bangla && !latinOnly, dandaDot())
                 if (t.isNotEmpty()) typeText(t)
                 return
             }
@@ -597,11 +600,11 @@ class MgbIme : InputMethodService() {
         }
         override fun typeExtra(k: com.mgb.keyboard.layout.KeyDef, s: String) {
             if (s.startsWith("@")) { atAction(s); return }
-            commitWord(); typeText(com.mgb.keyboard.layout.LayoutRoute.mapQm(k.id, s, bangla && !latinOnly))
+            commitWord(); typeText(com.mgb.keyboard.layout.LayoutRoute.mapDot(k.id, s, bangla && !latinOnly, dandaDot()))
         }
         override fun dynLabel(k: com.mgb.keyboard.layout.KeyDef, layer: String, base: String): String {
             if (layer == "nr") return if (com.mgb.keyboard.layout.LayoutRoute.isDigit(base)) numDigit(base[0]) else base
-            if (layer == "bot") return com.mgb.keyboard.layout.LayoutRoute.qmLabel(k.id, base, bangla)
+            if (layer == "bot") return com.mgb.keyboard.layout.LayoutRoute.dotLabel(k.id, base, bangla, bangla && !latinOnly, dandaDot())   // v0.17.18 (L1)
             return base
         }
         override fun actionKey(k: com.mgb.keyboard.layout.KeyDef, pct: Int): Button? {
@@ -780,6 +783,7 @@ class MgbIme : InputMethodService() {
         langBtn?.text = langLabel()
         try { if (prefs.bool("space_lang", false)) { spaceBtn?.text = com.mgb.keyboard.typing.LangSwipe.spaceLabel(bangla, probhat); spaceBtn?.contentDescription = com.mgb.keyboard.typing.KeyDesc.spaceDesc(spaceBtn?.text?.toString()) } } catch (_: Throwable) { }   // v0.8.9; v0.10.20 spoken name
         dandaBtn?.text = if (bangla) "।" else "?"
+        try { val pb = periodBtn; if (pb != null) { val t = com.mgb.keyboard.layout.LayoutRoute.dotLabel(dandaDot(), bangla && !latinOnly); pb.text = t; val d = com.mgb.keyboard.typing.KeyDesc.describe(t); if (d != null) pb.contentDescription = d } } catch (_: Throwable) { }   // v0.17.18 (L1)
         refreshLetters()
         try { container?.post { checkRule() } } catch (_: Throwable) { }   // v0.17.17 (K13): a language rule may pick another layout (posted: never rebuild under a finger)
     }
@@ -1365,8 +1369,9 @@ class MgbIme : InputMethodService() {
             dandaBtn = db
             r4.addView(db)
         } else dandaBtn = null   // forget the key of an earlier build (applyLang uses dandaBtn?.)
-        val periodKey = key(".", 1f) { commitWord(); typeText(".") }
-        if (!qmShown) { try { JabraLongPress.attach(periodKey, prefs) { commitWord(); typeText(if (bangla && !latinOnly) "।" else "?") } } catch (_: Throwable) { } }   // v0.17.1 (K1): long-press "." = "?" (Bangla: "।"; password / email / URL fields: always "?", same rule as the old key)
+        val periodKey = key(com.mgb.keyboard.layout.LayoutRoute.dotLabel(dandaDot(), bangla && !latinOnly), 1f) { commitWord(); typeText(com.mgb.keyboard.layout.LayoutRoute.dotTap(dandaDot(), bangla && !latinOnly)) }   // v0.17.18 (L1): danda-dot rule (default ON); OFF = exactly the old key
+        periodBtn = periodKey
+        if (!qmShown) { try { JabraLongPress.attach(periodKey, prefs) { commitWord(); typeText(com.mgb.keyboard.layout.LayoutRoute.dotLong(dandaDot(), bangla && !latinOnly)) } } catch (_: Throwable) { } }   // v0.17.1 (K1); v0.17.18 (L1): rule ON + Bangla = long-press gives the full stop: long-press "." = "?" (Bangla: "।"; password / email / URL fields: always "?", same rule as the old key)
         r4.addView(periodKey)
         r4.addView(fn(JabraIcons.putThemed(this, key("⏎", com.mgb.keyboard.typing.BottomPlan.enterWeight(bst)) { commitWord(); doEnter() }, "enter")))   // v0.0.7 + v0.0.9
         try {   // v0.10.27: Ridmik-like bottom row: space takes what is left, so the row stays as wide as before (old style = space 4, nothing changes)

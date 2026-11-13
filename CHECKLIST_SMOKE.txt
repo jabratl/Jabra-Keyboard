@@ -42,7 +42,7 @@ G. PLAN X (X1 - X13)                                                   [Z85 - Z9
  [ ] 21. After steps 16 - 20: type English + Bangla in a real app again: typing, backspace, clipboard paste feel as before.
 
 H. PLAN K = KEYBOARD LAYOUT EDITOR (K1 - K9b)                          [Z100 - Z112]
- [ ] 22. (K1) Bottom row has NO "?" key. Hold "." : "?" appears (Bangla: danda). Space bar is wider than before.
+ [ ] 22. (K1, L1) Bottom row has NO "?" key. English: hold "." = "?". Bangla: the dot key shows "।", tap = "।", hold = ".". Setting "Bangla: । on the dot key" OFF = old behaviour (hold = danda). Password field: "." and hold "?". Space bar is wider than before.
  [ ] 23. (K2) Space bar width / height settings change the bar; swiping on the space bar changes the language smoothly.
  [ ] 24. (K5) App > Layout & Size > Custom keyboard: turn ON. Type English, Bangla Avro and Bangla fixed: the keys look and type as before. Turn OFF: classic keyboard again.
  [ ] 25. (K6, K7) Open the layout editor: tap a key, change its letter and width, give a swipe. Two keys with the same letter get an orange outline + a warning; tap Fix. Undo / Redo work.
@@ -53,3 +53,5 @@ H. PLAN K = KEYBOARD LAYOUT EDITOR (K1 - K9b)                          [Z100 - Z
  [ ] 30. After 22 - 29: type English + Bangla in a real app: typing, backspace, clipboard paste feel as before.
  [ ] 31. (K11a) Editor: hold a key, drag it onto another key: swap (middle) or insert (edge). Undo works.
  [ ] 32. (K13) Editor > card "Layout rules": add an App rule (e.g. com.termux) with a saved layout: that app shows it, other apps keep the normal layout. Remove the rule: back to normal.
+ [ ] 33. (L2) Editor top card "Current layout": shows the name + saved / unsaved after each edit. Save = one tap. Save & use... with the custom keyboard OFF turns it ON; open the keyboard: the layout is used. Add a layout rule to another layout: the orange warning appears.
+ [ ] 34. (L1 custom) Custom keyboard ON, Bangla Avro / Probhat: the dot key is "।", hold = ".". Edit the b_period key text yourself: your text is typed as you wrote it.

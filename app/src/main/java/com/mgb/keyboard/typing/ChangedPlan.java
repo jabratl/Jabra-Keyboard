@@ -74,7 +74,7 @@ public final class ChangedPlan {
             if (in(key, "haptic", "fb_down", "haptic_native", "sound")) return "Feedback";
             if (in(key, "key_popup", "pop_ref", "pop_fast")) return "Popup";
             if (in(key, "learn_on", "sp_punct", "ac_on", "sg_on", "ap_on", "qa_on")) return "Smart typing";
-            if (in(key, "h_lock", "key_globe", "key_voice", "key_emoji", "key_qm")) return "Extra keys";
+            if (in(key, "h_lock", "key_globe", "key_voice", "key_emoji", "key_qm", "danda_key")) return "Extra keys";
             if (in(key, "lp_delay", "cursor_speed")) return "Timing";
         } else if (group.equals("Typing")) {   // v0.15.3 (N3)
             if (in(key, "bs_repeat", "bs_word", "autocap", "enter_action")) return "Editing";

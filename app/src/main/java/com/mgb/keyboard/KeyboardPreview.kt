@@ -185,7 +185,7 @@ object KeyboardPreview {
         val spW = try { com.mgb.keyboard.typing.SpacePlan.spaceWeight(spBase, p.int("sp_wpct", 100), spOthers, 1f, ctx.resources.displayMetrics.widthPixels / d - 2f * edgeDp) } catch (_: Throwable) { spBase }   // v0.17.2 (K2): same width rule as the real keyboard
         r4.addView(key(spaceLabel, spW, 2, hB))
         if (qmShown) r4.addView(key(if (probhat) "\u0964" else "?", 1f, 0, hB))   // v0.17.1 (K1): follows the setting key_qm (default hidden)
-        r4.addView(key(".", 1f, 0, hB))
+        r4.addView(key(com.mgb.keyboard.layout.LayoutRoute.dotLabel(com.mgb.keyboard.layout.LayoutRoute.dandaDot(p.bool("danda_key", com.mgb.keyboard.layout.LayoutRoute.DANDA_DEF), qmShown), probhat), 1f, 0, hB))   // v0.17.18 (L1)
         val en = key("\u23CE", BottomPlan.enterWeight(bst), 1, hB)
         try { JabraIcons.putThemed(ctx, en, "enter") } catch (_: Throwable) { }
         r4.addView(en)

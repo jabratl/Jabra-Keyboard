@@ -42,6 +42,45 @@ public final class LayoutRoute {
         return label == null ? "" : label;
     }
 
+    // ---------- v0.17.18 (L1): "danda dot" = the dot key follows the Ridmik rule in Bangla ----------
+    /** Default of pref danda_key (ON: Bangla dot key = danda, long-press = full stop). One place, so every reader agrees. */
+    public static final boolean DANDA_DEF = true;
+    private static final String DANDA = "\u0964";
+
+    /** The rule is on only when the pref is on AND the separate "?" / danda key is hidden (else the danda would be there twice). */
+    public static boolean dandaDot(boolean pref, boolean qmShown) { return pref && !qmShown; }
+
+    /** Text typed by a TAP on the classic dot key. [banglaActive] = Bangla on and the field is not latinOnly. */
+    public static String dotTap(boolean dandaDot, boolean banglaActive) { return dandaDot && banglaActive ? DANDA : "."; }
+
+    /** Text typed by a LONG-PRESS on the classic dot key: rule ON + Bangla = full stop; old rule = danda in Bangla, "?" otherwise. */
+    public static String dotLong(boolean dandaDot, boolean banglaActive) {
+        if (banglaActive) return dandaDot ? "." : DANDA;
+        return "?";
+    }
+
+    /** Label of the dot key for the classic row. */
+    public static String dotLabel(boolean dandaDot, boolean banglaActive) { return dotTap(dandaDot, banglaActive); }
+
+    /**
+     * Custom layout: like {@link #mapQm}, plus the danda-dot rule for key b_period. Only the factory texts are mapped
+     * ("." -> danda, long-press "?" -> "."); a text the user typed into the editor (anything else) is never touched.
+     */
+    public static String mapDot(String keyId, String text, boolean banglaActive, boolean dandaDot) {
+        if (text == null) return "";
+        if (dandaDot && banglaActive && "b_period".equals(keyId)) {
+            if (".".equals(text)) return DANDA;
+            if ("?".equals(text)) return ".";
+        }
+        return mapQm(keyId, text, banglaActive);
+    }
+
+    /** Custom layout label: danda-dot rule for b_period, else the old {@link #qmLabel}. */
+    public static String dotLabel(String keyId, String label, boolean bangla, boolean banglaActive, boolean dandaDot) {
+        if (dandaDot && banglaActive && "b_period".equals(keyId) && ".".equals(label)) return DANDA;
+        return qmLabel(keyId, label, bangla);
+    }
+
     /** Number row: a single Latin digit may be shown / typed as a Bangla digit (pref numrow_bn); anything else stays. [shown] = the text the classic number row would use. */
     public static boolean isDigit(String out) {
         return out != null && out.length() == 1 && out.charAt(0) >= '0' && out.charAt(0) <= '9';

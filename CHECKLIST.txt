@@ -858,3 +858,11 @@ Z115. v0.17.17 (K13) layout rules per language / screen / app (NOT phone-tested)
  6. Tap a rule in the list = removed. Rename a saved layout: its rules follow. Delete a saved layout: its rules vanish. Remove all (Sure?) works.
  7. Custom keyboard OFF = rules do nothing. No rules = nothing changes. Backup + restore keeps the rules.
  8. Symbols panel (?123) shows the symbols of the SAME layout the letters use. Password field (English forced) uses the English-language rule.
+
+Z116. v0.17.18 (L1 danda dot key + L2 Current layout bar) (NOT phone-tested)
+ 1. Update the app. App > Keys & gestures: row "Bangla: । on the dot key" is ON. Switch to Bangla (Avro): the dot key shows "।", tap types "।", hold types ".". Probhat: same.
+ 2. English: dot key "." and hold "?" as before. Password / email field while Bangla is selected: "." and hold "?".
+ 3. Switch the setting OFF: Bangla dot key is "." again and hold gives "।" (old). Switch "Show ? / । key" ON: the rule is off by itself, the separate danda key is there.
+ 4. Custom keyboard ON: Bangla dot key = "।" too. Edit the dot key (editor > Bottom row) to ";": it types ";" in every language.
+ 5. Editor > top card "Current layout": name + "saved". Change a key: "unsaved changes". Save: "saved". Save & use...: with the custom keyboard OFF it turns ON; open the keyboard to see the layout.
+ 6. Layout rules > add a rule that uses another saved layout: the orange warning shows on the top card.
