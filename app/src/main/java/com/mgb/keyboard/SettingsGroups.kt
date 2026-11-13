@@ -544,6 +544,7 @@ object SettingsGroups {
             toggle(g, "PC shortcut chips", "pc_chips", true)   // v0.17.51 (PC3): chips + More + Num row (PC rows as layout keys only)
             textRow(g, "PC shortcut chips list", "pc_chips_list", "up to 5, e.g. Ctrl+A,Ctrl+Shift+Z,Alt+F4",   // v0.17.51 (PC3)
                 { com.mgb.keyboard.typing.PcChord.parseList(it, com.mgb.keyboard.typing.PcChord.MAX_CHIPS).joinToString(",") { c -> c.text() } }, "No valid shortcut found")
+            if (sink != null) { try { val kt = PcTestPage.button(ctx); kt.tag = "secreset"; g.addView(kt) } catch (_: Throwable) { } }   // v0.17.52 (PC4): key test page button (new app screen only)
         }
 
         group("Typing") { g ->

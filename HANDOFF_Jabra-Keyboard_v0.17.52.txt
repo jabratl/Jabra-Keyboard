@@ -1,0 +1,22 @@
+HANDOFF Jabra-Keyboard v0.17.52 (PC4 done = PC plan PC1-PC4 complete)  -  paste this at the start of the next chat
+
+DONE LIST
+- P1-P5 v0.17.44-48 | PC1 v0.17.49 (real modifiers, hold-repeat, guard) | PC2 v0.17.50 (PC layer) | PC3 v0.17.51 (chips, More, Num) | PC4 v0.17.52 (key test page, this step)
+- Current version: v0.17.52. Kotlin NEVER compiled yet; nothing phone-tested for v0.17.44-52.
+
+WHAT CHANGED (file: 1 line each)
+- typing/PcLog.java (NEW): memory ring of 20 lines, privacy gate (records only while the page is open), key names, sent / got / hold line formats, self-test results + summary.
+- PcTestPage.kt (NEW): full-screen "PC key test" page (test box, sent / got log, Run self-test, Clear, Copy summary) + object PcSelfTest (runs Left Right Home End Ctrl+A Ctrl+C+V in the page's own box and reads it back).
+- MgbIme.kt: pcSend + pcHoldStart log lines; PcSelfTest.run set in onCreate / cleared in onDestroy; pcSelfTest() only runs when the open field is this app's own box.
+- SettingsGroups.kt: button "PC key test" under the PC chips settings.
+- tools/PcLogTest.java (NEW, 29 checks). app/build.gradle.kts: 0.17.52. InputSafe.kt NOT changed (plan said "return detail": not needed).
+
+CHECKS DONE: bash tools/run_tests.sh = 125/125 green; bracket balance of PcTestPage.kt, MgbIme.kt, SettingsGroups.kt OK.
+
+NOT TESTED (needs real use)
+- Kotlin compile of ALL v0.17.44-52 (build error log -> FIX mode first).
+- Phone: key test page (look, keyboard open, "got" lines arrive, self-test timing 150 ms, Copy summary, close drops log). Plus the v0.17.49 / 50 / 51 lists.
+- Known gaps: layout EDITOR does not show the pc layer; PC keys have no popup bubble; chip labels refresh only after a keyboard rebuild; the page tests only its own box.
+
+NEXT: send the Gradle build error log if the build fails (FIX mode). If green: phone-test everything above. Then decide PC5 (Bluetooth HID, separate, needs new permissions: ASK first) or polish (pc layer in layout editor, PC key bubble, live chip labels).
+Start line for the next chat: "FIX: build error log" or "PC5 / polish decide".

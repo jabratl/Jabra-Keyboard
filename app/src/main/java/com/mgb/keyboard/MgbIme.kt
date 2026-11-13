@@ -245,6 +245,7 @@ class MgbIme : InputMethodService() {
         try { bangla = getSharedPreferences("jabra", MODE_PRIVATE).getBoolean("bangla", false) } catch (_: Throwable) { }
         try { probhat = prefs.str("bn_layout", "avro") == "probhat" } catch (_: Throwable) { probhat = false }
         try { EmojiStore.preload(this) } catch (_: Throwable) { }   // v0.8.1: load the emoji file once, in the background
+        try { PcSelfTest.run = { pcSelfTest() } } catch (_: Throwable) { }   // v0.17.52 (PC4)
         // v0.0.6: listen to copy events (only text, only while this keyboard service lives)
         try {
             val cm = getSystemService(CLIPBOARD_SERVICE) as ClipboardManager
@@ -254,7 +255,16 @@ class MgbIme : InputMethodService() {
         } catch (_: Throwable) { }
     }
 
+    /** v0.17.52 (PC4): key test page self-test. Runs ONLY when the open field belongs to this app (the page's own box). */
+    private fun pcSelfTest() {
+        try {
+            if (currentInputEditorInfo?.packageName != packageName) { com.mgb.keyboard.typing.PcLog.add("self-test: tap the test box of the PC key test page first (it only runs there)"); return }
+            PcSelfTest.execute(currentInputConnection, prefs.bool("pc_real_mods", true))
+        } catch (_: Throwable) { }
+    }
+
     override fun onDestroy() {
+        try { PcSelfTest.run = null } catch (_: Throwable) { }   // v0.17.52 (PC4)
         try {
             val l = clipListener
             if (l != null) (getSystemService(CLIPBOARD_SERVICE) as ClipboardManager).removePrimaryClipChangedListener(l)
@@ -989,7 +999,8 @@ class MgbIme : InputMethodService() {
         val ic = currentInputConnection ?: return
         val mods = pcState.mods() or com.mgb.keyboard.typing.PcKeyPlan.modsFromMeta(extraMeta)
         val real = try { prefs.bool("pc_real_mods", true) } catch (_: Throwable) { true }
-        InputSafe.pcKey(ic, code, mods, real)   // v0.17.49: keyCombo -> key (meta bits) -> context menu (Ctrl+A/C/V/X/Z)
+        val pcAcc = InputSafe.pcKey(ic, code, mods, real)   // v0.17.49: keyCombo -> key (meta bits) -> context menu (Ctrl+A/C/V/X/Z)
+        try { com.mgb.keyboard.typing.PcLog.sent(code, mods, real && mods != 0, pcAcc) } catch (_: Throwable) { }   // v0.17.52 (PC4): key test page log (only while the page is open)
         pcState.keySent()
         pcRefresh()   // v0.17.50 (PC2): PC rows + layer keys
     }
@@ -1059,6 +1070,7 @@ class MgbIme : InputMethodService() {
                 pcHeld = InputSafe.holdDown(ic, code, pcHeldMods, pcHeldReal)
                 if (!pcHeld) { pcHeldPlain = true; pcHeld = InputSafe.pcKey(ic, code, pcHeldMods, false) }
             }
+            try { com.mgb.keyboard.typing.PcLog.hold(code, pcHeldMods, pcHeld) } catch (_: Throwable) { }   // v0.17.52 (PC4)
             pcState.keySent()
             pcRefresh()   // v0.17.50 (PC2)
         } catch (_: Throwable) { }
