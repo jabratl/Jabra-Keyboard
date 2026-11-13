@@ -231,7 +231,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
 
         // top bar
         val top = row()
-        top.addView(btn("ABC", 1.0f, 40) { sel.leave(); confirmDel = false; host.showLetters() })   // v0.2.5.3: ABC leaves select mode
+        top.addView(ClipBar.func(pf, btn("ABC", 1.0f, 40) { sel.leave(); confirmDel = false; host.showLetters() }))   // v0.2.5.3: ABC leaves select mode; v0.17.30 (UI6): function-key look
         val searchBtn = btn(if (searching) "✕ Search" else "🔍 Search", 1.6f, 40) {
             searching = !searching
             query = ""
@@ -246,7 +246,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
             refresh()
         }
         if (confirmClear) clearBtn.textSize = 12f   // v0.2.5.1: the button is a bit narrower now
-        top.addView(clearBtn)
+        top.addView(ClipBar.danger(pf, clearBtn))   // v0.17.30 (UI6): warm red label
         root.addView(top)
 
         // v0.2.5.1: header line message (e.g. "Added", "Field is empty"); shown once
@@ -267,7 +267,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
             val undoBtn = btn("↶ Undo", 0f, 30) { doUndo() }
             undoBtn.textSize = 12f
             undoBtn.setPadding(dp(10), 0, dp(10), 0)
-            head.addView(undoBtn)
+            head.addView(ClipBar.pill(pf, undoBtn))   // v0.17.30 (UI6)
         }
         val sortLv = try { JabraPrefs(ctx).int("clip_sort", 0).coerceIn(0, 3) } catch (_: Throwable) { 0 }   // v0.4.3
         val sortBtn = btn("\u2195 " + arrayOf("Newest", "Oldest", "A-Z", "Used")[sortLv], 0f, 30) {
@@ -285,12 +285,12 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
         viewBtn.textSize = 12f
         viewBtn.setPadding(dp(10), 0, dp(10), 0)
         if (!selOn) {   // v0.2.5.3: in select mode the action row below replaces View / Manage
-            head.addView(sortBtn)   // v0.4.3
-            head.addView(viewBtn)
+            head.addView(ClipBar.pill(pf, sortBtn))   // v0.4.3; v0.17.30 (UI6): capsule
+            head.addView(ClipBar.pill(pf, viewBtn))
             val manageBtn = btn("Manage", 0f, 30) { sel.enter(); confirmClear = false; confirmDel = false; refresh() }
             manageBtn.textSize = 12f
             manageBtn.setPadding(dp(10), 0, dp(10), 0)
-            head.addView(manageBtn)
+            head.addView(ClipBar.pill(pf, manageBtn))   // v0.17.30 (UI6)
         }
         root.addView(head)
         if (selOn) root.addView(selectBar())
@@ -401,7 +401,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
 
         // ---- sticky top bar
         val top = row()
-        top.addView(btn("ABC", 1.0f, t40) { sel.leave(); confirmDel = false; moreOpen = false; host.showLetters() })
+        top.addView(ClipBar.func(pf, btn("ABC", 1.0f, t40) { sel.leave(); confirmDel = false; moreOpen = false; host.showLetters() }))   // v0.17.30 (UI6): function-key look
         val searchBtn = btn(if (searching) "✕ Search" else "🔍 Search", 1.6f, t40) {
             searching = !searching
             query = ""
@@ -411,12 +411,14 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
         JabraIcons.putThemed(ctx, searchBtn, if (searching) "close" else "search")
         top.addView(searchBtn)
         if (!selOn) top.addView(btn("Add", 1.0f, t40) { addFromField() })
-        top.addView(btn(if (selOn) "Done" else "Manage", 1.3f, t40) {
+        val manageNew = btn(if (selOn) "Done" else "Manage", 1.3f, t40) {
             if (selOn) { sel.leave(); moreOpen = false } else sel.enter()
             confirmClear = false
             confirmDel = false
             refresh()
-        })
+        }
+        if (selOn) ClipBar.on(ctx, pf, manageNew)   // v0.17.30 (UI6): select mode is ON = soft blue
+        top.addView(manageNew)
         root.addView(top)
 
         // ---- filter chips (hidden while the More tray is open: the space goes to the list)
@@ -461,11 +463,11 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
                 val b = btn(label, 0f, 34, onClick)
                 b.textSize = 12f
                 b.setPadding(dp(10), 0, dp(10), 0)
-                return b
+                return ClipBar.pill(pf, b)   // v0.17.30 (UI6): capsule like the space bar
             }
             if (confirmClear) {
                 head.addView(small("Cancel") { confirmClear = false; refresh() })
-                head.addView(small("Yes, clear") { keepUndo(store.recentView("")); store.clearUnpinned(); confirmClear = false; refresh() })
+                head.addView(ClipBar.danger(pf, small("Yes, clear") { keepUndo(store.recentView("")); store.clearUnpinned(); confirmClear = false; refresh() }))   // v0.17.30 (UI6)
             } else {
                 if (undoBuf.isNotEmpty()) head.addView(small("↶ Undo") { doUndo() })
                 if (!selOn) {
@@ -479,7 +481,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
                         confirmClear = false
                         refreshTop()
                     })
-                    head.addView(small("Clear") { confirmClear = true; refresh() })
+                    head.addView(ClipBar.danger(pf, small("Clear") { confirmClear = true; refresh() }))   // v0.17.30 (UI6)
                 }
             }
             root.addView(head)

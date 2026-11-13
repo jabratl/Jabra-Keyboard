@@ -907,3 +907,11 @@ Z122 (v0.17.24, L4: named custom themes)
  [ ] 5. 13th name = message "at most 12 ...". Old Save / Save and use / Delete custom theme buttons work as before.
  [ ] 6. Backup now, delete a saved theme, Restore: the deleted theme is back.
 
+
+Z123 (v0.17.30, UI6: Clipboard top buttons follow the keyboard keys)
+ [ ] 1. App > Look & Theme > Look = Jabra. Open the Clipboard panel: "ABC" has the same colour as ?123 / Backspace; Search / Add / Manage keep the normal key colour.
+ [ ] 2. Tap Manage: the button becomes "Done" in soft blue with a bold label. Tap Done: back to the normal look.
+ [ ] 3. Small buttons (Undo, Sort, View, Manage in the classic panel) are capsules. Sizes and positions are the same as before; nothing is cut at big font size.
+ [ ] 4. "Clear" has a red label that is easy to read. Tap it: "Sure?" / "Yes, clear" still asks first, red label still readable. Try one light and one dark theme.
+ [ ] 5. Set Look = Classic: the panel looks exactly like v0.17.29 (no capsules, no blue Done, no red label).
+ [ ] 6. Same in the New panel style (Panel style setting) and in Borderless key mode: everything works, only colours / shapes differ.

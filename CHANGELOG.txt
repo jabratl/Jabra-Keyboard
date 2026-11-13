@@ -1,3 +1,12 @@
+v0.17.30 - NEW (UI6): the buttons at the top of the Clipboard panel now follow the keyboard keys (look only)
+- WHY: the top bar buttons (ABC, Search, Add, Manage) and the small header-line buttons (Undo, Sort, View, Clear) all had the same plain key look, so the panel did not feel like part of the keyboard.
+- What you get (needs Look = Jabra; Classic look is unchanged on purpose): (1) "ABC" has the function-key colour, like ?123 / Shift / Backspace. (2) In select mode the "Done" button is soft blue (the mode is ON). (3) The small header-line buttons (Undo, Sort, View, Manage) are capsules like the space bar. (4) "Clear" / "Yes, clear" / "Sure? (unpinned)" have a warm red label, only when it reads well on your key colour (else the old label colour). Works in the classic panel AND the New panel style. Corner radius follows your key radius / custom theme.
+- Code: NEW ClipBar.kt (func / on / pill / danger, every one try/catch, does nothing unless Look = Jabra); NEW typing/BarInk.java (WCAG contrast pick) + tools/BarInkTest.java (15 checks); ClipboardFeature.kt = 10 one-line hooks marked "v0.17.30" (+ the Manage button is now a val so it can be tinted). No pref, no storage, no size / weight / margin / click change, no permission.
+- BROKE: nothing known.
+- TESTED here: Java compile of ALL app code OK; BarInkTest 15/15, EdgePlanTest 40/40; bracket balance of ClipBar.kt and ClipboardFeature.kt OK (balanced, only the intended 26 diff lines). The rest of the Java suite is left to CI.
+- NOT tested: Kotlin NOT compiled here (no network for kotlinc); NOT phone-tested. Check first: the red label on a dark theme and on a coloured theme; "Done" blue in a dark theme; capsules do not clip the text at font scale 130%.
+- Rollback: delete ClipBar.kt, BarInk.java, BarInkTest.java and push the v0.17.29 ClipboardFeature.kt back.
+
 v0.17.29 - NEW (UI5): small look upgrades of the Clipboard panel (look only)
 - What you get: (1) the Pinned section header has a gold star and the gold pin colour (cards view and list view). (2) The search text is shown in a rounded themed box. (3) The empty message is centred with a clipboard icon. (4) A card shows a soft tint while you press it (the hold-to-select time is unchanged). Works in the classic panel AND the New panel style.
 - Code: ClipboardFeature.kt (search box x2, empty state x2, sectionHeader), ClipCards.kt (header, pressed tint on the card text). No Java, no pref, no clip data change.
