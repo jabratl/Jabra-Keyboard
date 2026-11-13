@@ -145,6 +145,7 @@ class LayoutEditorPage(private val act: Activity, private val prefs: JabraPrefs,
 
         layoutsCard(dlg, col, ink, dim)   // v0.17.13 (K9)
         try { presetsCard(dlg, col, ink, dim) } catch (_: Throwable) { }   // v0.17.14 (K9b)
+        try { rulesCard(col, ink, dim) } catch (_: Throwable) { }          // v0.17.17 (K13)
         try { testPadCard(col, ink, dim) } catch (_: Throwable) { }        // v0.17.14 (K9b)
 
         // layer tabs
@@ -434,6 +435,101 @@ class LayoutEditorPage(private val act: Activity, private val prefs: JabraPrefs,
             })
         col.addView(card, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
         layoutsStatus()
+    }
+
+    // ---------- v0.17.17 (K13): layout rules (per language / screen / app) ----------
+    private var rulesNote: TextView? = null
+    private var rulesList: LinearLayout? = null
+
+    private fun rulesCard(col: LinearLayout, ink: Int, dim: Int) {
+        val card = LinearLayout(act)
+        card.orientation = LinearLayout.VERTICAL
+        card.setPadding(dp(AppTokens.S3), dp(AppTokens.S2), dp(AppTokens.S3), dp(AppTokens.S2))
+        try { card.background = AppUi.cardBg(act, 12) } catch (_: Throwable) { }
+        card.addView(txt("Layout rules", 14f, ink, true))
+        card.addView(txt("Use a different SAVED layout for a language, for portrait / landscape, or for one app. App beats language, language beats screen. No rule = your active layout. The custom keyboard must be ON.", 12f, dim))
+        val lst = LinearLayout(act)
+        lst.orientation = LinearLayout.VERTICAL
+        rulesList = lst
+        card.addView(lst)
+        val nt = txt("", 12f, dim)
+        rulesNote = nt
+        card.addView(nt)
+        addRowOf(card,
+            mini("Language...") { ruleLang() },
+            mini("Screen...") { ruleScreen() })
+        addRowOf(card,
+            mini("App...") { ruleApp() },
+            mini("Remove all") {
+                if (LayoutStore.rules(act).isEmpty()) rulesSay("There are no rules.", false)
+                else sure("Remove all layout rules?", "Your saved layouts stay. Only the rules are removed.", "Remove") {
+                    LayoutStore.putRules(act, com.mgb.keyboard.layout.LayoutRules.empty())
+                    rulesRefresh()
+                }
+            })
+        col.addView(card, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
+        rulesRefresh()
+    }
+
+    private fun rulesSay(msg: String, warn: Boolean) {
+        rulesNote?.setTextColor(if (warn) AppUi.warn(act) else AppUi.dim(act))
+        rulesNote?.text = msg
+    }
+
+    private fun rulesRefresh() {
+        val lst = rulesList ?: return
+        lst.removeAllViews()
+        val r = LayoutStore.rules(act)
+        if (r.isEmpty()) { rulesSay("No rules: the active layout is used everywhere.", false); return }
+        val b = LayoutStore.book(act)
+        rulesSay(r.size().toString() + " rule(s). Tap a rule to remove it.", false)
+        for (i in 0 until r.size()) {
+            val kind = r.kind(i)
+            val key = r.key(i)
+            val gone = !b.has(r.name(i))
+            val bt = mini("Remove: " + r.line(i) + (if (gone) " (layout missing)" else "")) {
+                LayoutStore.putRules(act, LayoutStore.rules(act).remove(kind, key))
+                rulesRefresh()
+            }
+            lst.addView(bt, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
+        }
+    }
+
+    private fun ruleLang() {
+        val keys = arrayOf("en", "av", "pb")
+        val titles = Array(keys.size) { i -> com.mgb.keyboard.layout.LayoutRules.keyTitle("lang", keys[i]) }
+        AlertDialog.Builder(act).setTitle("Which language?").setItems(titles) { _, i -> ruleLayout("lang", keys[i]) }
+            .setNegativeButton("Cancel", null).show()
+    }
+
+    private fun ruleScreen() {
+        val keys = arrayOf("p", "l")
+        val titles = Array(keys.size) { i -> com.mgb.keyboard.layout.LayoutRules.keyTitle("orient", keys[i]) }
+        AlertDialog.Builder(act).setTitle("Which screen?").setItems(titles) { _, i -> ruleLayout("orient", keys[i]) }
+            .setNegativeButton("Cancel", null).show()
+    }
+
+    private fun ruleApp() {
+        val et = EditText(act)
+        et.hint = "com.termux"
+        et.setSingleLine(true)
+        et.filters = arrayOf(InputFilter.LengthFilter(com.mgb.keyboard.typing.AppProfileMap.MAX_PKG))
+        AlertDialog.Builder(act).setTitle("App package name").setMessage("Example: com.termux or com.whatsapp").setView(et)
+            .setPositiveButton("Next") { _, _ ->
+                val p = et.text.toString().trim()
+                if (!com.mgb.keyboard.typing.AppProfileMap.validPackage(p)) rulesSay("That is not a valid package name.", true) else ruleLayout("app", p)
+            }
+            .setNegativeButton("Cancel", null).show()
+    }
+
+    private fun ruleLayout(kind: String, key: String) {
+        val title = "Layout for " + com.mgb.keyboard.layout.LayoutRules.kindTitle(kind) + " " + com.mgb.keyboard.layout.LayoutRules.keyTitle(kind, key)
+        pickSaved(title) { nm ->
+            val r0 = LayoutStore.rules(act)
+            val r1 = r0.put(kind, key, nm)
+            if (r1 === r0) rulesSay("Rule not added (at most " + com.mgb.keyboard.layout.LayoutRules.MAX_RULES + " rules).", true)
+            else { LayoutStore.putRules(act, r1); rulesRefresh() }
+        }
     }
 
     // ---------- v0.17.14 (K9b): presets gallery + test pad ----------

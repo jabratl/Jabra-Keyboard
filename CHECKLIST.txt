@@ -848,3 +848,13 @@ Z114. v0.17.16 (K11a) drag and drop move (NOT phone-tested)
  [ ] Drag towards the top / bottom edge of the screen: the page scrolls by itself while you hold.
  [ ] A plain tap still selects a key; scrolling the page with a finger starting on the keys still works (no accidental drag).
  [ ] Open the keyboard: the new order is there.
+
+Z115. v0.17.17 (K13) layout rules per language / screen / app (NOT phone-tested)
+ 1. App > Layout & size > Edit layout > card "Saved layouts": Save as "Normal", then change a key, Save as "Coder". Switch back to "Normal".
+ 2. Card "Layout rules" > App... > type com.termux (or any app you have) > pick "Coder". Open that app: Coder layout shows. Open another app: Normal.
+ 3. Language... > Bangla (Probhat) > pick "Coder": switch to Probhat on the keyboard = the keyboard rebuilds once with Coder; back to English = Normal.
+ 4. Screen... > Landscape > pick a layout: rotate the phone: that layout shows; portrait = your normal one.
+ 5. App beats language: with 2 and 3 set, Termux + Probhat shows the Termux (app) layout.
+ 6. Tap a rule in the list = removed. Rename a saved layout: its rules follow. Delete a saved layout: its rules vanish. Remove all (Sure?) works.
+ 7. Custom keyboard OFF = rules do nothing. No rules = nothing changes. Backup + restore keeps the rules.
+ 8. Symbols panel (?123) shows the symbols of the SAME layout the letters use. Password field (English forced) uses the English-language rule.

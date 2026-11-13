@@ -52,3 +52,4 @@ H. PLAN K = KEYBOARD LAYOUT EDITOR (K1 - K9b)                          [Z100 - Z
  [ ] 29. If the custom keyboard ever looks wrong: App > Layout & Size > "Restore last good layout" / turn Custom keyboard OFF. The classic keyboard must come back at once.
  [ ] 30. After 22 - 29: type English + Bangla in a real app: typing, backspace, clipboard paste feel as before.
  [ ] 31. (K11a) Editor: hold a key, drag it onto another key: swap (middle) or insert (edge). Undo works.
+ [ ] 32. (K13) Editor > card "Layout rules": add an App rule (e.g. com.termux) with a saved layout: that app shows it, other apps keep the normal layout. Remove the rule: back to normal.

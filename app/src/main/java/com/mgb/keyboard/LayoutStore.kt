@@ -10,6 +10,7 @@ import com.mgb.keyboard.layout.LayoutDefaults
 import com.mgb.keyboard.layout.LayoutGuard
 import com.mgb.keyboard.layout.LayoutPresets
 import com.mgb.keyboard.layout.LayoutRoute
+import com.mgb.keyboard.layout.LayoutRules
 
 /**
  * v0.17.5 (K5a.1) storage + safety net of the custom keyboard layout (plan K 6.8).
@@ -24,10 +25,16 @@ object LayoutStore {
     private const val K_BUILT = "built_v"      // v0.17.6: version stamp of a layout built from the settings (see LayoutRoute.needsRebuild)
     private const val K_BOOK = "book_v1"       // v0.17.13 (K9): all named layouts (LayoutBook text)
     private const val K_ACTIVE = "active"      // v0.17.13 (K9): name of the active saved layout
+    private const val K_RULES = "rules_v1"      // v0.17.17 (K13): layout rules (per language / screen / app), LayoutRules text
     private const val K_EDITED = "edited"      // v0.17.6: set by the editor (K6) so a user's own layout is never rebuilt
 
     @Volatile private var cacheText: String? = null
     @Volatile private var cacheModel: LayoutDef? = null
+    @Volatile private var resolvedName: String = ""          // v0.17.17 (K13): saved layout the keyboard was built from ("" = the active layout)
+    @Volatile private var savedCacheText: String? = null     // v0.17.17 (K13): decoded model of that saved layout
+    @Volatile private var savedCacheModel: LayoutDef? = null
+    @Volatile private var bookRaw: String? = null            // v0.17.17 (K13): decoded book cache (the book can be big, rules ask for it at every language change)
+    @Volatile private var bookVal: LayoutBook? = null
     /** Short reason why the last load fell back to classic ("" = no problem). Shown on the app page. */
     @Volatile var lastProblem: String = ""
         private set
@@ -105,7 +112,7 @@ object LayoutStore {
      * What buildKeyboard0 asks: the model to draw, or null = classic. kb_custom must be 1; the crash counter is checked (S2: 3 hard stops =
      * kb_custom back to 0 once, the layout text stays untouched) and armed here; [disarmLater] resets it after the first good 5 seconds.
      */
-    fun activeModel(ctx: Context, prefs: JabraPrefs): LayoutDef? {
+    fun activeModel(ctx: Context, prefs: JabraPrefs, ruleName: String = ""): LayoutDef? {
         try {
             if (!LayoutGuard.customOn(prefs.int("kb_custom", 0))) return null
             val s = sp(ctx)
@@ -116,7 +123,9 @@ object LayoutStore {
                 lastProblem = "custom keyboard crashed 3 times, classic keyboard is back"
                 return null
             }
-            val m = load(ctx, prefs) ?: return null
+            val saved = if (ruleName.isNotEmpty()) modelOfSaved(ctx, ruleName) else null   // v0.17.17 (K13): a rule picked another saved layout; a damaged / missing one = the active layout
+            resolvedName = if (saved != null) ruleName else ""
+            val m = saved ?: load(ctx, prefs) ?: return null
             s.edit().putInt(K_SAFE, LayoutGuard.armed(n)).apply()
             return m
         } catch (_: Throwable) { return null }
@@ -139,6 +148,50 @@ object LayoutStore {
         } catch (_: Throwable) { return false }
     }
 
+    // ---------- v0.17.17 (K13): layout rules ----------
+    /** All layout rules (never null). */
+    fun rules(ctx: Context): LayoutRules = try { LayoutRules.decode(sp(ctx).getString(K_RULES, null)) } catch (_: Throwable) { LayoutRules.empty() }
+
+    fun putRules(ctx: Context, r: LayoutRules) {
+        try { if (r.isEmpty()) sp(ctx).edit().remove(K_RULES).apply() else sp(ctx).edit().putString(K_RULES, r.encode()).apply() } catch (_: Throwable) { }
+    }
+
+    /**
+     * Which SAVED layout the rules pick for this app / language layer / screen: its name, or "" = use the active layout (no rule, custom keyboard OFF,
+     * the named layout is gone, or it is the active one anyway). Never throws; no rules = one cheap prefs read.
+     */
+    fun resolveName(ctx: Context, prefs: JabraPrefs, pkg: String, layer: String, land: Boolean): String {
+        try {
+            if (!LayoutGuard.customOn(prefs.int("kb_custom", 0))) return ""
+            val r = rules(ctx)
+            if (r.isEmpty()) return ""
+            val n = r.resolve(pkg, layer, land)
+            if (n.isEmpty()) return ""
+            val b = book(ctx)
+            val i = b.indexOf(n)
+            if (i < 0) return ""
+            val real = b.name(i)
+            return if (real.equals(b.active(), ignoreCase = true)) "" else real
+        } catch (_: Throwable) { return "" }
+    }
+
+    /** The saved layout [name] as a model when its text passes the load gate, else null. */
+    private fun modelOfSaved(ctx: Context, name: String): LayoutDef? = try {
+        val t = book(ctx).textOf(name)
+        if (t.isEmpty()) null
+        else if (t == savedCacheText && savedCacheModel != null) savedCacheModel
+        else {
+            val g = LayoutGuard.gate(t)
+            if (g.ok()) { savedCacheText = t; savedCacheModel = g.model; g.model } else null
+        }
+    } catch (_: Throwable) { null }
+
+    /** The model the KEYBOARD uses right now (symbols panel): the layout the last build picked (a rule or the active one). The editor and the preview use [load]. */
+    fun runtimeModel(ctx: Context, prefs: JabraPrefs): LayoutDef? {
+        val n = resolvedName
+        return (if (n.isNotEmpty()) modelOfSaved(ctx, n) else null) ?: load(ctx, prefs)
+    }
+
     /** Status line for the app page: "off" / "OK" / the problem. */
     fun status(ctx: Context, prefs: JabraPrefs): String {
         if (!LayoutGuard.customOn(prefs.int("kb_custom", 0))) return "Custom layout: off (classic keyboard)"
@@ -150,7 +203,11 @@ object LayoutStore {
     private fun putBook(ctx: Context, b: LayoutBook) { sp(ctx).edit().putString(K_BOOK, b.encode()).putString(K_ACTIVE, b.active()).apply() }
 
     /** All saved named layouts (never null). */
-    fun book(ctx: Context): LayoutBook = try { LayoutBook.decode(sp(ctx).getString(K_BOOK, null)) } catch (_: Throwable) { LayoutBook.empty() }
+    fun book(ctx: Context): LayoutBook = try {
+        val raw = sp(ctx).getString(K_BOOK, null)
+        val cb = bookVal
+        if (cb != null && raw != null && raw == bookRaw) cb else { val nb = LayoutBook.decode(raw); bookRaw = raw; bookVal = nb; nb }   // v0.17.17 (K13): cached by the raw text
+    } catch (_: Throwable) { LayoutBook.empty() }
 
     /** The active layout text when it passes the load gate, else null. */
     fun currentText(ctx: Context): String? = try {
@@ -196,7 +253,13 @@ object LayoutStore {
             val b = book(ctx)
             val nb = b.rename(old, new)
             if (nb === b) return if (LayoutBook.cleanName(new).isEmpty()) "type a name" else "that name is taken"
-            putBook(ctx, nb); return ""
+            putBook(ctx, nb)
+            try {   // v0.17.17 (K13): rules that pointed at the old name follow the new name
+                var rr = rules(ctx)
+                for (i in 0 until rr.size()) if (rr.name(i).equals(old, ignoreCase = true)) rr = rr.put(rr.kind(i), rr.key(i), LayoutBook.cleanName(new))
+                putRules(ctx, rr)
+            } catch (_: Throwable) { }
+            return ""
         } catch (_: Throwable) { return "could not rename" }
     }
 
@@ -214,7 +277,9 @@ object LayoutStore {
             val b = book(ctx)
             val nb = b.delete(name)
             if (nb === b) return "no such saved layout"
-            putBook(ctx, nb); return ""
+            putBook(ctx, nb)
+            try { putRules(ctx, rules(ctx).dropMissing(nb)) } catch (_: Throwable) { }   // v0.17.17 (K13): rules of a deleted layout go away
+            return ""
         } catch (_: Throwable) { return "could not delete" }
     }
 
@@ -263,6 +328,7 @@ object LayoutStore {
         s.getString(K_ACTIVE, null)?.let { kv[K_ACTIVE] = it }
         kv[K_EDITED] = if (s.getBoolean(K_EDITED, false)) "1" else "0"
         kv[K_BUILT] = s.getInt(K_BUILT, 0).toString()
+        s.getString(K_RULES, null)?.let { kv[K_RULES] = it }   // v0.17.17 (K13)
         if (kv.containsKey(K_LAYOUT) || kv.containsKey(K_BOOK)) LayoutBook.pack(kv) else null
     } catch (_: Throwable) { null }
 
@@ -284,6 +350,12 @@ object LayoutStore {
                 val clean = full.dropInvalid()
                 e.putString(K_BOOK, clean.encode()).putString(K_ACTIVE, clean.active())
                 if (clean.size() < full.size()) note += " " + (full.size() - clean.size()) + " damaged saved layout(s) were dropped."
+            }
+            val rt = kv[K_RULES]   // v0.17.17 (K13): rules are cleaned and must point at layouts that exist after the restore
+            if (rt != null) {
+                val bk = if (bt != null) LayoutBook.decode(bt).dropInvalid() else book(ctx)
+                val rr = LayoutRules.decode(rt).dropMissing(bk)
+                if (rr.isEmpty()) e.remove(K_RULES) else e.putString(K_RULES, rr.encode())
             }
             e.apply()
             cacheText = null; cacheModel = null; lastProblem = ""

@@ -369,9 +369,24 @@ class MgbIme : InputMethodService() {
             try { refreshLetters() } catch (_: Throwable) { }   // v0.0.4: Probhat labels follow the field type
         } catch (_: Throwable) { latinOnly = false }
         try { autoProfile(info?.packageName) } catch (_: Throwable) { }   // v0.10.19 (W6.2): auto-profile per app (pref ap_on, default OFF)
+        try { checkRule() } catch (_: Throwable) { }   // v0.17.17 (K13): layout rule per app / field type
     }
 
     private var apLast = ""   // v0.10.19 (W6.2): profile applied for the current mapped app (memory only)
+    private var builtRule = ""   // v0.17.17 (K13): saved-layout name the keyboard was built with ("" = the active layout)
+
+    /** v0.17.17 (K13): saved layout the layout rules pick now (app > language > screen), "" = the active one. Cheap when there are no rules. */
+    private fun ruleName(): String = try {
+        LayoutStore.resolveName(this, prefs, currentInputEditorInfo?.packageName ?: "", com.mgb.keyboard.layout.LayoutRoute.layerFor(bangla, latinOnly, probhat), JabraPrefs.isLand(this))
+    } catch (_: Throwable) { "" }
+
+    /** v0.17.17 (K13): the rules now pick another layout than the one on screen = build the letters again once (not while a panel is open: it rebuilds when closed). */
+    private fun checkRule() {
+        try {
+            if (container == null || inPanel) return
+            if (com.mgb.keyboard.layout.LayoutRules.changed(builtRule, ruleName())) showLetters()
+        } catch (_: Throwable) { }
+    }
 
     /** v0.10.19 (W6.2): when ap_on and this app has a mapped profile that is not applied yet and would change something: apply it (same ProfileStore.apply as the panel) and rebuild the letters once. */
     private fun autoProfile(pkg: String?) {
@@ -766,6 +781,7 @@ class MgbIme : InputMethodService() {
         try { if (prefs.bool("space_lang", false)) { spaceBtn?.text = com.mgb.keyboard.typing.LangSwipe.spaceLabel(bangla, probhat); spaceBtn?.contentDescription = com.mgb.keyboard.typing.KeyDesc.spaceDesc(spaceBtn?.text?.toString()) } } catch (_: Throwable) { }   // v0.8.9; v0.10.20 spoken name
         dandaBtn?.text = if (bangla) "।" else "?"
         refreshLetters()
+        try { container?.post { checkRule() } } catch (_: Throwable) { }   // v0.17.17 (K13): a language rule may pick another layout (posted: never rebuild under a finger)
     }
 
     /** Long-press on the language key: switch Bangla layout Avro <-> Probhat (and turn Bangla on). */
@@ -1271,7 +1287,8 @@ class MgbIme : InputMethodService() {
         var cmModel: com.mgb.keyboard.layout.LayoutDef? = null
         val insertedViews = mutableListOf<View>()
         try {
-            val cm = LayoutStore.activeModel(this, prefs)
+            val rn = ruleName(); builtRule = rn   // v0.17.17 (K13): layout rule for this app / language / screen
+            val cm = LayoutStore.activeModel(this, prefs, rn)
             if (cm != null) {
                 val sets = LinkedHashMap<String, CustomRows>()
                 var at = letterRowsAt

@@ -16,7 +16,7 @@ public final class LayoutBook {
     public static final int MAX_LAYOUTS = 12, MAX_NAME = 24, MAX_TEXT = 200000;
     private static final String HEAD = "BOOK1", PACK_HEAD = "JLP1";
     /** Keys of prefs file jabra_layouts that go into a backup. */
-    public static final String[] PACK_KEYS = { "layout_v1", "book_v1", "active", "edited", "built_v" };
+    public static final String[] PACK_KEYS = { "layout_v1", "book_v1", "active", "edited", "built_v", "rules_v1" };
 
     private final List<String> names;
     private final List<String> texts;

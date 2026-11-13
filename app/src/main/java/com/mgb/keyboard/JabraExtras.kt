@@ -291,7 +291,7 @@ class JabraPanels(private val ctx: Context, private val host: JabraHost) {
 
     private fun symbolsFromModel(): View? {
         if (!com.mgb.keyboard.layout.LayoutGuard.customOn(prefs.int("kb_custom", 0))) return null
-        val m = LayoutStore.load(ctx, prefs) ?: return null
+        val m = LayoutStore.runtimeModel(ctx, prefs) ?: return null   // v0.17.17 (K13): the layout the keyboard uses now (a rule can pick another one)
         val rows = m.effectiveRows("s" + (com.mgb.keyboard.typing.SymbolPages.norm(symPage) + 1))
         if (rows.isEmpty()) return null
         val root = rootView()
