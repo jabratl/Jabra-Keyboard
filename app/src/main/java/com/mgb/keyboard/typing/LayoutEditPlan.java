@@ -1,6 +1,7 @@
 package com.mgb.keyboard.typing;
 
 import com.mgb.keyboard.layout.KeyDef;
+import com.mgb.keyboard.layout.LayerDef;
 import com.mgb.keyboard.layout.LayoutDef;
 import com.mgb.keyboard.layout.LayoutOps;
 import com.mgb.keyboard.layout.LayoutText;
@@ -9,7 +10,7 @@ import com.mgb.keyboard.layout.RowDef;
 import java.util.List;
 
 /**
- * v0.17.8 (K6a) pure rules of the app layout editor (no Android): which inspector fields a key has, width steps, shown labels,
+ * v0.17.8 (K6a) + v0.17.9 (K6b) pure rules of the app layout editor (no Android): which inspector fields a key has, width steps, shown labels,
  * key positions for drawing / touch, spoken description. Tested by tools/LayoutEditPlanTest.java.
  */
 public final class LayoutEditPlan {
@@ -182,5 +183,81 @@ public final class LayoutEditPlan {
             top = bottom + gap;
         }
         return -1;
+    }
+
+    // ---------- v0.17.9 (K6b): structure editing helpers ----------
+    public static final int H_STEP = 10;
+
+    /** Next row height % after [-] / [+] (steps of 10, kept inside RowDef.H_MIN .. H_MAX). */
+    public static int nextHeight(int pct, int dir) {
+        int n = pct + (dir < 0 ? -H_STEP : (dir > 0 ? H_STEP : 0));
+        if (n < RowDef.H_MIN) n = RowDef.H_MIN;
+        if (n > RowDef.H_MAX) n = RowDef.H_MAX;
+        return n;
+    }
+
+    /** {layerId, rowIndex} of the layer that really OWNS the key (a shared number / bottom row belongs to layer nr / bot), or null. */
+    public static String[] owner(LayoutDef m, String id) {
+        if (m == null || id == null) return null;
+        for (LayerDef l : m.layers) {
+            for (int i = 0; i < l.rows.size(); i++) {
+                RowDef r = l.rows.get(i);
+                if (r.isRef()) continue;
+                for (KeyDef k : r.keys) if (id.equals(k.id)) return new String[] { l.id, String.valueOf(i) };
+            }
+        }
+        return null;
+    }
+
+    /** Raw row index of the key inside [layer]'s own rows; -1 when the key is not an own key of that layer (e.g. a shared row). */
+    public static int ownRow(LayoutDef m, String layer, String id) {
+        String[] o = owner(m, id);
+        if (o == null || !o[0].equals(layer)) return -1;
+        return Integer.parseInt(o[1]);
+    }
+
+    /** Id of the right (d > 0) or left (d < 0) neighbour of the key in its drawn row, or "". */
+    public static String neighbourId(LayoutDef m, String layer, String id, int d) {
+        int[] p = locate(m, layer, id);
+        if (p == null) return "";
+        List<KeyDef> ks = m.effectiveRows(layer).get(p[0]).keys;
+        int j = p[1] + (d < 0 ? -1 : 1);
+        return (j >= 0 && j < ks.size()) ? ks.get(j).id : "";
+    }
+
+    /** Which key to select after a structure change: the same id when it still exists, else the key now at the old place, else the first letter. */
+    public static String keepOrNear(LayoutDef m, String layer, String id, int[] loc) {
+        if (m == null) return "";
+        if (findKey(m, layer, id) != null) return id;
+        List<RowDef> rows = m.effectiveRows(layer);
+        if (loc != null && rows.size() > 0) {
+            int r = Math.max(0, Math.min(loc[0], rows.size() - 1));
+            List<KeyDef> ks = rows.get(r).keys;
+            if (ks.size() > 0) return ks.get(Math.max(0, Math.min(loc[1], ks.size() - 1))).id;
+        }
+        return firstCharId(m, layer);
+    }
+
+    /** \"Row 2: 9 keys, width 9.5\" for the row badge (\"\" when the key is not drawn). */
+    public static String rowSummary(LayoutDef m, String layer, String id) {
+        int[] p = locate(m, layer, id);
+        if (p == null) return "";
+        RowDef r = m.effectiveRows(layer).get(p[0]);
+        return "Row " + (p[0] + 1) + ": " + r.keys.size() + (r.keys.size() == 1 ? " key" : " keys") + ", width " + weightText(r.totalWeight()) + ", height " + r.heightPct + "%";
+    }
+
+    public static String undoText(boolean can, String label) {
+        if (!can) return "Undo";
+        return (label == null || label.length() == 0) ? "Undo" : "Undo: " + label;
+    }
+
+    public static String redoText(boolean can, String label) {
+        if (!can) return "Redo";
+        return (label == null || label.length() == 0) ? "Redo" : "Redo: " + label;
+    }
+
+    /** Message when LayoutOps refused a change (it returned the same model). */
+    public static String refusedText(String what) {
+        return "Not possible here: " + (what == null ? "this change" : what) + " (a row needs 1 key, a key at least 0.25 width, max 8 rows / 80 keys).";
     }
 }

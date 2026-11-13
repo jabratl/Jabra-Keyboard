@@ -786,3 +786,15 @@ Z101) v0.17.2 Space bar size + smoother language swipe (K2)  [portrait + landsca
  [ ] Width [+] on a key: the key gets wider in the editor, the keyboard follows after reopening. Rows keep filling the whole width.
  [ ] Try to remove a needed key? (not possible yet in K6a). Rotate the phone while the editor is open: it closes, nothing is lost. Layout & size page: "Rebuild layout from current settings" resets your edits (expected).
  [ ] App Live preview (custom ON) shows the edited layout.
+
+=== Z108 (v0.17.9, K6b: layout editor page 2, EXPERIMENTAL) ===
+ [ ] Push the zip. Actions: "Java tests: 102/102 green" then the APK. If RED: paste the Kotlin errors (Kotlin of v0.17.5 - v0.17.9 was never compiled): FIX first.
+ [ ] Editor > tap "w": Make empty -> the key becomes a dashed spot. Tap "e": Make empty. Select the first empty spot: Merge next -> ONE wide empty spot. Split -> two again.
+ [ ] Select the empty spot: button says "Fill" -> type x -> a normal key "x". Undo: back to an empty spot. Redo: x again. Undo button text shows what it will undo.
+ [ ] Merge two letters (e.g. "a" + "s"): one wide key "a", its long-press = "s", the note says so. Undo restores both.
+ [ ] Move left / right swaps with the neighbour; Move up / down moves the key to the row above / below. Delete removes a key (a row never becomes empty). Add before / after gives an empty spot.
+ [ ] Row badge changes when you select keys of other rows. Row height [-] [+] changes the row in the editor. Add row below / Duplicate row / Delete row / Row up / Row down work in a letter row; in the number row / bottom row they say "shared by all language tabs".
+ [ ] Try Delete on Backspace / Space / ?123 until the keyboard would have none: "Not saved: ..." and nothing changes.
+ [ ] Undo 5 steps, Redo 5 steps. Close + reopen the editor: the changes are still there; the keyboard (custom ON) follows after reopening it.
+ [ ] Same width: all keys of the row get one width. Width to row: all keys get the selected key's width. Copy style to next: next key gets the width.
+ [ ] Phone check: rotate while the editor is open (it closes, nothing lost). "Rebuild layout from current settings" still brings the classic keyboard back.

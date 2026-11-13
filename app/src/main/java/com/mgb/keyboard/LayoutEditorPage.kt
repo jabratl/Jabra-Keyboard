@@ -1,6 +1,7 @@
 package com.mgb.keyboard
 
 import android.app.Activity
+import android.app.AlertDialog
 import android.app.Dialog
 import android.content.res.ColorStateList
 import android.graphics.Color
@@ -21,6 +22,7 @@ import android.widget.ScrollView
 import android.widget.TextView
 import com.mgb.keyboard.layout.KeyDef
 import com.mgb.keyboard.layout.LayoutDef
+import com.mgb.keyboard.layout.LayoutHistory
 import com.mgb.keyboard.layout.LayoutOps
 import com.mgb.keyboard.typing.AppTokens
 import com.mgb.keyboard.typing.LayoutEditPlan
@@ -29,7 +31,8 @@ import com.mgb.keyboard.typing.LayoutEditPlan
  * v0.17.8 (K6a) the keyboard layout editor, page 1: see the layout, tap a key (selected = accent outline), edit its label, tap output,
  * shift output, long-press text and width. Every change goes through LayoutOps + LayoutStore.save (the safety gate S4) at once.
  * Shown as a full-screen dialog from App > Layout & size > "Edit layout" (no new page route, no manifest change). The app screen may use EditText.
- * Structure edits (merge, split, move, add, delete, undo) = K6b; swipes / warnings = K7; number row / symbols / action keys = K8.
+ * v0.17.9 (K6b): structure buttons (move, merge, split, empty / fill, add, delete, row tools) + Undo / Redo (LayoutHistory; every undo is saved through the same gate).
+ *  swipes / warnings = K7; number row / symbols / action keys = K8.
  */
 class LayoutEditorPage(private val act: Activity, private val prefs: JabraPrefs, private val onClose: () -> Unit) {
     private class Field(val box: LinearLayout, val et: EditText, val read: (KeyDef) -> String, val op: (LayoutDef, String, String) -> LayoutDef)
@@ -50,6 +53,13 @@ class LayoutEditorPage(private val act: Activity, private val prefs: JabraPrefs,
     private var minus: Button? = null
     private var plus: Button? = null
     private var hint: TextView? = null
+    private var hist: LayoutHistory? = null          // v0.17.9
+    private var undoBtn: Button? = null
+    private var redoBtn: Button? = null
+    private var emptyBtn: Button? = null
+    private var rowTv: TextView? = null
+    private var heightTv: TextView? = null
+    private var after = ""                           // message for the note after a structure change (or the reason of a refusal)
 
     private fun dp(v: Int) = (v * act.resources.displayMetrics.density).toInt()
 
@@ -68,6 +78,21 @@ class LayoutEditorPage(private val act: Activity, private val prefs: JabraPrefs,
         b.minHeight = dp(AppTokens.TOUCH); b.minimumHeight = dp(AppTokens.TOUCH)
         b.setOnClickListener { try { onClick() } catch (_: Throwable) { } }
         return b
+    }
+
+    private fun mini(s: String, onClick: () -> Unit): Button {
+        val b = btn(s, onClick)
+        b.textSize = 12f
+        b.setPadding(dp(4), 0, dp(4), 0)
+        b.minWidth = 0; b.minimumWidth = 0
+        return b
+    }
+
+    private fun addRowOf(card: LinearLayout, vararg bs: Button) {
+        val r = LinearLayout(act)
+        r.orientation = LinearLayout.HORIZONTAL
+        for (b in bs) r.addView(b, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
+        card.addView(r)
     }
 
     private fun build() {
@@ -94,6 +119,7 @@ class LayoutEditorPage(private val act: Activity, private val prefs: JabraPrefs,
 
         val m0 = try { LayoutStore.load(act, prefs) } catch (_: Throwable) { null }
         model = m0
+        hist = if (m0 != null) LayoutHistory(m0) else null
         if (m0 == null) {   // damaged layout: say so, offer the one-tap repair (the classic keyboard keeps running)
             col.addView(txt("The saved layout cannot be read (" + LayoutStore.lastProblem + "). The classic keyboard is used.", 14f, AppUi.warn(act)))
             col.addView(btn("Rebuild layout from current settings") {
@@ -133,6 +159,63 @@ class LayoutEditorPage(private val act: Activity, private val prefs: JabraPrefs,
         hint = txt("Tap a key to select it. Changes are saved at once. Reopen the keyboard to see them.", 12f, dim)
         hint?.setPadding(0, dp(AppTokens.S1), 0, dp(AppTokens.S2))
         col.addView(hint)
+
+        // v0.17.9 (K6b) structure card: undo / redo, move, merge, split, empty / fill, add, delete, row tools
+        val st = LinearLayout(act)
+        st.orientation = LinearLayout.VERTICAL
+        st.setPadding(dp(AppTokens.S3), dp(AppTokens.S3), dp(AppTokens.S3), dp(AppTokens.S3))
+        try { st.background = AppUi.cardBg(act, 12) } catch (_: Throwable) { }
+        st.addView(txt("Keys (the selected key)", 14f, ink, true))
+        val ub = mini("Undo") { undoRedo(false) }
+        val rb = mini("Redo") { undoRedo(true) }
+        undoBtn = ub; redoBtn = rb
+        addRowOf(st, ub, rb)
+        addRowOf(st, mini("Move left") { structOp("move left") { m -> LayoutOps.moveLeft(m, selected) } },
+            mini("Move right") { structOp("move right") { m -> LayoutOps.moveRight(m, selected) } },
+            mini("Move up") { structOp("move up") { m -> LayoutOps.moveUp(m, selected) } },
+            mini("Move down") { structOp("move down") { m -> LayoutOps.moveDown(m, selected) } })
+        val eb = mini("Make empty") { toggleEmpty() }
+        emptyBtn = eb
+        addRowOf(st, mini("Merge next") { structOp("merge") { m ->
+                val r = LayoutOps.merge(m, selected)
+                after = if (r !== m && LayoutOps.mergeMovesSecond(m, selected)) "Merged. The second key's letter is now the long-press of the first key." else ""
+                r } },
+            mini("Split") { structOp("split") { m -> LayoutOps.split(m, selected) } },
+            eb,
+            mini("Delete") { structOp("delete key") { m -> LayoutOps.delete(m, selected) } })
+        addRowOf(st, mini("Add before") { structOp("add key before") { m -> LayoutOps.insertBefore(m, selected) } },
+            mini("Add after") { structOp("add key after") { m -> LayoutOps.insertAfter(m, selected) } },
+            mini("Copy style to next") { structOp("copy style") { m ->
+                val n = LayoutEditPlan.neighbourId(m, LayoutEditPlan.tabId(tab), selected, 1)
+                if (n.isEmpty()) m else LayoutOps.copyKeyStyle(m, selected, n) } })
+        val rt = txt("", 12f, dim)
+        rt.setPadding(0, dp(AppTokens.S2), 0, 0)
+        rowTv = rt
+        st.addView(rt)
+        val hr = LinearLayout(act)
+        hr.orientation = LinearLayout.HORIZONTAL
+        hr.gravity = Gravity.CENTER_VERTICAL
+        hr.addView(txt("Row height", 14f, ink), LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
+        val hm = mini("-") { stepRowHeight(-1) }
+        hm.contentDescription = "Row lower"
+        hr.addView(hm, LinearLayout.LayoutParams(dp(56), ViewGroup.LayoutParams.WRAP_CONTENT))
+        val ht = txt("100%", 16f, ink, true)
+        ht.gravity = Gravity.CENTER
+        ht.minWidth = dp(64)
+        heightTv = ht
+        hr.addView(ht)
+        val hp = mini("+") { stepRowHeight(1) }
+        hp.contentDescription = "Row taller"
+        hr.addView(hp, LinearLayout.LayoutParams(dp(56), ViewGroup.LayoutParams.WRAP_CONTENT))
+        st.addView(hr)
+        addRowOf(st, mini("Add row below") { structOp("add row") { m -> val r = ownRowOrNote(m); if (r < 0) m else LayoutOps.addRow(m, LayoutEditPlan.tabId(tab), r) } },
+            mini("Duplicate row") { structOp("duplicate row") { m -> val r = ownRowOrNote(m); if (r < 0) m else LayoutOps.duplicateRow(m, LayoutEditPlan.tabId(tab), r) } },
+            mini("Delete row") { structOp("delete row") { m -> val r = ownRowOrNote(m); if (r < 0) m else LayoutOps.deleteRow(m, LayoutEditPlan.tabId(tab), r) } })
+        addRowOf(st, mini("Row up") { structOp("row up") { m -> val r = ownRowOrNote(m); if (r < 0) m else LayoutOps.swapRows(m, LayoutEditPlan.tabId(tab), r, r - 1) } },
+            mini("Row down") { structOp("row down") { m -> val r = ownRowOrNote(m); if (r < 0) m else LayoutOps.swapRows(m, LayoutEditPlan.tabId(tab), r, r + 1) } },
+            mini("Same width") { structOp("same width in row") { m -> val o = LayoutEditPlan.owner(m, selected); if (o == null) m else LayoutOps.autoBalanceRow(m, o[0], o[1].toInt()) } },
+            mini("Width to row") { structOp("this width for the row") { m -> LayoutOps.applyWidthToRow(m, selected) } })
+        col.addView(st, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
 
         // inspector
         val card = LinearLayout(act)
@@ -223,30 +306,112 @@ class LayoutEditorPage(private val act: Activity, private val prefs: JabraPrefs,
         val m = model ?: return
         val id = selected
         if (id.isEmpty()) return
-        commit(f.op(m, id, f.et.text.toString()), true)
+        commit(f.op(m, id, f.et.text.toString()), true, "edit text")
     }
 
     /** nm === model means the operation was refused (nothing changed). Saves through the safety gate; a refused save keeps the old model. */
-    private fun commit(nm: LayoutDef, keepText: Boolean) {
-        val old = model ?: return
-        if (nm === old) { if (!keepText) fillInspector(); return }
+    private fun commit(nm: LayoutDef, keepText: Boolean, label: String = "edit text"): Boolean {
+        val old = model ?: return false
+        if (nm === old) { if (!keepText) fillInspector(); return false }
         val r = LayoutStore.save(act, nm)
         if (r.isEmpty()) {
             model = nm
             view?.model = nm
+            hist?.commit(nm, label)
             updateTitleAndWidth()
             note?.setTextColor(AppUi.dim(act)); note?.text = "Saved"
-        } else {
-            note?.setTextColor(AppUi.warn(act)); note?.text = "Not saved: $r"
-            fillInspector()
+            return true
         }
+        note?.setTextColor(AppUi.warn(act)); note?.text = "Not saved: $r"
+        fillInspector()
+        return false
+    }
+
+    /** v0.17.9: one structure change. Refused (same model) = a note, nothing changes. Saved through the safety gate; the selection stays on the key or moves to the key now at its place. */
+    private fun structOp(label: String, f: (LayoutDef) -> LayoutDef) {
+        flushPending()
+        val m = model ?: return
+        val layer = LayoutEditPlan.tabId(tab)
+        if (selected.isEmpty() || LayoutEditPlan.findKey(m, layer, selected) == null) return
+        val loc = LayoutEditPlan.locate(m, layer, selected)
+        after = ""
+        val nm = f(m)
+        if (nm === m) {
+            note?.setTextColor(AppUi.warn(act))
+            note?.text = if (after.isNotEmpty()) after else LayoutEditPlan.refusedText(label)
+            after = ""
+            return
+        }
+        if (commit(nm, true, label)) {
+            selected = LayoutEditPlan.keepOrNear(nm, layer, selected, loc)
+            view?.selectedId = selected
+            if (after.isEmpty()) after = "Done: $label"
+            fillInspector()
+        } else after = ""
+    }
+
+    /** Row index of the selected key in the OWN rows of this tab, or -1 + a note when it sits in a shared row (number row / bottom row). */
+    private fun ownRowOrNote(m: LayoutDef): Int {
+        val r = LayoutEditPlan.ownRow(m, LayoutEditPlan.tabId(tab), selected)
+        if (r < 0) after = "This row is shared by all language tabs: only its height can be changed here."
+        return r
+    }
+
+    private fun stepRowHeight(dir: Int) {
+        flushPending()
+        val m = model ?: return
+        val o = LayoutEditPlan.owner(m, selected) ?: return
+        val row = o[1].toInt()
+        val cur = m.layer(o[0])?.rows?.get(row)?.heightPct ?: return
+        commit(LayoutOps.setRowHeight(m, o[0], row, LayoutEditPlan.nextHeight(cur, dir)), true, "row height")
+    }
+
+    private fun toggleEmpty() {
+        flushPending()
+        val k = LayoutEditPlan.findKey(model, LayoutEditPlan.tabId(tab), selected) ?: return
+        if (k.kind == KeyDef.SPACER) askFill() else structOp("make empty") { m -> LayoutOps.makeSpacer(m, selected) }
+    }
+
+    private fun askFill() {
+        val et = EditText(act)
+        et.isSingleLine = true
+        et.inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS
+        et.filters = arrayOf<InputFilter>(InputFilter.LengthFilter(LayoutEditPlan.limit(LayoutEditPlan.F_OUT) * 2))
+        AlertDialog.Builder(act).setTitle("Letter for this empty spot").setView(et)
+            .setPositiveButton("Fill") { _, _ ->
+                val t = et.text.toString()
+                structOp("fill") { m -> if (t.isEmpty()) m else LayoutOps.fill(m, selected, t) }
+            }
+            .setNegativeButton("Cancel", null).show()
+    }
+
+    private fun undoRedo(redo: Boolean) {
+        flushPending()
+        val h = hist ?: return
+        val layer = LayoutEditPlan.tabId(tab)
+        val loc = LayoutEditPlan.locate(model, layer, selected)
+        val label = if (redo) h.redoLabel() else h.undoLabel()
+        val m = (if (redo) h.redo() else h.undo()) ?: return
+        val r = LayoutStore.save(act, m)
+        if (r.isNotEmpty()) {   // the old state cannot be saved any more: stay where we were
+            if (redo) h.undo() else h.redo()
+            note?.setTextColor(AppUi.warn(act)); note?.text = "Not saved: $r"
+            updateTitleAndWidth()
+            return
+        }
+        model = m
+        view?.model = m
+        selected = LayoutEditPlan.keepOrNear(m, layer, selected, loc)
+        view?.selectedId = selected
+        after = (if (redo) "Redone" else "Undone") + (if (label.isEmpty()) "" else ": $label")
+        fillInspector()
     }
 
     private fun stepWidth(dir: Int) {
         flushPending()
         val m = model ?: return
         val k = LayoutEditPlan.findKey(m, LayoutEditPlan.tabId(tab), selected) ?: return
-        commit(LayoutOps.setWeight(m, selected, LayoutEditPlan.nextWeight(k.weight, dir)), true)
+        commit(LayoutOps.setWeight(m, selected, LayoutEditPlan.nextWeight(k.weight, dir)), true, "width")
     }
 
     private fun selectTab(i: Int) {
@@ -278,6 +443,14 @@ class LayoutEditorPage(private val act: Activity, private val prefs: JabraPrefs,
         val k = LayoutEditPlan.findKey(m, layer, selected)
         title?.text = if (k == null) "No key selected" else "Selected: " + LayoutEditPlan.describe(m, layer, selected, false)
         weightTv?.text = if (k == null) "-" else LayoutEditPlan.weightText(k.weight)
+        val hs = hist
+        val cu = hs != null && hs.canUndo(); val cr = hs != null && hs.canRedo()
+        undoBtn?.text = LayoutEditPlan.undoText(cu, hs?.undoLabel() ?: ""); undoBtn?.isEnabled = cu
+        redoBtn?.text = LayoutEditPlan.redoText(cr, hs?.redoLabel() ?: ""); redoBtn?.isEnabled = cr
+        emptyBtn?.text = if (k?.kind == KeyDef.SPACER) "Fill" else "Make empty"
+        rowTv?.text = if (k == null) "" else LayoutEditPlan.rowSummary(m, layer, selected)
+        val o = LayoutEditPlan.owner(m, selected)
+        heightTv?.text = if (m == null || o == null) "-" else ((m.layer(o[0])?.rows?.get(o[1].toInt())?.heightPct ?: 100).toString() + "%")
     }
 
     /** Puts the selected key into the inspector (hides the fields the key kind does not have). */
@@ -301,10 +474,12 @@ class LayoutEditorPage(private val act: Activity, private val prefs: JabraPrefs,
         note?.setTextColor(AppUi.dim(act))
         note?.text = when {
             k == null -> ""
-            k.kind == KeyDef.SPACER -> "Empty spot: it draws nothing and types nothing. Filling, merging and moving come in the next update."
-            k.kind == KeyDef.ACTION -> "Function key (" + k.action + "): only its width can be changed for now."
+            after.isNotEmpty() -> after
+            k.kind == KeyDef.SPACER -> "Empty spot: it draws nothing and types nothing. Use Fill to put a letter in it, or Merge / Split / Move."
+            k.kind == KeyDef.ACTION -> "Function key (" + k.action + "): width, move, merge, delete work; its letters cannot be changed yet."
             else -> ""
         }
+        after = ""
         view?.selectedId = selected
     }
 }
