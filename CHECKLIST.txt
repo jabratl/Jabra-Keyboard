@@ -798,13 +798,3 @@ Z101) v0.17.2 Space bar size + smoother language swipe (K2)  [portrait + landsca
  [ ] Undo 5 steps, Redo 5 steps. Close + reopen the editor: the changes are still there; the keyboard (custom ON) follows after reopening it.
  [ ] Same width: all keys of the row get one width. Width to row: all keys get the selected key's width. Copy style to next: next key gets the width.
  [ ] Phone check: rotate while the editor is open (it closes, nothing lost). "Rebuild layout from current settings" still brings the classic keyboard back.
-
-=== Z109 (v0.17.10, K7: swipes, picker, warnings, EXPERIMENTAL) ===
- [ ] Push the zip. Actions: "Java tests: 102/102 green" + APK. If RED: paste the Kotlin errors (Kotlin of v0.17.5 - v0.17.10 never compiled): FIX first.
- [ ] Editor > select "q": 4 swipe fields appear. Swipe up = @paste. Custom keyboard ON, reopen keyboard: swipe up on q pastes; a short tap still types q.
- [ ] Tap the "Swipe down" field, "Pick from list" > Currency > taka sign: field shows it; swipe down on the key types it. Pick > Bangla signs (kar) shows ZWNJ / ZWJ names.
- [ ] Pick > Actions while the Tap output field is focused: refused with a note. In a swipe field it works.
- [ ] Set key "w" tap output to "q": both keys get an ORANGE outline, the Warnings card lists "q is on 2 keys". Tap the line: selects a key. "Fix": one key becomes empty, warnings gone. Undo brings the duplicate back.
- [ ] Same letter on shift vs normal of ONE key is not a warning. Saving is never blocked by a warning.
- [ ] Make "z" empty and clear its tap: chip "z" appears. Tap it: z returns into the first empty spot. If no empty spot: a note.
- [ ] Bangla tab: warnings / chips list Bangla letters; chips scroll sideways.

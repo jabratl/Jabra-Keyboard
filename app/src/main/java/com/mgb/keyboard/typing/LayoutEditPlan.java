@@ -2,25 +2,21 @@ package com.mgb.keyboard.typing;
 
 import com.mgb.keyboard.layout.KeyDef;
 import com.mgb.keyboard.layout.LayerDef;
-import com.mgb.keyboard.layout.LayoutCheck;
 import com.mgb.keyboard.layout.LayoutDef;
 import com.mgb.keyboard.layout.LayoutOps;
 import com.mgb.keyboard.layout.LayoutText;
 import com.mgb.keyboard.layout.RowDef;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 
 /**
- * v0.17.8 (K6a) + v0.17.9 (K6b) + v0.17.10 (K7) pure rules of the app layout editor (no Android): which inspector fields a key has, width steps, shown labels,
+ * v0.17.8 (K6a) + v0.17.9 (K6b) pure rules of the app layout editor (no Android): which inspector fields a key has, width steps, shown labels,
  * key positions for drawing / touch, spoken description. Tested by tools/LayoutEditPlanTest.java.
  */
 public final class LayoutEditPlan {
     private LayoutEditPlan() { }
 
-    public static final int F_LABEL = 1, F_OUT = 2, F_SHIFT = 4, F_LP = 8, F_WIDTH = 16, F_SWIPE = 32;
+    public static final int F_LABEL = 1, F_OUT = 2, F_SHIFT = 4, F_LP = 8, F_WIDTH = 16;
     public static final float STEP = 0.25f;
 
     /** Letter layers the editor shows in K6a (symbol pages come with K8). */
@@ -32,7 +28,7 @@ public final class LayoutEditPlan {
 
     /** Inspector fields of a key kind (bit mask). Character key = all; action key / empty spot = width only (K6b adds more). */
     public static int fields(int kind) {
-        if (kind == KeyDef.CHAR) return F_LABEL | F_OUT | F_SHIFT | F_LP | F_WIDTH | F_SWIPE;
+        if (kind == KeyDef.CHAR) return F_LABEL | F_OUT | F_SHIFT | F_LP | F_WIDTH;
         if (kind == KeyDef.ACTION || kind == KeyDef.SPACER) return F_WIDTH;
         return 0;
     }
@@ -42,7 +38,7 @@ public final class LayoutEditPlan {
     /** Max length (code points) of the text field: F_LABEL, F_OUT / F_SHIFT, F_LP. 0 = unknown field. */
     public static int limit(int field) {
         if (field == F_LABEL) return LayoutText.MAX_LABEL;
-        if (field == F_OUT || field == F_SHIFT || field == F_SWIPE) return LayoutText.MAX_OUT;
+        if (field == F_OUT || field == F_SHIFT) return LayoutText.MAX_OUT;
         if (field == F_LP) return LayoutText.MAX_LP;
         return 0;
     }
@@ -263,99 +259,5 @@ public final class LayoutEditPlan {
     /** Message when LayoutOps refused a change (it returned the same model). */
     public static String refusedText(String what) {
         return "Not possible here: " + (what == null ? "this change" : what) + " (a row needs 1 key, a key at least 0.25 width, max 8 rows / 80 keys).";
-    }
-
-    // ---------- v0.17.10 (K7): swipe fields, picker lists, warnings ----------
-    public static final String[] SWIPE_NAMES = { "Swipe up", "Swipe down", "Swipe left", "Swipe right" };
-    public static final int MAX_WARN_SHOWN = 8, MAX_CHIPS = 40;
-
-    private static String[] cps(String s) {
-        List<String> l = new ArrayList<String>();
-        for (int i = 0; i < s.length(); ) { int c = s.codePointAt(i); l.add(new String(Character.toChars(c))); i += Character.charCount(c); }
-        return l.toArray(new String[0]);
-    }
-
-    private static final String[] PICK_TITLES = { "Symbols", "Digits", "Currency (incl. \u09F3)", "Bangla vowels", "Bangla consonants", "Bangla signs (kar)", "Bangla digits", "Actions (swipe / long-press)" };
-
-    public static String[] pickTitles() { return PICK_TITLES.clone(); }
-
-    /** Items of picker group g (0-based, see pickTitles). Unknown group = empty. Group 7 = the @actions of the whitelist (sorted). */
-    public static String[] pickItems(int g) {
-        switch (g) {
-            case 0: return cps("!@#%&*()-+=/\\:;'\",.?_~<>[]{}|^`\u0964");
-            case 1: return cps("0123456789");
-            case 2: return cps("\u09F3$\u20AC\u00A3\u00A5\u20B9\u00A2\u20A9");
-            case 3: return cps("\u0985\u0986\u0987\u0988\u0989\u098A\u098B\u098F\u0990\u0993\u0994");
-            case 4: return new String[] { "\u0995","\u0996","\u0997","\u0998","\u0999","\u099A","\u099B","\u099C","\u099D","\u099E","\u099F","\u09A0","\u09A1","\u09A2","\u09A3","\u09A4","\u09A5","\u09A6","\u09A7","\u09A8","\u09AA","\u09AB","\u09AC","\u09AD","\u09AE","\u09AF","\u09B0","\u09B2","\u09B6","\u09B7","\u09B8","\u09B9","\u09DC","\u09DD","\u09DF","\u09CE","\u0982","\u0983","\u0981" };
-            case 5: return new String[] { "\u09BE","\u09BF","\u09C0","\u09C1","\u09C2","\u09C3","\u09C7","\u09C8","\u09CB","\u09CC","\u09CD","\u200C","\u200D" };
-            case 6: return cps("\u09E6\u09E7\u09E8\u09E9\u09EA\u09EB\u09EC\u09ED\u09EE\u09EF");
-            case 7: { String[] a = LayoutText.AT_ACTIONS.toArray(new String[0]); Arrays.sort(a); return a; }
-            default: return new String[0];
-        }
-    }
-
-    /** Readable name of a picker item (ZWJ / ZWNJ and @actions are not visible otherwise). */
-    public static String pickName(String item) {
-        if (item == null) return "";
-        if (item.equals("\u200C")) return "ZWNJ (invisible)";
-        if (item.equals("\u200D")) return "ZWJ (invisible)";
-        if (item.startsWith("@") && item.length() > 1) return item + " = " + atName(item);
-        return item;
-    }
-
-    public static String atName(String a) {
-        if (a == null) return "";
-        switch (a) {
-            case "@tab": return "Tab"; case "@undo": return "Undo"; case "@redo": return "Redo"; case "@paste": return "Paste";
-            case "@copy": return "Copy"; case "@cut": return "Cut"; case "@selall": return "Select all"; case "@emoji": return "Emoji panel";
-            case "@clip": return "Clipboard"; case "@lang": return "Switch language"; case "@caps": return "Caps lock"; case "@sym": return "Symbols";
-            case "@left": return "Cursor left"; case "@right": return "Cursor right"; case "@home": return "Line start"; case "@end": return "Line end";
-            case "@del_word": return "Delete word";
-            default: return a;
-        }
-    }
-
-    /** Ids of the keys that belong to a warning of [layer] with at least [minSev] (orange outline in the editor). */
-    public static java.util.Set<String> warnKeyIds(List<LayoutCheck.Warn> ws, String layer, int minSev) {
-        java.util.Set<String> out = new java.util.HashSet<String>();
-        if (ws == null) return out;
-        for (LayoutCheck.Warn w : ws) if (w != null && w.severity >= minSev && (layer == null || layer.equals(w.layer))) out.addAll(w.keyIds);
-        return out;
-    }
-
-    /** Warnings of one layer, worst first (stable). */
-    public static List<LayoutCheck.Warn> warnsOf(List<LayoutCheck.Warn> ws, String layer) {
-        List<LayoutCheck.Warn> out = new ArrayList<LayoutCheck.Warn>();
-        if (ws == null) return out;
-        for (LayoutCheck.Warn w : ws) if (w != null && (layer == null || layer.equals(w.layer))) out.add(w);
-        Collections.sort(out, new java.util.Comparator<LayoutCheck.Warn>() {
-            @Override public int compare(LayoutCheck.Warn a, LayoutCheck.Warn b) { return b.severity - a.severity; }
-        });
-        return out;
-    }
-
-    public static String severityName(int sev) { return sev >= LayoutCheck.HIGH ? "High" : (sev == LayoutCheck.MED ? "Medium" : (sev == LayoutCheck.LOW ? "Low" : "Info")); }
-
-    public static String warnLine(LayoutCheck.Warn w) {
-        if (w == null) return "";
-        return "[" + severityName(w.severity) + "] " + w.text + (w.fixable ? " (can be fixed)" : "");
-    }
-
-    /** Letters of the W_COVERAGE warning of [layer] that no key types (chips in the editor, max MAX_CHIPS). */
-    public static List<String> coverageItems(List<LayoutCheck.Warn> ws, String layer) {
-        List<String> out = new ArrayList<String>();
-        if (ws == null) return out;
-        for (LayoutCheck.Warn w : ws) {
-            if (w == null || !LayoutCheck.W_COVERAGE.equals(w.code) || (layer != null && !layer.equals(w.layer))) continue;
-            for (String it : w.items) if (out.size() < MAX_CHIPS && !out.contains(it)) out.add(it);
-        }
-        return out;
-    }
-
-    /** Id of the first empty spot drawn in [layer], or "". */
-    public static String firstSpacerId(LayoutDef m, String layer) {
-        if (m == null) return "";
-        for (RowDef r : m.effectiveRows(layer)) for (KeyDef k : r.keys) if (k.kind == KeyDef.SPACER) return k.id;
-        return "";
     }
 }
