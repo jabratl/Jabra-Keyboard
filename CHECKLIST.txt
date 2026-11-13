@@ -973,3 +973,10 @@ Z130  v0.17.38  M5  Clipboard list height slider
  [ ] 3. Check Cards view and List view, Panel style Classic and New, with the search box open.
  [ ] 4. "Clipboard follows keyboard height" OFF + 70 %: list is still shorter. Back to 100 = old size.
  [ ] 5. Paste / select mode / scroll still work at 50 %.
+
+Z131  v0.17.39  M6  Remember the format (html) of copied clips (no UI yet)
+ [ ] 1. Copy 3 different texts in a browser / Docs / WhatsApp (bold or link text if possible). Open the Jabra clipboard: all 3 are there, looks exactly as before, no crash.
+ [ ] 2. Copy the same text twice, delete one clip, Clear unpinned, Settings > Privacy > Clear clipboard history now: all work as before, no crash.
+ [ ] 3. Edit a clip (Edit screen > Save): works as before.
+ [ ] 4. Keyboard is not slower to open the clipboard or to copy a long text (20000 chars).
+ [ ] 5. (Developer only) Settings > Apps > Jabra > Storage: Clear data removes jabra_clipfmt too.

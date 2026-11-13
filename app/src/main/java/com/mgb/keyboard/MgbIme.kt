@@ -82,7 +82,7 @@ class MgbIme : InputMethodService() {
     // v0.0.6: clipboard history + edit bar
     private var pwdField = false               // true in password fields: nothing is recorded there
     private var clipListener: ClipboardManager.OnPrimaryClipChangedListener? = null
-    private val clipStore by lazy { ClipStore(JabraPrefs(this)) }
+    private val clipStore by lazy { ClipStore(JabraPrefs(this), ClipFmtStore(this)) }   // v0.17.39 (M6)
     private val clipPanel by lazy { ClipPanel(this, host, clipStore) { fieldText() }.also { cp -> cp.toVault = { l -> vaultPanel.saveFromClips(l) } } }   // v0.2.5.1: Add button reads the field; v0.4.4: "To Vault" button
     private val vaultStore by lazy { VaultStore(this) }   // v0.4.4 Personal Text Vault (file vault_v1.json, loaded only when the panel opens)
     private val vaultPanel by lazy { VaultPanel(this, host, vaultStore) { fieldText() } }   // v0.4.4
@@ -271,9 +271,10 @@ class MgbIme : InputMethodService() {
             val sensitive = try { d.description?.extras?.getBoolean("android.content.extra.IS_SENSITIVE", false) ?: false } catch (_: Throwable) { false }
             if (sensitive) return
             var t: String? = null   // v0.16.15 (E3): first item that has text (was: item 0 only)
-            for (i in 0 until d.itemCount) { val s = try { d.getItemAt(i).coerceToText(this)?.toString() } catch (_: Throwable) { null }; if (!s.isNullOrBlank()) { t = s; break } }
+            var html: String? = null   // v0.17.39 (M6): the html of that same item (null = plain)
+            for (i in 0 until d.itemCount) { val s = try { d.getItemAt(i).coerceToText(this)?.toString() } catch (_: Throwable) { null }; if (!s.isNullOrBlank()) { t = s; html = try { d.getItemAt(i).htmlText } catch (_: Throwable) { null }; break } }
             if (t == null) return
-            clipStore.addCaptured(t)   // v0.16.15 (E3): texts longer than 2000 characters were dropped before (now up to 20000)
+            clipStore.addCaptured(t, html)   // v0.16.15 (E3): texts longer than 2000 characters were dropped before (now up to 20000)
         } catch (_: Throwable) { }
     }
 

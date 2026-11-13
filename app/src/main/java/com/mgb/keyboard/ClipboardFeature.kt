@@ -24,18 +24,21 @@ import com.mgb.keyboard.typing.PanelLayout   // v0.16.9 (X9)
  */
 
 /** Saves/loads the history. Never throws. */
-class ClipStore(private val prefs: JabraPrefs) {
+class ClipStore(private val prefs: JabraPrefs, private val fmt: ClipFmtStore? = null) {   // v0.17.39 (M6): fmt = remembered html formats (null = none)
     private var list: ClipList = try { ClipList.parse(prefs.str("clips_v1", "")) } catch (_: Throwable) { ClipList() }   // v0.10.10: var (reload after "Clear clipboard history now")
 
     init { live = this }   // v0.10.10 (W4)
 
     /** v0.10.10 (W4): re-reads the list from prefs (used after the Privacy page cleared it) and drops meta of clips that are gone. */
-    fun reload() { try { list = ClipList.parse(prefs.str("clips_v1", "")); if (meta.prune(list.view(""))) saveMeta() } catch (_: Throwable) { } }
+    fun reload() { try { list = ClipList.parse(prefs.str("clips_v1", "")); if (meta.prune(list.view(""))) saveMeta(); fmt?.reload(); pruneFmt() } catch (_: Throwable) { } }
+
+    /** v0.17.39 (M6): drops the stored formats of clips that are gone (cheap: nothing is read when no format is stored). */
+    private fun pruneFmt() { try { fmt?.prune(list.view("").map { it.text }) } catch (_: Throwable) { } }
 
     companion object {   // v0.10.10 (W4)
         @Volatile private var live: ClipStore? = null
         /** Deletes all UNPINNED clips straight in prefs (Privacy page has no ClipStore). Keeps pinned. Returns how many were removed. */
-        fun clearUnpinnedNow(prefs: JabraPrefs): Int = try {
+        fun clearUnpinnedNow(prefs: JabraPrefs, ctx: Context? = null): Int = try {   // v0.17.39 (M6): ctx = also prune the stored formats
             val l = ClipList.parse(prefs.str("clips_v1", ""))
             val before = l.size()
             l.clearUnpinned()
@@ -43,6 +46,7 @@ class ClipStore(private val prefs: JabraPrefs) {
             val m = ClipMeta.parse(prefs.str("clip_meta_v1", ""))
             m.prune(l.view(""))
             prefs.setStr("clip_meta_v1", m.serialize())
+            if (ctx != null) ClipFmtStore.pruneNow(ctx, l.view("").map { it.text })   // v0.17.39 (M6)
             live?.reload()
             before - l.size()
         } catch (_: Throwable) { 0 }
@@ -57,7 +61,7 @@ class ClipStore(private val prefs: JabraPrefs) {
     fun replace(i: ClipList.Item, t: String): Int = try {
         val old = i.text
         val rc = list.replace(i, t)
-        if (rc == 0 && old != t) { save(); meta.rename(old, t); saveMeta() }
+        if (rc == 0 && old != t) { save(); meta.rename(old, t); saveMeta(); pruneFmt() }   // v0.17.39 (M6): edited text = no format
         rc
     } catch (_: Throwable) { 4 }
     fun has(t: String): Boolean = try { list.view("").any { it.text == t } } catch (_: Throwable) { false }
@@ -79,7 +83,7 @@ class ClipStore(private val prefs: JabraPrefs) {
                 ClipSensitive.isDue(c.pinned, c.text, m, now)
             }
             val n = if (gone.isNotEmpty()) list.removeAll(gone) else 0
-            if (n > 0) { save(); meta.prune(list.view("")); touched = true }
+            if (n > 0) { save(); meta.prune(list.view("")); pruneFmt(); touched = true }   // v0.17.39 (M6)
             if (touched) saveMeta()
             n
         }
@@ -91,7 +95,7 @@ class ClipStore(private val prefs: JabraPrefs) {
             val before = meta.size()
             val gone = meta.expired(list.view(""), ttl, System.currentTimeMillis())
             val n = if (gone.isNotEmpty()) list.removeAll(gone) else 0
-            if (n > 0) save()
+            if (n > 0) { save(); pruneFmt() }   // v0.17.39 (M6)
             val pr = meta.prune(list.view(""))
             if (pr || n > 0 || meta.size() != before) saveMeta()
             n
@@ -101,17 +105,22 @@ class ClipStore(private val prefs: JabraPrefs) {
     fun add(t: String) { try { val isNew = !has(t); if (list.add(t)) save(); if (isNew) { meta.made(t, System.currentTimeMillis()); saveMeta() } else if (prefs.bool("clip_sens", false) && ClipSensitive.looksLikeCode(t)) { meta.remake(t, System.currentTimeMillis()); saveMeta() }; expireNow() } catch (_: Throwable) { } }   // v0.4.3: records "made" for new clips
     /** v0.16.15 (E3): for text copied in other apps: long texts (up to ClipList.MAX_CAPTURE) are kept. Same bookkeeping as add(). */
     fun addCaptured(t: String) { try { val isNew = !has(t); if (list.addCaptured(t)) save(); if (isNew && has(t)) { meta.made(t, System.currentTimeMillis()); saveMeta() } else if (!isNew && prefs.bool("clip_sens", false) && ClipSensitive.looksLikeCode(t)) { meta.remake(t, System.currentTimeMillis()); saveMeta() }; expireNow() } catch (_: Throwable) { } }
+    /** v0.17.39 (M6): same as addCaptured(t) and remembers the html copied with it (null = plain copy: an old stored format of the same text goes). */
+    fun addCaptured(t: String, html: String?) {
+        addCaptured(t)
+        try { if (fmt != null && has(t)) { fmt.put(t, html); if (html != null) pruneFmt() } } catch (_: Throwable) { }
+    }
     fun view(q: String): List<ClipList.Item> = try { list.view(q) } catch (_: Throwable) { emptyList() }
     fun togglePin(i: ClipList.Item): Boolean = try { val ok = list.togglePin(i); if (ok) save(); ok } catch (_: Throwable) { false }
-    fun remove(i: ClipList.Item) { try { if (list.remove(i)) save() } catch (_: Throwable) { } }
-    fun clearUnpinned() { try { list.clearUnpinned(); save() } catch (_: Throwable) { } }
+    fun remove(i: ClipList.Item) { try { if (list.remove(i)) { save(); pruneFmt() } } catch (_: Throwable) { } }   // v0.17.39 (M6)
+    fun clearUnpinned() { try { list.clearUnpinned(); save(); pruneFmt() } catch (_: Throwable) { } }   // v0.17.39 (M6)
 
     // v0.2.5.1: engine wrappers (all safe)
     fun pinnedView(q: String): List<ClipList.Item> = try { list.viewPinned(q) } catch (_: Throwable) { emptyList() }
     fun recentView(q: String): List<ClipList.Item> = try { list.viewRecent(q) } catch (_: Throwable) { emptyList() }
     fun pinnedCount(): Int = try { list.pinnedCount() } catch (_: Throwable) { 0 }
     fun setPinned(sel: List<ClipList.Item>, pin: Boolean): Int = try { val n = list.setPinned(sel, pin); if (n > 0) save(); n } catch (_: Throwable) { 0 }
-    fun removeAll(sel: List<ClipList.Item>): Int = try { val n = list.removeAll(sel); if (n > 0) save(); n } catch (_: Throwable) { 0 }
+    fun removeAll(sel: List<ClipList.Item>): Int = try { val n = list.removeAll(sel); if (n > 0) { save(); pruneFmt() }; n } catch (_: Throwable) { 0 }
     /** Saves a text as a new clip. Returns ClipList.check(): 0 = saved, 1 = empty, 2 = too long. */
     fun addChecked(t: String): Int = try { val c = ClipList.check(t); if (c == 0) add(t); c } catch (_: Throwable) { 1 }
 }

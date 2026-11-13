@@ -58,7 +58,7 @@ object PrivacyPage {
                     if (!armed) { armed = true; cb.text = PrivacyInfo.clearLabel(true, unpinned) }
                     else {
                         armed = false
-                        val n = ClipStore.clearUnpinnedNow(prefs)
+                        val n = ClipStore.clearUnpinnedNow(prefs, ctx)   // v0.17.39 (M6): also drops stored formats
                         msg.text = PrivacyInfo.clearDone(n)
                         fill()
                     }
