@@ -1,4 +1,4 @@
-JABRA KEYBOARD - HANDOFF   code = v0.16.16   PLAN K (keyboard layout editor) written 2026-11-13 by a PLANNING chat (read-only audit, NO code changed) | REV 2 = SENIOR REVIEW 2026-11-13 (checked against the real repo zip, see 6.13 + section 7b)
+JABRA KEYBOARD - HANDOFF   code = v0.17.1   PLAN K (keyboard layout editor) written 2026-11-13 by a PLANNING chat (read-only audit, NO code changed) | REV 2 = SENIOR REVIEW 2026-11-13 (checked against the real repo zip, see 6.13 + section 7b)
 =====================================================================================================================================
 Paste this file + the newest Jabra-Keyboard-main zip at the start of EVERY chat. This file is SELF-CONTAINED and REPLACES the file of the same name.
 The old long handoff (plan X, sections 1-11) is kept UNCHANGED in docs/ARCHIVE_HANDOFF_v0.16.10_before_plan_K.txt (grep only, never read fully).
@@ -17,7 +17,7 @@ ASSUMPTIONS (1 line): (a) "extra ? key" = the ? key between space and "." in the
   Languages: English, "Bangলা" (phonetic, pref bn_layout = "avro", Ridmik key map default bn_map=1), "বাংলা" (fixed layout, bn_layout = "probhat"). Panels: clipboard, novel formatter, vault, text tools, profiles, themes + Theme Studio, emoji, number pad, symbols, cursor pad, PC mode, size, settings, health check, backup / restore. App screen (SettingsActivity) has 7 pages + Live preview (KeyboardPreview.kt).
   Build = push to GitHub main -> Actions -> APK -> in-app updater. The workflow applies every *_vX_Y_Z.zip waiting in the repo root, in version order. ZIP RULES: file name must contain _vX_Y_Z (e.g. jabra_v0_17_1.zip); zip ROOT FOLDER = Jabra-Keyboard-main/; a code zip must contain app/build.gradle.kts with appVersionName; DELETE.txt inside the zip = files to remove (one path per line). Docs-only zips have NO version digits (jabra_<topic>_docs.zip). (The v0.16.15 chat made "Jabra-Keyboard-v0.16.15-patch.zip" without that naming / root folder: the user applied it by hand. From now on follow the rule.)
   Permissions: INTERNET (updater only), REQUEST_INSTALL_PACKAGES, VIBRATE. NO new permission without ASKING.
-  Version = ONE line appVersionName in app/build.gradle.kts (now "0.16.16"; versionCode = GitHub run number).
+  Version = ONE line appVersionName in app/build.gradle.kts (now "0.17.1"; versionCode = GitHub run number).
   EXCLUDED BY USER (never plan / build): diff checker, calculator, keyboard wallpaper / photo background, Store, cloud sync, clipboard images, volume-key cursor, SPLIT keyboard, Bangla suggestions / next-word / learning / typed-word preview / suggestion bar (dropped v0.0.9), auto-correct.
   LIFTED BY USER ON 2026-11-13: "key customize" (was excluded). Plan K builds it on purpose.
 
@@ -61,7 +61,7 @@ ASSUMPTIONS (1 line): (a) "extra ? key" = the ? key between space and "." in the
   Panel routes: clipboard format more emoji settings typing size themes tstudio vault tt profiles numpad symbols tbquick toolbar pad keymap (letters = showLetters()). NEW in plan K: none in the keyboard until K10 (in-keyboard edit); app route "layout_editor" (K6).
   Clipboard prefs (v0.16.16): clip_hold (int level 0 System / 1 0.8 s / 2 1.2 s / 3 1.5 s default / 4 2 s; in ProfileCodec.SPEC).
   Language prefs: bn_layout ("avro" | "probhat"), lang_avro_on, lang_probhat_on, lang_tap, lang_fav, bn_map. VALUES STAY.
-  Bottom row prefs: bot_style, key_lang, space_lang, sp_step, key_globe, key_voice, key_emoji, key_dots, mode_key, edit_bar, row_gap, fn_gap, edge_dp, letter_pct, numrow, nr_mode, nr_chars, xrow_chars.
+  Bottom row prefs: key_qm (v0.17.1, bool default false), bot_style, key_lang, space_lang, sp_step, key_globe, key_voice, key_emoji, key_dots, mode_key, edit_bar, row_gap, fn_gap, edge_dp, letter_pct, numrow, nr_mode, nr_chars, xrow_chars.
   Clip data: clips_v1 "<0|1 pinned>,<urlencoded text>" (ClipList.MAX_LEN 2000 for Add / Edit, MAX_CAPTURE 20000 for copied text), clip_meta_v1.
   PLAN K NEW PREFS (names grep-checked free on 2026-11-13; grep AGAIN before use; avoid names that are a substring of an old key, e.g. "tb_h"):
     key_qm   (bool, "? / । key in the bottom row"; K1; DEFAULT = HIDDEN because the user asked to remove it; setting row lets him bring it back)
@@ -130,7 +130,7 @@ ASSUMPTIONS (1 line): (a) "extra ? key" = the ? key between space and "." in the
       Read-only: typing/HoldSelect.java (+ HoldSelectTest 40 checks), typing/ClipSelect.java, ScrollKeep.java (X1: keep scroll position), HintKeys.kt.
       Checks (phone): hold 1.5 s on the first clip -> selected; tap 3 others -> ticked at once; tap the tick -> toggles; scroll while holding -> no selection; plain tap outside select mode still pastes; Pin / Delete / All / Done work; cards + list + New style + search; password field = clipboard hidden as before.
 
-  [ ] K1   v0.17.1    Remove the "?" key (setting)                                  mode MODIFY   size S (~20%)
+  [x] K1   v0.17.1    DONE 2026-11-13 (pref key_qm default hidden; BottomPlan.spaceMax/spaceOld/spaceWeight(…,qmShown); long-press "." = ? / । with latinOnly rule; preview follows; 91 tests green, Kotlin NOT compiled, NOT phone-tested): Remove the "?" key (setting)                                  mode MODIFY   size S (~20%)
       Goal: the bottom row has NO "? / ।" key by default; the space bar takes its width; a setting brings it back; the app Live preview agrees.
       Modify: MgbIme.kt L1107-1109 (3 lines: db / dandaBtn / addView) -> ONE branch on pref key_qm (default false = hidden): hidden = dandaBtn stays null (applyLang L573 already uses dandaBtn?.), no view; the Ridmik-style space weight code at L1111-1116 already sums the other keys, so space grows by itself (check SPACE_MAX 4.5 in BottomPlan: when "?" is hidden allow up to 5.5 -> add BottomPlan.spaceMax(qmShown) + test). Bangla "।": when the key is hidden, long-press on "." types "।" in Bangla mode and "?" in English (tiny hook on the "." key, try / catch; no change when the key is shown). KeyboardPreview.kt bottom row (L118-140 area, find with grep "danda\|\"?\"") must follow key_qm. SettingsGroups.kt row "Show ? / । key" (toggle, section Keyboard / Bottom row), SettingsIndex help, ProfileCodec.SPEC (bool), Migrate, ChangedPlan default (false), tests counts, KeyDesc.java if it lists the key name.
       New pure helper: BottomPlan.spaceMax(boolean qmShown) + BottomPlanTest checks (tools/BottomPlanTest.java exists? grep first; else add).
@@ -229,7 +229,7 @@ ASSUMPTIONS (1 line): (a) "extra ? key" = the ? key between space and "." in the
   G. NOT CHANGED: package name, prefs file "jabra", RULE 0, patch-only rule, one step per chat, exclusion list, design rules, Classic theme, default = old behaviour.
 
 8) STATUS
-  Code = v0.16.16 (plan X steps X1-X14 done, E1 + E2 + E3 done; E2 NOT phone-tested yet: CHECKLIST Z99). Plan K = planned only (this chat); REV 2 senior review done the same day, still no code changed. v0.16.15 build on GitHub: result NOT known in the planning chat; ask the user. Kotlin has never been compiled in these chats (no kotlinc / github.com): the first chat that can must run tools/KOTLIN_CHECK.txt and FIX before new work.
+  Code = v0.17.1 (plan X done, E1 E2 E3 done, K1 done; E2 + K1 NOT phone-tested yet: CHECKLIST Z99, Z100). NEXT = K2. Plan K = planned only (this chat); REV 2 senior review done the same day, still no code changed. v0.16.15 build on GitHub: result NOT known in the planning chat; ask the user. Kotlin has never been compiled in these chats (no kotlinc / github.com): the first chat that can must run tools/KOTLIN_CHECK.txt and FIX before new work.
   panel_ui default is still 0 (Classic panels): ASK the user, flip to 1 only after phone OK of X9-X12.
   The user's phone showed Jabra Keyboard 0.16.10 (build 156): remind him to update (App > Check for updates) so E3 (long clips, gold pinned) can be tested.
 
@@ -253,6 +253,7 @@ ASSUMPTIONS (1 line): (a) "extra ? key" = the ? key between space and "." in the
 
   2026-11-13 PLAN K REV 2 DONE (senior review, repo zip checked read-only, sections 6.1b 6.8-6.13 7b + steps K0 K9b K13 added, K5a split) -> jabra_plan_k_review_docs.zip
   2026-11-13 E2 DONE (v0.16.16): ClipHold.kt NEW, ClipCards.kt / ClipboardFeature.kt hold + tick fix, clip_hold setting (6 registration files), HoldSelectTest 47, all 91 tests green -> jabra_v0_16_16.zip (user applies by pushing it to the repo root)
+  2026-11-13 K1 DONE (v0.17.1): key_qm hidden by default, space wider, long-press "." = ? / ।, preview + setting + 5 registration files, BottomPlanTest 37, all 91 tests green -> jabra_v0_17_1.zip
 
 11) NEXT (ideas, NOT planned, ask the user first)
   - (REV 2) Key colour per key + haptic strength per key are still ideas; layout per language / orientation / app became K13 (optional).

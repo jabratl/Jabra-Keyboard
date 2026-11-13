@@ -14,6 +14,11 @@ public final class BottomPlan {
     public static final float TOTAL = 10.6f;
     public static final float SPACE_OLD = 4f, SPACE_MIN = 2f, SPACE_MAX = 4.5f;
 
+    /** v0.17.1 (K1): with the "?" / danda key hidden the space bar may grow by one key width (old style: 4 -> 5, Ridmik style: cap 4.5 -> 5.5). */
+    public static final float SPACE_MAX_NO_QM = 5.5f;
+    public static float spaceMax(boolean qmShown) { return qmShown ? SPACE_MAX : SPACE_MAX_NO_QM; }
+    public static float spaceOld(boolean qmShown) { return qmShown ? SPACE_OLD : SPACE_OLD + 1f; }
+
     public static int style(int v) { return v == RIDMIK ? RIDMIK : OLD; }
     public static boolean ridmik(int v) { return v == RIDMIK; }
 
@@ -22,10 +27,14 @@ public final class BottomPlan {
     public static float langWeight(int v) { return ridmik(v) ? 1f : 1.3f; }
 
     /** Space weight: old = 4. Ridmik-like = what is left of TOTAL after all other visible keys (othersSum), kept in 2..4.5. */
-    public static float spaceWeight(int v, float othersSum) {
-        if (!ridmik(v)) return SPACE_OLD;
+    public static float spaceWeight(int v, float othersSum) { return spaceWeight(v, othersSum, true); }
+
+    /** v0.17.1 (K1): same, with the "?" key shown (true = exactly the old numbers) or hidden (false = space takes the freed width, other keys keep their width). */
+    public static float spaceWeight(int v, float othersSum, boolean qmShown) {
+        if (!ridmik(v)) return spaceOld(qmShown);
         float w = TOTAL - othersSum;
-        return w < SPACE_MIN ? SPACE_MIN : (w > SPACE_MAX ? SPACE_MAX : w);
+        float max = spaceMax(qmShown);
+        return w < SPACE_MIN ? SPACE_MIN : (w > max ? max : w);
     }
 
     /** Probhat home row with the gap: 9 letters + the extra key (weight 0.5) at the right, a half-key gap at the left. Needs row_gap ON too. */

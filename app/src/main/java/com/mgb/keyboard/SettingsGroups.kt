@@ -677,6 +677,7 @@ object SettingsGroups {
             toggle(g, "Globe key", "key_globe", false)
             toggle(g, "Voice key", "key_voice", false)
             toggle(g, "Emoji key", "key_emoji", false)
+            toggle(g, "Show ? / । key", "key_qm", false)   // v0.17.1 (K1): OFF (default) = no ? key in the bottom row, space is wider, long-press the dot for ? / ।
             level(g, "Long-press time", "lp_delay", TypingLevels.LP_DEFAULT, TypingLevels.LP_NAMES)
             level(g, "Cursor speed (space drag)", "cursor_speed", TypingLevels.CS_DEFAULT, TypingLevels.CS_NAMES)
         }

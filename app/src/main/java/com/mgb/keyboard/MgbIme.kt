@@ -1091,7 +1091,8 @@ class MgbIme : InputMethodService() {
         KeyDots.attach(commaKey, prefs)   // v0.10.27   // v0.1.0: long-press "," = emoji panel
         r4.addView(commaKey)
         val spaceAction = { commitWord(); spaceKey() }   // v0.1.1: double space
-        val sb = key("space", 4f) { spaceAction() }
+        val qmShown = try { prefs.bool("key_qm", false) } catch (_: Throwable) { false }   // v0.17.1 (K1): the "?" / "।" key is HIDDEN by default (setting "Show ? / । key")
+        val sb = key("space", com.mgb.keyboard.typing.BottomPlan.spaceOld(qmShown)) { spaceAction() }   // v0.17.1: old style, key hidden = space takes the freed width
         try { JabraLook.shape(prefs, sb, JabraLook.PILL) } catch (_: Throwable) { }   // v0.1.5: pill space key
         val spaceLangOn = try { prefs.bool("space_lang", false) } catch (_: Throwable) { false }   // v0.8.9
         spaceBtn = if (spaceLangOn) sb else null
@@ -1104,16 +1105,20 @@ class MgbIme : InputMethodService() {
                 { c -> endLangSwipe(c) }, { try { com.mgb.keyboard.typing.LangSwipe.stepDp(prefs.int("sp_step", com.mgb.keyboard.typing.LangSwipe.STEP_DEFAULT)) } catch (_: Throwable) { com.mgb.keyboard.typing.LangSwipe.STEP_DP } }) else sdh.attach(sb)   // v0.9.8: save once at finger up, sp_step   // v0.9.2 (R3): live language bubble
         } catch (_: Throwable) { }
         r4.addView(sb)
-        val db = key(if (bangla) "।" else "?", 1f) { commitWord(); val d = dandaBtn?.text?.toString() ?: "."; typeText(if (latinOnly && d == "।") "?" else d) }
-        dandaBtn = db
-        r4.addView(db)
-        r4.addView(key(".", 1f) { commitWord(); typeText(".") })
+        if (qmShown) {   // v0.17.1 (K1): shown only when the setting is ON (same key as before)
+            val db = key(if (bangla) "।" else "?", 1f) { commitWord(); val d = dandaBtn?.text?.toString() ?: "."; typeText(if (latinOnly && d == "।") "?" else d) }
+            dandaBtn = db
+            r4.addView(db)
+        } else dandaBtn = null   // forget the key of an earlier build (applyLang uses dandaBtn?.)
+        val periodKey = key(".", 1f) { commitWord(); typeText(".") }
+        if (!qmShown) { try { JabraLongPress.attach(periodKey, prefs) { commitWord(); typeText(if (bangla && !latinOnly) "।" else "?") } } catch (_: Throwable) { } }   // v0.17.1 (K1): long-press "." = "?" (Bangla: "।"; password / email / URL fields: always "?", same rule as the old key)
+        r4.addView(periodKey)
         r4.addView(fn(JabraIcons.putThemed(this, key("⏎", com.mgb.keyboard.typing.BottomPlan.enterWeight(bst)) { commitWord(); doEnter() }, "enter")))   // v0.0.7 + v0.0.9
         try {   // v0.10.27: Ridmik-like bottom row: space takes what is left, so the row stays as wide as before (old style = space 4, nothing changes)
             if (com.mgb.keyboard.typing.BottomPlan.ridmik(bst)) {
                 var others = 0f
                 for (i in 0 until r4.childCount) { val c = r4.getChildAt(i); if (c !== sb) others += (c.layoutParams as LinearLayout.LayoutParams).weight }
-                (sb.layoutParams as LinearLayout.LayoutParams).weight = com.mgb.keyboard.typing.BottomPlan.spaceWeight(bst, others)
+                (sb.layoutParams as LinearLayout.LayoutParams).weight = com.mgb.keyboard.typing.BottomPlan.spaceWeight(bst, others, qmShown)
             }
         } catch (_: Throwable) { }
         root.addView(r4)

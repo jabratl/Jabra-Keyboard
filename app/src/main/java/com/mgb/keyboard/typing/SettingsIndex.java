@@ -155,6 +155,7 @@ public final class SettingsIndex {
             case "h_lock": return "Keyboard keeps the same height in English, " + LangNames.AVRO + " and " + LangNames.PROBHAT + " (no jump). OFF = old.";   // v0.9.7
             case "key_globe": return "Shows a key to switch to the next keyboard.";
             case "key_voice": return "Shows a key that opens the phone's voice typing.";
+            case "key_qm": return "Shows a ? key (Bangla: ।) before the dot. OFF = wider space; long-press the dot for it.";   // v0.17.1 (K1)
             case "key_emoji": return "Shows an emoji key next to the language key.";
             case "lp_delay": return "How long you must hold a key for a long-press.";
             case "cursor_speed": return "How fast the cursor moves when you drag on the space key.";

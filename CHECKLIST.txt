@@ -717,3 +717,13 @@ Z99) v0.16.16 Hold to select a clip + tick box (E2)  [test Cards view, List view
  [ ] List view: same hold + one-tap toggles. Search + hold works. Rotate: select mode is kept.
  [ ] Set "Hold to select a clip" = System: the OLD long-press selects (about 0.5 s). Set 0.8 s / 2 s: the time changes.
  [ ] Password field: clipboard hidden as before.
+
+Z100) v0.17.1 No "?" key in the bottom row (K1)  [English, Bangla phonetic, Bangla fixed; portrait + landscape]
+ [ ] App > Data & About shows 0.17.1. Open any text field: the bottom row is ?123 | EN | , | SPACE | . | Enter - NO "?" key, space is wider, the other keys have the same width as before.
+ [ ] English: long-press "." = "?" is typed. A short tap on "." still types ".". Space, comma, Enter, ?123 work as before.
+ [ ] Bangla (phonetic) and Bangla (fixed): long-press "." = "।". Short tap = ".".
+ [ ] Password field and an email / URL field: long-press "." = "?" (never "।").
+ [ ] Space swipe (language) and cursor drag on space still work. Double-space period still works.
+ [ ] App > Keys & gestures > "Show ? / । key" = ON: the old "?" / "।" key is back and the space bar is as before (Bangla shows "।"). OFF again: it disappears at once.
+ [ ] App "Live preview" shows the same bottom row for ON and OFF. Settings > Bottom row style "Ridmik-like" and "Old": both look right, space is wider in both when the key is OFF.
+ [ ] Symbols page (?123) still has "?". Rotation and one-hand mode: row fits, no crash.

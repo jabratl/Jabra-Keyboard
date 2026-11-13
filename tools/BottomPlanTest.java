@@ -30,6 +30,24 @@ public class BottomPlanTest {
         eq("left probhat on", BottomPlan.leftGapShown(true, true, true), true);
         eq("right english", BottomPlan.rightGapShown(false, true), true);
         eq("right probhat", BottomPlan.rightGapShown(true, true), false);
+        // v0.17.1 (K1): "?" key hidden
+        eq("spaceMax shown", BottomPlan.spaceMax(true), 4.5f);
+        eq("spaceMax hidden", BottomPlan.spaceMax(false), 5.5f);
+        eq("spaceOld shown", BottomPlan.spaceOld(true), 4f);
+        eq("spaceOld hidden", BottomPlan.spaceOld(false), 5f);
+        eq("old style hidden = 5", BottomPlan.spaceWeight(0, 3f, false), 5f);
+        eq("old style shown = 4 (3 args)", BottomPlan.spaceWeight(0, 3f, true), 4f);
+        eq("2 args = shown", BottomPlan.spaceWeight(0, 3f), BottomPlan.spaceWeight(0, 3f, true));
+        eq("2 args ridmik = shown", BottomPlan.spaceWeight(1, 5f), BottomPlan.spaceWeight(1, 5f, true));
+        float oth = 1.55f * 2 + 3f;   // ?123, enter, comma, danda, period
+        float sh = BottomPlan.spaceWeight(1, oth, true), hid = BottomPlan.spaceWeight(1, oth - 1f, false);
+        eq("ridmik hidden = shown + 1 (other keys keep their width)", Math.abs(hid - (sh + 1f)) < 0.001f, true);
+        eq("ridmik hidden cap 5.5", BottomPlan.spaceWeight(1, 1f, false), 5.5f);
+        eq("ridmik hidden min 2", BottomPlan.spaceWeight(1, 20f, false), 2f);
+        eq("ridmik shown cap still 4.5", BottomPlan.spaceWeight(1, 1f, true), 4.5f);
+        boolean mono = true;
+        for (int st = 0; st < 2; st++) for (float o = 0f; o <= 12f; o += 0.25f) { float a = BottomPlan.spaceWeight(st, o, true), b = BottomPlan.spaceWeight(st, o, false); if (b < a - 0.0001f || b < 2f || b > 5.5f) mono = false; }
+        eq("hidden never narrower than shown, always 2..5.5", mono, true);
         System.out.println("BottomPlanTest " + ok + " ok, " + bad + " fail");
         if (bad > 0) System.exit(1);
     }

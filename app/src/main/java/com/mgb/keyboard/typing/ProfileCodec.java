@@ -43,7 +43,8 @@ public final class ProfileCodec {
         "tb_hpct:i", "tb_ipct:i",   // v0.16.6
         "nr_hpct:i", "nr_mode:i", "nr_chars:s",   // v0.16.7
         "panel_ui:i",   // v0.16.9
-        "clip_hold:i"   // v0.16.16 (E2)
+        "clip_hold:i",   // v0.16.16 (E2)
+        "key_qm:b"   // v0.17.1 (K1)
     };
     public static final String[] KEYS = new String[SPEC.length];
     private static final char[] TYPE = new char[SPEC.length];
