@@ -1,4 +1,4 @@
-JABRA KEYBOARD - HANDOFF   code = v0.17.35   PLAN M (clipboard format / paste stay / list height / cursor pad / space-before-punctuation) written 2026-11-14 by a PLANNING chat (read-only audit); M1 done 2026-11-14 (v0.17.34); M2 done 2026-11-14 (v0.17.35)
+JABRA KEYBOARD - HANDOFF   code = v0.17.36   PLAN M (clipboard format / paste stay / list height / cursor pad / space-before-punctuation) written 2026-11-14 by a PLANNING chat (read-only audit); M1 done 2026-11-14 (v0.17.34); M2 done 2026-11-14 (v0.17.35); M3 done 2026-11-14 (v0.17.36)
 =====================================================================================================================================
 Paste this file + the newest Jabra-Keyboard-main repo zip at the start of EVERY chat. This file is SELF-CONTAINED and REPLACES the file of the same name.
 The old plan K / L handoff (architecture 6.x, checkpoint log, UI1-UI9 notes) is kept UNCHANGED in docs/ARCHIVE_HANDOFF_v0.17.33_plan_K_L.txt (grep only, never read fully). Old HANDOFF_* files in the repo root = stale, never give them.
@@ -109,7 +109,7 @@ ASSUMPTIONS (1 line): (a) "space before , . ! ?" = typing , . ! ? right after a 
         modify: MgbIme.kt (onStartInputView guard; grep other showLetters callers), PadPanel.kt + typing/PadState.java (keep Select ON across rebuild), tools/PadTest.java, CHANGELOG, CHECKLIST, build.gradle.kts, HANDOFF
         read-only: MgbIme.kt L340-430 (onStartInputView / onUpdateSelection / onFinishInput), L993-1030 (showLetters / showPanel), PadPanel.kt
         deps: none. design: none. checks: PanelKeepTest (restart + pad = keep; restart + number-pad auto = old; new field after Finish = letters as before), PadTest, javac. NOT phone-tested: test in apps that restart input on selection change.
-  [ ] M3  NEW    M (~35%)  v0.17.36  Pad: Top / Bottom buttons (+ select to start / end)
+  [x] M3  NEW    M (~35%)  v0.17.36 DONE  Pad: Top / Bottom buttons (+ select to start / end)
         goal: 2 buttons jump to start / end of the whole text; with Select ON they select from the current position.
         add: typing/PadJump.java, tools/PadJumpTest.java
         modify: PadPanel.kt (new row + PadIo.jump), MgbIme.kt (PadIo impl, 3 stages), CHANGELOG, CHECKLIST, build.gradle.kts, HANDOFF
@@ -144,7 +144,7 @@ ASSUMPTIONS (1 line): (a) "space before , . ! ?" = typing , . ! ? right after a 
   VERSION CONVENTION: patch +1 per step (appVersionName in app/build.gradle.kts, one line). A FIX of a step = next patch number. CHANGELOG.txt entry on top per step; docs zip names without digits.
 
 8) STATUS
-  Code = v0.17.35 (M2 FIX pad stays open: PanelKeepTest 12, PadTest 9, javac OK, Kotlin NOT compiled, NOT phone-tested). Before that v0.17.34 (M1 FIX space before , . ! ?; Java tests of the changed files green here: PunctSpaceTest 36, SuggestPlanTest, SettingsIndexTest, SettingsHelpTest, ChangedPlanTest; Kotlin NOT compiled, NOT phone-tested). Before that v0.17.33 (UI9). Plan M: M1 + M2 done, next = M3. ASK the user for the GitHub result of v0.17.35 (and v0.17.34) first: Java tests 116/116 green + APK GREEN, or pasted Kotlin errors -> FIX FIRST. Remind him to install v0.17.33 (card size) and v0.17.32 (button size) - R3 card size is already there.
+  Code = v0.17.36 (M3 NEW pad Top / Bottom: PadJumpTest 20, PadTest 9, javac OK, Kotlin NOT compiled, NOT phone-tested). Before that v0.17.35 (M2 FIX pad stays open: PanelKeepTest 12, PadTest 9, javac OK, Kotlin NOT compiled, NOT phone-tested). Before that v0.17.34 (M1 FIX space before , . ! ?; Java tests of the changed files green here: PunctSpaceTest 36, SuggestPlanTest, SettingsIndexTest, SettingsHelpTest, ChangedPlanTest; Kotlin NOT compiled, NOT phone-tested). Before that v0.17.33 (UI9). Plan M: M1 + M2 + M3 done, next = M4. ASK the user for the GitHub result of v0.17.36 (and v0.17.35 / .34) first: Java tests 117/117 green + APK GREEN, or pasted Kotlin errors -> FIX FIRST. Remind him to install v0.17.33 (card size) and v0.17.32 (button size) - R3 card size is already there.
   panel_ui default is still 0 (Classic panels): every clipboard step must work in Classic AND New panel style (panel_ui = 1).
 
 9) STANDING RULES (every chat; copied from the previous handoff, plus the Plan M lines at the end)
@@ -169,6 +169,7 @@ ASSUMPTIONS (1 line): (a) "space before , . ! ?" = typing , . ! ? right after a 
   2026-11-14 PLAN M DONE (planning only, no code changed): this handoff + docs/ARCHIVE_HANDOFF_v0.17.33_plan_K_L.txt -> jabra_planM_docs.zip
   2026-11-14 M1 DONE (v0.17.34): typing/PunctSpace.java + tools/PunctSpaceTest (36) NEW, SuggestController.kt (kbSpace + noteSpace, punctFix), MgbIme.kt (2 hooks in spaceKey), SettingsIndex (help line), build.gradle.kts 0.17.34, CHANGELOG + CHECKLIST Z126, 5 related tests green + javac of all app Java, Kotlin NOT compiled, NOT phone-tested -> jabra_v0_17_34.zip
   2026-11-14 M2 DONE (v0.17.35): typing/PanelKeep.java + tools/PanelKeepTest (12) NEW, MgbIme.kt (onStartInputView guards x2 + autoProfile condition + showPanel pad keepSelect), PadPanel.kt (build(keepSelect), ABC resets Select), build.gradle.kts 0.17.35, CHANGELOG + CHECKLIST Z127, PanelKeepTest + PadTest green + javac of all app Java, Kotlin NOT compiled, NOT phone-tested -> jabra_v0_17_35.zip
+  2026-11-14 M3 DONE (v0.17.36): typing/PadJump.java + tools/PadJumpTest (20) NEW, PadPanel.kt (PadIo.jump, row 4 = Top / Bottom / ABC, note), MgbIme.kt (padIo.jump + padJump 3 stages), build.gradle.kts 0.17.36, CHANGELOG + CHECKLIST Z128, PadJumpTest + PadTest green + javac of all app Java, Kotlin NOT compiled, NOT phone-tested -> jabra_v0_17_36.zip
 
 11) NEXT (ideas, NOT planned, ask the user first)
   - (from M2) onCreateInputView (rotation / fold) rebuilds the view but does not reset inPanel / shownPanel: check that letters + inPanel agree after a rotation.
@@ -178,4 +179,4 @@ ASSUMPTIONS (1 line): (a) "space before , . ! ?" = typing , . ! ? right after a 
   - Older ideas: see docs/ARCHIVE_HANDOFF_v0.17.33_plan_K_L.txt section 11.
 
 12) KICKOFF LINE FOR THE NEXT CHAT (copy-paste)
-  "Jabra-Keyboard plan M. Read HANDOFF_Jabra-Keyboard_v0.17.35.txt. Do step M3 (then M4, M5 ... one per chat; I name the step if different). I upload the FULL repo zip (input only). Patch only, changed files only, session guard 90%. Deliver ONLY a patch zip (name jabra_v0_X_Y_Z.zip, root folder Jabra-Keyboard-main/) that ALSO contains the updated HANDOFF_Jabra-Keyboard_v<new>.txt + DELETE.txt for the old handoff, and tell me how much is left. GitHub build of the last version: GREEN / errors pasted below (if errors: FIX first)."
+  "Jabra-Keyboard plan M. Read HANDOFF_Jabra-Keyboard_v0.17.36.txt. Do step M4 (then M5, M6 ... one per chat; I name the step if different). I upload the FULL repo zip (input only). Patch only, changed files only, session guard 90%. Deliver ONLY a patch zip (name jabra_v0_X_Y_Z.zip, root folder Jabra-Keyboard-main/) that ALSO contains the updated HANDOFF_Jabra-Keyboard_v<new>.txt + DELETE.txt for the old handoff, and tell me how much is left. GitHub build of the last version: GREEN / errors pasted below (if errors: FIX first)."

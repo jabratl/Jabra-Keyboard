@@ -102,6 +102,7 @@ class MgbIme : InputMethodService() {
     private val padIo = object : PadIo {   // v0.2.3
         override fun sendKey(code: Int, meta: Int) { this@MgbIme.padSend(code, meta) }
         override fun edit(kind: String) { this@MgbIme.editAction(kind) }
+        override fun jump(top: Boolean, selectOn: Boolean) { this@MgbIme.padJump(top, selectOn) }   // v0.17.36 (M3)
     }
     private val tbHost = object : ToolbarHost {   // v0.2.1
         override fun makeKey(id: String): Button? = this@MgbIme.toolbarKey(id)
@@ -927,6 +928,33 @@ class MgbIme : InputMethodService() {
         commitWord()
         val ic = currentInputConnection ?: return
         InputSafe.key(ic, code, meta)   // v0.3.1: same event + soft-keyboard flags
+    }
+
+    /** v0.17.36 (M3): cursor pad Top / Bottom = start / end of the WHOLE text (Select ON: select from the current position). Max 3 stages: (1) field text from getExtractedText + PadJump + setSelection, (2) Ctrl+Home / Ctrl+End key event (+ Shift when Select is ON), (3) text before / after the cursor (works only when the whole text is under 20000 chars). Any problem = nothing happens. */
+    private fun padJump(top: Boolean, selectOn: Boolean) {
+        try {
+            commitWord()
+            val ic = currentInputConnection ?: return
+            val req = android.view.inputmethod.ExtractedTextRequest()
+            req.hintMaxChars = 20000
+            req.hintMaxLines = 2000
+            val ex = try { ic.getExtractedText(req, 0) } catch (_: Throwable) { null }
+            val t = ex?.text
+            if (ex != null && t != null && ex.selectionStart >= 0 && ex.selectionEnd >= 0 && ex.startOffset == 0 && ex.partialStartOffset < 0 && t.length < 20000) {
+                val r = com.mgb.keyboard.typing.PadJump.jump(t.length, ex.selectionStart, ex.selectionEnd, top, selectOn)
+                ic.setSelection(r[0], r[1])
+                return
+            }
+            val meta = KeyEvent.META_CTRL_ON or (if (selectOn) KeyEvent.META_SHIFT_ON else 0)
+            if (InputSafe.key(ic, if (top) KeyEvent.KEYCODE_MOVE_HOME else KeyEvent.KEYCODE_MOVE_END, meta)) return
+            val n = 20000
+            val before = ic.getTextBeforeCursor(n, 0)?.length ?: return
+            val sel = ic.getSelectedText(0)?.length ?: 0
+            val after = ic.getTextAfterCursor(n, 0)?.length ?: return
+            if (before >= n || after >= n) return
+            val r = com.mgb.keyboard.typing.PadJump.jump(before + sel + after, before, before + sel, top, selectOn)
+            ic.setSelection(r[0], r[1])
+        } catch (_: Throwable) { }
     }
 
     /** v0.2.2: what a toolbar item does. Only opens things that already exist (panels, switcher, theme / one-hand cycle). */

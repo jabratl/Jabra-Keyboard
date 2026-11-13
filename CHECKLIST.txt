@@ -950,3 +950,12 @@ Z127 (v0.17.35 M2: Cursor pad stays open)
  [ ] 5. Close the keyboard and open it in another field with the letters showing: letters as before. A number field with "Number pad automatically" ON: the number pad still opens by itself.
  [ ] 6. App profile per app ON (Profiles > App): switching to a mapped app while a panel is open does not close the panel.
 
+Z128 (v0.17.36 M3: Cursor pad Top / Bottom)
+ [ ] 1. Open the Cursor pad: the last row shows Top, Bottom, ABC. The pad is not taller than before.
+ [ ] 2. In a long text (several lines) put the cursor in the middle, Select OFF: Top = cursor at the very first character, Bottom = at the very last character (not only the line start / end).
+ [ ] 3. Select ON (blue), cursor in the middle of any line: Top selects from the cursor back to the start of the whole text; Cut / Copy takes exactly that. Same for Bottom to the end.
+ [ ] 4. Select a word (Select ON + arrows or long-press), then Bottom: the selection runs from the start of that word to the end. Top: from the start of the text to the end of that word.
+ [ ] 5. Select OFF while text is selected: Top / Bottom drops the selection and moves the cursor.
+ [ ] 6. Empty field and a one-word field: nothing breaks. Try Bangla text and a very long text (more than 20000 characters) and a browser / WebView field (an app that ignores it = nothing happens, no crash).
+ [ ] 7. ABC still closes the pad (v0.17.35: Select goes OFF), Home / End / arrows / All / Copy / Cut / Paste work as before.
+
