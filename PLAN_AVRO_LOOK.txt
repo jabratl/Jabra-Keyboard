@@ -1,0 +1,35 @@
+PLAN "Avro look" (M1-M3)  -  Jabra-Keyboard, started at v0.17.52 -> v0.17.55
+(Step names M1-M3 here are NEW. Old comments "(M1)" .. "(M7)" in the code belong to v0.17.34-40 and always carry their version.)
+
+GOAL
+(a) Bangla (phonetic) mode gets the Ridmik Avro key look: letter keys with hint legends, Bengali-digit number page with the same sign set.
+(b) Letters -> number page keeps the tools row (toolbar / suggestion row) in English, Bangla, Bangla-fixed.
+(c) The Avro look is the DEFAULT in Bangla mode (prefs default ON, each one can be switched OFF = old look).
+
+REFERENCE (from the 4 screenshots)
+Ridmik letters: q..p hint 1 2 3 4 5 6 7 8 9 0 | a s d f g h j k l hint @ # & * - ! ? ( ) | z " , x -, c -, v -, b ' , n : , m /  (x c v have no hint).
+Ridmik number page: r1 Bengali digits (hint 1..0) | r2 @ # TAKA($) % & *(star) -(_) +  ((<) )(>) | r3 =\< ! " ' :(deg) ; / ? BACKSPACE | r4 ABC , SPACE . ENTER.
+Jabra today (screens 3-4): Bangla mode shows NO hints (hints are English-only: LongPressHints.active), English digits on the number page, no tools row there.
+
+STEPS (one step per chat; each ends with zip of changed files + handoff)
+M1  v0.17.53  MODIFY  DONE
+    Tools row stays on the number / symbol page (and the manual number pad), all 3 languages. Pref tools_keep (default ON).
+    Files: MgbIme.kt (withTools / keepsTools / reshowTop, 3 call sites), SettingsGroups.kt, typing/SettingsIndex.java, typing/ChangedPlan.java, app/build.gradle.kts.
+M2  v0.17.54  MODIFY  Bangla letter legends (Ridmik table)
+    - NEW typing/AvroHints.java (pure): hintFor(letter) = the table above; digits on q..p only when the number row is OFF (else symbols as today); tools/AvroHintsTest.java.
+    - MgbIme.kt hintTypingActive / hintLabelActive: phonetic Bangla (not Bangla-fixed, not latinOnly) allowed when pref bn_hints (default ON); HintKeys.kt: pick AvroHints table for phonetic Bangla (grep: LongPressHints.hintFor in lines ~49 / ~98).
+    - layout/LayoutDefaults.java letters("av"): same table (grep: LongPressHints.hintFor at ~183) so the custom-keyboard path matches.
+    - Long-press types the hint after commitWord() (same path as English hints). Settings toggle + help + ChangedPlan key.
+    - Check: Java tests; av layer ids unchanged; English / Probhat hints unchanged (test).
+M3  v0.17.55  MODIFY  Bangla number page (Ridmik sign set)
+    - NEW typing/AvroNumPage.java (pure): rows r1-r3 (key text, hint, long-press text); tools/AvroNumPageTest.java.
+    - NEW BnNumberPage.kt (or a function in JabraExtras.kt): 4 rows, hints drawn with HintKeys.HintDrawable, tap = Bengali digit / sign, hold = hint; "=\<" = next page (existing SymbolPages 1 and 2 keep working), ABC , space . Enter (bottom row).
+    - JabraExtras.symbols(): first line "if Bangla phonetic && bn_numpage -> new page, any problem -> old page". JabraHost gets isBanglaPhonetic() (default false), MgbIme overrides. Pref bn_numpage (default ON).
+    - M1 tools row is automatic (withTools wraps the panel).
+    - Check: tests; 360 / 1280 dp, dark + light; the old classic / model page still opens with bn_numpage OFF.
+
+NOT in this plan (assumptions, say if you want them later)
+- Ridmik colours (dark green keys), emoji key left of "," and the "Done" label on Enter, "avro" label on space (Jabra keeps its own "Bangla" label).
+- Bangla-fixed (Probhat) and English number pages keep today's look (only the tools row from M1 applies).
+
+RULES FOR EVERY STEP: patch only; grep first, view only the range; plan <= 5 lines; node-style checks = bash tools/run_tests.sh + bracket balance of changed Kotlin; bump version + CHANGELOG + handoff; zip with ONLY changed / new files; reply < 10 lines. Kotlin is still NEVER compiled here: if GitHub build fails, next chat = FIX with the error log.

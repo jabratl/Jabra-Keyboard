@@ -96,6 +96,7 @@ public final class SettingsIndex {
             case "lang_probhat_on": return "OFF hides " + LangNames.PROBHAT + " from the language key (English always stays).";
             case "numrow": return "Shows a row of digits above the letters.";
             case "numpad_auto": return "Opens the number pad by itself in number and phone fields.";
+            case "tools_keep": return "ON = the tools row (or the suggestion row) stays on top when you open the number / symbol page (?123). OFF = the page covers it.";   // v0.17.53 (M1)
             case "pc_mode": return "Phone = normal keys. PC = extra Esc / Ctrl / F-keys / arrows rows.";
             case "mode_key": return "Shows the Phone / PC switch key in the edit bar.";
             case "pc_remember": return "OFF = the keyboard always opens in Phone mode.";

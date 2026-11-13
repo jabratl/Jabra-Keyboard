@@ -1,0 +1,20 @@
+HANDOFF Jabra-Keyboard v0.17.53 (M1 done = tools row on number page)  -  paste this + PLAN_AVRO_LOOK.txt at the start of the next chat
+
+DONE LIST
+- P1-P5 v0.17.44-48 | PC1-PC4 v0.17.49-52 | Avro look plan: M1 v0.17.53 (tools row on number / symbol page, this step)
+- Current version: v0.17.53. Kotlin NEVER compiled yet; nothing phone-tested for v0.17.44-53.
+
+WHAT CHANGED (file: 1 line each)
+- MgbIme.kt: keepsTools / withTools (builds toolbar or suggestion row, wraps the page in the letters frame) / reshowTop; showPanel wraps the built page; sg left icon + 2 toolbar fold keys call reshowTop.
+- SettingsGroups.kt: toggle "Tools row on number page" (tools_keep, default ON). typing/SettingsIndex.java: help line. typing/ChangedPlan.java: key in "Number row & mode".
+- app/build.gradle.kts: 0.17.53. CHANGELOG.txt, CHECKLIST_SMOKE.txt (item 37), PLAN_AVRO_LOOK.txt (NEW), this handoff (NEW; the v0.17.52 handoff can be deleted).
+
+CHECKS DONE: bash tools/run_tests.sh = 125/125 green; bracket balance of MgbIme.kt + SettingsGroups.kt OK. No new pure logic = no new test.
+
+NOT TESTED (needs real use)
+- Kotlin compile of ALL v0.17.44-53 (build error log -> FIX mode first).
+- Phone: number page with the row in 3 languages, suggestions ON / OFF, fold key, "<<" key, frame / height vs letters (360 dp, dark + light), one-hand, manual number pad (123 key) with the row, auto number pad in number fields = unchanged.
+- Known limits: old fixed edit bar (Custom toolbar OFF) not copied; PC rows not copied; settings / emoji / clipboard panels still cover the row (only symbols + numpad keep it).
+
+NEXT: M2 (v0.17.54) Bangla letter legends in the Ridmik table (hints on a..l, z b n m, digits on q..p) as in PLAN_AVRO_LOOK.txt. Then M3 (v0.17.55) Bangla number page.
+Start line for the next chat: "M2 koro" or "FIX: build error log". Attach: MgbIme.kt (grep hintTypingActive / hintLabelActive only), HintKeys.kt, typing/LongPressHints.java, layout/LayoutDefaults.java (letters / addLetters), SettingsGroups.kt, typing/SettingsIndex.java, typing/ChangedPlan.java, PLAN_AVRO_LOOK.txt.

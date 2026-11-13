@@ -56,7 +56,7 @@ class MgbIme : InputMethodService() {
             { text, del, fromAvro -> sgApply(text, del, fromAvro) },
             { openClipboard() },
             { prefs.bool("edit_bar", true) },
-            { sgTools = true; showLetters() },
+            { sgTools = true; reshowTop() },   // v0.17.53 (M1)
             { try { commitWord(); switcher.voice() } catch (_: Throwable) { } },
             selected = { try { currentInputConnection?.getSelectedText(0)?.toString() ?: "" } catch (_: Throwable) { "" } },   // v0.10.23 (W9)
             replaceSel = { res, start -> try {
@@ -1176,14 +1176,14 @@ class MgbIme : InputMethodService() {
 
     private fun toolbarKey(id: String): Button? {
         if (id == "fold" && prefs.bool("sg_on", true)) {   // v0.10.1 (G2): with the suggestion row ON this first toolbar key brings the suggestions back
-            val bk = key("\u00AB", 1f) { sgTools = false; showLetters() }
+            val bk = key("\u00AB", 1f) { sgTools = false; reshowTop() }   // v0.17.53 (M1)
             bk.textSize = try { BarSize.foldSp(prefs.int("tb_ipct", BarSize.DEF)) } catch (_: Throwable) { 14f }   // v0.16.6 (X6)
             try { ToolTip.attach(bk, prefs) { "Suggestions" } } catch (_: Throwable) { }
             return bk
         }
         if (id == "fold") {
             val folded = prefs.bool("tb_fold", false)
-            val f = key(if (folded) "\u00BB" else "\u00AB", 1f) { prefs.setBool("tb_fold", !prefs.bool("tb_fold", false)); showLetters() }
+            val f = key(if (folded) "\u00BB" else "\u00AB", 1f) { prefs.setBool("tb_fold", !prefs.bool("tb_fold", false)); reshowTop() }   // v0.17.53 (M1)
             f.textSize = try { BarSize.foldSp(prefs.int("tb_ipct", BarSize.DEF)) } catch (_: Throwable) { 14f }   // v0.16.6 (X6)
             try { ToolTip.attach(f, prefs) { if (prefs.bool("tb_fold", false)) "Unfold toolbar" else "Fold toolbar" } } catch (_: Throwable) { }   // v0.8.8: name tip
             return f
@@ -1221,11 +1221,43 @@ class MgbIme : InputMethodService() {
         try { KeyPopup.attachHost(c) } catch (_: Throwable) { }   // v0.9.9 (V4): removeAllViews() removed the overlay, put it back on top
     }
 
+    // v0.17.53 (M1): the tools row (toolbar, or the suggestion row) stays on top of the number / symbol page, so letters -> numbers keeps the same top row (English, Bangla, Bangla fixed).
+    // Pref tools_keep (default ON). Not for the number pad that opens by itself in number / phone fields. Any problem = the page as before (no row).
+    private fun keepsTools(name: String): Boolean = (name == "symbols" || name == "numpad") && !autoNumpad && prefs.bool("tools_keep", true)
+
+    private fun withTools(name: String, v: View): View {
+        if (!keepsTools(name)) return v
+        val wrap = LinearLayout(this)
+        wrap.orientation = LinearLayout.VERTICAL
+        try {   // same decision as buildKeyboard0: toolbar OR suggestion row
+            if (prefs.bool("edit_bar", true) && !sg.wants(sgTools)) {
+                val tb = try { if (prefs.bool("tb_custom", true)) Toolbar.build(this, prefs, tbHost) else null } catch (_: Throwable) { null }
+                if (tb != null) wrap.addView(tb)
+            }
+        } catch (_: Throwable) { }
+        try { sg.attach(wrap, sgTools) } catch (_: Throwable) { }
+        if (wrap.childCount == 0) return v
+        val edgePx = try { dp(com.mgb.keyboard.typing.EdgePlan.edgeDp(prefs.int("edge_dp", -1))) } catch (_: Throwable) { dp(2) }
+        wrap.setBackgroundColor(Color.parseColor("#DDDDDD"))
+        try { JabraThemes.paint(prefs, wrap) } catch (_: Throwable) { }
+        wrap.setPadding(edgePx, dp(4), edgePx, dp(4))   // same frame as the letters keyboard
+        try { v.background = null; v.setPadding(0, 0, 0, 0) } catch (_: Throwable) { }   // the page sits inside the frame above
+        wrap.addView(v)
+        return wrap
+    }
+
+    /** v0.17.53 (M1): rebuild after the top row changed (suggestions <-> toolbar, fold): the number / symbol page stays, anything else = the letters. */
+    private fun reshowTop() {
+        try { if (inPanel && keepsTools(shownPanel)) { showPanel(shownPanel); return } } catch (_: Throwable) { }
+        showLetters()
+    }
+
     private fun showPanel(name: String) {
         val c = container ?: return
         commitWord()
         if (PanelGuard.blocked(this, name)) { BackupStore.toast(this, "Panel switched off after 2 crashes. See Health Check in the app screen."); showLetters(); return }   // v0.5.3
-        val v = try { if (name == "clipboard") { try { clipPanel.fitPx = if (!inPanel && c.height > 0) c.height else lettersH } catch (_: Throwable) { }; clipPanel.build() } else if (name == "format") fmtPanel.build() else if (name == "more") morePanel.build() else if (name == "emoji") emojiPanel.build() else if (name == "typing") typingPanel.build() else if (name == "size") sizePanel.build() else if (name == "toolbar") toolbarPanel.build() else if (name == "tbquick") toolbarQuick.build() else if (name == "pad") padPanel.build(inPanel && shownPanel == "pad") else if (name == "themes") themePanel.build() else if (name == "vault") vaultPanel.build() else if (name == "tt") ttPanel.build() else if (name == "profiles") profilePanel.build() else if (name == "keymap") { try { keyMapPanel.fitPx = if (!inPanel && c.height > 0) c.height else lettersH } catch (_: Throwable) { }; keyMapPanel.build() } else if (name == "tstudio") studioPanel.build() else if (name == "pcmore" || name == "pcnum") pcMorePanel.build(name) else panels.build(name) } catch (_: Throwable) { try { PanelGuard.failed(this, name) } catch (_: Throwable) { }; null }   // v0.0.8: "format"; v0.1.0: "emoji"; v0.1.1: "typing"
+        val v0 = try { if (name == "clipboard") { try { clipPanel.fitPx = if (!inPanel && c.height > 0) c.height else lettersH } catch (_: Throwable) { }; clipPanel.build() } else if (name == "format") fmtPanel.build() else if (name == "more") morePanel.build() else if (name == "emoji") emojiPanel.build() else if (name == "typing") typingPanel.build() else if (name == "size") sizePanel.build() else if (name == "toolbar") toolbarPanel.build() else if (name == "tbquick") toolbarQuick.build() else if (name == "pad") padPanel.build(inPanel && shownPanel == "pad") else if (name == "themes") themePanel.build() else if (name == "vault") vaultPanel.build() else if (name == "tt") ttPanel.build() else if (name == "profiles") profilePanel.build() else if (name == "keymap") { try { keyMapPanel.fitPx = if (!inPanel && c.height > 0) c.height else lettersH } catch (_: Throwable) { }; keyMapPanel.build() } else if (name == "tstudio") studioPanel.build() else if (name == "pcmore" || name == "pcnum") pcMorePanel.build(name) else panels.build(name) } catch (_: Throwable) { try { PanelGuard.failed(this, name) } catch (_: Throwable) { }; null }   // v0.0.8: "format"; v0.1.0: "emoji"; v0.1.1: "typing"
+        val v = if (v0 == null) null else try { withTools(name, v0) } catch (_: Throwable) { v0 }   // v0.17.53 (M1): tools row stays on the number / symbol page
         if (v == null) { showLetters(); return }
         try { PanelGuard.ok(this, name) } catch (_: Throwable) { }   // v0.5.3
         try { JabraOneHand.apply(this, prefs, v) } catch (_: Throwable) { }   // v0.1.0

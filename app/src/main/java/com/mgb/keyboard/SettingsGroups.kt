@@ -535,6 +535,7 @@ object SettingsGroups {
             toggle(g, "Show language key (EN)", "key_lang", true)   // v0.8.9: hidden only when Space swipe is ON
             toggle(g, "Number row", "numrow", true)
             toggle(g, "Auto numpad (number / phone fields)", "numpad_auto", true)
+            toggle(g, "Tools row on number page", "tools_keep", true)   // v0.17.53 (M1)
             cycle(g, "Mode", "pc_mode", { arrayOf("Phone", "PC") }, { if (prefs.bool("pc_mode", false)) 1 else 0 }, { prefs.setBool("pc_mode", it == 1) })
             toggle(g, "Mode key", "mode_key", true)
             toggle(g, "Remember mode", "pc_remember", true)
