@@ -839,3 +839,12 @@ Z112. v0.17.14 (K9b) presets + test pad (NOT phone-tested)
 Z113. v0.17.15 (K12) docs only (NOT phone-tested)
  [ ] Nothing to test in the keyboard. Run CHECKLIST_SMOKE.txt section H (lines 22 - 30) once after installing.
  [ ] App version shows 0.17.15.
+
+Z114. v0.17.16 (K11a) drag and drop move (NOT phone-tested)
+ [ ] Editor, English tab: hold "q" about half a second: small buzz, the key gets a dashed outline and a blue copy follows your finger.
+ [ ] Drag it to the middle of "e", let go: q and e swapped. Undo (button) puts them back.
+ [ ] Drag "q" to the LEFT edge of "e" (a blue bar shows): q sits before e. Drag to the RIGHT edge of a key: inserted after it.
+ [ ] Drag a key to the bottom row or the number row: no blue mark, drop does nothing / says "not possible".
+ [ ] Drag towards the top / bottom edge of the screen: the page scrolls by itself while you hold.
+ [ ] A plain tap still selects a key; scrolling the page with a finger starting on the keys still works (no accidental drag).
+ [ ] Open the keyboard: the new order is there.

@@ -170,9 +170,10 @@ class LayoutEditorPage(private val act: Activity, private val prefs: JabraPrefs,
         view = v
         v.model = m0
         v.onSelect = { id -> selectKey(id) }
+        v.onDrop = { id, tid, mode -> dragDrop(id, tid, mode) }   // v0.17.16 (K11a)
         col.addView(v, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
 
-        hint = txt("Tap a key to select it. Orange outline = warning. Changes are saved at once. Reopen the keyboard to see them.", 12f, dim)
+        hint = txt("Tap a key to select it. Hold a key, then drag it onto another key: middle = swap, left / right edge = insert before / after. Orange outline = warning. Changes are saved at once. Reopen the keyboard to see them.", 12f, dim)
         hint?.setPadding(0, dp(AppTokens.S1), 0, dp(AppTokens.S2))
         col.addView(hint)
 
@@ -590,6 +591,24 @@ class LayoutEditorPage(private val act: Activity, private val prefs: JabraPrefs,
             if (after.isEmpty()) after = "Done: $label"
             fillInspector()
         } else after = ""
+    }
+
+    /** v0.17.16 (K11a): a key was dragged onto another key. Saved through the safety gate and one undo step; a refused move = a note, nothing changes. */
+    private fun dragDrop(id: String, tid: String, mode: Int) {
+        flushPending()
+        val m = model ?: return
+        val nm = com.mgb.keyboard.layout.LayoutDrag.drop(m, id, tid, mode)
+        if (nm === m) {
+            note?.setTextColor(AppUi.warn(act)); note?.text = "That move is not possible here (shared rows and other pages cannot receive these keys)."
+            return
+        }
+        val label = com.mgb.keyboard.layout.LayoutDrag.label(mode)
+        if (commit(nm, true, label)) {
+            selected = id
+            view?.selectedId = id
+            fillInspector()
+            note?.setTextColor(AppUi.dim(act)); note?.text = "Moved. Undo brings it back."
+        }
     }
 
     /** Row index of the selected key in the OWN rows of this tab, or -1 + a note when it sits in a shared row (number row / bottom row). */

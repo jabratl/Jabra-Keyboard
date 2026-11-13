@@ -1,4 +1,4 @@
-JABRA KEYBOARD - 10-MINUTE SMOKE TEST (v0.17.15, plan N: N1 - N8 + plan X: X1 - X13 + plan K: K1 - K9b)
+JABRA KEYBOARD - 10-MINUTE SMOKE TEST (v0.17.15, plan N: N1 - N8 + plan X: X1 - X13 + plan K: K1 - K9b, K11a)
 =========================================================================
 Use this FIRST after installing a new build. It touches every new thing of plan N and plan X once.
 If all lines are OK, the long lists in CHECKLIST.txt (Z77 - Z96) are only needed when something looks wrong.
@@ -51,3 +51,4 @@ H. PLAN K = KEYBOARD LAYOUT EDITOR (K1 - K9b)                          [Z100 - Z
  [ ] 28. (K9b) Presets: add "Coder", switch to it: no number row, swipe down on "v" pastes. Test pad: Open test pad shows the keyboard and you can type.
  [ ] 29. If the custom keyboard ever looks wrong: App > Layout & Size > "Restore last good layout" / turn Custom keyboard OFF. The classic keyboard must come back at once.
  [ ] 30. After 22 - 29: type English + Bangla in a real app: typing, backspace, clipboard paste feel as before.
+ [ ] 31. (K11a) Editor: hold a key, drag it onto another key: swap (middle) or insert (edge). Undo works.

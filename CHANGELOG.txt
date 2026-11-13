@@ -1,3 +1,13 @@
+v0.17.16 - NEW (K11a, plan K): drag and drop move in the layout editor
+- WHY: step K11a (optional, you asked for it). You can now hold a key in the editor preview and drag it to a new place instead of pressing Move left / right many times.
+- What you get: in the editor (app) HOLD a key (about half a second, a small buzz), then drag: the key follows your finger. Drop on the MIDDLE of another key = the two keys swap. Drop on the LEFT quarter of a key = insert before it; RIGHT quarter = insert after it (a bar shows where). Dropping on an empty spot swaps with the empty spot. Near the top / bottom of the screen the page scrolls by itself. One drop = one undo step ("Undo: drag key swap"). A tap still selects a key; the buttons Move left / right / up / down are unchanged.
+- Rules: keys can move inside their row and between the rows of ONE page (English, Avro, Probhat, Symbols 1-3). A letter can NOT be dragged into the shared number row / bottom row, and keys do not jump between pages. A move that would leave a row without keys is refused with a note ("That move is not possible here").
+- NOT built (K11b, next): drag to resize (edge handles, snap 0.25) and row height drag; moving a key to a new row by dropping below the last row; multi-key drag.
+- Code: layout/LayoutDrag.java (new, pure: zones, drop, auto-scroll step) + tools/LayoutDragTest.java (44 checks); LayoutEditView.kt (long-press, ghost, drop marks, auto-scroll, onDrop); LayoutEditorPage.kt (dragDrop + hint text).
+- BROKE: nothing known.
+- TESTED here: javac of all app Java + LayoutDragTest 44 green; bracket balance + duplicate-val scan of the 2 Kotlin files OK. Rest of the suite is left to CI (expected 105/105). Kotlin NOT compiled; NOT phone-tested (hold time, haptics, auto-scroll feel are unknown).
+- Rollback: put back LayoutEditView.kt and LayoutEditorPage.kt of v0.17.15 and delete layout/LayoutDrag.java + tools/LayoutDragTest.java.
+
 v0.17.15 - MODIFY (K12, plan K): final check + docs (no feature change, no Kotlin change)
 - WHY: plan K step 12. The layout editor work (K1 - K9b) is finished, so the docs are brought up to date and the changelog is shortened. The optional steps K10 / K11 / K13 are NOT done; they stay available if you ask.
 - What changed: CHECKLIST_SMOKE.txt gets section H = a 10-minute test of the whole plan K (no ? key, space bar, custom keyboard ON, editor, symbols, saved layouts, presets, test pad). README.txt describes the layout editor. CHANGELOG.txt keeps v0.17.x only; v0.16.16 and older moved UNCHANGED to docs/ARCHIVE_CHANGELOG.txt. Handoff refreshed.
