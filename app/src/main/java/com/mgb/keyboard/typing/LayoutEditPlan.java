@@ -30,6 +30,42 @@ public final class LayoutEditPlan {
 
     public static String tabId(int i) { return (i >= 0 && i < TAB_IDS.length) ? TAB_IDS[i] : TAB_IDS[0]; }
 
+    /** v0.17.12 (K8): the editor tabs = 3 letter layers + number row + bottom row + 3 symbol pages. TAB_IDS (letters only) stays as it was. */
+    public static final String[] EDIT_TABS = { "en", "av", "pb", "nr", "bot", "s1", "s2", "s3" };
+
+    public static String[] editTitles() {
+        return new String[] { "English", LangNames.AVRO, LangNames.PROBHAT, "Numbers", "Bottom row", "Symbols 1", "Symbols 2", "Symbols 3" };
+    }
+
+    public static String editTabId(int i) { return (i >= 0 && i < EDIT_TABS.length) ? EDIT_TABS[i] : EDIT_TABS[0]; }
+
+    public static boolean isSymbolLayer(String layer) { return layer != null && layer.length() == 2 && layer.charAt(0) == 's' && layer.charAt(1) >= '1' && layer.charAt(1) <= '3'; }
+
+    private static final String[] ACT_ALL = { "tab", "undo", "redo", "clip", "emoji", "globe", "voice", "lang", "comma", "period", "sym", "shift", "backspace", "enter", "space" };
+    private static final String[] ACT_SYM = { "sym", "backspace", "enter", "space", "comma", "period", "emoji", "clip" };
+
+    /** Function keys the picker offers for a layer (the symbols panel runs only ACT_SYM; the letters keyboard runs all of ACT_ALL). */
+    public static String[] actionIds(String layer) { return (isSymbolLayer(layer) ? ACT_SYM : ACT_ALL).clone(); }
+
+    public static String actionTitle(String id, String layer) {
+        if ("tab".equals(id)) return "Tab";
+        if ("undo".equals(id)) return "Undo";
+        if ("redo".equals(id)) return "Redo";
+        if ("clip".equals(id)) return "Clipboard";
+        if ("emoji".equals(id)) return "Emoji";
+        if ("globe".equals(id)) return "Globe (switch keyboard)";
+        if ("voice".equals(id)) return "Voice typing";
+        if ("lang".equals(id)) return "Language (EN)";
+        if ("comma".equals(id)) return "Comma key";
+        if ("period".equals(id)) return "Period key";
+        if ("sym".equals(id)) return isSymbolLayer(layer) ? "ABC (back to letters)" : "?123 (symbols)";
+        if ("shift".equals(id)) return "Shift";
+        if ("backspace".equals(id)) return "Backspace";
+        if ("enter".equals(id)) return "Enter";
+        if ("space".equals(id)) return "Space bar";
+        return id == null ? "" : id;
+    }
+
     /** Inspector fields of a key kind (bit mask). Character key = all; action key / empty spot = width only (K6b adds more). */
     public static int fields(int kind) {
         if (kind == KeyDef.CHAR) return F_LABEL | F_OUT | F_SHIFT | F_LP | F_WIDTH | F_SWIPE;

@@ -251,7 +251,71 @@ class JabraPanels(private val ctx: Context, private val host: JabraHost) {
         return b
     }
 
+    /** v0.17.12 (K8): the symbols panel built from the custom layout (layers s1-s3) while kb_custom = 1. Any problem = null = the classic panel below.
+     *  Not in the model (D3): the gear + 123 keys, they are added after the first key of the last row. The page key = the "sym" key whose id ends with "_page". */
+    private fun symKey(k: com.mgb.keyboard.layout.KeyDef, pct: Int): View? {
+        val w = k.weight
+        val hh = dp(host.keyHeightDp() * pct / 100)
+        fun fit(b: Button): Button { if (pct != 100) (b.layoutParams as LinearLayout.LayoutParams).height = hh; return b }
+        val lab = k.label[0]
+        if (k.kind == com.mgb.keyboard.layout.KeyDef.SPACER) {
+            val v = View(ctx)
+            v.isClickable = false
+            val lp = LinearLayout.LayoutParams(0, hh, w)
+            lp.setMargins(dp(2), dp(2), dp(2), dp(2))
+            v.layoutParams = lp
+            return v
+        }
+        if (k.kind == com.mgb.keyboard.layout.KeyDef.CHAR) {
+            val o = k.out[0]
+            if (o.isEmpty()) return null
+            return fit(cs(pk(if (lab.isNotEmpty()) lab else o, w) { sym(o) }))
+        }
+        return when (k.action) {
+            "sym" -> if (k.id.endsWith("_page"))
+                fit(pk(if (lab.isNotEmpty()) lab else com.mgb.keyboard.typing.SymbolPages.switchLabel(symPage), w) {
+                    symPage = com.mgb.keyboard.typing.SymbolPages.next(symPage)
+                    host.showPanel("symbols")
+                })
+            else fit(pk(if (lab.isNotEmpty()) lab else "ABC", w) { host.showLetters() })
+            "backspace" -> fit(repeatable(JabraIcons.putThemed(ctx, pk("\u232B", w) { host.backspace() }, "back")))
+            "enter" -> fit(JabraIcons.putThemed(ctx, pk("\u23CE", w) { host.commitWord(); host.enter() }, "enter"))
+            "space" -> fit(pk(if (lab.isNotEmpty()) lab else "space", w) { sym(" ") })
+            "comma" -> fit(pk(if (lab.isNotEmpty()) lab else ",", w) { sym(",") })
+            "period" -> fit(pk(if (lab.isNotEmpty()) lab else ".", w) { sym(".") })
+            "emoji" -> fit(JabraIcons.putThemed(ctx, pk("\u263A", w) { host.showPanel("emoji") }, "emoji"))
+            "clip" -> fit(JabraIcons.putThemed(ctx, pk("\u2398", w) { host.showPanel("clipboard") }, "clip"))
+            else -> null   // other function keys are not run by this panel (the picker does not offer them here)
+        }
+    }
+
+    private fun symbolsFromModel(): View? {
+        if (!com.mgb.keyboard.layout.LayoutGuard.customOn(prefs.int("kb_custom", 0))) return null
+        val m = LayoutStore.load(ctx, prefs) ?: return null
+        val rows = m.effectiveRows("s" + (com.mgb.keyboard.typing.SymbolPages.norm(symPage) + 1))
+        if (rows.isEmpty()) return null
+        val root = rootView()
+        for (ri in rows.indices) {
+            val rd = rows[ri]
+            val r = row()
+            var n = 0
+            for (k in rd.keys) {
+                val v = symKey(k, rd.heightPct) ?: continue
+                r.addView(v)
+                n++
+                if (ri == rows.size - 1 && n == 1) {   // classic bottom row: ABC, gear, 123, ... (gear + 123 are not in the model)
+                    r.addView(JabraIcons.putThemed(ctx, pk("\u2699", 1f) { host.showPanel("settings") }, "gear"))
+                    r.addView(pk("123", 1f) { host.showPanel("numpad") })
+                }
+            }
+            if (n == 0) return null
+            root.addView(r)
+        }
+        return root
+    }
+
     private fun symbols(): View {
+        try { val mv = symbolsFromModel(); if (mv != null) return mv } catch (_: Throwable) { }   // v0.17.12 (K8)
         val root = rootView()
         val pages: Array<String> = try { com.mgb.keyboard.typing.SymbolPages.page(symPage) } catch (_: Throwable) {   // v0.9.5: 3 pages from SymbolPages; old 2 pages = fallback
             if (symPage == 0)

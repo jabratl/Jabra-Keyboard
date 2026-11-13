@@ -1,3 +1,13 @@
+v0.17.12 - NEW (K8, plan K): number row, bottom row and symbol pages in the layout editor + function-key picker; the symbols panel follows your layout
+- WHY: step 8. You can now edit every row of the keyboard from the app, not only the letter rows.
+- What you get: (1) editor tabs (scroll sideways): English, Avro, Probhat, Numbers, Bottom row, Symbols 1-3. (2) Button "Function key": turns the selected key into Tab, Undo, Redo, Clipboard, Emoji, Globe, Voice, Language, Comma, Period, ?123 / ABC, Shift, Backspace, Enter or Space (one undo step). To remove the "?" key: Bottom row tab > tap it > Delete. (3) With the custom keyboard ON the symbols panel is drawn from layers s1-s3 of your layout (chars, empty spots, widths, row heights, function keys). The gear and 123 keys stay (added after the first key of the last row). Old panel = fallback if anything is wrong.
+- Page key (=< / pi-root) vs ABC key: decided by the key id (ends with _page), no new action id.
+- NOT built (moved on): per-key icon vs text; KeyboardPreview in the app still shows the classic keyboard; swipe / long-press on symbol keys (panel ignores them); Tab / Undo / Redo / Globe / Voice keys on the symbols panel (the picker does not offer them there).
+- Code: typing/LayoutEditPlan.java (+EDIT_TABS, editTitles, editTabId, isSymbolLayer, actionIds, actionTitle) + tools/LayoutEditPlanTest (+9 checks); LayoutEditorPage.kt; JabraExtras.kt (symbolsFromModel / symKey).
+- BROKE: nothing known.
+- NOT tested: Kotlin NOT compiled; Java tests NOT run (no javac here); NOT phone-tested.
+- Rollback: put back LayoutEditorPage.kt, JabraExtras.kt, LayoutEditPlan.java, LayoutEditPlanTest.java of v0.17.11.
+
 v0.17.11 - FIX: build error in LayoutEditorPage.kt (Conflicting declarations: val wt, lines 175 / 275)
 - WHY: v0.17.10 did not compile: two "val wt: TextView" in the same function.
 - Fix: the width-stepper value view (2nd one) is now "wv". Nothing else changed.

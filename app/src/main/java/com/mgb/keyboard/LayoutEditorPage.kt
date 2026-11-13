@@ -145,13 +145,17 @@ class LayoutEditorPage(private val act: Activity, private val prefs: JabraPrefs,
         // layer tabs
         val tabRow = LinearLayout(act)
         tabRow.orientation = LinearLayout.HORIZONTAL
-        val titles = LayoutEditPlan.tabTitles()
+        val titles = LayoutEditPlan.editTitles()
         for (i in titles.indices) {
             val b = btn(titles[i]) { selectTab(i) }
             tabBtns.add(b)
-            tabRow.addView(b, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
+            b.minWidth = 0; b.minimumWidth = 0
+            tabRow.addView(b, LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT))
         }
-        col.addView(tabRow)
+        val tabScroll = HorizontalScrollView(act)   // v0.17.12 (K8): 8 tabs scroll sideways
+        tabScroll.isHorizontalScrollBarEnabled = false
+        tabScroll.addView(tabRow)
+        col.addView(tabScroll)
 
         val sb = btn("Shift: off") { val v = view ?: return@btn; v.shift = !v.shift; shiftBtn?.text = if (v.shift) "Shift: on" else "Shift: off" }
         shiftBtn = sb
@@ -216,8 +220,9 @@ class LayoutEditorPage(private val act: Activity, private val prefs: JabraPrefs,
         addRowOf(st, mini("Add before") { structOp("add key before") { m -> LayoutOps.insertBefore(m, selected) } },
             mini("Add after") { structOp("add key after") { m -> LayoutOps.insertAfter(m, selected) } },
             mini("Copy style to next") { structOp("copy style") { m ->
-                val n = LayoutEditPlan.neighbourId(m, LayoutEditPlan.tabId(tab), selected, 1)
+                val n = LayoutEditPlan.neighbourId(m, LayoutEditPlan.editTabId(tab), selected, 1)
                 if (n.isEmpty()) m else LayoutOps.copyKeyStyle(m, selected, n) } })
+        addRowOf(st, mini("Function key (Tab, emoji, ABC, ...)") { pickAction() })   // v0.17.12 (K8)
         val rt = txt("", 12f, dim)
         rt.setPadding(0, dp(AppTokens.S2), 0, 0)
         rowTv = rt
@@ -238,11 +243,11 @@ class LayoutEditorPage(private val act: Activity, private val prefs: JabraPrefs,
         hp.contentDescription = "Row taller"
         hr.addView(hp, LinearLayout.LayoutParams(dp(56), ViewGroup.LayoutParams.WRAP_CONTENT))
         st.addView(hr)
-        addRowOf(st, mini("Add row below") { structOp("add row") { m -> val r = ownRowOrNote(m); if (r < 0) m else LayoutOps.addRow(m, LayoutEditPlan.tabId(tab), r) } },
-            mini("Duplicate row") { structOp("duplicate row") { m -> val r = ownRowOrNote(m); if (r < 0) m else LayoutOps.duplicateRow(m, LayoutEditPlan.tabId(tab), r) } },
-            mini("Delete row") { structOp("delete row") { m -> val r = ownRowOrNote(m); if (r < 0) m else LayoutOps.deleteRow(m, LayoutEditPlan.tabId(tab), r) } })
-        addRowOf(st, mini("Row up") { structOp("row up") { m -> val r = ownRowOrNote(m); if (r < 0) m else LayoutOps.swapRows(m, LayoutEditPlan.tabId(tab), r, r - 1) } },
-            mini("Row down") { structOp("row down") { m -> val r = ownRowOrNote(m); if (r < 0) m else LayoutOps.swapRows(m, LayoutEditPlan.tabId(tab), r, r + 1) } },
+        addRowOf(st, mini("Add row below") { structOp("add row") { m -> val r = ownRowOrNote(m); if (r < 0) m else LayoutOps.addRow(m, LayoutEditPlan.editTabId(tab), r) } },
+            mini("Duplicate row") { structOp("duplicate row") { m -> val r = ownRowOrNote(m); if (r < 0) m else LayoutOps.duplicateRow(m, LayoutEditPlan.editTabId(tab), r) } },
+            mini("Delete row") { structOp("delete row") { m -> val r = ownRowOrNote(m); if (r < 0) m else LayoutOps.deleteRow(m, LayoutEditPlan.editTabId(tab), r) } })
+        addRowOf(st, mini("Row up") { structOp("row up") { m -> val r = ownRowOrNote(m); if (r < 0) m else LayoutOps.swapRows(m, LayoutEditPlan.editTabId(tab), r, r - 1) } },
+            mini("Row down") { structOp("row down") { m -> val r = ownRowOrNote(m); if (r < 0) m else LayoutOps.swapRows(m, LayoutEditPlan.editTabId(tab), r, r + 1) } },
             mini("Same width") { structOp("same width in row") { m -> val o = LayoutEditPlan.owner(m, selected); if (o == null) m else LayoutOps.autoBalanceRow(m, o[0], o[1].toInt()) } },
             mini("Width to row") { structOp("this width for the row") { m -> LayoutOps.applyWidthToRow(m, selected) } })
         col.addView(st, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
@@ -368,7 +373,7 @@ class LayoutEditorPage(private val act: Activity, private val prefs: JabraPrefs,
     private fun structOp(label: String, f: (LayoutDef) -> LayoutDef) {
         flushPending()
         val m = model ?: return
-        val layer = LayoutEditPlan.tabId(tab)
+        val layer = LayoutEditPlan.editTabId(tab)
         if (selected.isEmpty() || LayoutEditPlan.findKey(m, layer, selected) == null) return
         val loc = LayoutEditPlan.locate(m, layer, selected)
         after = ""
@@ -389,7 +394,7 @@ class LayoutEditorPage(private val act: Activity, private val prefs: JabraPrefs,
 
     /** Row index of the selected key in the OWN rows of this tab, or -1 + a note when it sits in a shared row (number row / bottom row). */
     private fun ownRowOrNote(m: LayoutDef): Int {
-        val r = LayoutEditPlan.ownRow(m, LayoutEditPlan.tabId(tab), selected)
+        val r = LayoutEditPlan.ownRow(m, LayoutEditPlan.editTabId(tab), selected)
         if (r < 0) after = "This row is shared by all language tabs: only its height can be changed here."
         return r
     }
@@ -405,7 +410,7 @@ class LayoutEditorPage(private val act: Activity, private val prefs: JabraPrefs,
 
     private fun toggleEmpty() {
         flushPending()
-        val k = LayoutEditPlan.findKey(model, LayoutEditPlan.tabId(tab), selected) ?: return
+        val k = LayoutEditPlan.findKey(model, LayoutEditPlan.editTabId(tab), selected) ?: return
         if (k.kind == KeyDef.SPACER) askFill() else structOp("make empty") { m -> LayoutOps.makeSpacer(m, selected) }
     }
 
@@ -423,11 +428,27 @@ class LayoutEditorPage(private val act: Activity, private val prefs: JabraPrefs,
     }
 
     /** v0.17.10: the picker. Writes the chosen text into the field that was focused last (@actions only into swipe / long-press fields). */
+    /** v0.17.12 (K8): turns the selected key into a function key (Tab, emoji, ABC, space, ...). One undo step; refused = note. */
+    private fun pickAction() {
+        flushPending()
+        val m = model ?: return
+        val layer = LayoutEditPlan.editTabId(tab)
+        if (selected.isEmpty() || LayoutEditPlan.findKey(m, layer, selected) == null) {
+            note?.setTextColor(AppUi.warn(act)); note?.text = "Tap a key first, then Function key."
+            return
+        }
+        val ids = LayoutEditPlan.actionIds(layer)
+        val names = Array(ids.size) { LayoutEditPlan.actionTitle(ids[it], layer) }
+        AlertDialog.Builder(act).setTitle("Function key").setItems(names) { _, i ->
+            structOp("function key") { mm -> LayoutOps.setAction(mm, selected, ids[i]) }
+        }.setNegativeButton("Cancel", null).show()
+    }
+
     private fun pick() {
         flushPending()
         val et = lastEt
         val fi = fields.indexOfFirst { it.et === et }
-        if (et == null || fi < 0 || et.visibility != android.view.View.VISIBLE || LayoutEditPlan.findKey(model, LayoutEditPlan.tabId(tab), selected) == null) {
+        if (et == null || fi < 0 || et.visibility != android.view.View.VISIBLE || LayoutEditPlan.findKey(model, LayoutEditPlan.editTabId(tab), selected) == null) {
             note?.setTextColor(AppUi.warn(act)); note?.text = "Tap a text field first, then Pick from list."
             return
         }
@@ -448,17 +469,17 @@ class LayoutEditorPage(private val act: Activity, private val prefs: JabraPrefs,
     /** v0.17.10: warning list of this tab (tap = select the key, Fix = safe auto-fix as ONE undo step) + chips of letters no key types. */
     private fun refreshWarnings() {
         val m = model ?: return
-        val layer = LayoutEditPlan.tabId(tab)
+        val layer = LayoutEditPlan.editTabId(tab)
         val all = try {
             val dm = act.resources.displayMetrics
             val langs = 1 + (if (prefs.bool("lang_avro_on", true)) 1 else 0) + (if (prefs.bool("lang_probhat_on", true)) 1 else 0)
             LayoutCheck.check(m, LayoutCheck.Env(dm.widthPixels / dm.density, langs))
         } catch (_: Throwable) { emptyList<LayoutCheck.Warn>() }
         val ids = HashSet<String>()
-        for (l in arrayOf(layer, "nr", "bot")) ids.addAll(LayoutEditPlan.warnKeyIds(all, l, LayoutCheck.LOW))
+        for (l in arrayOf(layer, "nr", "bot").distinct()) ids.addAll(LayoutEditPlan.warnKeyIds(all, l, LayoutCheck.LOW))
         view?.warnIds = ids
         val mine = ArrayList<LayoutCheck.Warn>()
-        for (l in arrayOf(layer, "nr", "bot")) mine.addAll(LayoutEditPlan.warnsOf(all, l))
+        for (l in arrayOf(layer, "nr", "bot").distinct()) mine.addAll(LayoutEditPlan.warnsOf(all, l))
         warnTitle?.text = if (mine.isEmpty()) "Warnings: none" else "Warnings (" + mine.size + ") - they never block saving"
         val box = warnBox ?: return
         box.removeAllViews()
@@ -487,7 +508,7 @@ class LayoutEditorPage(private val act: Activity, private val prefs: JabraPrefs,
     private fun fixWarning(w: LayoutCheck.Warn) {
         flushPending()
         val m = model ?: return
-        val layer = LayoutEditPlan.tabId(tab)
+        val layer = LayoutEditPlan.editTabId(tab)
         val nm = try { LayoutCheck.autoFix(m, w) } catch (_: Throwable) { m }
         if (nm === m) { note?.setTextColor(AppUi.warn(act)); note?.text = "No safe automatic fix for this one."; return }
         val loc = LayoutEditPlan.locate(m, layer, selected)
@@ -502,7 +523,7 @@ class LayoutEditorPage(private val act: Activity, private val prefs: JabraPrefs,
     private fun fillChip(item: String) {
         flushPending()
         val m = model ?: return
-        val layer = LayoutEditPlan.tabId(tab)
+        val layer = LayoutEditPlan.editTabId(tab)
         val id = LayoutEditPlan.firstSpacerId(m, layer)
         if (id.isEmpty()) { note?.setTextColor(AppUi.warn(act)); note?.text = "No empty spot: select a key and tap Make empty first."; return }
         if (commit(LayoutOps.fill(m, id, item), true, "put " + item)) {
@@ -516,7 +537,7 @@ class LayoutEditorPage(private val act: Activity, private val prefs: JabraPrefs,
     private fun undoRedo(redo: Boolean) {
         flushPending()
         val h = hist ?: return
-        val layer = LayoutEditPlan.tabId(tab)
+        val layer = LayoutEditPlan.editTabId(tab)
         val loc = LayoutEditPlan.locate(model, layer, selected)
         val label = if (redo) h.redoLabel() else h.undoLabel()
         val m = (if (redo) h.redo() else h.undo()) ?: return
@@ -539,20 +560,20 @@ class LayoutEditorPage(private val act: Activity, private val prefs: JabraPrefs,
     private fun stepWidth(dir: Int) {
         flushPending()
         val m = model ?: return
-        val k = LayoutEditPlan.findKey(m, LayoutEditPlan.tabId(tab), selected) ?: return
+        val k = LayoutEditPlan.findKey(m, LayoutEditPlan.editTabId(tab), selected) ?: return
         commit(LayoutOps.setWeight(m, selected, LayoutEditPlan.nextWeight(k.weight, dir)), true, "width")
     }
 
     private fun selectTab(i: Int) {
         flushPending()
-        tab = i.coerceIn(0, LayoutEditPlan.TAB_IDS.size - 1)
+        tab = i.coerceIn(0, LayoutEditPlan.EDIT_TABS.size - 1)
         val dark = AppUi.isDark(act)
         for (j in tabBtns.indices) {
             val on = j == tab
             tabBtns[j].backgroundTintList = if (on) ColorStateList.valueOf(AppUi.accent(act)) else null
             tabBtns[j].setTextColor(if (on) (if (dark) Color.BLACK else Color.WHITE) else AppUi.text(act))
         }
-        val id = LayoutEditPlan.tabId(tab)
+        val id = LayoutEditPlan.editTabId(tab)
         view?.layer = id
         val first = LayoutEditPlan.firstCharId(model, id)
         selected = first
@@ -569,7 +590,7 @@ class LayoutEditorPage(private val act: Activity, private val prefs: JabraPrefs,
 
     private fun updateTitleAndWidth() {
         val m = model
-        val layer = LayoutEditPlan.tabId(tab)
+        val layer = LayoutEditPlan.editTabId(tab)
         val k = LayoutEditPlan.findKey(m, layer, selected)
         title?.text = if (k == null) "No key selected" else "Selected: " + LayoutEditPlan.describe(m, layer, selected, false)
         weightTv?.text = if (k == null) "-" else LayoutEditPlan.weightText(k.weight)
@@ -585,7 +606,7 @@ class LayoutEditorPage(private val act: Activity, private val prefs: JabraPrefs,
 
     /** Puts the selected key into the inspector (hides the fields the key kind does not have). */
     private fun fillInspector() {
-        val layer = LayoutEditPlan.tabId(tab)
+        val layer = LayoutEditPlan.editTabId(tab)
         val k = LayoutEditPlan.findKey(model, layer, selected)
         val mask = if (k == null) 0 else LayoutEditPlan.fields(k.kind)
         loading = true
@@ -606,7 +627,7 @@ class LayoutEditorPage(private val act: Activity, private val prefs: JabraPrefs,
             k == null -> ""
             after.isNotEmpty() -> after
             k.kind == KeyDef.SPACER -> "Empty spot: it draws nothing and types nothing. Use Fill to put a letter in it, or Merge / Split / Move."
-            k.kind == KeyDef.ACTION -> "Function key (" + k.action + "): width, move, merge, delete work; its letters cannot be changed yet."
+            k.kind == KeyDef.ACTION -> "Function key (" + k.action + "): width, move, merge, delete work; use Function key to change what it does."
             else -> ""
         }
         after = ""

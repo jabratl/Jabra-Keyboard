@@ -239,6 +239,17 @@ public class LayoutEditPlanTest {
         LayoutDef put = LayoutOps.fill(gone, "en_z", "z");
         t("chip tap puts z back, warning gone", LayoutEditPlan.coverageItems(LayoutCheck.check(put), "en").isEmpty());
         t("warnsOf sorted worst first", sortedOk(LayoutEditPlan.warnsOf(LayoutCheck.check(gone), "en")));
+        // v0.17.12 (K8)
+        t("edit tabs 8", LayoutEditPlan.EDIT_TABS.length == 8 && LayoutEditPlan.editTitles().length == 8);
+        t("edit tab id bad", LayoutEditPlan.editTabId(99).equals("en") && LayoutEditPlan.editTabId(3).equals("nr") && LayoutEditPlan.editTabId(7).equals("s3"));
+        t("symbol layer test", LayoutEditPlan.isSymbolLayer("s1") && LayoutEditPlan.isSymbolLayer("s3") && !LayoutEditPlan.isSymbolLayer("nr") && !LayoutEditPlan.isSymbolLayer("s4") && !LayoutEditPlan.isSymbolLayer(null));
+        for (String sl : new String[] { "s1", "s2", "s3" }) t("symbol layer rows " + sl, m.effectiveRows(sl).size() == 4);
+        boolean allOk = true;
+        for (String lay : new String[] { "en", "s1" }) for (String a1 : LayoutEditPlan.actionIds(lay)) if (!com.mgb.keyboard.layout.LayoutText.ACTIONS.contains(a1) || LayoutEditPlan.actionTitle(a1, lay).length() == 0) allOk = false;
+        t("picker ids are valid actions", allOk);
+        t("sym title by layer", LayoutEditPlan.actionTitle("sym", "s1").startsWith("ABC") && LayoutEditPlan.actionTitle("sym", "bot").startsWith("?123"));
+        LayoutDef fk = LayoutOps.setAction(m, "s1_comma", "emoji");
+        t("symbol key becomes function key", fk != m && LayoutEditPlan.findKey(fk, "s1", "s1_comma").kind == KeyDef.ACTION);
         t("severity names", LayoutEditPlan.severityName(3).equals("High") && LayoutEditPlan.severityName(0).equals("Info"));
         t("null safe", LayoutEditPlan.warnKeyIds(null, "en", 0).isEmpty() && LayoutEditPlan.coverageItems(null, "en").isEmpty() && LayoutEditPlan.warnsOf(null, "en").isEmpty() && LayoutEditPlan.warnLine(null).equals(""));
         System.out.println("LayoutEditPlanTest: " + ok + " ok, " + bad + " bad");

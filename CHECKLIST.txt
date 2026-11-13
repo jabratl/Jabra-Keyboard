@@ -808,3 +808,12 @@ Z101) v0.17.2 Space bar size + smoother language swipe (K2)  [portrait + landsca
  [ ] Same letter on shift vs normal of ONE key is not a warning. Saving is never blocked by a warning.
  [ ] Make "z" empty and clear its tap: chip "z" appears. Tap it: z returns into the first empty spot. If no empty spot: a note.
  [ ] Bangla tab: warnings / chips list Bangla letters; chips scroll sideways.
+
+Z110. v0.17.12 (K8) layout editor: number row, bottom row, symbol pages, function keys (NOT phone-tested)
+ [ ] App > Layout & size > Edit layout: 8 tabs (English, Avro, Probhat, Numbers, Bottom row, Symbols 1-3) scroll sideways; each shows its rows.
+ [ ] Bottom row tab: tap the "?" key > Delete. Reopen the keyboard: the "?" key is gone, nothing else broke.
+ [ ] Bottom row tab: tap a key > Function key > Tab. The key becomes Tab and sends Tab in a field (browser / notes). Undo brings the old key back.
+ [ ] Numbers tab: change a digit's tap output; the keyboard number row types it.
+ [ ] Symbols 1 tab: change one symbol, make one key empty, widen one key. Open ?123 on the keyboard: the panel shows the change. Gear and 123 keys still work.
+ [ ] Page key (=<) goes to page 2 / 3 and back; ABC returns to the letters.
+ [ ] Custom keyboard OFF: ?123 panel is exactly the old one.
