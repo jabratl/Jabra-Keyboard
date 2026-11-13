@@ -377,6 +377,62 @@ class VaultPanel(private val ctx: Context, private val host: JabraHost, private 
     // ===================== v0.16.10 (X10): NEW Vault list (pref panel_ui = 1) =====================
     // Sticky top bar + folder chips (with counts) + kind chips + info line, card list (title + 1-line preview), tap = insert,
     // long-press = actions sheet (Edit / Move / Delete / Select), select mode = bottom bar. Edit / Add / Move / Folders screens are the old ones.
+    // ---- v0.18 (easy browse): rounded card + kind badge + count pill, used by the New list AND the classic list ----
+    private fun kindColor(kind: String): Int = when (kind) {
+        VaultList.NOTE -> 0xFFF9A825.toInt()
+        VaultList.TERM -> 0xFF2E7D32.toInt()
+        VaultList.TEMPLATE -> 0xFF7B1FA2.toInt()
+        else -> JabraTokens.ACCENT
+    }
+    private fun kindGlyph(kind: String): String = when (kind) {
+        VaultList.NOTE -> "\uD83D\uDCDD"       // memo
+        VaultList.TERM -> "\uD83D\uDCD6"       // open book
+        VaultList.TEMPLATE -> "\uD83D\uDCC4"   // page
+        else -> "\uD83D\uDCCB"                 // clipboard
+    }
+    private fun cardBg(picked: Boolean): android.graphics.drawable.GradientDrawable {
+        val g = android.graphics.drawable.GradientDrawable()
+        try {
+            g.setColor(rowFill(picked))
+            g.cornerRadius = dp(10).toFloat()
+            g.setStroke(dp(if (picked) 2 else 1), JabraTokens.cardStroke(prefs, picked, false))
+        } catch (_: Throwable) { }
+        return g
+    }
+    private fun badge(kind: String): View {
+        val t = TextView(ctx)
+        t.text = kindGlyph(kind)
+        t.textSize = 16f
+        t.gravity = Gravity.CENTER
+        try {
+            val g = android.graphics.drawable.GradientDrawable()
+            g.shape = android.graphics.drawable.GradientDrawable.OVAL
+            g.setColor(JabraTokens.withAlpha(kindColor(kind), 0x33))
+            t.background = g
+        } catch (_: Throwable) { }
+        val lp = LinearLayout.LayoutParams(dp(32), dp(32))
+        lp.leftMargin = dp(8)
+        t.layoutParams = lp
+        return t
+    }
+    private fun countPill(n: Int): TextView {
+        val c = TextView(ctx)
+        c.text = n.toString() + "\u00D7"
+        c.textSize = 11f
+        c.setTextColor(rowNote())
+        try {
+            val g = android.graphics.drawable.GradientDrawable()
+            g.setColor(JabraTokens.withAlpha(rowInk(), 0x14))
+            g.cornerRadius = dp(8).toFloat()
+            c.background = g
+        } catch (_: Throwable) { }
+        c.setPadding(dp(7), dp(2), dp(7), dp(2))
+        val lp = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT)
+        lp.rightMargin = dp(8)
+        c.layoutParams = lp
+        return c
+    }
+
     private fun makeListNew(restoreY: Int): View {
         val root = rootView()
         val l = store.get()
@@ -408,12 +464,13 @@ class VaultPanel(private val ctx: Context, private val host: JabraHost, private 
             val fr = row()
             fun chip(label: String, count: Int, value: String?) {
                 val on = folderF == value
-                fr.addView(small(btn(VaultView.chipLabel(label, count, on), 0f, 34) {
+                val nm = if (label.isEmpty()) "Unfiled" else label
+                fr.addView(UiKit.chip(ctx, prefs, nm + " " + Math.max(0, count), on, 32, { v -> host.feedback(v) }) {
                     folderF = value
                     if (value != null) { try { prefs.setStr("vault_dest", value) } catch (_: Throwable) { } }
                     leaveSel(); sheetId = 0
                     refreshTop()
-                }).also { it.setPadding(dp(10), 0, dp(10), 0) })
+                })
             }
             chip("All", l.size(), null)
             chip("", l.countIn(""), "")
@@ -427,7 +484,9 @@ class VaultPanel(private val ctx: Context, private val host: JabraHost, private 
         val names = arrayOf("All", "Snippets", "Notes", "Glossary")
         val kinds = arrayOf<String?>(null, VaultList.SNIPPET, VaultList.NOTE, VaultList.TERM)
         for (i in 0..3) {
-            chips.addView(small(btn((if (kindF == i) "\u2713 " else "") + names[i] + " " + l.countKind(kinds[i]), 1f, 32) { kindF = i; leaveSel(); sheetId = 0; refreshTop() }))
+            val kc = UiKit.chip(ctx, prefs, names[i] + " " + l.countKind(kinds[i]), kindF == i, 32, { v -> host.feedback(v) }) { kindF = i; leaveSel(); sheetId = 0; refreshTop() }
+            try { val klp = kc.layoutParams as LinearLayout.LayoutParams; klp.width = 0; klp.weight = 1f; kc.layoutParams = klp } catch (_: Throwable) { }
+            chips.addView(kc)
         }
         root.addView(chips)
 
@@ -435,8 +494,12 @@ class VaultPanel(private val ctx: Context, private val host: JabraHost, private 
             val q = TextView(ctx)
             q.text = "\uD83D\uDD0D " + query + "\u258F"
             q.textSize = 15f
-            q.setTextColor(ink())
-            q.setPadding(dp(8), dp(2), dp(8), dp(2))
+            q.setTextColor(rowInk())
+            q.background = cardBg(false)
+            q.setPadding(dp(12), dp(6), dp(12), dp(6))
+            val qlp = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
+            qlp.setMargins(dp(4), dp(2), dp(4), dp(2))
+            q.layoutParams = qlp
             root.addView(q)
         }
 
@@ -479,8 +542,10 @@ class VaultPanel(private val ctx: Context, private val host: JabraHost, private 
         if (items.isEmpty()) {
             val t = TextView(ctx)
             t.text = if (searching) "No match" else if (l.size() == 0) "Vault is empty. Type or select text in a field, then tap + Add. Or tap + Add on an empty field to write one here." else "Nothing here. Change the chips above."
-            t.setPadding(dp(8), dp(12), dp(8), dp(12))
+            t.setPadding(dp(16), dp(12), dp(16), dp(12))
             t.setTextColor(dim())
+            t.gravity = Gravity.CENTER
+            if (!searching && l.size() == 0) t.text = "\uD83D\uDDC2\n" + t.text
             col.addView(t)
         }
         for (e in items) col.addView(cardNew(e))
@@ -521,11 +586,12 @@ class VaultPanel(private val ctx: Context, private val host: JabraHost, private 
         val r = row()
         r.gravity = Gravity.CENTER_VERTICAL
         val picked = selOn && sel.contains(e.id)
-        r.setBackgroundColor(rowFill(picked))
+        r.background = cardBg(picked)   // v0.18: rounded card
         val lp = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
-        lp.setMargins(dp(3), dp(2), dp(3), dp(2))
+        lp.setMargins(dp(4), dp(3), dp(4), dp(3))
         r.layoutParams = lp
-        r.minimumHeight = dp(48)
+        r.minimumHeight = dp(52)
+        r.addView(badge(e.kind))   // v0.18: kind icon on a tinted circle
 
         val colL = LinearLayout(ctx)
         colL.orientation = LinearLayout.VERTICAL
@@ -550,14 +616,7 @@ class VaultPanel(private val ctx: Context, private val host: JabraHost, private 
             colL.addView(prev)
         }
         r.addView(colL)
-        if (e.count > 0) {
-            val c = TextView(ctx)
-            c.text = e.count.toString() + "\u00D7"
-            c.textSize = 11f
-            c.setTextColor(rowNote())
-            c.setPadding(dp(4), 0, dp(6), 0)
-            r.addView(c)
-        }
+        if (e.count > 0) r.addView(countPill(e.count))   // v0.18
         if (e.kind == VaultList.TERM && !selOn) {
             val mb = small(btn("Meaning", 0f, 34) { sheetId = 0; paste(e, VaultList.meaning(e)) })
             mb.setPadding(dp(8), 0, dp(8), 0)
@@ -635,11 +694,12 @@ class VaultPanel(private val ctx: Context, private val host: JabraHost, private 
         val r = row()
         r.gravity = Gravity.CENTER_VERTICAL
         val picked = selOn && sel.contains(e.id)
-        r.setBackgroundColor(rowFill(picked))   // v0.6.6
+        r.background = cardBg(picked)   // v0.18: rounded card (v0.6.6 colours)
         val lp = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
-        lp.setMargins(dp(2), dp(1), dp(2), dp(1))
+        lp.setMargins(dp(4), dp(3), dp(4), dp(3))
         r.layoutParams = lp
-        r.minimumHeight = dp(44)
+        r.minimumHeight = dp(52)
+        r.addView(badge(e.kind))   // v0.18
 
         val colL = LinearLayout(ctx)
         colL.orientation = LinearLayout.VERTICAL
@@ -663,14 +723,7 @@ class VaultPanel(private val ctx: Context, private val host: JabraHost, private 
         colL.addView(prev)
         r.addView(colL)
 
-        if (e.count > 0) {
-            val c = TextView(ctx)
-            c.text = e.count.toString() + "×"
-            c.textSize = 11f
-            c.setTextColor(rowNote())   // v0.6.6
-            c.setPadding(dp(4), 0, dp(6), 0)
-            r.addView(c)
-        }
+        if (e.count > 0) r.addView(countPill(e.count))   // v0.18
         if (e.kind == VaultList.TERM && !selOn) {   // v0.4.5: tap row = paste the term, this button = paste the meaning
             val mb = small(btn("Meaning", 0f, 32) { paste(e, VaultList.meaning(e)) })
             mb.setPadding(dp(8), 0, dp(8), 0)
