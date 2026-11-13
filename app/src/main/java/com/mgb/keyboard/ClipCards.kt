@@ -26,7 +26,9 @@ class SelectMode(
     val onPaste: (ClipList.Item) -> Unit = { },   // v0.4.3: paste counter
     val info: (ClipList.Item) -> String = { "" },   // v0.4.3: small grey line under the text ("123 chars"), "" = none
     val holdMs: Int = 0,   // v0.16.16 (E2): hold time (ms) to start select mode; 0 = old system long-click
-    val afterPaste: (() -> Unit)? = null   // v0.17.37 (M4): what to do after a card paste (null = old: back to letters)
+    val afterPaste: (() -> Unit)? = null,   // v0.17.37 (M4): what to do after a card paste (null = old: back to letters)
+    val hasFmt: (ClipList.Item) -> Boolean = { false },   // v0.17.40 (M7): has a stored format = shows the Aa tag
+    val paste: ((ClipList.Item, Boolean) -> Unit)? = null   // v0.17.40 (M7): paste(item, badgeTapped); null = old way (plain, below)
 )
 
 object ClipCards {
@@ -142,11 +144,14 @@ object ClipCards {
             if (sm.on) {   // v0.2.5.3: select mode = tap toggles, NO paste
                 try { sm.onToggle(item) } catch (_: Throwable) { }
             } else try {
+                val pm = sm.paste   // v0.17.40 (M7): plain or with format, decided in ClipPanel
+                if (pm != null) pm(item, false) else {
                 host.commitWord()
                 host.typeText(item.text)
                 try { sm.onPaste(item) } catch (_: Throwable) { }   // v0.4.3
                 val ap = sm.afterPaste   // v0.17.37 (M4)
                 if (ap != null) ap() else host.showLetters()
+                }
             } catch (_: Throwable) { }
         }
         t.setOnClickListener { act() }
@@ -159,7 +164,10 @@ object ClipCards {
         try {   // v0.4.3: char count line (v0.10.24 C1: + kind tag on the left + age in the text)
             val inf = sm.info(item)
             val tg = ClipLook.tag(ctx, pf, item.text)
-            if (inf.isNotEmpty() || tg != null) {
+            val pmode = sm.paste   // v0.17.40 (M7)
+            val ft = if (pmode != null && sm.hasFmt(item)) ClipLook.fmtTag(ctx, pf) else null
+            if (ft != null) ft.setOnClickListener { if (!sm.on) { try { host.feedback(ft) } catch (_: Throwable) { }; try { pmode!!(item, true) } catch (_: Throwable) { } } }
+            if (inf.isNotEmpty() || tg != null || ft != null) {
                 val line = LinearLayout(ctx)
                 line.orientation = LinearLayout.HORIZONTAL
                 line.gravity = Gravity.CENTER_VERTICAL
@@ -168,6 +176,12 @@ object ClipCards {
                     tlp.setMargins(dp(ctx, 8), 0, 0, 0)
                     tg.layoutParams = tlp
                     line.addView(tg)
+                }
+                if (ft != null) {   // v0.17.40 (M7): Aa = paste with the OTHER choice
+                    val flp = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT)
+                    flp.setMargins(dp(ctx, 8), 0, 0, 0)
+                    ft.layoutParams = flp
+                    line.addView(ft)
                 }
                 if (inf.isNotEmpty()) {
                     val ct = TextView(ctx)

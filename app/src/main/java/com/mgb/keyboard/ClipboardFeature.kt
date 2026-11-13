@@ -67,6 +67,8 @@ class ClipStore(private val prefs: JabraPrefs, private val fmt: ClipFmtStore? = 
     fun has(t: String): Boolean = try { list.view("").any { it.text == t } } catch (_: Throwable) { false }
     fun countOf(t: String): Int = try { meta.count(t) } catch (_: Throwable) { 0 }
     fun madeOf(t: String): Long = try { meta.madeAt(t) } catch (_: Throwable) { 0L }   // v0.10.24 (C1): when the clip was copied (0 = unknown)
+    fun fmtOf(t: String): String? = try { fmt?.get(t) } catch (_: Throwable) { null }   // v0.17.40 (M7): stored html of a clip (null = none)
+    fun hasFmt(t: String): Boolean = try { fmtOf(t) != null } catch (_: Throwable) { false }
     fun noteUse(i: ClipList.Item) { try { meta.used(i.text, System.currentTimeMillis()); saveMeta() } catch (_: Throwable) { } }
     fun sorted(l: List<ClipList.Item>, mode: Int): List<ClipList.Item> = try { if (mode == 0) l else meta.sort(l, mode) } catch (_: Throwable) { l }
     /** Auto-delete (pref clip_expire 0..3): unpinned only; runs when the panel opens or a clip is added, never on a timer. Returns how many were removed. */
@@ -233,9 +235,22 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
         try { pasteToast?.cancel(); val t = android.widget.Toast.makeText(ctx, "Pasted", android.widget.Toast.LENGTH_SHORT); pasteToast = t; t.show() } catch (_: Throwable) { }
         if (rebuild) refresh()   // select mode was left: redraw, scroll position kept (keepY)
     }
-    private fun pasteClip(text: String, item: ClipList.Item?, rebuild: Boolean) {
-        host.commitWord()
-        host.typeText(text)
+    private fun keepFmtOnTap(): Boolean = try { JabraPrefs(ctx).bool("clip_fmt_tap", true) } catch (_: Throwable) { true }   // v0.17.40 (M7)
+    /** v0.17.40 (M7): a card tap (badge = the Aa tag): with or without format, by ClipPasteMode. */
+    private fun pasteItem(item: ClipList.Item, badge: Boolean) {
+        val mode = try { com.mgb.keyboard.typing.ClipPasteMode.decide(keepFmtOnTap(), badge, store.hasFmt(item.text)) } catch (_: Throwable) { com.mgb.keyboard.typing.ClipPasteMode.PLAIN }
+        pasteClip(item.text, item, false, mode)
+    }
+    private fun pasteClip(text: String, item: ClipList.Item?, rebuild: Boolean, mode: Int = com.mgb.keyboard.typing.ClipPasteMode.PLAIN) {
+        var done = false
+        if (mode == com.mgb.keyboard.typing.ClipPasteMode.FORMAT && item != null) {   // v0.17.40 (M7): format paste, any problem = plain paste below
+            val html = store.fmtOf(item.text)
+            if (html != null) done = try { host.pasteFormatted(text, html) } catch (_: Throwable) { false }
+        }
+        if (!done) {
+            host.commitWord()
+            host.typeText(text)
+        }
         if (item != null) store.noteUse(item)   // v0.4.3 (stay = no redraw, so the order does not jump)
         afterPaste(rebuild)
     }
@@ -367,7 +382,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
                 { it2 -> store.togglePin(it2); refresh() },
                 { it2 -> keepUndo(listOf(it2)); store.remove(it2); refresh() },
                 SelectMode(selOn, { x -> sel.isSelected(x) }, { x -> sel.toggle(x); confirmDel = false; refresh() }, { x -> sel.enterWith(x); confirmDel = false; refresh() },
-                    { x -> store.noteUse(x) }, { x -> infoLine(x) }, clipHoldMs(), { afterPaste(false) }), ClipOrder.recentFirst(ordMode), ordSwap)   // v0.4.3; v0.15.2: order + header tap
+                    { x -> store.noteUse(x) }, { x -> infoLine(x) }, clipHoldMs(), { afterPaste(false) }, { x -> store.hasFmt(x.text) }, { x, b -> pasteItem(x, b) }), ClipOrder.recentFirst(ordMode), ordSwap)   // v0.4.3; v0.15.2: order + header tap
         } else null
         if (cards != null) {
             col.addView(cards)
@@ -558,7 +573,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
                 { it2 -> store.togglePin(it2); refresh() },
                 { it2 -> keepUndo(listOf(it2)); store.remove(it2); refresh() },
                 SelectMode(selOn, { x -> sel.isSelected(x) }, { x -> sel.toggle(x); confirmDel = false; refresh() }, { x -> sel.enterWith(x); confirmDel = false; refresh() },
-                    { x -> store.noteUse(x) }, { x -> infoLine(x) }, clipHoldMs(), { afterPaste(false) }), ClipOrder.recentFirst(ordMode), ordSwap)
+                    { x -> store.noteUse(x) }, { x -> infoLine(x) }, clipHoldMs(), { afterPaste(false) }, { x -> store.hasFmt(x.text) }, { x, b -> pasteItem(x, b) }), ClipOrder.recentFirst(ordMode), ordSwap)
         } else null
         if (cards != null) {
             col.addView(cards)

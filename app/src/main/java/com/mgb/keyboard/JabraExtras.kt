@@ -37,6 +37,7 @@ interface JabraHost {
     fun fieldText(): String = ""     // v0.5.0: selected text or whole field text ("" in password fields / default)
     fun currentApp(): String = ""    // v0.10.18 (W6.1): package name of the app that owns the open field ("" = none / unknown)
     fun runAction(a: String) { }     // v0.17.21 (L5b): run a layout @action (@tab, @undo, @redo ...) from a panel (default: does nothing)
+    fun pasteFormatted(text: String, html: String): Boolean = false   // v0.17.40 (M7): paste text with its html format; false = not possible, the caller pastes plain
 }
 
 /** Safe pref reader/writer: every read has a default, nothing ever throws. */

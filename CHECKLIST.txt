@@ -980,3 +980,11 @@ Z131  v0.17.39  M6  Remember the format (html) of copied clips (no UI yet)
  [ ] 3. Edit a clip (Edit screen > Save): works as before.
  [ ] 4. Keyboard is not slower to open the clipboard or to copy a long text (20000 chars).
  [ ] 5. (Developer only) Settings > Apps > Jabra > Storage: Clear data removes jabra_clipfmt too.
+
+Z132  v0.17.40  M7  Paste with format + Aa tag (Cards view)
+ [ ] 1. In Chrome / Docs copy 3 texts with different formats (bold, link, heading), then open the Jabra clipboard (Cards view): the 3 cards show a small "Aa" tag. A plain-text copy shows no tag.
+ [ ] 2. Tap card A body in Gmail / Docs / Keep: pasted WITH its own format (bold / link). Then card B, then C: each keeps its OWN format, not the last copied one.
+ [ ] 3. Tap the "Aa" tag: the same clip is pasted PLAIN. Clipboard stays open after each paste.
+ [ ] 4. Settings > Clipboard & tools > "Paste keeps format (card tap)" OFF: body tap = plain, Aa tap = with format.
+ [ ] 5. WhatsApp / a plain field: pastes plain text, no crash. Password field: nothing odd.
+ [ ] 6. After a formatted paste the clipboard list has NO duplicate of that clip and the order did not jump. List view / New panel style still paste plain.

@@ -176,6 +176,7 @@ public final class SettingsIndex {
             case "clip_fit": return "Clipboard opens as tall as the keyboard (no shrink). OFF = old fixed size.";   // v0.15.1
             case "panel_ui": return "New panels (Clipboard, Vault, Gear, More, Toolbar): Classic = old, New = chips / tiles.";   // v0.16.12 (X12)
             case "clip_list_pct": return "Height of the clip list. Smaller = shorter list. 100% = as tall as the keyboard.";   // v0.17.38 (M5)
+            case "clip_fmt_tap": return "Card tap pastes with format; tap Aa for the other way. Some apps paste plain anyway.";   // v0.17.40 (M7)
             case "clip_stay": return "After tapping a clip it is pasted and the clipboard stays open. OFF = back to letters.";   // v0.17.37 (M4)
             case "clip_card_pct": return "Size of the clip cards. Smaller = more text and more clips fit. 100% = normal.";   // v0.17.33 (UI9)
             case "clip_btn_pct": return "Size of the Clipboard buttons. Smaller = the clip list shows more. 100% = normal.";   // v0.17.32 (UI8)

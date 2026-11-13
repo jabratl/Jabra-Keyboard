@@ -720,6 +720,7 @@ object SettingsGroups {
             toggle(g, "Clip character count", "clip_count", true)   // v0.4.3
             level(g, "Clip auto-delete (unpinned)", "clip_expire", 0, com.mgb.keyboard.clip.ClipMeta.EXPIRE_NAMES)   // v0.4.3
             toggle(g, "Stay in clipboard after paste", "clip_stay", true)   // v0.17.37 (M4): OFF = old way, back to letters
+            toggle(g, "Paste keeps format (card tap)", "clip_fmt_tap", true)   // v0.17.40 (M7): the Aa tag on a card does the other way
             toggle(g, "Clipboard follows keyboard height", "clip_fit", true)   // v0.15.1 (N1): OFF = old fixed clipboard size
             level(g, "Panel style", "panel_ui", 0, com.mgb.keyboard.typing.PanelLayout.STYLE_NAMES)   // v0.16.9 (X9): 0 Classic = today's clipboard (default in the first build), 1 New
             stepper(g, "Clipboard button size", "clip_btn_pct", com.mgb.keyboard.typing.ClipBtn.MIN, com.mgb.keyboard.typing.ClipBtn.MAX, com.mgb.keyboard.typing.ClipBtn.STEP, "%",

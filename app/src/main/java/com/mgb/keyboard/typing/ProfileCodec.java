@@ -50,7 +50,8 @@ public final class ProfileCodec {
         "clip_btn_pct:i",   // v0.17.32 (UI8)
         "clip_card_pct:i",   // v0.17.33 (UI9)
         "clip_stay:b",   // v0.17.37 (M4)
-        "clip_list_pct:i"   // v0.17.38 (M5)
+        "clip_list_pct:i",   // v0.17.38 (M5)
+        "clip_fmt_tap:b"   // v0.17.40 (M7)
     };
     public static final String[] KEYS = new String[SPEC.length];
     private static final char[] TYPE = new char[SPEC.length];

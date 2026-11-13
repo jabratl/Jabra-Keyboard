@@ -127,6 +127,7 @@ class MgbIme : InputMethodService() {
         override fun layoutChanged() { this@MgbIme.applyLayoutPref() }
         override fun fieldText(): String = this@MgbIme.fieldText()   // v0.5.0
         override fun currentApp(): String = try { currentInputEditorInfo?.packageName ?: "" } catch (_: Throwable) { "" }   // v0.10.18 (W6.1)
+        override fun pasteFormatted(text: String, html: String): Boolean = this@MgbIme.pasteFormatted(text, html)   // v0.17.40 (M7)
     }
 
     override fun onCreateInputView(): View {
@@ -266,6 +267,7 @@ class MgbIme : InputMethodService() {
     private fun captureClip() {
         try {
             if (pwdField || !prefs.bool("clip_on", true)) return
+            if (System.currentTimeMillis() - selfClipAt < 1500L) return   // v0.17.40 (M7): the clip we put there ourselves for a formatted paste
             val d = (getSystemService(CLIPBOARD_SERVICE) as ClipboardManager).primaryClip ?: return
             if (d.itemCount == 0) return
             val sensitive = try { d.description?.extras?.getBoolean("android.content.extra.IS_SENSITIVE", false) ?: false } catch (_: Throwable) { false }
@@ -307,6 +309,32 @@ class MgbIme : InputMethodService() {
             "plain" -> pastePlain()
             else -> { try { if (!pwdField && EditActions.isEditId(kind)) EditActions.run(ic, kind) } catch (_: Throwable) { } }   // v0.16.13 (X13): select / delete / line items, never in password fields
         }
+    }
+
+    // v0.17.40 (M7): paste a clip WITH its format. Stage 1: put text + html on the system clipboard and let the app paste it (same as a normal paste);
+    // stage 2: type the html as styled text; stage 3 (false): the caller pastes plain. captureClip ignores the change we cause (selfClipAt).
+    @Volatile private var selfClipAt = 0L
+    private fun pasteFormatted(text: String, html: String): Boolean {
+        try {
+            if (pwdField) return false
+            commitWord()
+            val ic = currentInputConnection ?: return false
+            try {
+                val cm = getSystemService(CLIPBOARD_SERVICE) as ClipboardManager
+                selfClipAt = System.currentTimeMillis()
+                cm.setPrimaryClip(android.content.ClipData.newHtmlText("Jabra", text, html))
+                selfClipAt = System.currentTimeMillis()
+                if (ic.performContextMenuAction(android.R.id.paste)) {
+                    try { pendingKind = com.mgb.keyboard.typing.AutoCapGate.kindOf(text) } catch (_: Throwable) { }
+                    return true
+                }
+            } catch (_: Throwable) { }
+            try {
+                val sp = android.text.Html.fromHtml(html, android.text.Html.FROM_HTML_MODE_LEGACY)
+                if (sp.isNotEmpty()) { ic.commitText(sp, 1); try { pendingKind = com.mgb.keyboard.typing.AutoCapGate.kindOf(text) } catch (_: Throwable) { }; return true }
+            } catch (_: Throwable) { }
+        } catch (_: Throwable) { }
+        return false
     }
 
     private fun pastePlain() {

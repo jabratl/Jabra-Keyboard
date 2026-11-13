@@ -15,6 +15,27 @@ object ClipLook {
     /** v0.16.15 (E3): colour of PINNED clips = warm gold. Blue is only for SELECTED clips (before: pinned and selected were both blue). */
     fun pinColor(dark: Boolean): Int = if (dark) 0xFFFFD54F.toInt() else 0xFFB7791F.toInt()
 
+    /** v0.17.40 (M7): small "Aa" tag on a card whose clip has a stored format. Theme colours (dim text, NOT blue), tap target >= 28 dp. */
+    fun fmtTag(ctx: Context, p: JabraPrefs?): TextView? = try {
+        val d = ctx.resources.displayMetrics.density
+        val c = try { JabraTokens.onCardDim(p!!) } catch (_: Throwable) { Color.DKGRAY }
+        val t = TextView(ctx)
+        t.text = "Aa"
+        t.textSize = 11f
+        t.setTypeface(t.typeface, Typeface.BOLD)
+        t.setTextColor(c)
+        t.maxLines = 1
+        t.gravity = android.view.Gravity.CENTER
+        t.minimumHeight = (28 * d).toInt()
+        t.minimumWidth = (28 * d).toInt()
+        t.setPadding((8 * d).toInt(), (2 * d).toInt(), (8 * d).toInt(), (2 * d).toInt())
+        val g = GradientDrawable()
+        g.setColor(JabraTokens.withAlpha(c, 0x2A))
+        g.cornerRadius = JabraTokens.R_SM * d
+        t.background = g
+        t
+    } catch (_: Throwable) { null }
+
     fun tag(ctx: Context, p: JabraPrefs?, text: String): TextView? = try {
         val k = ClipKind.kind(text)
         if (k == ClipKind.NONE) null else {
