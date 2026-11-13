@@ -26,7 +26,7 @@ public final class ChangedPlan {
     }
 
     // ---- sections ----
-    private static final String[] G_LAYOUT = { "Size", "Spacing", "Shape", "Bottom row", "One-hand" };
+    private static final String[] G_LAYOUT = { "Size", "Spacing", "Shape", "Bottom row", "One-hand", "Keyboard layout" };   // v0.17.5 (K5a.1): + Keyboard layout
     private static final String[] G_LOOK = { "Theme & style", "Custom theme", "Number row", "Hints", "Other" };
     private static final String[] G_LANG = { "Bangla", "Switching", "Number row & mode" };
     private static final String[] G_KEYS = { "Feedback", "Popup", "Smart typing", "Extra keys", "Timing" };
@@ -59,6 +59,7 @@ public final class ChangedPlan {
             if (in(key, "key_radius")) return "Shape";
             if (in(key, "bot_style", "key_dots", "pb_home_gap", "sp_wpct", "sp_hpct")) return "Bottom row";   // v0.17.2 (K2): sp_wpct, sp_hpct
             if (in(key, "oh_w_p", "oh_w_l")) return "One-hand";
+            if (in(key, "kb_custom")) return "Keyboard layout";   // v0.17.5 (K5a.1)
         } else if (group.equals("Look")) {
             if (in(key, "theme", "look", "key_border", "icons_on")) return "Theme & style";
             if (in(key, "ct_studio")) return "Custom theme";   // v0.15.7 (N7): pseudo key (no row), keeps the section in use

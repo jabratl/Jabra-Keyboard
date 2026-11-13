@@ -11,7 +11,7 @@ public class ProfileTest {
         // whitelist
         t("allowed theme", ProfileCodec.allowed("theme") && ProfileCodec.allowed("xrow_chars") && ProfileCodec.allowed("haptic_lv"));
         t("ct_json NOT allowed", !ProfileCodec.allowed("ct_json") && !ProfileCodec.allowed("clips_v1") && !ProfileCodec.allowed("fmt_cur") && !ProfileCodec.allowed(null));
-        t("65 keys", ProfileCodec.KEYS.length == 65);   // v0.17.2: +sp_wpct, sp_hpct, sp_anim; v0.17.1: +key_qm; v0.16.16: +clip_hold; v0.16.9: +panel_ui; v0.16.7: +nr_hpct, nr_mode, nr_chars;   // v0.16.6: +tb_hpct, tb_ipct; v0.16.3: +bn_map   // v0.9.9: +pop_fast; v0.10.1: +sg_on
+        t("66 keys", ProfileCodec.KEYS.length == 66);   // v0.17.5: +kb_custom; v0.17.2: +sp_wpct, sp_hpct, sp_anim; v0.17.1: +key_qm; v0.16.16: +clip_hold; v0.16.9: +panel_ui; v0.16.7: +nr_hpct, nr_mode, nr_chars;   // v0.16.6: +tb_hpct, tb_ipct; v0.16.3: +bn_map   // v0.9.9: +pop_fast; v0.10.1: +sg_on
         Set<String> seen = new HashSet<String>(Arrays.asList(ProfileCodec.KEYS));
         t("keys unique", seen.size() == ProfileCodec.KEYS.length);
 
@@ -35,6 +35,11 @@ public class ProfileTest {
         r2.clear(); r2.put("sp_hpct", 79); t("sp_hpct 79 dropped", ProfileCodec.clean(r2).isEmpty());
         r2.clear(); r2.put("sp_hpct", 161); t("sp_hpct 161 dropped", ProfileCodec.clean(r2).isEmpty());
         r2.clear(); r2.put("sp_anim", 1); t("sp_anim wrong type dropped", ProfileCodec.clean(r2).isEmpty());
+        r2.clear(); r2.put("kb_custom", 1); t("kb_custom 1 ok", ProfileCodec.clean(r2).size() == 1);   // v0.17.5
+        r2.clear(); r2.put("kb_custom", 0); t("kb_custom 0 ok", ProfileCodec.clean(r2).size() == 1);
+        r2.clear(); r2.put("kb_custom", 2); t("kb_custom 2 dropped", ProfileCodec.clean(r2).isEmpty());
+        r2.clear(); r2.put("kb_custom", -1); t("kb_custom -1 dropped", ProfileCodec.clean(r2).isEmpty());
+        r2.clear(); r2.put("kb_custom", true); t("kb_custom wrong type dropped", ProfileCodec.clean(r2).isEmpty());
         r2.clear(); r2.put("sp_wpct", 60); r2.put("sp_hpct", 160); t("sp range edges ok", ProfileCodec.clean(r2).size() == 2);
         r2.clear(); r2.put("kh_pct_p", Long.valueOf(90)); t("Long accepted as int", ProfileCodec.clean(r2).get("kh_pct_p").equals(90));
         StringBuilder big = new StringBuilder(); for (int i = 0; i < 700; i++) big.append('x');

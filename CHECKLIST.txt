@@ -748,3 +748,14 @@ Z101) v0.17.2 Space bar size + smoother language swipe (K2)  [portrait + landsca
  [ ] Push the zip. Actions run: step "Java tests" is green and shows "Java tests: 97/97 green", then the APK is built.
  [ ] Install the APK: App > Data & About shows 0.17.4. The keyboard looks and types exactly like 0.17.3 (nothing visible changed, no new setting).
  [ ] (Info) K3 + K4 are still invisible: the first visible custom keyboard comes with K5a.1 / K5a.2.
+
+=== Z104 (v0.17.5, K5a.1: custom English letter rows + safety net, EXPERIMENTAL) ===
+ [ ] Push the zip. Actions: "Java tests: 98/98 green" (97 + LayoutGuardTest) then the APK. If the build is RED, paste the Kotlin errors here: this is the first Kotlin of plan K.
+ [ ] Install: with the new switch OFF (default) the keyboard looks and types exactly like 0.17.4 (English, Bangla, symbols, clipboard, themes).
+ [ ] App > Layout & size > "Keyboard layout": switch ON, open any text field: English rows look the same as before (compare side by side: key sizes, gaps, home-row gap, shift + backspace width, theme colours, letter size, bold).
+ [ ] Type: letters, shift (one tap = one capital, double tap = caps lock, blue tint), backspace (tap, hold = repeat, long hold = word delete), long-press a letter = its hint letter / digit, popup bubble, haptic. Auto-capital after ". " still works.
+ [ ] Switch language to Bangla (phonetic and fixed): the classic Bangla rows show and type as before; back to English = custom rows again. Password / email field with Bangla selected = English custom rows.
+ [ ] Ctrl + C in PC mode still works (Ctrl / Alt + a letter key).
+ [ ] Rotation, one-hand mode, key height %, letter size %, key gap: custom rows follow.
+ [ ] Page shows "Custom layout: OK". Switch OFF = classic again at once. "Restore last good layout" shows "Last good layout restored".
+ [ ] (Optional) Damage test: Android Settings > Apps > Jabra > no editor yet, so skip; the load gate is covered by LayoutGuardTest.

@@ -597,6 +597,17 @@ object SettingsGroups {
                 { val v = prefs.int("letter_pct", -1); if (com.mgb.keyboard.typing.SizePct.letterValid(v)) v else 100 }, -1)
             toggle(g, "Bold letters", "letter_bold", false)
             toggle(g, "Home row side gap", "row_gap", true)
+            level(g, "Custom keyboard layout (experimental)", "kb_custom", 0, arrayOf("Off", "On"))   // v0.17.5 (K5a.1): On = English letter rows come from the saved layout; any problem = classic keyboard
+            try {   // v0.17.5 (K5a.1): status line + the "settings that do nothing" note (plan 6.9) + one-tap safety button (S3)
+                val st = android.widget.TextView(ctx)
+                val on = prefs.int("kb_custom", 0) == 1
+                st.text = LayoutStore.status(ctx, prefs) + (if (on) "\nWhile it is ON: Home row side gap, Shift / Backspace gap and Long-press override do nothing for the English letter rows (they come back when you switch to Off)." else "")
+                st.textSize = 12f
+                st.setTextColor(0xFF888888.toInt())
+                st.setPadding(dp(8), 0, dp(8), dp(4))
+                g.addView(st)
+                g.addView(btn("Restore last good layout") { v -> (v as Button).text = if (LayoutStore.restoreLastGood(ctx)) "Last good layout restored" else "No saved layout yet" })
+            } catch (_: Throwable) { }
             stepper(g, "Key corner radius", "key_radius", com.mgb.keyboard.typing.EdgePlan.R_MIN, com.mgb.keyboard.typing.EdgePlan.R_MAX, 1, " dp",
                 { com.mgb.keyboard.typing.EdgePlan.radiusDp(prefs.int("key_radius", -1)) }, -1)   // v0.10.28 (P3): Jabra look only; Ridmik about 6
             // v0.10.26 (P1): spacing like Ridmik. All three unset = the old look (edge 2 dp, up-down gap = key gap, no extra gap).
