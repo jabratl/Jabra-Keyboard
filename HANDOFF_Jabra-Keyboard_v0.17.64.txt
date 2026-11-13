@@ -1,0 +1,6 @@
+HANDOFF Jabra-Keyboard v0.17.64 (R4)
+DONE: ... v0.17.62 R2 | v0.17.63 R3 export rename + ZIP | v0.17.64 R4 Settings Home polish. CURRENT: 0.17.64
+CHANGED: AppHome.kt (headings via AppRows.sectionHeader, Quick looks help line, test field card look, tile summary 2 lines, version 12sp); app/build.gradle.kts; CHANGELOG.txt.
+CHECKS: bracket balance AppHome.kt; Java suite green.
+NOT TESTED: Kotlin not compiled (R3 + R4 both: if GitHub build fails send the error log -> FIX). Phone look at 360/1280 dp dark+light; search still hides the Home list while typing.
+NEXT: R5 = settings PAGES (row help length, order inside pages) after a phone check of R3 + R4.

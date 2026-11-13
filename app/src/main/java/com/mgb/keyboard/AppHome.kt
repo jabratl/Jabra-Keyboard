@@ -61,6 +61,7 @@ object AppHome {
         try { title.isAccessibilityHeading = true } catch (_: Throwable) { }
         val ver = TextView(act)
         ver.text = "Version ${BuildConfig.VERSION_NAME} (build ${BuildConfig.VERSION_CODE})"
+        ver.textSize = 12f   // v0.17.64 (R4): quieter version line
         try { ver.setTextColor(AppUi.dim(act)) } catch (_: Throwable) { }
         names.addView(title)
         names.addView(ver)
@@ -88,6 +89,14 @@ object AppHome {
 
         // ---- Quick looks ----
         col.addView(label(act, "Quick looks", dp(AppTokens.S4)))
+        try {   // v0.17.64 (R4): one line that says what a Quick look does
+            val qh = TextView(act)
+            qh.text = "One tap sets key size and spacing. You can undo it."
+            qh.textSize = 12f
+            qh.setTextColor(AppUi.dim(act))
+            qh.setPadding(0, dp(AppTokens.S1), 0, dp(AppTokens.S1))
+            col.addView(qh)
+        } catch (_: Throwable) { }
         val keys = EdgePlan.PRESET_KEYS
         fun curVals(): IntArray = IntArray(keys.size) { if (EdgePlan.isBool(it)) (if (prefs.bool(keys[it], false)) 1 else 0) else prefs.int(keys[it], -1) }
         fun write(v: IntArray) { for (i in keys.indices) { if (EdgePlan.isBool(i)) prefs.setBool(keys[i], v[i] == 1) else prefs.setInt(keys[i], v[i]) } }
@@ -168,6 +177,13 @@ object AppHome {
         col.addView(label(act, "Try the keyboard", dp(AppTokens.S4)))
         val test = EditText(act)
         test.hint = "Type here to test the keyboard"
+        try {   // v0.17.64 (R4): same card look as the tiles, 48 dp touch height
+            test.background = AppUi.cardBg(act, 12)
+            test.setPadding(dp(AppTokens.S3), dp(AppTokens.S3), dp(AppTokens.S3), dp(AppTokens.S3))
+            test.minHeight = dp(AppTokens.TOUCH)
+            test.setTextColor(AppUi.text(act))
+            test.setHintTextColor(AppUi.dim(act))
+        } catch (_: Throwable) { }
         col.addView(test)
 
         // ---- tiles: one list row per page (icon, title, short summary, arrow); v0.15.0 (M5): own order + hidden tiles (PersonalPlan) ----
@@ -236,6 +252,7 @@ object AppHome {
                 texts.addView(tt)
                 val sm = TextView(act)
                 sm.textSize = 13f
+                sm.maxLines = 2; sm.ellipsize = android.text.TextUtils.TruncateAt.END   // v0.17.64 (R4): even tile height
                 try { sm.setTextColor(AppUi.dim(act)) } catch (_: Throwable) { }
                 sm.text = summary(act, prefs, id)
                 texts.addView(sm)
@@ -350,7 +367,9 @@ object AppHome {
         }, { id -> select(id) })
     }
 
-    private fun label(act: SettingsActivity, text: String, topPx: Int): TextView {
+    /** v0.17.64 (R4): Home headings use the same small-caps + divider look as the page sections (AppRows.sectionHeader). Old look = fallback. */
+    private fun label(act: SettingsActivity, text: String, topPx: Int): View {
+        try { return AppRows.sectionHeader(act, text) } catch (_: Throwable) { }
         val t = TextView(act)
         t.text = text
         t.textSize = 16f
