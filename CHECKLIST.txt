@@ -899,3 +899,11 @@ Z121 (v0.17.23, L5c: preset "Ridmik symbols")
  [ ] 2. Custom keyboard ON, press ?123: row 1 = Tab ~ \\ < > _ = [ ], row 2 = @ # taka % & * - + ( ), row 3 = page key, ! " ' : ; / ?, backspace.
  [ ] 3. Tap Tab (in Termux or a browser): Tab is sent. Letters, bottom row, symbol pages 2 and 3 look as before. Switch back to your old layout: nothing changed.
 
+Z122 (v0.17.24, L4: named custom themes)
+ [ ] 1. App > Look & Theme > Custom theme: scroll to "Saved themes". Edit the colours, type the name "Night", press [Save as]. The name shows in the list.
+ [ ] 2. Change the colours, save as "Rose". Two entries. Press [Use] on "Night": the keyboard shows the Night colours, the list shows "(in use)" on it, the editor fields follow.
+ [ ] 3. [Edit] on "Rose": its colours load into the editor (not saved). [Rename]: type a new name in the name field, press Rename. Same name as another = a message, nothing changes.
+ [ ] 4. [Delete] once = "Sure?", wait 3 s = back to "Delete"; tap twice = removed. The keyboard theme does not change when you delete.
+ [ ] 5. 13th name = message "at most 12 ...". Old Save / Save and use / Delete custom theme buttons work as before.
+ [ ] 6. Backup now, delete a saved theme, Restore: the deleted theme is back.
+

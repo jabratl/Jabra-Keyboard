@@ -1,3 +1,13 @@
+v0.17.24 - NEW (L4): named custom themes ("Saved themes") in the app Theme Studio
+- WHY: plan L4. The custom theme had ONE slot (theme 21, pref ct_json): a new design overwrote the old one.
+- What you get: App > Look & Theme > Custom theme (Theme Studio), new block at the bottom "Saved themes (up to 12)": type a name + [Save as (name above)] keeps the colours of the editor under that name. Each saved theme has [Use] (switches the keyboard to it = writes ct_json and turns the custom theme ON), [Edit] (loads it into the editor, not saved yet), [Rename] (uses the name field) and [Delete] (two taps, "Sure?"). The one in use shows "(in use)". Same name = replaced. Backup / restore carry the list without any change.
+- Code: NEW typing/ThemeBook.java (pure, immutable, 12 themes, names like LayoutBook, storage "TBOOK1", every theme must parse as a CustomTheme) + tools/ThemeBookTest (39); NEW ThemeStore.kt (pref themes_v1 in the main prefs file "jabra", so the existing backup already includes it; a damaged text decodes to fewer / no themes); AppThemeStudio.kt (hooks marked v0.17.24: the block + reload() also refreshes the list). ct_json, the keyboard Theme Studio, the theme grid and the old Save / Save and use / Delete buttons are UNCHANGED.
+- NOT built: the same list inside the keyboard's own Theme Studio (it still edits the active theme only); export / import of one theme as text.
+- BROKE: nothing known. Without saved themes nothing changes.
+- TESTED here: javac of ALL app Java + ThemeBookTest 39, CustomThemeTest 26, CustomThemeFormTest 50, BackupTest 32, LayoutBookTest 73 green; backup round trip of themes_v1 checked. Rest left to CI.
+- NOT tested: Kotlin (ThemeStore.kt, AppThemeStudio.kt) NOT compiled (no kotlinc here; brackets balanced, names checked by grep); NOT phone-tested (CHECKLIST Z122).
+- Rollback: Delete saved themes in the block, or push the v0.17.23 AppThemeStudio.kt back and delete ThemeStore.kt + typing/ThemeBook.java + tools/ThemeBookTest.java (the pref themes_v1 is then just ignored).
+
 v0.17.23 - NEW (L5c): preset "Ridmik symbols" (symbols page 1 in the Ridmik order)
 - WHY: plan L5c. The user's Ridmik reference (video) has symbol page 1 = [Tab ~ \\ < > _ = [ ]] / [@ # taka % & * - + ( )] / [page ! " ' : ; / ? backspace]. The default symbols page is different.
 - What you get: Editor > Presets > 6th item "Ridmik symbols". It is saved as a NEW named layout (an existing layout is never overwritten). Symbols page 1 shows the Ridmik order with a Tab key at the start of row 1 (uses the L5b.1 Tab key). Letters, bottom row, symbol pages 2 and 3 are exactly the default. Turn Custom keyboard ON to see it.

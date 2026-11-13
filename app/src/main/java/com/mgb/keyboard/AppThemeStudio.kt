@@ -23,6 +23,7 @@ import android.widget.Toast
 import com.mgb.keyboard.typing.AppTokens
 import com.mgb.keyboard.typing.CustomTheme
 import com.mgb.keyboard.typing.CustomThemeForm
+import com.mgb.keyboard.typing.ThemeBook
 import com.mgb.keyboard.typing.SizePct
 
 /**
@@ -243,8 +244,119 @@ object AppThemeStudio {
             }
         })
 
+        // v0.17.24 (L4): saved (named) themes. The ONE active custom theme (ct_json, slot 21) works exactly as before; this list is extra.
+        val svHead = TextView(ctx)
+        svHead.text = "Saved themes (up to " + ThemeBook.MAX_THEMES + "). Type a name, then Save as. Use = switch the keyboard to it."
+        svHead.textSize = 12f
+        svHead.setTextColor(AppUi.dim(ctx))
+        svHead.setPadding(0, dp(AppTokens.S3), 0, dp(AppTokens.S1))
+        box.addView(svHead)
+        val nameEt = EditText(ctx)
+        nameEt.setSingleLine(true)
+        nameEt.hint = "Theme name"
+        nameEt.textSize = 15f
+        nameEt.filters = arrayOf(InputFilter.LengthFilter(ThemeBook.MAX_NAME_CHARS))
+        nameEt.minHeight = dp(AppTokens.TOUCH)
+        box.addView(nameEt)
+        val svList = LinearLayout(ctx)
+        svList.orientation = LinearLayout.VERTICAL
+
+        fun toast(m: String) { try { Toast.makeText(ctx, m, Toast.LENGTH_SHORT).show() } catch (_: Throwable) { } }
+
+        fun refreshList() {
+            try {
+                svList.removeAllViews()
+                val bk = ThemeStore.book(prefs)
+                if (bk.size() == 0) {
+                    val e = TextView(ctx)
+                    e.text = "No saved themes yet."
+                    e.textSize = 13f
+                    e.setTextColor(AppUi.dim(ctx))
+                    e.setPadding(0, dp(AppTokens.S1), 0, dp(AppTokens.S1))
+                    svList.addView(e)
+                    return
+                }
+                val cur = prefs.str("ct_json", "")
+                for (nm in bk.names()) {
+                    val t = TextView(ctx)
+                    t.text = nm + (if (bk.sameAs(nm, cur)) "   (in use)" else "")
+                    t.textSize = 15f
+                    t.setTextColor(AppUi.text(ctx))
+                    t.setPadding(0, dp(AppTokens.S2), 0, dp(AppTokens.S1))
+                    svList.addView(t)
+                    val br = LinearLayout(ctx)
+                    br.orientation = LinearLayout.HORIZONTAL
+                    fun small(label: String, click: (Button) -> Unit): Button {
+                        val b = action(label, click)
+                        b.textSize = 12f
+                        val lp = LinearLayout.LayoutParams(0, dp(AppTokens.TOUCH), 1f)
+                        lp.setMargins(dp(AppTokens.S1), 0, dp(AppTokens.S1), 0)
+                        b.layoutParams = lp
+                        b.setPadding(dp(2), 0, dp(2), 0)
+                        br.addView(b)
+                        return b
+                    }
+                    small("Use") {
+                        val th = CustomTheme.parse(ThemeStore.book(prefs).jsonOf(nm))
+                        if (th == null) { toast("This saved theme is damaged."); return@small }
+                        val old = JabraThemes.index(prefs)
+                        prefs.setStr("ct_json", th.toJson())
+                        prefs.setInt("theme", JabraThemes.ALL.size)
+                        ThemeStore.put(prefs, ThemeStore.book(prefs).setActive(nm))
+                        setAll(th, false)
+                        toast("Theme \"" + nm + "\" is ON.")
+                        try { onSaved(old) } catch (_: Throwable) { }
+                        refreshList()
+                    }
+                    small("Edit") {
+                        val th = CustomTheme.parse(ThemeStore.book(prefs).jsonOf(nm))
+                        if (th == null) { toast("This saved theme is damaged."); return@small }
+                        setAll(th, true)
+                        nameEt.setText(nm)
+                        toast("Loaded into the editor above. Not saved yet.")
+                    }
+                    small("Rename") {
+                        val b0 = ThemeStore.book(prefs)
+                        val nb = b0.rename(nm, nameEt.text.toString())
+                        if (nb === b0) { toast("Type a new, free name in the name field first."); return@small }
+                        ThemeStore.put(prefs, nb)
+                        refreshList()
+                    }
+                    var armedDel = false
+                    small("Delete") { b ->
+                        if (!armedDel) {
+                            armedDel = true
+                            b.text = "Sure?"
+                            b.setTextColor(AppUi.warn(ctx))
+                            b.postDelayed({ armedDel = false; b.text = "Delete"; b.setTextColor(AppUi.text(ctx)) }, 3000)
+                        } else {
+                            armedDel = false
+                            ThemeStore.put(prefs, ThemeStore.book(prefs).delete(nm))
+                            refreshList()
+                        }
+                    }
+                    svList.addView(br)
+                }
+            } catch (_: Throwable) { }
+        }
+
+        box.addView(action("Save as (name above)") {
+            val th = CustomThemeForm.build(fields, round, alpha)
+            if (th == null) { toast("Fix the red colours first. Nothing was saved."); return@action }
+            val b0 = ThemeStore.book(prefs)
+            val json = th.toJson()
+            val why = b0.saveProblem(nameEt.text.toString(), json)
+            if (why.isNotEmpty()) { toast(why.replaceFirstChar { it.uppercase() } + "."); return@action }
+            val nb = b0.saveAs(nameEt.text.toString(), json)
+            ThemeStore.put(prefs, nb)
+            toast("Saved as \"" + nb.active() + "\". Press Use to switch to it.")
+            refreshList()
+        })
+        box.addView(svList)
+        refreshList()
+
         update()
-        fun reload() { if (!dirty) setAll(JabraThemes.custom(prefs), false) }   // pick up a change made in the keyboard Studio (only when nothing is being edited here)
+        fun reload() { if (!dirty) setAll(JabraThemes.custom(prefs), false); refreshList() }   // pick up a change made in the keyboard Studio (only when nothing is being edited here)
         box.addOnAttachStateChangeListener(object : View.OnAttachStateChangeListener {
             override fun onViewAttachedToWindow(v: View) { try { reload() } catch (_: Throwable) { } }
             override fun onViewDetachedFromWindow(v: View) { }
