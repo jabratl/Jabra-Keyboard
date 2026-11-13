@@ -1,0 +1,17 @@
+HANDOFF Jabra-Keyboard v0.17.63 (R3)  - paste at the start of the next chat
+
+DONE: ... v0.17.60 C5 | v0.17.61 R1 Bangla fixed Ridmik look | v0.17.62 R2 modes ON/OFF + order | v0.17.63 R3 export rename + ZIP.
+CURRENT VERSION: 0.17.63
+
+WHAT CHANGED
+- clip/ClipName.java (NEW): clean() safe name, autoBase() (1 clip = first words), addDate(), zipNames() (01_title.ext, unique), toZip() (one file per clip).
+- ClipboardFeature.kt: state expName / renaming / renText / renPos / renCaps; makeRename() screen; expZip(); name row + "One file | ZIP" chips in makeExport(); doExport() uses ClipName; reset points + 1 line in make(). Marked // v0.17.63 (R3).
+- tools/ClipNameTest.java (NEW): 12061 checks.
+- app/build.gradle.kts: 0.17.63.  CHANGELOG.txt, PLAN_CLIP_V2.txt: entries.
+- NOT changed: ClipExporter.kt, file_paths.xml, manifest (zip uses same share / MediaStore code).
+
+CHECKS DONE: ClipNameTest + ClipExportTest green (javac of clip/*.java); bracket balance ClipboardFeature.kt; no duplicate new names.
+
+NOT TESTED (needs real use): Kotlin not compiled (no android.jar in chat) -> if GitHub build fails, FIX first from the error log. Phone: rename screen layout 360 / 1280 dp dark + light, Rename->OK, Auto, ZIP chip (2+ clips only), Share ZIP + open on PC (Bangla names), Save ZIP in Downloads, classic panel Export button.
+
+NEXT: R4 = phone test of R3 or FIX from build log. Ideas: TAR option, name templates, per-file "#n" in zip details.

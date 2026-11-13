@@ -45,3 +45,5 @@ NEXT (not built): long clip fade + "more" expand in place (ClipCards.kt), press 
 
 STEP C5 - MODIFY (v0.17.60)  DONE: "More / Less" in place for cut clips (Cards), Undo message on list-row x. Dropped: colour fade, press scale (reasons in CHANGELOG).
 NEXT: phone test of C1-C5 or FIX from the build log.
+
+STEP R3 (v0.17.63) DONE: export rename (single file / zip name) + ZIP (file per clip). See CHANGELOG. NEXT ideas (not built): TAR, name templates ({date}/{n}), zip password, per-file "#n" in zip details, Markdown / HTML export.

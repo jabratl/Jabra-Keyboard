@@ -12,6 +12,7 @@ import android.widget.TextView
 import com.mgb.keyboard.clip.ClipList
 import com.mgb.keyboard.clip.ClipMeta
 import com.mgb.keyboard.clip.ClipExport   // v0.17.57 (C2)
+import com.mgb.keyboard.clip.ClipName   // v0.17.63 (R3)
 import com.mgb.keyboard.typing.ClipCaret   // v0.17.56 (C1)
 import com.mgb.keyboard.typing.ClipSelect
 import com.mgb.keyboard.typing.ClipOrder   // v0.15.2 (N2)
@@ -147,6 +148,11 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
     private var expScope = 0        // 0 = selected clips, 1 = all clips, 2 = pinned clips
     private var expSel: List<ClipList.Item> = emptyList()   // the selection at the moment Export was tapped
     private var expMsg = ""
+    private var expName = ""        // v0.17.63 (R3): custom file / zip name without extension ("" = automatic name)
+    private var renaming = false    // v0.17.63 (R3): rename screen is open (inside the export screen)
+    private var renText = ""
+    private var renPos = 0
+    private var renCaps = false
     private var confirmSave = false
     /** v0.4.4: set by MgbIme: saves the given clip texts into the Text Vault and returns a short message. null = no "To Vault" button. */
     var toVault: ((List<String>) -> String)? = null
@@ -172,7 +178,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
         refresh()
     }
 
-    fun reset() { editing = null; confirmSave = false; undoBuf = emptyList(); searching = false; query = ""; confirmClear = false; msg = ""; sel.leave(); confirmDel = false; keepY = -1; fromRefresh = false; fChip = 0; moreOpen = false; ovOpen = false; exporting = false; expMsg = "" }   // v0.16.1 (X1); v0.17.57 (C2): export screen closed; v0.16.9 (X9): chip + More tray start fresh
+    fun reset() { editing = null; confirmSave = false; undoBuf = emptyList(); searching = false; query = ""; confirmClear = false; msg = ""; sel.leave(); confirmDel = false; keepY = -1; fromRefresh = false; fChip = 0; moreOpen = false; ovOpen = false; exporting = false; expMsg = ""; renaming = false; expName = "" }   // v0.17.63 (R3): rename closed + name cleared; v0.16.1 (X1); v0.17.57 (C2): export screen closed; v0.16.9 (X9): chip + More tray start fresh
 
     private fun dp(v: Int): Int = (v * ctx.resources.displayMetrics.density).toInt()
 
@@ -286,6 +292,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
         val restoreY = if (fromRefresh) keepY else -1   // v0.16.1 (X1)
         fromRefresh = false
         if (restoreY < 0 && editing == null) keepY = -1   // fresh open = start at the top
+        if (exporting && renaming) { try { return fitEdit(makeRename()) } catch (_: Throwable) { renaming = false } }   // v0.17.63 (R3)
         if (exporting) { try { return fitEdit(makeExport()) } catch (_: Throwable) { exporting = false } }   // v0.17.57 (C2)
         if (editing != null) { try { return fitEdit(makeEdit()) } catch (_: Throwable) { editing = null } }   // v0.15.1: fitEdit   // v0.4.3.1
         // v0.16.9 (X9): pref panel_ui = 1 -> the NEW panel (makeNew below). Default 0 / any problem = the classic code that follows, untouched.
@@ -595,7 +602,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
                     try { JabraPrefs(ctx).setInt("clip_view", if (cardsOn) 0 else 1) } catch (_: Throwable) { }
                     refreshTop()
                 })
-                tray.addView(tp("Export all", 1.2f) { ovOpen = false; expSel = emptyList(); expScope = 1; expMsg = ""; exporting = true; moreOpen = false; confirmDel = false; refresh() })
+                tray.addView(tp("Export all", 1.2f) { ovOpen = false; expSel = emptyList(); expScope = 1; expMsg = ""; expName = ""; renaming = false; exporting = true; moreOpen = false; confirmDel = false; refresh() })
                 tray.addView(ClipBar.danger(pf, tp("Clear", 0.9f) { ovOpen = false; confirmClear = true; refresh() }))
                 root.addView(tray)
             }
@@ -798,7 +805,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
         val chosen = sel.selection()
         expSel = chosen
         expScope = if (chosen.isEmpty()) 1 else 0
-        expMsg = ""
+        expMsg = ""; expName = ""; renaming = false   // v0.17.63 (R3)
         exporting = true; moreOpen = false; confirmDel = false
         refresh()
     }
@@ -823,10 +830,13 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
         o.now = System.currentTimeMillis()
         val list = expEntries(o.skipCode, IntArray(1))
         if (list.isEmpty()) { expMsg = "Nothing to export"; refresh(); return }
-        val bytes = if (docx) ClipExport.toDocx(list, o) else ClipExport.toTxtBytes(list, o)
+        val zip = expZip(list.size)   // v0.17.63 (R3): ZIP = one file per clip
+        val bytes = if (zip) ClipName.toZip(list, docx, o) else if (docx) ClipExport.toDocx(list, o) else ClipExport.toTxtBytes(list, o)
         if (bytes == null) { expMsg = "Could not build the file"; refresh(); return }
-        val name = ClipExport.fileName(if (docx) "docx" else "txt", o.now, o.tz)
-        val mime = if (docx) ClipExport.MIME_DOCX else ClipExport.MIME_TXT
+        val ext = if (zip) "zip" else if (docx) "docx" else "txt"
+        val auto = ClipName.autoBase(list, o.now, o.tz)
+        val name = ClipName.withExt(if (expName.isNotEmpty()) expName else auto, ext, auto)
+        val mime = if (zip) ClipName.MIME_ZIP else if (docx) ClipExport.MIME_DOCX else ClipExport.MIME_TXT
         expMsg = if (save) ClipExporter.saveToDownloads(ctx, name, mime, bytes) else ClipExporter.share(ctx, name, mime, bytes)
         refresh()
     }
@@ -879,6 +889,14 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
 
         val skipped = IntArray(1)
         val es = expEntries(optS, skipped)
+        val zipOn = expZip(es.size)   // v0.17.63 (R3)
+        if (es.size > 1) {   // v0.17.63 (R3): one file with all clips, or a ZIP with one file per clip
+            val pk = row()
+            val packZip = pr.bool("clip_exp_zip", false)
+            pk.addView(UiKit.chip(ctx, pf, "One file", !packZip, sz(t40), { v -> fb(v) }) { pr.setBool("clip_exp_zip", false); expMsg = ""; refresh() })
+            pk.addView(UiKit.chip(ctx, pf, "ZIP (file per clip)", packZip, sz(t40), { v -> fb(v) }) { pr.setBool("clip_exp_zip", true); expMsg = ""; refresh() })
+            outer.addView(pk)
+        }
         val withFmt = if (optF) es.count { it.html != null && it.html.isNotEmpty() } else 0
         val info = TextView(ctx)
         info.text = if (expMsg.isNotEmpty()) expMsg else (es.size.toString() + (if (es.size == 1) " clip" else " clips") +
@@ -889,26 +907,139 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
         if (nl()) cardInfo(info)   // v0.17.58 (C4): same card look as the clips
         outer.addView(info)
         val hint = TextView(ctx)
-        hint.text = "TXT = plain text.  DOCX = Word file; keeps bold / italic / lists when the clip has format."
+        hint.text = if (zipOn) "ZIP has one file per clip, named from its first words (01_..., 02_...).  TXT = plain text, DOCX = Word file." else "TXT = plain text.  DOCX = Word file; keeps bold / italic / lists when the clip has format."
         hint.textSize = fs(11f)
         hint.setTextColor(hush())
         hint.setPadding(dp(8), 0, dp(8), dp(4))
         outer.addView(hint)
 
+        // v0.17.63 (R3): file / zip name, rename before export
+        val auto = try { ClipName.autoBase(es, System.currentTimeMillis(), java.util.TimeZone.getDefault()) } catch (_: Throwable) { "Jabra-Clips" }
+        val nameRow = row()
+        val nameTv = TextView(ctx)
+        nameTv.text = (if (zipOn) "ZIP name: " else "File name: ") + (if (expName.isNotEmpty()) expName else auto) + (if (zipOn) ".zip" else ".txt / .docx")
+        nameTv.textSize = fs(12f)
+        nameTv.setTextColor(ink())
+        nameTv.gravity = Gravity.CENTER_VERTICAL
+        nameTv.setPadding(dp(8), 0, dp(4), 0)
+        nameTv.maxLines = 2
+        nameTv.layoutParams = LinearLayout.LayoutParams(0, dp(sz(t40)), 2.4f)
+        nameRow.addView(nameTv)
+        nameRow.addView(btn("Rename", 1f, t40) { renText = if (expName.isNotEmpty()) expName else auto; renPos = renText.length; renCaps = false; renaming = true; expMsg = ""; refresh() })
+        if (expName.isNotEmpty()) nameRow.addView(btn("Auto", 0.8f, t40) { expName = ""; expMsg = ""; refresh() })
+        outer.addView(nameRow)
+
         val share = row()
-        share.addView(btn("Share .txt", 1f, t40) { doExport(false, false) })
-        val shDocx = btn("Share .docx", 1f, t40) { doExport(true, false) }
+        share.addView(btn(if (zipOn) "Share ZIP .txt" else "Share .txt", 1f, t40) { doExport(false, false) })
+        val shDocx = btn(if (zipOn) "Share ZIP .docx" else "Share .docx", 1f, t40) { doExport(true, false) }
         share.addView(if (nl()) ClipBar.on(ctx, pf, shDocx) else shDocx)   // v0.17.58 (C4): primary button
         outer.addView(share)
         if (ClipExporter.canSave()) {
             val save = row()
-            save.addView(btn("Save .txt", 1f, t40) { doExport(false, true) })
-            save.addView(btn("Save .docx", 1f, t40) { doExport(true, true) })
+            save.addView(btn(if (zipOn) "Save ZIP .txt" else "Save .txt", 1f, t40) { doExport(false, true) })
+            save.addView(btn(if (zipOn) "Save ZIP .docx" else "Save .docx", 1f, t40) { doExport(true, true) })
             outer.addView(save)
         }
         val sv = ScrollView(ctx)
         sv.addView(outer)
         return sv
+    }
+
+    /** v0.17.63 (R3): ZIP is used only when chosen AND there is more than one clip to export. */
+    private fun expZip(n: Int): Boolean = n > 1 && try { JabraPrefs(ctx).bool("clip_exp_zip", false) } catch (_: Throwable) { false }
+
+    /** v0.17.63 (R3): rename screen for the export file / zip name: Cancel | Use field text | OK, text box with caret, mini keys. Name is cleaned by ClipName.clean() on OK. */
+    private fun makeRename(): View {
+        val t40 = PanelLayout.MIN_TOUCH
+        val root = LinearLayout(ctx)
+        root.orientation = LinearLayout.VERTICAL
+        paintBg(root)
+        root.setPadding(dp(2), dp(4), dp(2), dp(4))
+        fun touched(a: () -> Unit) { a(); refresh() }
+        fun ins(s: String) { if (renText.length + s.length > ClipName.MAX_BASE) return; val np = ClipCaret.afterInsert(renText, renPos, s); renText = ClipCaret.insert(renText, renPos, s); renPos = np }
+
+        val top = row()
+        top.addView(btn("Cancel", 1f, 40) { renaming = false; refresh() })
+        top.addView(btn("Use field text", 1.6f, 40) {
+            val t = try { fieldText() } catch (_: Throwable) { "" }
+            val c = ClipName.clean(t)
+            if (c.isEmpty()) expMsg = "Field is empty" else { renText = c; renPos = c.length }
+            refresh()
+        })
+        val okBtn = btn("OK", 1.2f, 40) {
+            expName = ClipName.clean(renText)   // "" = automatic name
+            expMsg = ""; renaming = false; refresh()
+        }
+        top.addView(if (nl()) ClipBar.on(ctx, pf, okBtn) else okBtn)
+        root.addView(top)
+
+        val info = TextView(ctx)
+        val shown = ClipName.clean(renText)
+        info.text = (if (expMsg.isEmpty()) "File name (no extension)" else expMsg) + "   " + renText.length + "/" + ClipName.MAX_BASE + (if (shown.isNotEmpty() && shown != renText) "   \u2192 " + shown else "")
+        expMsg = ""
+        info.textSize = 12f
+        info.setTextColor(dim())
+        info.setPadding(dp(8), dp(2), dp(8), dp(2))
+        if (nl()) cardInfo(info)
+        root.addView(info)
+
+        val sv = ScrollView(ctx)
+        sv.layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(48))
+        val tv = TextView(ctx)
+        renPos = ClipCaret.clamp(renText, renPos)
+        val shownPos = renPos
+        tv.text = ClipCaret.display(renText, shownPos)
+        tv.textSize = 14f
+        tv.setTextColor(ink())
+        tv.setPadding(dp(8), dp(2), dp(8), dp(2))
+        if (nl()) { try { sv.background = UiKit.cardBackground(ctx, pf) } catch (_: Throwable) { }; tv.setPadding(dp(12), dp(6), dp(12), dp(6)) }
+        sv.addView(tv)
+        try {   // tap on the text = put the caret there (same as the clip edit screen)
+            tv.setOnTouchListener { v, ev ->
+                if (ev.action == android.view.MotionEvent.ACTION_UP && ev.eventTime - ev.downTime < 400L) {
+                    try {
+                        val t = v as TextView
+                        val lay = t.layout
+                        if (lay != null) {
+                            val y = (ev.y - t.totalPaddingTop + t.scrollY).toInt().coerceIn(0, lay.height - 1)
+                            val line = lay.getLineForVertical(y)
+                            val off = lay.getOffsetForHorizontal(line, ev.x - t.totalPaddingLeft)
+                            renPos = ClipCaret.posFromDisplay(renText, shownPos, off)
+                            refresh()
+                        }
+                    } catch (_: Throwable) { }
+                }
+                true
+            }
+        } catch (_: Throwable) { }
+        root.addView(sv)
+
+        val quick = row()
+        quick.addView(btn("Auto name", 1.3f, 34) { touched { renText = try { ClipName.autoBase(expEntries(JabraPrefs(ctx).bool("clip_exp_skip", true), IntArray(1)), System.currentTimeMillis(), java.util.TimeZone.getDefault()) } catch (_: Throwable) { "Jabra-Clips" }; renPos = renText.length } })
+        quick.addView(btn("+ Date", 1f, 34) { touched { renText = ClipName.addDate(renText, System.currentTimeMillis(), java.util.TimeZone.getDefault()); renPos = renText.length } })
+        quick.addView(btn("Clear", 1f, 34) { touched { renText = ""; renPos = 0 } })
+        root.addView(quick)
+
+        val nav = row()
+        nav.addView(btn("|\u25C0", 1f, 34) { touched { renPos = 0 } })
+        nav.addView(btn("\u25C0", 1f, 34) { touched { renPos = ClipCaret.left(renText, renPos) } })
+        nav.addView(btn("\u25B6", 1f, 34) { touched { renPos = ClipCaret.right(renText, renPos) } })
+        nav.addView(btn("\u25B6|", 1f, 34) { touched { renPos = renText.length } })
+        root.addView(nav)
+
+        fun ch(c: Char): String = if (renCaps) c.uppercaseChar().toString() else c.toString()
+        for (letters in arrayOf("1234567890", "qwertyuiop", "asdfghjkl", "zxcvbnm")) {
+            val r = row()
+            if (letters == "zxcvbnm") r.addView(btn(if (renCaps) "\u21E7 ON" else "\u21E7", 1.5f, 34) { touched { renCaps = !renCaps } })
+            letters.forEach { c -> r.addView(btn(ch(c), 1f, 34) { touched { ins(ch(c)); renCaps = false } }) }
+            if (letters == "zxcvbnm") r.addView(btn("\u232B", 1.5f, 34) { touched { val np = ClipCaret.afterBackspace(renText, renPos); renText = ClipCaret.backspace(renText, renPos); renPos = np } })
+            root.addView(r)
+        }
+        val last = row()
+        for (p in arrayOf("-", "_", ".", "(", ")")) last.addView(btn(p, 1f, 34) { touched { ins(p) } })
+        last.addView(btn("space", 2.5f, 34) { touched { ins(" ") } })
+        root.addView(last)
+        return root
     }
 
     private fun actToVault() {
