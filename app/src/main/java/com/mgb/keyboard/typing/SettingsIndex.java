@@ -96,6 +96,7 @@ public final class SettingsIndex {
             case "lang_probhat_on": return "OFF hides " + LangNames.PROBHAT + " from the language key (English always stays).";
             case "numrow": return "Shows a row of digits above the letters.";
             case "numpad_auto": return "Opens the number pad by itself in number and phone fields.";
+            case "bn_design": return "Ridmik look = Bangla fixed keys like Ridmik: bare signs, shift letters as small hints (hold to type), Bengali number page. Keyboard's original design = the old look.";   // v0.17.61 (R1)
             case "bn_hints": return "ON = Bangla (phonetic) keys show small 1-0 and signs like the Ridmik Avro keyboard; hold a key to type it. OFF = no hints in Bangla.";   // v0.17.54 (M2)
             case "bn_numpage": return "ON = in Bangla (phonetic) the number page (?123) has Bengali digits and the Ridmik Avro signs; hold a key for the small sign. OFF = the normal number page.";   // v0.17.55 (M3)
             case "tools_keep": return "ON = the tools row (or the suggestion row) stays on top when you open the number / symbol page (?123). OFF = the page covers it.";   // v0.17.53 (M1)

@@ -121,7 +121,7 @@ class MgbIme : InputMethodService() {
         override fun enter() { this@MgbIme.doEnter() }   // v0.0.9: was sendDownUpKeyEvents(ENTER) - now uses the app's Send/Search/Go action when it has one
         override fun pickKeyboard() { this@MgbIme.pickKeyboard() }   // v0.0.9
         override fun runAction(a: String) { this@MgbIme.atAction(a) }   // v0.17.21 (L5b)
-        override fun isBanglaPhonetic(): Boolean = try { this@MgbIme.phoneticOn() } catch (_: Throwable) { false }   // v0.17.55 (M3)
+        override fun isBanglaPhonetic(): Boolean = try { this@MgbIme.phoneticOn() || (this@MgbIme.probhatOn() && this@MgbIme.ridmikOn()) } catch (_: Throwable) { false }   // v0.17.61 (R1): Probhat in the Ridmik look uses the Bengali number page too   // v0.17.55 (M3)
         override fun showLetters() { this@MgbIme.showLetters() }
         override fun showPanel(name: String) { this@MgbIme.showPanel(name) }
         override fun feedback(v: View) { this@MgbIme.feedback(v) }
@@ -215,14 +215,20 @@ class MgbIme : InputMethodService() {
     }
 
     /** v0.17.54 (M2): phonetic Bangla shows + types the Ridmik Avro hints (pref bn_hints, default ON). Bangla fixed keeps no hints. */
+    /** v0.17.61 (R1): pref bn_design (0 = Ridmik look = default, 1 = the keyboard's original design). Any problem = Ridmik look. */
+    private fun ridmikOn(): Boolean = try { com.mgb.keyboard.typing.BnDesign.ridmik(prefs.int("bn_design", 0)) } catch (_: Throwable) { true }
+    private fun pbHintsOn(): Boolean = try { com.mgb.keyboard.typing.ProbhatHints.active(ridmikOn(), bangla, probhat, latinOnly) } catch (_: Throwable) { false }
+    private fun pbLabel(c: Char): String = if (ridmikOn()) ProbhatLayout.labelBare(c) else ProbhatLayout.label(c)
+    private fun pbExtraLabel(s: String): String = if (ridmikOn()) ProbhatLayout.extraLabelBare(s) else ProbhatLayout.extraLabel(s)
     private fun avroHintsOn(): Boolean = try { com.mgb.keyboard.typing.AvroHints.active(prefs.bool("bn_hints", true), bangla, probhat, latinOnly) } catch (_: Throwable) { false }
 
     /** v0.1.6: long-press hint letters (English only; v0.17.54: + phonetic Bangla). */
     private val hintHost = object : HintHost {
-        override fun hintTypingActive(): Boolean = try { com.mgb.keyboard.typing.LongPressHints.active(true, bangla && !latinOnly && !avroHintsOn(), pcState.isPc() && pcState.meta() != 0) } catch (_: Throwable) { false }
-        override fun hintLabelActive(): Boolean = try { com.mgb.keyboard.typing.LongPressHints.active(true, bangla && !latinOnly && !avroHintsOn(), false) } catch (_: Throwable) { false }
+        override fun hintTypingActive(): Boolean = try { com.mgb.keyboard.typing.LongPressHints.active(true, bangla && !latinOnly && !avroHintsOn() && !pbHintsOn(), pcState.isPc() && pcState.meta() != 0) } catch (_: Throwable) { false }
+        override fun hintLabelActive(): Boolean = try { com.mgb.keyboard.typing.LongPressHints.active(true, bangla && !latinOnly && !avroHintsOn() && !pbHintsOn(), false) } catch (_: Throwable) { false }
         override fun banglaNumbers(): Boolean = bangla && !latinOnly   // v0.9.4 (R4)
         override fun avroHints(): Boolean = avroHintsOn()   // v0.17.54 (M2)
+        override fun probhatHints(): Boolean = pbHintsOn()   // v0.17.61 (R1)
         override fun typeHint(s: String) { commitWord(); typeText(s) }
         override fun hintFeedback(v: View) { feedback(v) }
     }
@@ -781,7 +787,7 @@ class MgbIme : InputMethodService() {
         val pb = probhatOn()
         letterKeys.forEach { b ->
             val c = (b.tag as? Char) ?: return@forEach
-            val nt = if (pb) ProbhatLayout.label(if (shift) c.uppercaseChar() else c)
+            val nt = if (pb) pbLabel(if (shift) c.uppercaseChar() else c)
                      else if (shift) c.uppercase() else c.toString()
             if (!nt.contentEquals(b.text)) b.text = nt   // v0.6.1: no relayout when the label is already right
         }
@@ -811,7 +817,7 @@ class MgbIme : InputMethodService() {
         try { val lp = prefs.int("letter_pct", -1); if (com.mgb.keyboard.typing.SizePct.letterValid(lp)) b.textSize = com.mgb.keyboard.typing.SizePct.letterSp(lp) } catch (_: Throwable) { }
         try { if (prefs.bool("letter_bold", false)) b.setTypeface(b.typeface, android.graphics.Typeface.BOLD) } catch (_: Throwable) { }
         val pb = probhatOn()
-        b.text = ProbhatLayout.extraLabel(if (pb && shift) pair[1] else pair[0])
+        b.text = pbExtraLabel(if (pb && shift) pair[1] else pair[0])
         b.visibility = if (pb) View.VISIBLE else View.GONE
         pbExtraKeys.add(Pair(b, pair))
         r.addView(b)
@@ -842,7 +848,7 @@ class MgbIme : InputMethodService() {
         pbExtraKeys.forEach { (b, pair) ->
             val v = if (pb) View.VISIBLE else View.GONE
             if (b.visibility != v) b.visibility = v
-            val nt = ProbhatLayout.extraLabel(if (pb && shift) pair[1] else pair[0])
+            val nt = pbExtraLabel(if (pb && shift) pair[1] else pair[0])
             if (!nt.contentEquals(b.text)) b.text = nt
         }
     }

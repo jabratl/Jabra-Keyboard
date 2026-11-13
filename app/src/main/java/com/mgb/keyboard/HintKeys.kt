@@ -34,6 +34,8 @@ interface HintHost {
     fun banglaNumbers(): Boolean = false
     /** v0.17.54 (M2): true = phonetic Bangla uses the Ridmik Avro hint table (default false = English table as before). */
     fun avroHints(): Boolean = false
+    /** v0.17.61 (R1): true = Bangla fixed (Probhat) in the Ridmik look shows + types its shift letter as the hint (default false = no hints). */
+    fun probhatHints(): Boolean = false
 }
 
 object HintKeys {
@@ -42,7 +44,8 @@ object HintKeys {
 
     /** v0.17.54 (M2): the hint of a letter: Avro table in phonetic Bangla (when on), else the English table (custom text first) as before. */
     private fun hintOf(c: Char, numrow: Boolean, custom: String, host: HintHost): String? =
-        if (try { host.avroHints() } catch (_: Throwable) { false }) com.mgb.keyboard.typing.AvroHints.hintFor(c, numrow) else LongPressHints.hintFor(c, numrow, custom)
+        if (try { host.probhatHints() } catch (_: Throwable) { false }) com.mgb.keyboard.typing.ProbhatHints.hintFor(c)   // v0.17.61 (R1)
+        else if (try { host.avroHints() } catch (_: Throwable) { false }) com.mgb.keyboard.typing.AvroHints.hintFor(c, numrow) else LongPressHints.hintFor(c, numrow, custom)
 
     fun attach(b: Button, prefs: JabraPrefs, host: HintHost) {
         val h = Handler(Looper.getMainLooper())

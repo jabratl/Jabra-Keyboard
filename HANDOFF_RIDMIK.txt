@@ -1,0 +1,17 @@
+HANDOFF - Jabra Keyboard Ridmik look (R1 done, current v0.17.61). Paste at the start of the next chat.
+
+DONE: clipboard C1-C5 (v0.17.56-.60). R1 v0.17.61: Bangla fixed (Probhat) in the Ridmik look + option "Keyboard's original design".
+
+WHAT CHANGED (file: 1 line)
+- typing/BnDesign.java (NEW): pref bn_design 0 = Ridmik (default), 1 = original.
+- typing/ProbhatHints.java (NEW): hint of a letter key = its shift letter.
+- probhat/ProbhatLayout.java: labelBare / extraLabelBare (no dotted circle, ZWNJ prefix).
+- HintKeys.kt: HintHost.probhatHints().
+- MgbIme.kt: ridmikOn, pbHintsOn, pbLabel, pbExtraLabel; hint gates; isBanglaPhonetic also true for Probhat + Ridmik look (= Bengali number page).
+- SettingsGroups.kt, SettingsIndex.java, ChangedPlan.java: row "Bangla keyboard design" (end of Look group).
+- tools/BnDesignTest.java, tools/ProbhatHintsTest.java (NEW); app/build.gradle.kts 0.17.61; CHANGELOG.txt.
+
+CHECKS DONE: tools/run_tests.sh = 133/133 green. Bracket balance OK.
+NOT TESTED: Kotlin NOT compiled. Phone: dotted circle really gone (ZWNJ trick), hints look + hold, Bengali number page in Bangla fixed, original design = old look.
+
+NEXT (user asked, not built): R2 = English ON/OFF toggle + manual order of the 3 modes (English, Bangla phonetic, Bangla fixed) for language key tap and space swipe (files: typing/LangOrder.java, LangSwipe.java, MgbIme.kt language state, SettingsGroups.kt "Languages & layouts"; today only lang_avro_on / lang_probhat_on and 2 cycle orders exist). R3 = hints on extra keys, Ridmik bottom row / colours, custom-keyboard path, edge-cut keys (needs repro).

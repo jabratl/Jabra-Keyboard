@@ -82,6 +82,24 @@ public final class ProbhatLayout {
         return show(s);
     }
 
+    /** v0.17.61 (R1): Ridmik look: a sign key shows the bare sign (ZWNJ in front, no dotted circle). Other keys = same as label(). */
+    public static String labelBare(char key) {
+        String s = M.get(key);
+        return s == null ? String.valueOf(key) : showBare(s);
+    }
+
+    public static String extraLabelBare(String s) {
+        if (s == null || s.length() == 0) return "";
+        if (s.charAt(0) == '\u200c') return "ZWNJ";
+        return showBare(s);
+    }
+
+    private static String showBare(String s) {
+        int t = Character.getType(s.charAt(0));
+        if (t == Character.NON_SPACING_MARK || t == Character.COMBINING_SPACING_MARK) return "\u200c" + s;
+        return s;
+    }
+
     private static String show(String s) {
         int t = Character.getType(s.charAt(0));
         if (t == Character.NON_SPACING_MARK || t == Character.COMBINING_SPACING_MARK) return "◌" + s;
