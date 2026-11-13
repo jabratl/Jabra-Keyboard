@@ -67,8 +67,8 @@ public final class ChangedPlan {
             if (in(key, "hint_hide", "hint_digits", "hint_size_lv", "hint_alpha_lv")) return "Hints";
             if (in(key, "onehand", "tb_tip")) return "Other";
         } else if (group.equals("Languages & layouts")) {
-            if (in(key, "bn_layout", "bn_map", "lang_avro_on", "lang_probhat_on")) return "Bangla";
-            if (in(key, "lang_tap", "lang_fav", "space_lang", "sp_preview", "sp_tick", "sp_step", "key_lang", "sp_anim")) return "Switching";   // v0.17.2 (K2): sp_anim
+            if (in(key, "bn_layout", "bn_map", "lang_avro_on", "lang_probhat_on", "lang_en_on")) return "Bangla";
+            if (in(key, "lang_tap", "lang_fav", "lang_order", "space_lang", "sp_preview", "sp_tick", "sp_step", "key_lang", "sp_anim")) return "Switching";   // v0.17.2 (K2): sp_anim
             if (in(key, "numrow", "numpad_auto", "tools_keep", "bn_hints", "bn_design", "bn_numpage", "pc_mode", "mode_key", "pc_remember", "pc_real_mods", "pc_layer", "pc_frow", "pc_chips", "pc_chips_list")) return "Number row & mode";
         } else if (group.equals("Keys & gestures")) {
             if (in(key, "haptic", "fb_down", "haptic_native", "sound")) return "Feedback";

@@ -513,8 +513,10 @@ object SettingsGroups {
                 { prefs.setInt("bn_map", if (it == 1) 0 else 1) })
             cycle(g, "Language key tap", "lang_tap", { Array(3) { i -> com.mgb.keyboard.typing.LangOrder.TAP_NAMES[i] } }, { prefs.int("lang_tap", 0).coerceIn(0, 2) }, { prefs.setInt("lang_tap", it) })   // v0.5.0
             cycle(g, "Bangla first", "lang_fav", { Array(3) { i -> com.mgb.keyboard.typing.LangOrder.FAV_NAMES[i] } }, { prefs.int("lang_fav", 0).coerceIn(0, 2) }, { prefs.setInt("lang_fav", it) })   // v0.5.0
+            toggle(g, "English available", "lang_en_on", true)   // v0.17.62 (R2): OFF = English leaves the language key + space swipe (at least one mode always stays on)
             toggle(g, "${com.mgb.keyboard.typing.LangNames.AVRO} available", "lang_avro_on", true)   // v0.5.0
             toggle(g, "${com.mgb.keyboard.typing.LangNames.PROBHAT} available", "lang_probhat_on", true)   // v0.5.0
+            cycle(g, "Language order (swipe + cycle)", "lang_order", { com.mgb.keyboard.typing.LangModes.orderNames() }, { com.mgb.keyboard.typing.LangModes.sanitizeOrder(prefs.int("lang_order", 0)) }, { prefs.setInt("lang_order", it) })   // v0.17.62 (R2): which language comes after which
             if (sink != null) {   // v0.16.4 (X4): "Open key map" button at the end of the Bangla section (new app screen only); any problem = no button
                 try {
                     val kb = KeyMapPage.button(ctx)

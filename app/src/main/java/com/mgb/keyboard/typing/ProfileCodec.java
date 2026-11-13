@@ -26,7 +26,7 @@ public final class ProfileCodec {
         "numrow:b", "numrow_large:b", "letter_pct:i", "letter_bold:b", "key_gap:i", "key_border:i",
         "tb_custom:b", "tb_order:s", "tb_hidden:s", "tb_on:s", "tb_fold:b", "edit_bar:b", "mode_key:b",
         "haptic:b", "sound:b", "key_popup:b", "icons_on:b", "lp_delay:i", "cursor_speed:i", "hint_on:b", "hint_hide:b",
-        "lang_tap:i", "lang_fav:i", "lang_avro_on:b", "lang_probhat_on:b", "xrow_chars:s",
+        "lang_tap:i", "lang_fav:i", "lang_avro_on:b", "lang_probhat_on:b", "lang_en_on:b", "lang_order:i", "xrow_chars:s",
         "haptic_lv:i", "hint_custom:s",   // v0.5.2
         "hint_digits:b", "hint_size_lv:i", "hint_alpha_lv:i",   // v0.8.6
         "tb_tip:b",   // v0.8.8

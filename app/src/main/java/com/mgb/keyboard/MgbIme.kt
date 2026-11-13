@@ -398,6 +398,7 @@ class MgbIme : InputMethodService() {
 
     override fun onStartInputView(info: EditorInfo?, restarting: Boolean) {
         super.onStartInputView(info, restarting)
+        try { fixLangState() } catch (_: Throwable) { }   // v0.17.62 (R2): English / a layout switched off in settings while it was active
         try { val pk = info?.packageName; if (pk != pcLastPkg) { if (pcLastPkg != null) pcResetMods(); pcLastPkg = pk } } catch (_: Throwable) { }   // v0.17.49 (PC1): app (package) change = no stuck Ctrl
         try { if (prefs.bool("bk_auto", true) && prefs.int("bk_day", 0) != BackupStore.today()) BackupStore.autoIfDue(this) } catch (_: Throwable) { }   // v0.4.0: auto backup once per day (background Thread)
         try { if (!prefs.bool("pc_remember", true) && prefs.bool("pc_mode", false)) { prefs.setBool("pc_mode", false); pcState.setPc(false); showLetters() } } catch (_: Throwable) { }   // v0.1.2: Remember mode OFF = always start in Phone mode
@@ -1371,6 +1372,18 @@ class MgbIme : InputMethodService() {
         }
     }
 
+    /** v0.17.62 (R2): true = English switched off or a manual language order: the new rules in typing/LangModes.java. Default (English on, order 0) = false = the old code runs exactly as before. */
+    private fun langCustom(): Boolean = try { com.mgb.keyboard.typing.LangModes.custom(prefs.bool("lang_en_on", true), prefs.int("lang_order", 0)) } catch (_: Throwable) { false }
+    private fun lmEn(): Boolean = prefs.bool("lang_en_on", true)
+    private fun lmOrder(): Int = prefs.int("lang_order", 0)
+
+    /** v0.17.62 (R2): a switched-off mode (e.g. English off) must not stay active after the setting changed: move to the first mode that is on. State only, no rebuild here. */
+    private fun fixLangState() {
+        if (!langCustom()) return
+        val t = com.mgb.keyboard.typing.LangModes.normalize(bangla, probhat, lmOrder(), lmEn(), prefs.bool("lang_avro_on", true), prefs.bool("lang_probhat_on", true))
+        if ((t[0] == 1) != bangla || (t[1] == 1) != probhat) { bangla = t[0] == 1; probhat = t[1] == 1; persistLang() }
+    }
+
     /** v0.5.0: apply a LangOrder result {bangla, probhat}: same state + prefs writes as the old code. v0.9.8: persist = false while a space swipe is going on (saved once at finger up). */
     private fun applyLang(t: IntArray, persist: Boolean = true) {
         bangla = t[0] == 1
@@ -1393,7 +1406,7 @@ class MgbIme : InputMethodService() {
         try {
             val a = prefs.bool("lang_avro_on", true)
             val p = prefs.bool("lang_probhat_on", true)
-            val nt = com.mgb.keyboard.typing.LangSwipe.step(bangla, probhat, a, p, n)
+            val nt = if (langCustom()) com.mgb.keyboard.typing.LangModes.step(bangla, probhat, lmOrder(), lmEn(), a, p, n) else com.mgb.keyboard.typing.LangSwipe.step(bangla, probhat, a, p, n)   // v0.17.62 (R2)
             langSess.begin(bangla, probhat)
             applyLang(nt, false)
             langSess.move(bangla, probhat)
@@ -1424,6 +1437,7 @@ class MgbIme : InputMethodService() {
 
     private fun toggleLang() {
         commitWord()
+        try { if (langCustom()) { applyLang(com.mgb.keyboard.typing.LangModes.tap(bangla, probhat, lmOrder(), lmEn(), prefs.bool("lang_avro_on", true), prefs.bool("lang_probhat_on", true), prefs.int("lang_tap", 0), prefs.int("lang_fav", 0))); return } } catch (_: Throwable) { }   // v0.17.62 (R2)
         try { applyLang(com.mgb.keyboard.typing.LangOrder.tap(bangla, probhat, prefs.bool("lang_avro_on", true), prefs.bool("lang_probhat_on", true), prefs.int("lang_tap", 0), prefs.int("lang_fav", 0))); return } catch (_: Throwable) { }   // v0.5.0 (defaults = old behaviour); any problem = old code below
         bangla = !bangla
         try { getSharedPreferences("jabra", MODE_PRIVATE).edit().putBoolean("bangla", bangla).apply() } catch (_: Throwable) { }

@@ -1,6 +1,6 @@
-HANDOFF - Jabra Keyboard Ridmik look (R1 done, current v0.17.61). Paste at the start of the next chat.
+HANDOFF - Jabra Keyboard Ridmik look (R1 done, current v0.17.62). Paste at the start of the next chat.
 
-DONE: clipboard C1-C5 (v0.17.56-.60). R1 v0.17.61: Bangla fixed (Probhat) in the Ridmik look + option "Keyboard's original design".
+DONE: R2 v0.17.62 English ON/OFF + manual language order (typing/LangModes.java, pure; old code unchanged by default). Clipboard C1-C5 (v0.17.56-.60). R1 v0.17.61: Bangla fixed (Probhat) in the Ridmik look + option "Keyboard's original design".
 
 WHAT CHANGED (file: 1 line)
 - typing/BnDesign.java (NEW): pref bn_design 0 = Ridmik (default), 1 = original.
@@ -14,4 +14,7 @@ WHAT CHANGED (file: 1 line)
 CHECKS DONE: tools/run_tests.sh = 133/133 green. Bracket balance OK.
 NOT TESTED: Kotlin NOT compiled. Phone: dotted circle really gone (ZWNJ trick), hints look + hold, Bengali number page in Bangla fixed, original design = old look.
 
-NEXT (user asked, not built): R2 = English ON/OFF toggle + manual order of the 3 modes (English, Bangla phonetic, Bangla fixed) for language key tap and space swipe (files: typing/LangOrder.java, LangSwipe.java, MgbIme.kt language state, SettingsGroups.kt "Languages & layouts"; today only lang_avro_on / lang_probhat_on and 2 cycle orders exist). R3 = hints on extra keys, Ridmik bottom row / colours, custom-keyboard path, edge-cut keys (needs repro).
+R2 files: typing/LangModes.java (NEW), MgbIme.kt (langCustom, fixLangState, swipeLang, toggleLang, onStartInputView), SettingsGroups.kt, SettingsIndex.java, ChangedPlan.java, ProfileCodec.java, LayoutEditorPage.kt, tools/LangModesTest.java, tools/ProfileTest.java, build.gradle.kts 0.17.62. Checks: run_tests 134/134 green, bracket balance OK. NOT tested: Kotlin compile; phone (English off start state, swipe with each order, tap with English off).
+NOTE: the edge-cut keys in the Jabra screenshots were a screenshot problem (user confirmed), not a bug.
+
+NEXT: R3 = hints on extra keys, Ridmik bottom row / colours, custom-keyboard path, edge-cut keys (needs repro).

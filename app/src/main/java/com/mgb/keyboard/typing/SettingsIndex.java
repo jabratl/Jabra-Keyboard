@@ -92,6 +92,8 @@ public final class SettingsIndex {
             case "bn_map": return LangNames.AVRO + " typing rules: Ridmik key map (default) or the Classic phonetic rules.";   // v0.16.3
             case "lang_tap": return "Language key tap: EN <-> Bangla (default), or cycle through all languages.";
             case "lang_fav": return "Which Bangla layout opens first when you tap the language key from English.";
+            case "lang_en_on": return "OFF = English is skipped by the language key and the space swipe. At least one mode always stays on.";   // v0.17.62 (R2)
+            case "lang_order": return "The order of English, " + LangNames.AVRO + " and " + LangNames.PROBHAT + " when you swipe on space or use the cycle option of the language key.";   // v0.17.62 (R2)
             case "lang_avro_on": return "OFF hides " + LangNames.AVRO + " from the language key (English always stays).";
             case "lang_probhat_on": return "OFF hides " + LangNames.PROBHAT + " from the language key (English always stays).";
             case "numrow": return "Shows a row of digits above the letters.";

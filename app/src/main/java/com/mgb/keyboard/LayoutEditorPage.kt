@@ -863,8 +863,8 @@ class LayoutEditorPage(private val act: Activity, private val prefs: JabraPrefs,
         val layer = LayoutEditPlan.editTabId(tab)
         val all = try {
             val dm = act.resources.displayMetrics
-            val langs = 1 + (if (prefs.bool("lang_avro_on", true)) 1 else 0) + (if (prefs.bool("lang_probhat_on", true)) 1 else 0)
-            LayoutCheck.check(m, LayoutCheck.Env(dm.widthPixels / dm.density, langs))
+            val langs = (if (prefs.bool("lang_en_on", true)) 1 else 0) + (if (prefs.bool("lang_avro_on", true)) 1 else 0) + (if (prefs.bool("lang_probhat_on", true)) 1 else 0)
+            LayoutCheck.check(m, LayoutCheck.Env(dm.widthPixels / dm.density, langs.coerceAtLeast(1)))   // v0.17.62 (R2): never 0 languages
         } catch (_: Throwable) { emptyList<LayoutCheck.Warn>() }
         val ids = HashSet<String>()
         for (l in arrayOf(layer, "nr", "bot").distinct()) ids.addAll(LayoutEditPlan.warnKeyIds(all, l, LayoutCheck.LOW))
