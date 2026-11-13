@@ -1000,3 +1000,7 @@ Z133  v0.17.41  M8  Format in List view + select mode (final check of the clipbo
 Z134  v0.17.42  Empty clipboard hint
  [ ] 1. Clear all unpinned clips (no pinned): clipboard shows the old "Nothing copied yet" text AND the small grey hint line under it; readable in dark and light themes.
  [ ] 2. Type in the search box with no match: only "No match" (no hint). With a clip present: no hint. Cards view and List view, Classic and New style.
+
+Z135  v0.17.43  Cursor pad note
+ [ ] 1. Open the cursor pad: the grey note under the keys is two short lines, fully readable at 360 dp, dark and light; the pad is not taller than the letters keyboard.
+ [ ] 2. Select, arrows, Top / Bottom, ABC work as before.

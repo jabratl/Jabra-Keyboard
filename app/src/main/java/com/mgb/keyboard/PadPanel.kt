@@ -137,7 +137,7 @@ class PadPanel(private val ctx: Context, private val host: JabraHost, private va
         r3.addView(pk("Paste", 1f) { io.edit("paste") })
         root.addView(r3)
 
-        root.addView(note("Select ON + arrows / Home / End / Top / Bottom = extend the selection. Top / Bottom = start / end of the whole text. Arrows, Home, End need an app that reads key events (same limit as PC mode); All / Copy / Cut / Paste work in every app."))
+        root.addView(note("Select ON: arrows, Home, End, Top, Bottom extend the selection.\nHome / End = this line, Top / Bottom = whole text. Arrows need an app that reads key events."))   // v0.17.43: shorter, two clear lines (was one long sentence)
 
         val r4 = row()
         r4.addView(pk("Top", 1f) { io.jump(true, state.isSelect()) })   // v0.17.36 (M3): cursor to the very start (Select ON: select up to it)

@@ -1,3 +1,11 @@
+v0.17.43 - MODIFY (UX): Cursor pad note is shorter and clearer
+- WHY: the grey help text under the pad keys was one 245-character sentence (it took extra height on a 360 dp screen and was hard to scan).
+- What you get: two short lines: "Select ON: arrows, Home, End, Top, Bottom extend the selection." / "Home / End = this line, Top / Bottom = whole text. Arrows need an app that reads key events." Same facts about Select, line vs whole text and the key-event limit. The line "All / Copy / Cut / Paste work in every app" was dropped (nothing says they do not). No key, handler, id or layout change.
+- Code: PadPanel.kt (one text line, // v0.17.43). No pref, no permission.
+- BROKE: nothing known (no test reads this text).
+- TESTED here: full Java suite 120/120 green, bracket balance OK. NOT tested: Kotlin NOT compiled; NOT phone-tested (360 dp, dark + light, pad height stays the keyboard height).
+- Rollback: put back the old one-sentence text.
+
 v0.17.42 - MODIFY (UX): Empty clipboard shows a short "how to use" line
 - WHY: a new user (or after "Clear") saw only "Nothing copied yet" and did not know what a tap, a hold or the star does.
 - What you get: when the clipboard is empty (not while searching, All filter), a small grey line under the old text: "Tap a clip = paste · hold = select · ☆ = pin (keeps it)". Classic and New panel style. Nothing else changes; the old empty text is untouched.
