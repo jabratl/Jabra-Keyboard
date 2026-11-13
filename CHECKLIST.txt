@@ -737,3 +737,9 @@ Z101) v0.17.2 Space bar size + smoother language swipe (K2)  [portrait + landsca
  [ ] "Label slides while swiping" OFF: the label does not move (bubble + tick still work). Space swipe OFF: dragging on space still moves the cursor as before.
  [ ] Phone setting "Remove animations" ON: no slide, swipe still works.
  [ ] Double-space period, language key (EN), rotation, one-hand mode, password field, Ridmik-like bottom row style: all still fine.
+
+=== Z102 (v0.17.3, K0 + K3: test gate + layout model) ===
+ [ ] Push the zip. Actions run: the step "Java tests" is green and the run summary shows "Java tests: 94/94 green", then the APK is built as usual.
+ [ ] Install the APK: the keyboard looks and types exactly like v0.17.2 (nothing visible changed).
+ [ ] (Optional) Test the red path: add a scratch commit that breaks one test -> the run stops at "Java tests" with the list of red tests, no release. Then fix it.
+ [ ] (Emergency only) An empty file SKIP_TESTS.txt in the repo root = tests skipped + a note in the summary.
