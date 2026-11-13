@@ -541,6 +541,9 @@ object SettingsGroups {
             toggle(g, "Real modifier keys (PC)", "pc_real_mods", true)   // v0.17.49 (PC1)
             toggle(g, "PC rows as layout keys", "pc_layer", true)   // v0.17.50 (PC2): works only with the custom keyboard ON
             toggle(g, "PC F-keys row", "pc_frow", true)   // v0.17.50 (PC2): works only with PC rows as layout keys
+            toggle(g, "PC shortcut chips", "pc_chips", true)   // v0.17.51 (PC3): chips + More + Num row (PC rows as layout keys only)
+            textRow(g, "PC shortcut chips list", "pc_chips_list", "up to 5, e.g. Ctrl+A,Ctrl+Shift+Z,Alt+F4",   // v0.17.51 (PC3)
+                { com.mgb.keyboard.typing.PcChord.parseList(it, com.mgb.keyboard.typing.PcChord.MAX_CHIPS).joinToString(",") { c -> c.text() } }, "No valid shortcut found")
         }
 
         group("Typing") { g ->

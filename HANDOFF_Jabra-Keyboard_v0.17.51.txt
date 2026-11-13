@@ -1,0 +1,24 @@
+HANDOFF Jabra-Keyboard v0.17.51 (PC3 done)  -  paste this + the plan file at the start of the next chat
+
+DONE LIST
+- P1-P5 v0.17.44-48 (bubble stem, outline, accents, shadow, press animation) | PC1 v0.17.49 (real modifiers, hold-repeat, guard) | PC2 v0.17.50 (PC rows as layout layer)
+- PC3 v0.17.51 chips row + More panel + PC numpad panel (this step). Current version: v0.17.51. Kotlin NEVER compiled yet; nothing phone-tested for v0.17.44-51.
+
+WHAT CHANGED (file: 1 line each)
+- typing/PcChord.java (NEW): parse "Ctrl+Shift+Z" -> mods + key code, list cleaning (max 5, default Ctrl+A C V X Z), short label (^C, ^\u21E7Z).
+- typing/PcActions.java: + pc_more / pc_num / pc_chip_0..4 (valid), More key table (7 keys), keypad table (16 keys). Old 24 keys untouched.
+- layout/LayoutDefaults.java: pcModel(fRow, chips) = old layer + row 4 (chips + More + Num). Old pcModel(fRow) unchanged.
+- PcMorePanel.kt (NEW): routes "pcmore" and "pcnum" (UiKit buttons like PadPanel; keys go through pcIo.sendKey = pcSend).
+- MgbIme.kt: actionKey pc branch handles More / Num / chip; lazy pcMorePanel; showPanel branch; pcModel call passes chips.
+- SettingsGroups.kt / SettingsIndex.java / ChangedPlan.java: pc_chips (ON), pc_chips_list (text).
+- tools/PcChordTest.java (NEW, 46 checks). app/build.gradle.kts: 0.17.51.
+
+CHECKS DONE: bash tools/run_tests.sh = 124/124 green; bracket balance of PcMorePanel.kt, MgbIme.kt, SettingsGroups.kt OK.
+
+NOT TESTED (needs real use)
+- Kotlin compile of ALL v0.17.44-51 (build error log -> FIX mode first).
+- Phone: PC mode + custom keyboard ON: 4 PC rows height at 360 dp + landscape, dark + light; chip taps in Termux / Chrome / Keep; editing chips list + labels after rebuild; More + Num panels (look, height, ABC back); keypad / PrtSc / Menu / NumLk in a real app. Plus everything in the v0.17.49 + v0.17.50 handoffs.
+- Known gaps: layout EDITOR does not show the pc layer; PC keys have no popup bubble; chip labels refresh only after a keyboard rebuild; custom keyboard OFF = old PcRows (no row 4, no More / Num).
+
+NEXT: first send the Gradle build error log (if the build fails) -> FIX mode. If the build is green: phone-test list above, then the next step of your plan (PC4 if any: e.g. show the pc layer in the layout editor, bubble for PC keys, live chip label refresh).
+Start line for the next chat: "FIX: build error log" or "PC4 koro". Attach: only the files named in the error / step.

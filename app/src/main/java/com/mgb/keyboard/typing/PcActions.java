@@ -30,8 +30,42 @@ public final class PcActions {
 
     public static boolean isKey(String action) { return index(action) >= 0; }
 
-    /** True for every PC action name this class knows (modifier or key). */
-    public static boolean valid(String action) { return isMod(action) || isKey(action); }
+    /** True for every PC action name this class knows (modifier, key, v0.17.51 More / Num / chip keys). */
+    public static boolean valid(String action) { return isMod(action) || isKey(action) || MORE.equals(action) || NUM.equals(action) || chipIndex(action) >= 0; }
+
+    // ---------- v0.17.51 (PC3) ----------
+    /** pc_more opens the More panel, pc_num opens the PC numpad panel, pc_chip_<0..4> = shortcut chip n (text comes from pref pc_chips_list, see PcChord). */
+    public static final String MORE = "pc_more", NUM = "pc_num", CHIP = "pc_chip_";
+
+    /** Chip number 0..PcChord.MAX_CHIPS-1 of a pc_chip_<n> action, -1 for anything else. */
+    public static int chipIndex(String action) {
+        if (action == null || !action.startsWith(CHIP) || action.length() != CHIP.length() + 1) return -1;
+        char c = action.charAt(CHIP.length());
+        return c >= '0' && c < '0' + PcChord.MAX_CHIPS ? c - '0' : -1;
+    }
+
+    // keys of the More panel (not layout actions, the panel sends the key code directly): label, Android key code
+    private static final String[] MORE_LABELS = { "PrtSc", "ScrLk", "Pause", "Menu", "CapsLk", "NumLk", "AltGr" };
+    private static final int[] MORE_CODES = { 120, 116, 121, 82, 115, 143, 58 };
+
+    public static int moreCount() { return MORE_LABELS.length; }
+
+    public static String moreLabel(int i) { return i >= 0 && i < MORE_LABELS.length ? MORE_LABELS[i] : ""; }
+
+    public static int moreCode(int i) { return i >= 0 && i < MORE_CODES.length ? MORE_CODES[i] : 0; }
+
+    // keypad keys of the PC numpad panel: label, Android key code (KEYCODE_NUMPAD_*)
+    private static final String[] PAD_LABELS = { "7", "8", "9", "/", "4", "5", "6", "*", "1", "2", "3", "-", "0", ".", "=", "+" };
+    private static final int[] PAD_CODES = { 151, 152, 153, 154, 148, 149, 150, 155, 145, 146, 147, 156, 144, 158, 161, 157 };
+
+    public static int padCount() { return PAD_LABELS.length; }
+
+    public static String padLabel(int i) { return i >= 0 && i < PAD_LABELS.length ? PAD_LABELS[i] : ""; }
+
+    public static int padCode(int i) { return i >= 0 && i < PAD_CODES.length ? PAD_CODES[i] : 0; }
+
+    /** KEYCODE_NUMPAD_ENTER. */
+    public static final int PAD_ENTER = 160;
 
     /** Android key code of a pc_key_ action, 0 for anything else. */
     public static int keyCode(String action) { int i = index(action); return i < 0 ? 0 : CODES[i]; }

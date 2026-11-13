@@ -98,6 +98,7 @@ class MgbIme : InputMethodService() {
     private val toolbarPanel by lazy { ToolbarPanel(this, host) }   // v0.2.1 "Edit toolbar" page
     private val toolbarQuick by lazy { ToolbarQuickPanel(this, host) }   // v0.2.7 quick add / remove page
     private val padPanel by lazy { PadPanel(this, host, padIo) }   // v0.2.3 cursor / select pad
+    private val pcMorePanel by lazy { PcMorePanel(this, host, pcIo) }   // v0.17.51 (PC3): PC More + Num panels
     private val themePanel by lazy { ThemePanel(this, host) }   // v0.2.4 theme picker
     private val padIo = object : PadIo {   // v0.2.3
         override fun sendKey(code: Int, meta: Int) { this@MgbIme.padSend(code, meta) }
@@ -665,7 +666,19 @@ class MgbIme : InputMethodService() {
                 val pa = k.action
                 val lab = if (k.label[0].isNotEmpty()) k.label[0] else com.mgb.keyboard.typing.PcActions.label(pa)
                 val code = com.mgb.keyboard.typing.PcActions.keyCode(pa)
-                val pb: Button = if (code > 0) {
+                val chipIdx = com.mgb.keyboard.typing.PcActions.chipIndex(pa)   // v0.17.51 (PC3): shortcut chip n
+                val pb: Button = if (pa == com.mgb.keyboard.typing.PcActions.MORE) {
+                    key(lab, k.weight) { showPanel("pcmore") }   // v0.17.51 (PC3)
+                } else if (pa == com.mgb.keyboard.typing.PcActions.NUM) {
+                    key(lab, k.weight) { showPanel("pcnum") }   // v0.17.51 (PC3)
+                } else if (chipIdx >= 0) {
+                    key(lab, k.weight) {   // v0.17.51 (PC3): chord of the chip (pref pc_chips_list) + any sticky modifier that is on
+                        try {
+                            val ch = com.mgb.keyboard.typing.PcChord.chips(prefs.str("pc_chips_list", "")).getOrNull(chipIdx)
+                            if (ch != null) pcSend(ch.code, com.mgb.keyboard.typing.PcKeyPlan.legacyMeta(ch.mods))
+                        } catch (_: Throwable) { }
+                    }
+                } else if (code > 0) {
                     val kb = key(lab, k.weight) { if (!com.mgb.keyboard.typing.PcActions.isRepeat(pa)) pcSend(code, 0) }
                     if (com.mgb.keyboard.typing.PcActions.isRepeat(pa)) PcHold.attach(kb, code, pcIo)
                     kb
@@ -1200,7 +1213,7 @@ class MgbIme : InputMethodService() {
         val c = container ?: return
         commitWord()
         if (PanelGuard.blocked(this, name)) { BackupStore.toast(this, "Panel switched off after 2 crashes. See Health Check in the app screen."); showLetters(); return }   // v0.5.3
-        val v = try { if (name == "clipboard") { try { clipPanel.fitPx = if (!inPanel && c.height > 0) c.height else lettersH } catch (_: Throwable) { }; clipPanel.build() } else if (name == "format") fmtPanel.build() else if (name == "more") morePanel.build() else if (name == "emoji") emojiPanel.build() else if (name == "typing") typingPanel.build() else if (name == "size") sizePanel.build() else if (name == "toolbar") toolbarPanel.build() else if (name == "tbquick") toolbarQuick.build() else if (name == "pad") padPanel.build(inPanel && shownPanel == "pad") else if (name == "themes") themePanel.build() else if (name == "vault") vaultPanel.build() else if (name == "tt") ttPanel.build() else if (name == "profiles") profilePanel.build() else if (name == "keymap") { try { keyMapPanel.fitPx = if (!inPanel && c.height > 0) c.height else lettersH } catch (_: Throwable) { }; keyMapPanel.build() } else if (name == "tstudio") studioPanel.build() else panels.build(name) } catch (_: Throwable) { try { PanelGuard.failed(this, name) } catch (_: Throwable) { }; null }   // v0.0.8: "format"; v0.1.0: "emoji"; v0.1.1: "typing"
+        val v = try { if (name == "clipboard") { try { clipPanel.fitPx = if (!inPanel && c.height > 0) c.height else lettersH } catch (_: Throwable) { }; clipPanel.build() } else if (name == "format") fmtPanel.build() else if (name == "more") morePanel.build() else if (name == "emoji") emojiPanel.build() else if (name == "typing") typingPanel.build() else if (name == "size") sizePanel.build() else if (name == "toolbar") toolbarPanel.build() else if (name == "tbquick") toolbarQuick.build() else if (name == "pad") padPanel.build(inPanel && shownPanel == "pad") else if (name == "themes") themePanel.build() else if (name == "vault") vaultPanel.build() else if (name == "tt") ttPanel.build() else if (name == "profiles") profilePanel.build() else if (name == "keymap") { try { keyMapPanel.fitPx = if (!inPanel && c.height > 0) c.height else lettersH } catch (_: Throwable) { }; keyMapPanel.build() } else if (name == "tstudio") studioPanel.build() else if (name == "pcmore" || name == "pcnum") pcMorePanel.build(name) else panels.build(name) } catch (_: Throwable) { try { PanelGuard.failed(this, name) } catch (_: Throwable) { }; null }   // v0.0.8: "format"; v0.1.0: "emoji"; v0.1.1: "typing"
         if (v == null) { showLetters(); return }
         try { PanelGuard.ok(this, name) } catch (_: Throwable) { }   // v0.5.3
         try { JabraOneHand.apply(this, prefs, v) } catch (_: Throwable) { }   // v0.1.0
@@ -1409,7 +1422,7 @@ class MgbIme : InputMethodService() {
                 try {
                     if (prefs.bool("pc_layer", true) && com.mgb.keyboard.layout.LayoutGuard.customOn(prefs.int("kb_custom", 0))) {
                         val pcr = CustomRows(customHost, prefs, "pc")
-                        val built = pcr.build(com.mgb.keyboard.layout.LayoutDefaults.pcModel(prefs.bool("pc_frow", true))) { row() }
+                        val built = pcr.build(com.mgb.keyboard.layout.LayoutDefaults.pcModel(prefs.bool("pc_frow", true), if (prefs.bool("pc_chips", true)) com.mgb.keyboard.typing.PcChord.chips(prefs.str("pc_chips_list", "")) else null)) { row() }   // v0.17.51 (PC3): + row 4 (chips, More, Num)
                         if (built.isNotEmpty()) { built.forEach { root.addView(it); pcAdded.add(it) }; viaLayer = true }
                     }
                 } catch (_: Throwable) { viaLayer = false; pcLayerMods.clear(); try { pcAdded.forEach { root.removeView(it) } } catch (_: Throwable) { } }

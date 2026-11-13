@@ -95,6 +95,25 @@ public final class LayoutDefaults {
         return m;
     }
 
+    /**
+     * v0.17.51 (PC3): same PC layer plus a 4th row: [chips] + More + Num. [chips] = the shortcut chips (label text, action pc_chip_<n>),
+     * null / empty = no chips (row 4 is only More + Num). The old pcModel(fRow) stays exactly as in v0.17.50.
+     */
+    public static LayoutDef pcModel(boolean fRow, java.util.List<com.mgb.keyboard.typing.PcChord.Chord> chips) {
+        LayoutDef m = pcModel(fRow);
+        RowDef r = row(PC_ROW_PCT);
+        if (chips != null) {
+            for (int i = 0; i < chips.size() && i < com.mgb.keyboard.typing.PcChord.MAX_CHIPS; i++) {
+                String a = com.mgb.keyboard.typing.PcActions.CHIP + i;
+                r.keys.add(act(a, a, 1f, chips.get(i).label(), ""));
+            }
+        }
+        r.keys.add(act(com.mgb.keyboard.typing.PcActions.MORE, com.mgb.keyboard.typing.PcActions.MORE, 1f, "More", ""));
+        r.keys.add(act(com.mgb.keyboard.typing.PcActions.NUM, com.mgb.keyboard.typing.PcActions.NUM, 1f, "Num", ""));
+        m.layers.get(0).rows.add(r);
+        return m;
+    }
+
     // ---------- helpers ----------
     private static int clampPct(int v) { return v < RowDef.H_MIN ? RowDef.H_MIN : (v > RowDef.H_MAX ? RowDef.H_MAX : v); }
 

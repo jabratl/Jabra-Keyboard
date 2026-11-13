@@ -100,6 +100,8 @@ public final class SettingsIndex {
             case "mode_key": return "Shows the Phone / PC switch key in the edit bar.";
             case "pc_remember": return "OFF = the keyboard always opens in Phone mode.";
             case "pc_layer": return "ON = PC rows look like the other keys (needs the custom keyboard). OFF = old rows.";   // v0.17.50 (PC2)
+            case "pc_chips": return "Shows shortcut chips (Ctrl+C, Ctrl+V ...) in the 4th PC row. OFF = that row has only More and Num. PC rows as layout keys only.";   // v0.17.51 (PC3)
+            case "pc_chips_list": return "Up to 5 shortcuts, comma between, e.g. Ctrl+A,Ctrl+Shift+Z,Alt+F4. Empty = Ctrl+A C V X Z. Apps must read key events.";   // v0.17.51 (PC3)
             case "pc_frow": return "Shows the F1-F12 row in PC mode (PC rows as layout keys only).";   // v0.17.50 (PC2)
             case "pc_real_mods": return "ON = PC keys send real Ctrl / Alt / Shift / Win presses. OFF = old way.";   // v0.17.49 (PC1)
             case "bs_repeat": return "Holding backspace keeps deleting.";
