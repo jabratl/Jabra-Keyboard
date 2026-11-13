@@ -29,9 +29,11 @@ class MgbIme : InputMethodService() {
     private var classicLetterRows: List<View> = emptyList()   // v0.17.5: the 3 classic rows, hidden while the custom rows show
     private val customShiftBtns = mutableListOf<Button>()     // v0.17.6: shift keys of the custom rows (blue tint like the classic one)
     private var customNr: CustomRows? = null                  // v0.17.6: shared number row (layer "nr")
-    private var customBot: CustomRows? = null                 // v0.17.6: shared bottom row (layer "bot")
+    private var customBots: Map<String, CustomRows> = emptyMap()   // v0.17.19 (L3): bottom rows by layer id "bot" / "bot_av" / "bot_pb" (only the ones a language shows)
+    private var botSpaceBtns: Map<String, Button> = emptyMap()     // v0.17.19 (L3): space bar of each custom bottom row (only when space_lang is ON)
+    private var botLangBtns: Map<String, Button> = emptyMap()      // v0.17.19 (L3): language key of each custom bottom row
     private var customRefNr: Set<String> = emptySet()         // v0.17.6: layers whose model refs the number row
-    private var customRefBot: Set<String> = emptySet()        // v0.17.6: layers whose model refs the bottom row
+    private var customBotOf: Map<String, String> = emptyMap()  // v0.17.19 (L3): letter layer (en / av / pb) -> the bottom-row layer it shows (bot / bot_av / bot_pb)
     private var classicNrRow: View? = null                    // v0.17.6: classic number row / bottom row (hidden while the custom ones show)
     private var classicBotRow: View? = null
     private var classicSpaceBtn: Button? = null
@@ -519,13 +521,16 @@ class MgbIme : InputMethodService() {
         classicNrRow?.let { if (it.visibility != cv) it.visibility = cv }
         val nrV = if (useC && customRefNr.contains(layer)) View.VISIBLE else View.GONE
         customNr?.rows?.forEach { if (it.visibility != nrV) it.visibility = nrV }
-        val botShow = useC && customRefBot.contains(layer) && customBot != null
-        val botV = if (botShow) View.VISIBLE else View.GONE
-        customBot?.rows?.forEach { if (it.visibility != botV) it.visibility = botV }
+        val botId: String = if (useC) (customBotOf[layer] ?: "") else ""   // v0.17.19 (L3): each language shows its own bottom row (or the shared one)
+        val botShow = botId.isNotEmpty() && customBots[botId] != null
+        for ((bid, bc) in customBots) {
+            val bv = if (botShow && bid == botId) View.VISIBLE else View.GONE
+            bc.rows.forEach { if (it.visibility != bv) it.visibility = bv }
+        }
         val clB = if (botShow) View.GONE else View.VISIBLE   // the classic bottom row is the safety net: it shows whenever the custom one does not
         classicBotRow?.let { if (it.visibility != clB) it.visibility = clB }
-        spaceBtn = if (botShow) customSpaceBtn else classicSpaceBtn
-        langBtn = if (botShow) customLangBtn else classicLangBtn
+        spaceBtn = if (botShow) botSpaceBtns[botId] else classicSpaceBtn
+        langBtn = if (botShow) botLangBtns[botId] else classicLangBtn
         try {
             val lb = langBtn
             if (lb != null) { val t = langLabel(); if (!t.contentEquals(lb.text)) lb.text = t }
@@ -535,7 +540,7 @@ class MgbIme : InputMethodService() {
         if (useC) {
             active?.relabel(shift)
             if (nrV == View.VISIBLE) customNr?.relabel(shift)
-            if (botShow) customBot?.relabel(shift)
+            if (botShow) customBots[botId]?.relabel(shift)
         }
     }
 
@@ -579,7 +584,7 @@ class MgbIme : InputMethodService() {
             return v
         }
         override fun tapChar(k: com.mgb.keyboard.layout.KeyDef, layer: String) {
-            if (layer == "nr" || layer == "bot") {   // v0.17.6: number row / bottom row = finish the word, then type (same as the classic keys)
+            if (layer == "nr" || layer.startsWith("bot")) {   // v0.17.19 (L3): bot / bot_av / bot_pb; v0.17.6: number row / bottom row = finish the word, then type (same as the classic keys)
                 commitWord()
                 val o = k.out[0]
                 val t = if (layer == "nr") numCustom(o) else com.mgb.keyboard.layout.LayoutRoute.mapDot(k.id, o, bangla && !latinOnly, dandaDot())
@@ -604,7 +609,7 @@ class MgbIme : InputMethodService() {
         }
         override fun dynLabel(k: com.mgb.keyboard.layout.KeyDef, layer: String, base: String): String {
             if (layer == "nr") return if (com.mgb.keyboard.layout.LayoutRoute.isDigit(base)) numDigit(base[0]) else base
-            if (layer == "bot") return com.mgb.keyboard.layout.LayoutRoute.dotLabel(k.id, base, bangla, bangla && !latinOnly, dandaDot())   // v0.17.18 (L1)
+            if (layer.startsWith("bot")) return com.mgb.keyboard.layout.LayoutRoute.dotLabel(k.id, base, bangla, bangla && !latinOnly, dandaDot())   // v0.17.18 (L1)
             return base
         }
         override fun actionKey(k: com.mgb.keyboard.layout.KeyDef, pct: Int): Button? {
@@ -1286,7 +1291,7 @@ class MgbIme : InputMethodService() {
 
         // v0.17.5 (K5a.1) / v0.17.6 (K5a.2): custom rows (pref kb_custom = 1 + a valid layout): number row + letter rows of en / av / pb (the bottom row follows below r4).
         // Any problem = nothing changes (the classic rows stay). The English layer is the anchor: without it the classic keyboard runs.
-        customLetters = emptyMap(); customNr = null; customBot = null; customRefNr = emptySet(); customRefBot = emptySet()
+        customLetters = emptyMap(); customNr = null; customBots = emptyMap(); botSpaceBtns = emptyMap(); botLangBtns = emptyMap(); customRefNr = emptySet(); customBotOf = emptyMap()
         classicLetterRows = emptyList(); customShiftBtns.clear(); customSpaceBtn = null; customLangBtn = null
         var cmModel: com.mgb.keyboard.layout.LayoutDef? = null
         val insertedViews = mutableListOf<View>()
@@ -1306,9 +1311,9 @@ class MgbIme : InputMethodService() {
                     if (built.isNotEmpty()) { built.forEach { root.addView(it, at++); insertedViews.add(it) }; sets[id] = cr }
                 }
                 if (sets.containsKey("en")) {
-                    val refN = HashSet<String>(); val refB = HashSet<String>()
-                    for (id in sets.keys) cm.layer(id)?.rows?.forEach { if (it.share == "nr") refN.add(id); if (it.share == "bot") refB.add(id) }
-                    customRefNr = refN; customRefBot = refB
+                    val refN = HashSet<String>(); val refB = HashMap<String, String>()
+                    for (id in sets.keys) cm.layer(id)?.rows?.forEach { if (it.share == "nr") refN.add(id); if (com.mgb.keyboard.layout.LayoutText.isBottomId(it.share)) refB[id] = it.share }   // v0.17.19 (L3)
+                    customRefNr = refN; customBotOf = refB
                     customNr = nrSet
                     classicLetterRows = listOf(r1, r2, r3)
                     customLetters = sets
@@ -1321,7 +1326,7 @@ class MgbIme : InputMethodService() {
             }
         } catch (_: Throwable) {
             try { insertedViews.forEach { root.removeView(it) } } catch (_: Throwable) { }
-            customLetters = emptyMap(); customNr = null; customRefNr = emptySet(); customRefBot = emptySet(); classicLetterRows = emptyList(); customShiftBtns.clear(); cmModel = null
+            customLetters = emptyMap(); customNr = null; customRefNr = emptySet(); customBotOf = emptyMap(); classicLetterRows = emptyList(); customShiftBtns.clear(); cmModel = null
         }
 
         val r4 = row()
@@ -1401,19 +1406,26 @@ class MgbIme : InputMethodService() {
         } catch (_: Throwable) { }
         root.addView(r4)
         classicBotRow = r4; classicSpaceBtn = spaceBtn; classicLangBtn = langBtn   // v0.17.6 (K5a.2): the classic bottom row stays as the safety net
-        try {   // v0.17.6: custom bottom row (layer "bot"); the mode key (edit bar OFF) is not part of the model, so it is added here like in the classic row
+        try {   // v0.17.6 / v0.17.19 (L3): custom bottom rows (layers bot / bot_av / bot_pb: only the ones a language shows); the mode key (edit bar OFF) is not part of the model, so it is added here like in the classic row
             val cmm = cmModel
             if (cmm != null && customLetters.isNotEmpty()) {
-                val bc = CustomRows(customHost, prefs, "bot", true)
-                val bb = bc.build(cmm) { row() }
-                if (bb.isNotEmpty()) {
-                    val br = bb[0]
-                    try { if (prefs.bool("mode_key", true) && !prefs.bool("edit_bar", true)) { val ix = com.mgb.keyboard.layout.LayoutRoute.modeKeyIndex(cmm.layer("bot")?.rows?.firstOrNull()); br.addView(modeKey(null), if (ix < br.childCount) ix else br.childCount) } } catch (_: Throwable) { }
-                    root.addView(br)
-                    customBot = bc
+                val bots = LinkedHashMap<String, CustomRows>()
+                val sp = HashMap<String, Button>(); val lg = HashMap<String, Button>()
+                for (bid in customBotOf.values.toSet()) {
+                    customSpaceBtn = null; customLangBtn = null
+                    val bc = CustomRows(customHost, prefs, bid, true)
+                    val bb = bc.build(cmm) { row() }
+                    if (bb.isNotEmpty()) {
+                        val br = bb[0]
+                        try { if (prefs.bool("mode_key", true) && !prefs.bool("edit_bar", true)) { val ix = com.mgb.keyboard.layout.LayoutRoute.modeKeyIndex(cmm.layer(bid)?.rows?.firstOrNull()); br.addView(modeKey(null), if (ix < br.childCount) ix else br.childCount) } } catch (_: Throwable) { }
+                        root.addView(br)
+                        bots[bid] = bc
+                        customSpaceBtn?.let { sp[bid] = it }; customLangBtn?.let { lg[bid] = it }
+                    }
                 }
+                customBots = bots; botSpaceBtns = sp; botLangBtns = lg
             }
-        } catch (_: Throwable) { customBot = null }
+        } catch (_: Throwable) { customBots = emptyMap(); botSpaceBtns = emptyMap(); botLangBtns = emptyMap() }
 
         try { refreshLetters() } catch (_: Throwable) { }   // v0.0.4: right labels from the start (Probhat after rebuild / rotate)
         try { JabraOneHand.apply(this, prefs, root) } catch (_: Throwable) { }   // v0.1.0: one-handed mode (setting "onehand")

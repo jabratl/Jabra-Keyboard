@@ -27,7 +27,20 @@ public final class LayoutText {
 
     /** Valid layer ids. s1-s3 = symbol pages, nr = number row, bot = bottom row (shared rows). */
     public static final Set<String> LAYERS = new HashSet<String>(Arrays.asList(
-            "en", "av", "pb", "s1", "s2", "s3", "nr", "bot"));
+            "en", "av", "pb", "s1", "s2", "s3", "nr", "bot", "bot_av", "bot_pb"));
+
+    /** v0.17.19 (L3) shared-row layer ids: number row, the bottom row and the optional own bottom rows of Avro / Probhat. */
+    public static boolean isShareId(String s) { return "nr".equals(s) || isBottomId(s); }
+
+    /** v0.17.19 (L3) true for "bot", "bot_av", "bot_pb". */
+    public static boolean isBottomId(String s) { return "bot".equals(s) || "bot_av".equals(s) || "bot_pb".equals(s); }
+
+    /** v0.17.19 (L3) the bottom-row layer a letter layer OWNS when it has its own bottom row (en always uses "bot"). */
+    public static String botLayerOf(String letterLayer) {
+        if ("av".equals(letterLayer)) return "bot_av";
+        if ("pb".equals(letterLayer)) return "bot_pb";
+        return "bot";
+    }
 
     public static int cp(String s) { return s == null ? 0 : s.codePointCount(0, s.length()); }
 

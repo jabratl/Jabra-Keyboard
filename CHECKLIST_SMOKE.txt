@@ -55,3 +55,4 @@ H. PLAN K = KEYBOARD LAYOUT EDITOR (K1 - K9b)                          [Z100 - Z
  [ ] 32. (K13) Editor > card "Layout rules": add an App rule (e.g. com.termux) with a saved layout: that app shows it, other apps keep the normal layout. Remove the rule: back to normal.
  [ ] 33. (L2) Editor top card "Current layout": shows the name + saved / unsaved after each edit. Save = one tap. Save & use... with the custom keyboard OFF turns it ON; open the keyboard: the layout is used. Add a layout rule to another layout: the orange warning appears.
  [ ] 34. (L1 custom) Custom keyboard ON, Bangla Avro / Probhat: the dot key is "।", hold = ".". Edit the b_period key text yourself: your text is typed as you wrote it.
+ [ ] 35. (L3) Editor > tab Avro > [Own bottom row], change a key: Avro shows it, English keeps the shared row. [Share bottom row] goes back.

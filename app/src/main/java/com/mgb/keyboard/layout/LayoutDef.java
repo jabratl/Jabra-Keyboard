@@ -5,7 +5,7 @@ import java.util.List;
 
 /** v0.17.3 (K3) the whole custom layout = layers. Pure Java; use {@link LayoutOps} to change it (returns new models). */
 public final class LayoutDef {
-    public static final int MAX_KEYS_LAYER = 80, MAX_ROWS = 8, MAX_LAYERS = 8;
+    public static final int MAX_KEYS_LAYER = 80, MAX_ROWS = 8, MAX_LAYERS = 10;   // v0.17.19 (L3): 8 -> 10 (bot_av, bot_pb)
     public List<LayerDef> layers = new ArrayList<LayerDef>();
 
     public LayoutDef copy() {
@@ -30,6 +30,14 @@ public final class LayoutDef {
             if (s != null && s != l && s.rows.size() > 0 && !s.rows.get(0).isRef()) out.add(s.rows.get(0));
         }
         return out;
+    }
+
+    /** v0.17.19 (L3) id of the bottom-row layer that letter layer [layerId] shows (bot / bot_av / bot_pb), or "" when it has no bottom row. */
+    public String botRef(String layerId) {
+        LayerDef l = layer(layerId);
+        if (l == null) return "";
+        for (RowDef r : l.rows) if (r.isRef() && LayoutText.isBottomId(r.share)) return r.share;
+        return "";
     }
 
     public int totalKeys() { int n = 0; for (LayerDef l : layers) n += l.keyCount(); return n; }

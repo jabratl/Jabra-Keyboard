@@ -128,7 +128,7 @@ public final class LayoutOps {
             for (RowDef r : l.rows) {
                 if (r.heightPct < RowDef.H_MIN) r.heightPct = RowDef.H_MIN;
                 if (r.heightPct > RowDef.H_MAX) r.heightPct = RowDef.H_MAX;
-                if (!r.share.equals("nr") && !r.share.equals("bot")) r.share = "";
+                if (!LayoutText.isShareId(r.share)) r.share = "";
                 for (KeyDef k : r.keys) {
                     normKey(k);
                     k.id = LayoutText.cleanId(k.id);
@@ -157,7 +157,7 @@ public final class LayoutOps {
             for (RowDef r : l.rows) {
                 if (r.heightPct < RowDef.H_MIN || r.heightPct > RowDef.H_MAX) return "bad row height";
                 if (r.isRef()) {
-                    if (!r.share.equals("nr") && !r.share.equals("bot")) return "bad share";
+                    if (!LayoutText.isShareId(r.share)) return "bad share";
                     if (r.share.equals(l.id)) return "row shares itself";
                     continue;
                 }
@@ -441,6 +441,48 @@ public final class LayoutOps {
         for (KeyDef k : copy.keys) k.id = fresh(used);
         x.L.rows.add(row + 1, copy);
         return fin(x.c);
+    }
+
+    // ---------- v0.17.19 (L3): own bottom row per language ----------
+    /**
+     * Gives letter layer [layerId] (av or pb) its OWN copy of the shared bottom row (layer bot_av / bot_pb) and points that language at it.
+     * English always uses the shared row. Key ids of the copy get the suffix _av / _pb (ids stay unique; the danda-dot rule knows the suffix).
+     * Refused (same instance): en, unknown layer, copy already there, no reference to "bot", layer limit.
+     */
+    public static LayoutDef separateBottom(LayoutDef m, String layerId) {
+        if (m == null || layerId == null) return m;
+        String own = LayoutText.botLayerOf(layerId);
+        if (own.equals("bot") || m.layer(own) != null) return m;
+        LayerDef src = m.layer("bot");
+        if (src == null || src.rows.isEmpty() || src.rows.get(0).isRef() || !"bot".equals(m.botRef(layerId))) return m;
+        if (m.layers.size() >= LayoutDef.MAX_LAYERS) return m;
+        LayoutDef c = m.copy();
+        RowDef row = c.layer("bot").rows.get(0).copy();
+        String sfx = layerId.equals("av") ? "_av" : "_pb";
+        Set<String> used = ids(c);
+        for (KeyDef k : row.keys) {
+            String nid = LayoutText.cleanId(k.id + sfx);
+            if (nid.length() == 0 || used.contains(nid)) nid = fresh(used); else used.add(nid);
+            k.id = nid;
+        }
+        LayerDef nl = new LayerDef(own);
+        nl.rows.add(row);
+        c.layers.add(nl);
+        for (RowDef r : c.layer(layerId).rows) if (r.isRef() && r.share.equals("bot")) r.share = own;
+        return fin(c);
+    }
+
+    /** Points letter layer [layerId] back at the shared bottom row and drops its own copy. Refused (same instance) when it has no own copy. */
+    public static LayoutDef shareBottom(LayoutDef m, String layerId) {
+        if (m == null || layerId == null) return m;
+        String own = LayoutText.botLayerOf(layerId);
+        if (own.equals("bot") || m.layer(own) == null || m.layer("bot") == null) return m;
+        LayoutDef c = m.copy();
+        for (RowDef r : c.layer(layerId).rows) if (r.isRef() && r.share.equals(own)) r.share = "bot";
+        boolean used = false;
+        for (LayerDef l : c.layers) for (RowDef r : l.rows) if (r.isRef() && r.share.equals(own)) used = true;
+        if (!used) { LayerDef g = c.layer(own); c.layers.remove(g); }
+        return fin(c);
     }
 
     public static LayoutDef setRowHeight(LayoutDef m, String layerId, int row, int pct) {

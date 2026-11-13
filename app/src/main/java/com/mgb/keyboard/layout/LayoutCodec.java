@@ -188,7 +188,7 @@ public final class LayoutCodec {
                 for (RowDef r : l.rows) {
                     boolean ref = r.share.length() > 0;
                     if (ref) {
-                        boolean ok = (r.share.equals("nr") || r.share.equals("bot")) && !r.share.equals(l.id) && m.layer(r.share) != null;
+                        boolean ok = LayoutText.isShareId(r.share) && !r.share.equals(l.id) && m.layer(r.share) != null;
                         if (ok) { r.keys.clear(); keep.add(r); }
                     } else if (r.keys.size() > 0) keep.add(r);
                 }

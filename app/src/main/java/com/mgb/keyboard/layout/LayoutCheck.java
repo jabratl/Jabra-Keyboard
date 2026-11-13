@@ -90,7 +90,7 @@ public final class LayoutCheck {
     }
 
     private static void layer(LayoutDef m, String id, Env env, List<Warn> out) {
-        if (id.equals("nr") || id.equals("bot")) return;      // shared rows are checked inside the layers that show them
+        if (LayoutText.isShareId(id)) return;      // shared rows are checked inside the layers that show them
         List<RowDef> rows = m.effectiveRows(id);
         List<KeyDef> keys = new ArrayList<KeyDef>();
         for (RowDef r : rows) keys.addAll(r.keys);

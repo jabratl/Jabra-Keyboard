@@ -866,3 +866,11 @@ Z116. v0.17.18 (L1 danda dot key + L2 Current layout bar) (NOT phone-tested)
  4. Custom keyboard ON: Bangla dot key = "।" too. Edit the dot key (editor > Bottom row) to ";": it types ";" in every language.
  5. Editor > top card "Current layout": name + "saved". Change a key: "unsaved changes". Save: "saved". Save & use...: with the custom keyboard OFF it turns ON; open the keyboard to see the layout.
  6. Layout rules > add a rule that uses another saved layout: the orange warning shows on the top card.
+
+Z117 (v0.17.19, L3: own bottom row per language)
+ [ ] 1. Editor > tab Avro > [Own bottom row]: note "Done: this language has its own bottom row now". Change the dot key text there. Tab English: the bottom row there did NOT change.
+ [ ] 2. Custom keyboard ON: English keys show the shared bottom row; switch to Bangla Avro: it shows the changed one. Switch back: shared again (no flicker, no lost word).
+ [ ] 3. Tab Probhat > [Own bottom row], edit; Probhat shows its row, Avro keeps its own, English the shared one.
+ [ ] 4. [Share bottom row] on a tab: that language shows the shared row again. Undo / Redo works for both buttons.
+ [ ] 5. English tab: [Own bottom row] = note "Open the Avro or Probhat tab first". Space bar swipe (language) and cursor drag work in every bottom row.
+ [ ] 6. Old saved layouts and presets: no change. Dot key in Bangla = danda (L1) also in an own bottom row.

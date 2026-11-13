@@ -261,6 +261,8 @@ class LayoutEditorPage(private val act: Activity, private val prefs: JabraPrefs,
             mini("Row down") { structOp("row down") { m -> val r = ownRowOrNote(m); if (r < 0) m else LayoutOps.swapRows(m, LayoutEditPlan.editTabId(tab), r, r + 1) } },
             mini("Same width") { structOp("same width in row") { m -> val o = LayoutEditPlan.owner(m, selected); if (o == null) m else LayoutOps.autoBalanceRow(m, o[0], o[1].toInt()) } },
             mini("Width to row") { structOp("this width for the row") { m -> LayoutOps.applyWidthToRow(m, selected) } })
+        addRowOf(st, mini("Own bottom row") { bottomOp(true) },   // v0.17.19 (L3): Avro / Probhat tab only
+            mini("Share bottom row") { bottomOp(false) })
         col.addView(st, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
 
         // inspector
@@ -714,6 +716,31 @@ class LayoutEditorPage(private val act: Activity, private val prefs: JabraPrefs,
     }
 
     /** v0.17.9: one structure change. Refused (same model) = a note, nothing changes. Saved through the safety gate; the selection stays on the key or moves to the key now at its place. */
+    /** v0.17.19 (L3): the Avro / Probhat tab gets its OWN copy of the bottom row (own = true) or goes back to the shared one. One undo step; needs no selected key. */
+    private fun bottomOp(own: Boolean) {
+        flushPending()
+        val m = model ?: return
+        val layer = LayoutEditPlan.editTabId(tab)
+        val label = if (own) "own bottom row" else "shared bottom row"
+        if (layer != "av" && layer != "pb") {
+            note?.setTextColor(AppUi.warn(act)); note?.text = "Open the Avro or Probhat tab first (English always uses the shared bottom row)."
+            return
+        }
+        after = ""
+        val nm = if (own) LayoutOps.separateBottom(m, layer) else LayoutOps.shareBottom(m, layer)
+        if (nm === m) {
+            note?.setTextColor(AppUi.warn(act))
+            note?.text = if (own) "This language already has its own bottom row." else "This language already uses the shared bottom row."
+            return
+        }
+        if (commit(nm, true, label)) {
+            if (LayoutEditPlan.findKey(nm, layer, selected) == null) selected = LayoutEditPlan.firstCharId(nm, layer)
+            view?.selectedId = selected
+            if (after.isEmpty()) after = if (own) "Done: this language has its own bottom row now" else "Done: bottom row is shared again"
+            fillInspector()
+        } else after = ""
+    }
+
     private fun structOp(label: String, f: (LayoutDef) -> LayoutDef) {
         flushPending()
         val m = model ?: return

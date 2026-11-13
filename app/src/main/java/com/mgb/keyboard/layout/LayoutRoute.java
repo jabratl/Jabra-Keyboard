@@ -28,17 +28,22 @@ public final class LayoutRoute {
      * The old language rule of the "?" key (id b_qm: Bangla types the danda) and of the long-press of "." (id b_period, text "?").
      * [banglaActive] = Bangla is on AND the field is not latinOnly. Any other key / text = unchanged.
      */
+    /** v0.17.19 (L3) true when [id] is the factory key [base] or its copy in an own bottom row (base + _av / _pb). */
+    static boolean is(String id, String base) {
+        return id != null && (id.equals(base) || id.equals(base + "_av") || id.equals(base + "_pb"));
+    }
+
     public static String mapQm(String keyId, String text, boolean banglaActive) {
         if (text == null) return "";
         if (!banglaActive || keyId == null) return text;
-        if ("b_qm".equals(keyId) && "?".equals(text)) return "\u0964";
-        if ("b_period".equals(keyId) && "?".equals(text)) return "\u0964";
+        if (is(keyId, "b_qm") && "?".equals(text)) return "\u0964";
+        if (is(keyId, "b_period") && "?".equals(text)) return "\u0964";
         return text;
     }
 
     /** Label of the "?" key follows the language the same way (b_qm only). */
     public static String qmLabel(String keyId, String label, boolean bangla) {
-        if ("b_qm".equals(keyId) && "?".equals(label) && bangla) return "\u0964";
+        if (is(keyId, "b_qm") && "?".equals(label) && bangla) return "\u0964";
         return label == null ? "" : label;
     }
 
@@ -68,7 +73,7 @@ public final class LayoutRoute {
      */
     public static String mapDot(String keyId, String text, boolean banglaActive, boolean dandaDot) {
         if (text == null) return "";
-        if (dandaDot && banglaActive && "b_period".equals(keyId)) {
+        if (dandaDot && banglaActive && is(keyId, "b_period")) {
             if (".".equals(text)) return DANDA;
             if ("?".equals(text)) return ".";
         }
@@ -77,7 +82,7 @@ public final class LayoutRoute {
 
     /** Custom layout label: danda-dot rule for b_period, else the old {@link #qmLabel}. */
     public static String dotLabel(String keyId, String label, boolean bangla, boolean banglaActive, boolean dandaDot) {
-        if (dandaDot && banglaActive && "b_period".equals(keyId) && ".".equals(label)) return DANDA;
+        if (dandaDot && banglaActive && is(keyId, "b_period") && ".".equals(label)) return DANDA;
         return qmLabel(keyId, label, bangla);
     }
 

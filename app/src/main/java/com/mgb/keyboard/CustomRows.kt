@@ -96,7 +96,7 @@ class CustomRows(private val host: CustomHost, private val prefs: JabraPrefs, pr
         host.styleLetter(b)
         charKeys.add(b)
         val lp = if (k.lp.isNotEmpty()) k.lp else (k.lpList.firstOrNull() ?: "")
-        if (lp.isNotEmpty() && !lp.startsWith("@") && layer != "bot") showHint(b, lp)   // v0.17.6: the classic bottom row shows no hint on "."
+        if (lp.isNotEmpty() && !lp.startsWith("@") && !layer.startsWith("bot")) showHint(b, lp)   // v0.17.6: the classic bottom row shows no hint on "."
         attachTouch(b, k, lp)
         return b
     }
