@@ -60,9 +60,18 @@ object JabraLook {
                 val bw = Math.max(1, Math.round(ct.borderDp() * d))
                 up.setStroke(bw, ct.borderColor()); down.setStroke(bw, ct.borderColor())
             }
+            val sh = if (ct != null && ct.shadow > 0 && kind != PILL) Math.max(1, Math.round(ct.shadowDp() * d)) else 0   // v0.17.47 (P4): key shadow strip
+            fun wrap(top: GradientDrawable): android.graphics.drawable.Drawable {
+                if (sh == 0 || ct == null) return top
+                val s = GradientDrawable()
+                s.setColor(ct.shadowColor()); s.cornerRadius = radius
+                val ld = android.graphics.drawable.LayerDrawable(arrayOf<android.graphics.drawable.Drawable>(s, top))
+                ld.setLayerInset(1, 0, 0, 0, sh)
+                return ld
+            }
             val sl = StateListDrawable()
-            sl.addState(intArrayOf(android.R.attr.state_pressed), down)
-            sl.addState(intArrayOf(), up)
+            sl.addState(intArrayOf(android.R.attr.state_pressed), wrap(down))
+            sl.addState(intArrayOf(), wrap(up))
             b.background = sl
             b.backgroundTintList = null
             b.stateListAnimator = null

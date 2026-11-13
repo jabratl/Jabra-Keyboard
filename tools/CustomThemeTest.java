@@ -65,6 +65,15 @@ public class CustomThemeTest {
         String[] bf = CustomThemeForm.fields(CustomTheme.defaults());
         t("form build border", CustomThemeForm.build(bf, 45, 100, 3).border == 3 && CustomThemeForm.build(bf, 45, 100).border == 0 && CustomThemeForm.build(bf, 45, 100, 50).border == 6);
 
+        // v0.17.47 (P4) key shadow
+        t("shadow default 0", CustomTheme.defaults().shadow == 0 && !CustomTheme.defaults().toJson().contains("shadow"));
+        CustomTheme st = CustomTheme.defaults(); st.shadow = 3; st.border = 2;
+        CustomTheme sp = CustomTheme.parse(st.toJson());
+        t("shadow round trip (with border)", sp != null && sp.shadow == 3 && sp.border == 2 && sp.toJson().equals(st.toJson()));
+        t("shadow clamp", CustomTheme.parse("{\"ver\":1,\"shadow\":99}").shadow == 4);
+        t("shadowDp", Math.abs(st.shadowDp() - 2.25f) < 0.001f && (st.shadowColor() >>> 24) == 0x55);
+        t("form build shadow", CustomThemeForm.build(bf, 45, 100, 0, 2).shadow == 2 && CustomThemeForm.build(bf, 45, 100, 3).shadow == 0 && CustomThemeForm.build(bf, 45, 100, 0, 50).shadow == 4);
+
         System.out.println("CustomThemeTest: " + ok + " ok, " + bad + " failed");
         if (bad > 0) System.exit(1);
     }

@@ -17,6 +17,7 @@ import com.mgb.keyboard.typing.HintStyle
 
 /** v0.17.5 (K5a.1): what CustomRows needs from the keyboard (implemented in MgbIme, which owns the private typing functions). */
 interface CustomHost {
+    fun shiftOn(): Boolean = false   // v0.17.47 (P4): Shift / Caps on (accent options are typed and shown upper case)
     /** A themed key like the classic ones (key()): [pct] = row height % (100 = normal). */
     fun newKey(label: String, weight: Float, pct: Int, onClick: () -> Unit): Button
     /** Letter size % + bold, same as the classic letter keys. */
@@ -125,7 +126,7 @@ class CustomRows(private val host: CustomHost, private val prefs: JabraPrefs, pr
             try {
                 if (lp.isEmpty()) return@Runnable
                 fired = true
-                if (useBar && LpBar.show(b, opts, prefs)) {   // v0.17.20: the bar is up; the finger decides on lift (MOVE / UP below)
+                if (useBar && LpBar.show(b, opts, prefs, host.shiftOn())) {   // v0.17.47 (P4) shiftOn; v0.17.20: the bar is up; the finger decides on lift (MOVE / UP below)
                     barOn = true
                     KeyPopup.dismiss()
                     if (KeyCfg.hintBuzz(b)) host.feedbackAt(b)

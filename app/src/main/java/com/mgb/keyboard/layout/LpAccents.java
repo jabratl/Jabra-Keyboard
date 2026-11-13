@@ -31,6 +31,20 @@ public final class LpAccents {
         return new ArrayList<String>(Arrays.asList(s.split(" ")));
     }
 
+    /** True for a Latin letter with a mark (U+00C0..U+017F, ss included), e.g. "\u00FC". */
+    public static boolean isAccent(String s) {
+        if (s == null || s.length() == 0 || s.length() > 2) return false;
+        char c = s.charAt(0);
+        return c >= 0x00C0 && c <= 0x017F && c != 0x00D7 && c != 0x00F7;
+    }
+
+    /** The option typed / shown while Shift or Caps is on: accent letters go upper case (ss -> U+1E9E), everything else is unchanged. */
+    public static String shifted(String s) {
+        if (!isAccent(s)) return s;
+        if (s.equals("\u00DF")) return "\u1E9E";
+        return s.toUpperCase(java.util.Locale.ROOT);
+    }
+
     /** Options after the comma's own @emoji: & % + " - : ' @ */
     public static List<String> comma() { return new ArrayList<String>(Arrays.asList("&", "%", "+", "\"", "-", ":", "'", "@")); }
 

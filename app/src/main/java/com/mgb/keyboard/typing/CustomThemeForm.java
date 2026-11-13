@@ -36,7 +36,10 @@ public final class CustomThemeForm {
     public static CustomTheme build(String[] f, int round, int alpha) { return build(f, round, alpha, 0); }
 
     /** v0.17.45 (P2): same + key outline steps (clamped 0..6). */
-    public static CustomTheme build(String[] f, int round, int alpha, int border) {
+    public static CustomTheme build(String[] f, int round, int alpha, int border) { return build(f, round, alpha, border, 0); }
+
+    /** v0.17.47 (P4): same + key shadow steps (clamped 0..4). */
+    public static CustomTheme build(String[] f, int round, int alpha, int border, int shadow) {
         if (!allOk(f)) return null;
         CustomTheme c = new CustomTheme();
         c.bg = CustomTheme.hex(f[0]);
@@ -49,6 +52,7 @@ public final class CustomThemeForm {
         c.round = CustomTheme.clamp(round, CustomTheme.ROUND_MIN, CustomTheme.ROUND_MAX);
         c.alpha = CustomTheme.clamp(alpha, CustomTheme.ALPHA_MIN, CustomTheme.ALPHA_MAX);
         c.border = CustomTheme.clamp(border, CustomTheme.BORDER_MIN, CustomTheme.BORDER_MAX);
+        c.shadow = CustomTheme.clamp(shadow, CustomTheme.SHADOW_MIN, CustomTheme.SHADOW_MAX);
         return c;
     }
 

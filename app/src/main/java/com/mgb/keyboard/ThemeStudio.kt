@@ -101,7 +101,15 @@ class ThemeStudio(private val ctx: Context, private val host: JabraHost) {
                 p.color = draft.withKeyAlpha(base)
                 val l = pad + i * (kw + gap)
                 rect.set(l, dp(6).toFloat(), l + kw, dp(6).toFloat() + kh)
+                val dd = ctx.resources.displayMetrics.density
+                if (draft.shadow > 0) { val c0 = p.color; p.color = draft.shadowColor(); canvas.drawRoundRect(rect, rad, rad, p); rect.bottom -= draft.shadowDp() * dd; p.color = c0 }   // v0.17.47 (P4)
                 canvas.drawRoundRect(rect, rad, rad, p)
+                if (draft.border > 0) {   // v0.17.47 (P4): outline in this preview too
+                    val c1 = p.color
+                    p.style = Paint.Style.STROKE; p.strokeWidth = Math.max(1f, draft.borderDp() * dd); p.color = draft.borderColor()
+                    canvas.drawRoundRect(rect, rad, rad, p)
+                    p.style = Paint.Style.FILL; p.color = c1
+                }
                 p.color = draft.text
                 canvas.drawText(labels[i], l + kw / 2f, dp(6).toFloat() + kh / 2f + dp(5).toFloat(), p)
             }
@@ -189,8 +197,9 @@ class ThemeStudio(private val ctx: Context, private val host: JabraHost) {
                 val keepRound = draft.round
                 val keepAlpha = draft.alpha
                 val keepBorder = draft.border   // v0.17.45 (P2)
+                val keepShadow = draft.shadow   // v0.17.47 (P4)
                 draft = CustomTheme.preset(i)
-                draft.round = keepRound; draft.alpha = keepAlpha; draft.border = keepBorder
+                draft.round = keepRound; draft.alpha = keepAlpha; draft.border = keepBorder; draft.shadow = keepShadow
                 hexBuf = currentHex(); confirmReset = false
                 refresh()
             })

@@ -1,3 +1,12 @@
+v0.17.47 - MODIFY (P4): Shift-aware accents + key shadow + outline in the keyboard-side preview
+- WHY: P3 accents were always lower case; the keyboard-side theme preview did not show the outline; the theme studio had no depth option.
+- What you get: (1) Shift / Caps ON: the accent bar shows AND types upper case (u -> Ü, n -> Ñ, ss -> U+1E9E); other hold texts (digits, @emoji, symbols) are never changed. (2) Theme studio: new stepper "Key shadow" (off, 1-4 = 0.75 dp to 3 dp): a soft dark strip under every key (raised look), live in the mini preview. (3) The keyboard-side Theme studio preview now draws the outline and the shadow too; its presets keep your outline + shadow.
+- Code: layout/LpAccents.java (isAccent, shifted), CustomRows.kt (host.shiftOn() default method + 1 call), LpBar.kt (optional upper param), MgbIme.kt (shiftOn + typeExtra), typing/CustomTheme.java (shadow, json only when > 0), typing/CustomThemeForm.java (5-arg build; old builds = shadow 0), JabraLook.kt (LayerDrawable strip, not on the pill space key), AppThemeStudio.kt (stepper, preview, save), ThemeStudio.kt (preview + presets), tools/CustomThemeTest.java (+5), tools/LpAccentsTest.java (+5). // v0.17.47 marks hooks. No new pref (shadow lives in ct_json), no permission.
+- BROKE: nothing known. With a shadow the face of each key is shorter by the strip (1-3 dp) = expected. Older app versions ignore "shadow" in a backup.
+- TESTED here: full Java suite 121/121 green, bracket balance of the 6 Kotlin files OK.
+- NOT tested: Kotlin NOT compiled; NOT phone-tested (Shift one-shot / Caps with accent bar, shadow + outline together on dark + light, 360 dp, pressed state, label position on shadowed keys).
+- Rollback: set Key shadow to off, or restore the 11 files from v0.17.46.
+
 v0.17.46 - MODIFY (P3): Accent letters + symbol grid on hold (Ridmik style), up to 16 hold options
 - WHY: Ridmik opens a popup with accents when you hold u (ù ú û ü ū) and a symbol grid when you hold , or . Jabra had neither (only one hint character per key).
 - What you get: 2 new settings (Typing, both OFF by default = nothing changes): "Accent letters on hold" (a e i o u c n s y z l: hold, slide, lift = types the accent letter; if the key had a hint character it stays the first option, so lift-without-moving is as before) and "Symbols on hold of , and ." (comma: emoji + & % + \" - : ' @ ; period: ? ! ; / ( ) # ,). They use the v0.17.44 2-row grid. Also: hold options per key limit 8 -> 16 for the layout editor (old saved layouts load as before).

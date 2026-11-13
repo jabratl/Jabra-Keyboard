@@ -1,0 +1,6 @@
+HANDOFF Jabra-Keyboard v0.17.47 (P4)
+Done: P1 popup stem + 2-row grid (v0.17.44) | P2 key outline (v0.17.45) | P3 accents + , . grid + 16 options (v0.17.46) | P4 Shift accents + key shadow + preview outline (v0.17.47). Current: v0.17.47.
+Changed: layout/LpAccents.java (isAccent, shifted) | CustomRows.kt (shiftOn, 1 call) | LpBar.kt (upper param) | MgbIme.kt (shiftOn, typeExtra) | typing/CustomTheme.java (shadow) | typing/CustomThemeForm.java (5-arg build) | JabraLook.kt (shadow layer) | AppThemeStudio.kt (stepper) | ThemeStudio.kt (preview + presets) | tools/CustomThemeTest.java, tools/LpAccentsTest.java | app/build.gradle.kts | CHANGELOG.txt
+Checks: Java suite 121/121, bracket balance of 6 Kotlin files.
+NOT tested: Kotlin compile, phone (Shift/Caps + accent bar, shadow + outline together, 360dp dark/light).
+NEXT P5: outline / shadow steppers inside the keyboard-side ThemeStudio (now only in the App studio) + press animation (key scale on press, Ridmik smoothness).

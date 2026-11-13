@@ -21,6 +21,13 @@ public class LpAccentsTest {
         t("items valid length", items);
         t("comma 8", LpAccents.comma().size() == 8 && LpAccents.period().size() == 7);
 
+        t("isAccent", LpAccents.isAccent("\u00FC") && !LpAccents.isAccent("a") && !LpAccents.isAccent("@") && !LpAccents.isAccent("?") && !LpAccents.isAccent(null) && !LpAccents.isAccent("\u00D7"));
+        t("shifted accents", LpAccents.shifted("\u00FC").equals("\u00DC") && LpAccents.shifted("\u00F1").equals("\u00D1") && LpAccents.shifted("\u0142").equals("\u0141"));
+        t("shifted ss", LpAccents.shifted("\u00DF").equals("\u1E9E"));
+        t("shifted others unchanged", LpAccents.shifted("@").equals("@") && LpAccents.shifted("a").equals("a") && LpAccents.shifted("?").equals("?") && LpAccents.shifted(null) == null);
+        boolean allUp = true; for (char c = 'a'; c <= 'z'; c++) for (String s : LpAccents.accents(c)) allUp &= LpAccents.isAccent(s) && LpAccents.shifted(s).length() == 1;
+        t("every accent option is shiftable", allUp);
+
         LayoutDefaults.Options off = new LayoutDefaults.Options();
         LayoutDef a = LayoutDefaults.build(off);
         t("default off: u no list", find(a, "en_u") != null && find(a, "en_u").lpList.isEmpty());

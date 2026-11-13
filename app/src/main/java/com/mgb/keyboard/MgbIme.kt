@@ -636,9 +636,11 @@ class MgbIme : InputMethodService() {
                 else -> typeText(s)
             }
         }
+        override fun shiftOn(): Boolean = shiftSt.isShift() || shiftSt.isCaps()   // v0.17.47 (P4)
         override fun typeExtra(k: com.mgb.keyboard.layout.KeyDef, s: String) {
             if (s.startsWith("@")) { atAction(s); return }
-            commitWord(); typeText(com.mgb.keyboard.layout.LayoutRoute.mapDot(k.id, s, bangla && !latinOnly, dandaDot()))
+            val s2 = if (shiftOn()) com.mgb.keyboard.layout.LpAccents.shifted(s) else s   // v0.17.47 (P4): accent letters follow Shift
+            commitWord(); typeText(com.mgb.keyboard.layout.LayoutRoute.mapDot(k.id, s2, bangla && !latinOnly, dandaDot()))
         }
         override fun dynLabel(k: com.mgb.keyboard.layout.KeyDef, layer: String, base: String): String {
             if (layer == "nr") return if (com.mgb.keyboard.layout.LayoutRoute.isDigit(base)) numDigit(base[0]) else base

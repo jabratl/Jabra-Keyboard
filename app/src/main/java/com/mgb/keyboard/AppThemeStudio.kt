@@ -64,6 +64,7 @@ object AppThemeStudio {
                 for (i in 0 until 4) {
                     val l = pad + i * (kw + gap)
                     r.set(l, pad, l + kw, pad + kh)
+                    if (th.shadow > 0) { p.color = th.shadowColor(); cv.drawRoundRect(r, rad, rad, p); r.bottom -= th.shadowDp() * d }   // v0.17.47 (P4)
                     p.color = th.withKeyAlpha(if (i == 3) th.func else th.key)
                     cv.drawRoundRect(r, rad, rad, p)
                     if (th.border > 0) {   // v0.17.45 (P2): outline preview
@@ -90,6 +91,7 @@ object AppThemeStudio {
         var round = JabraThemes.custom(prefs)?.round ?: CustomTheme.defaults().round
         var alpha = JabraThemes.custom(prefs)?.alpha ?: CustomTheme.defaults().alpha
         var border = JabraThemes.custom(prefs)?.border ?: 0   // v0.17.45 (P2)
+        var shadow = JabraThemes.custom(prefs)?.shadow ?: 0   // v0.17.47 (P4)
         var dirty = false
         var muting = false
         var armed = false
@@ -104,10 +106,11 @@ object AppThemeStudio {
         lateinit var stepRound: AppRows.Built
         lateinit var stepAlpha: AppRows.Built
         lateinit var stepBorder: AppRows.Built   // v0.17.45 (P2)
+        lateinit var stepShadow: AppRows.Built   // v0.17.47 (P4)
 
         fun update() {
             val ok = CustomThemeForm.check(fields)
-            val th = CustomThemeForm.build(fields, round, alpha, border)
+            val th = CustomThemeForm.build(fields, round, alpha, border, shadow)
             mini.t = th
             mini.invalidate()
             for (i in 0 until 5) {
@@ -130,10 +133,11 @@ object AppThemeStudio {
             round = c?.round ?: CustomTheme.defaults().round
             alpha = c?.alpha ?: CustomTheme.defaults().alpha
             border = c?.border ?: 0   // v0.17.45 (P2)
+            shadow = c?.shadow ?: 0   // v0.17.47 (P4)
             for (i in 0 until 5) edits[i].setText(fields[i])
             muting = false
             dirty = mark
-            try { stepRound.refresh(); stepAlpha.refresh(); stepBorder.refresh() } catch (_: Throwable) { }
+            try { stepRound.refresh(); stepAlpha.refresh(); stepBorder.refresh(); stepShadow.refresh() } catch (_: Throwable) { }
             update()
         }
 
@@ -194,11 +198,15 @@ object AppThemeStudio {
         }, { })
         box.addView(stepRound.view)
         box.addView(stepAlpha.view)
+        stepShadow = AppRows.stepperRow(ctx, "Key shadow", "0 = none. A soft dark strip under every key (looks raised). Jabra look keys.", { if (shadow == 0) "off" else shadow.toString() }, { }, { dir ->   // v0.17.47 (P4)
+            shadow = SizePct.step(shadow, dir, CustomTheme.SHADOW_MIN, CustomTheme.SHADOW_MAX, 1); dirty = true; update()
+        }, { })
         box.addView(stepBorder.view)
+        box.addView(stepShadow.view)
         box.addView(warn)
 
         fun save(use: Boolean) {
-            val th = CustomThemeForm.build(fields, round, alpha, border)
+            val th = CustomThemeForm.build(fields, round, alpha, border, shadow)
             if (th == null) { Toast.makeText(ctx, "Fix the red colours first. Nothing was saved.", Toast.LENGTH_SHORT).show(); return }
             val old = JabraThemes.index(prefs)
             prefs.setStr("ct_json", th.toJson())
@@ -353,7 +361,7 @@ object AppThemeStudio {
         }
 
         box.addView(action("Save as (name above)") {
-            val th = CustomThemeForm.build(fields, round, alpha, border)
+            val th = CustomThemeForm.build(fields, round, alpha, border, shadow)
             if (th == null) { toast("Fix the red colours first. Nothing was saved."); return@action }
             val b0 = ThemeStore.book(prefs)
             val json = th.toJson()

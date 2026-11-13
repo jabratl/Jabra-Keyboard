@@ -28,7 +28,7 @@ object LpBar {
     private var topY = 0
 
     /** Shows the bar above [anchor]. false = not shown (the caller falls back to the old single long-press). */
-    fun show(anchor: View, opts: List<String>, prefs: JabraPrefs): Boolean {
+    fun show(anchor: View, opts: List<String>, prefs: JabraPrefs, upper: Boolean = false): Boolean {   // v0.17.47 (P4): upper = Shift / Caps on
         try {
             dismiss()
             if (opts.size < LpBarPlan.MIN_OPTIONS || anchor.width <= 0 || anchor.height <= 0) return false
@@ -41,7 +41,7 @@ object LpBar {
             anchor.getLocationOnScreen(loc)
             val l = LpBarPlan.left(loc[0], anchor.width, c, pr, dm.widthPixels)
             val v = BarView(anchor.context)
-            v.setup(opts.map { LpBarPlan.shown(it) }, c, prefs, dm.density, dm.scaledDensity, nr, pr)
+            v.setup(opts.map { if (upper) com.mgb.keyboard.layout.LpAccents.shifted(LpBarPlan.shown(it)) else LpBarPlan.shown(it) }, c, prefs, dm.density, dm.scaledDensity, nr, pr)
             val np = PopupWindow(v, c * pr, h * nr, false)
             np.isTouchable = false
             np.isFocusable = false
