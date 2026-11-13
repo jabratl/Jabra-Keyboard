@@ -75,11 +75,27 @@ object KeyPopup {
     fun touch(v: View, e: MotionEvent, prefs: JabraPrefs) {
         try {
             when (e.actionMasked) {
-                MotionEvent.ACTION_DOWN -> if (KeyCfg.popupOn(prefs)) show(v as Button, prefs)   // v0.6.0: cached flag (fallback = pref read)
-                MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL ->
+                MotionEvent.ACTION_DOWN -> {
+                    pressAnim(v, true, prefs)   // v0.17.48 (P5)
+                    if (KeyCfg.popupOn(prefs)) show(v as Button, prefs)   // v0.6.0: cached flag (fallback = pref read)
+                }
+                MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                    pressAnim(v, false, prefs)   // v0.17.48 (P5)
                     if (com.mgb.keyboard.typing.PopupStyle.releaseHides(owner, v)) dismiss()   // v0.9.6: finger A lifting must not hide the bubble of finger B
+                }
             }
         } catch (_: Throwable) { dismiss() }
+    }
+
+    /** v0.17.48 (P5): key press animation (setting key_press_anim, default OFF): the key shrinks a little while pressed, springs back on release. Any problem = nothing. */
+    private fun pressAnim(v: View, down: Boolean, prefs: JabraPrefs) {
+        try {
+            if (down && !prefs.bool("key_press_anim", false)) return
+            if (!down && v.scaleX == 1f && v.scaleY == 1f) return
+            val s = if (down) 0.93f else 1f
+            v.animate().cancel()
+            v.animate().scaleX(s).scaleY(s).setDuration(if (down) 45L else 90L).start()
+        } catch (_: Throwable) { }
     }
 
     fun attach(b: Button, prefs: JabraPrefs) {
@@ -89,7 +105,7 @@ object KeyPopup {
         }
         b.addOnAttachStateChangeListener(object : View.OnAttachStateChangeListener {
             override fun onViewAttachedToWindow(v: View) { }
-            override fun onViewDetachedFromWindow(v: View) { dismiss(); dropCached() }   // v0.9.0
+            override fun onViewDetachedFromWindow(v: View) { dismiss(); dropCached(); try { v.animate().cancel(); v.scaleX = 1f; v.scaleY = 1f } catch (_: Throwable) { } }   // v0.9.0 (+ v0.17.48 P5: scale reset)
         })
     }
 

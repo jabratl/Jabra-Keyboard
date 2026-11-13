@@ -107,6 +107,7 @@ public final class SettingsIndex {
             case "ds_tab": return "Two quick spaces type a tab (when the period rule does not apply).";
             case "hint_on": return "Long-press a letter to type its small hint character.";
             case "lp_accents": return "Hold a, e, i, o, u, c, n, s, y, z, l: slide to pick an accent letter (e.g. u: ù ú û ü ū).";
+            case "key_press_anim": return "The key shrinks a little while you press it and springs back (smoother feel). Off = no animation.";
             case "lp_punct": return "Hold , or . to slide over more symbols (2-row grid). Lift without moving = the old long-press.";
             case "theme": return "Colour theme of the keyboard (picker is inside the keyboard).";
             case "look": return "Classic = old square keys. Jabra = round keys, pill space key.";

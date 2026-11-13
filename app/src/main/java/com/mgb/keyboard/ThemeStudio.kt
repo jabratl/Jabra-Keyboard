@@ -190,6 +190,16 @@ class ThemeStudio(private val ctx: Context, private val host: JabraHost) {
         nr.addView(btn("+", 0.6f, 30) { draft.alpha = CustomTheme.clamp(draft.alpha + 10, CustomTheme.ALPHA_MIN, CustomTheme.ALPHA_MAX); refresh() })
         root.addView(nr)
 
+        // v0.17.48 (P5): key outline + key shadow (same steppers as the App studio)
+        val ob = row()
+        ob.addView(btn("Outline −", 1.1f, 30) { draft.border = CustomTheme.clamp(draft.border - 1, CustomTheme.BORDER_MIN, CustomTheme.BORDER_MAX); refresh() })
+        ob.addView(btn(if (draft.border == 0) "off" else draft.border.toString(), 0.7f, 30) { })
+        ob.addView(btn("+", 0.6f, 30) { draft.border = CustomTheme.clamp(draft.border + 1, CustomTheme.BORDER_MIN, CustomTheme.BORDER_MAX); refresh() })
+        ob.addView(btn("Shadow −", 1.1f, 30) { draft.shadow = CustomTheme.clamp(draft.shadow - 1, CustomTheme.SHADOW_MIN, CustomTheme.SHADOW_MAX); refresh() })
+        ob.addView(btn(if (draft.shadow == 0) "off" else draft.shadow.toString(), 0.7f, 30) { })
+        ob.addView(btn("+", 0.6f, 30) { draft.shadow = CustomTheme.clamp(draft.shadow + 1, CustomTheme.SHADOW_MIN, CustomTheme.SHADOW_MAX); refresh() })
+        root.addView(ob)
+
         // ready colour sets
         val pr = row()
         for (i in CustomTheme.PRESET_NAMES.indices) {

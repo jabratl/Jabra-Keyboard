@@ -1,0 +1,6 @@
+HANDOFF Jabra-Keyboard v0.17.48 (P5)
+Done: P1 popup stem + 2-row grid (v0.17.44) | P2 key outline (v0.17.45) | P3 accents + , . grid (v0.17.46) | P4 Shift accents + key shadow (v0.17.47) | P5 key press animation + outline/shadow buttons in keyboard-side studio (v0.17.48). Current: v0.17.48.
+Changed: KeyPopup.kt (pressAnim, reset on detach) | ThemeStudio.kt (Outline / Shadow row) | SettingsGroups.kt (toggle) | typing/SettingsIndex.java (help) | app/build.gradle.kts | CHANGELOG.txt
+Checks: Java suite 121/121, bracket balance of 3 Kotlin files.
+NOT tested: Kotlin compile, phone (animation feel, fast typing, studio panel height at 360dp, dark/light).
+NEXT P6: (idea) swipe-typing trail or key-hint size polish; first compile + phone test of v0.17.44-48 together is the most valuable step now.

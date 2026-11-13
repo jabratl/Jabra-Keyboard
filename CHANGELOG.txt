@@ -1,3 +1,12 @@
+v0.17.48 - MODIFY (P5): Key press animation + outline / shadow buttons in the keyboard-side theme studio
+- WHY: Ridmik keys feel "alive" (a tiny press response); Jabra keys only changed colour. And the studio inside the keyboard could not set the outline / shadow added in v0.17.45 / v0.17.47.
+- What you get: (1) new setting "Key press animation" (Typing, default OFF = nothing changes): the pressed key shrinks to 93% in 45 ms and springs back in 90 ms. (2) Theme studio inside the keyboard: a new button row "Outline - value +" and "Shadow - value +" (off, 1-6 / 1-4), live in its preview, saved with the theme.
+- Code: KeyPopup.kt (pressAnim() + 2 call lines in touch(); scale reset on detach), ThemeStudio.kt (one button row), SettingsGroups.kt (1 toggle), typing/SettingsIndex.java (1 help line). // v0.17.48 marks hooks. Pref key_press_anim (default false). No permission, no storage change.
+- BROKE: nothing known. With the animation ON every key press starts a short ViewPropertyAnimator (cheap, but NOT measured on a weak phone).
+- TESTED here: full Java suite 121/121 green, bracket balance of the 3 Kotlin files OK.
+- NOT tested: Kotlin NOT compiled; NOT phone-tested (animation feel + fast typing / two fingers, keys with the bubble overlay, studio panel height at 360 dp with the extra row, dark + light).
+- Rollback: switch "Key press animation" OFF, or restore the 4 files from v0.17.47.
+
 v0.17.47 - MODIFY (P4): Shift-aware accents + key shadow + outline in the keyboard-side preview
 - WHY: P3 accents were always lower case; the keyboard-side theme preview did not show the outline; the theme studio had no depth option.
 - What you get: (1) Shift / Caps ON: the accent bar shows AND types upper case (u -> Ü, n -> Ñ, ss -> U+1E9E); other hold texts (digits, @emoji, symbols) are never changed. (2) Theme studio: new stepper "Key shadow" (off, 1-4 = 0.75 dp to 3 dp): a soft dark strip under every key (raised look), live in the mini preview. (3) The keyboard-side Theme studio preview now draws the outline and the shadow too; its presets keep your outline + shadow.

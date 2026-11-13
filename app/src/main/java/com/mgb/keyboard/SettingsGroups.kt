@@ -550,6 +550,7 @@ object SettingsGroups {
             toggle(g, "Long-press characters", "hint_on", true)
             toggle(g, "Accent letters on hold (é ñ ü ...)", "lp_accents", false)   // v0.17.46 (P3)
             toggle(g, "Symbols on hold of , and .", "lp_punct", false)   // v0.17.46 (P3)
+            toggle(g, "Key press animation", "key_press_anim", false)   // v0.17.48 (P5)
             textRow(g, "Long-press override", "hint_custom", "a=@,e=3 (letter=text, comma between)",   // v0.15.4 (N4): same cleaning as the keyboard Typing panel
                 { com.mgb.keyboard.typing.LongPressHints.normalizeCustom(it.replace('\n', ',')) }, "No a=@ pairs found")
             textRow(g, "Extra character row", "xrow_chars", "up to 10 characters, e.g. ()[]{}",
