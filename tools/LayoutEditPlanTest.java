@@ -7,6 +7,8 @@ public class LayoutEditPlanTest {
     static void t(String n, boolean c) { if (c) ok++; else { bad++; System.out.println("FAIL: " + n); } }
     static boolean eq(float a, float b) { return Math.abs(a - b) < 0.001f; }
 
+    static boolean allNamed() { for (String a : LayoutText.AT_ACTIONS) if (LayoutEditPlan.atName(a).equals(a)) return false; return true; }
+    static boolean sortedOk(java.util.List<LayoutCheck.Warn> l) { for (int i = 1; i < l.size(); i++) if (l.get(i - 1).severity < l.get(i).severity) return false; return true; }
     public static void main(String[] a) {
         // fields
         int c = LayoutEditPlan.fields(KeyDef.CHAR);
@@ -185,6 +187,60 @@ public class LayoutEditPlanTest {
         h.commit(e1, "empty w");
         t("history can undo", h.canUndo() && LayoutEditPlan.undoText(h.canUndo(), h.undoLabel()).equals("Undo: empty w"));
         t("history undo gives start", h.undo().equals(m) && h.canRedo() && LayoutEditPlan.redoText(h.canRedo(), h.redoLabel()).equals("Redo: empty w"));
+        // ---- v0.17.10 (K7) swipe fields, picker, warnings ----
+        t("char has swipe field", LayoutEditPlan.has(LayoutEditPlan.fields(KeyDef.CHAR), LayoutEditPlan.F_SWIPE));
+        t("action / spacer have no swipe field", !LayoutEditPlan.has(LayoutEditPlan.fields(KeyDef.ACTION), LayoutEditPlan.F_SWIPE) && !LayoutEditPlan.has(LayoutEditPlan.fields(KeyDef.SPACER), LayoutEditPlan.F_SWIPE));
+        t("swipe limit", LayoutEditPlan.limit(LayoutEditPlan.F_SWIPE) == LayoutText.MAX_OUT);
+        t("4 swipe names", LayoutEditPlan.SWIPE_NAMES.length == 4);
+        String[] pt = LayoutEditPlan.pickTitles();
+        t("8 picker groups", pt.length == 8);
+        for (int gi = 0; gi < pt.length; gi++) {
+            String[] it = LayoutEditPlan.pickItems(gi);
+            boolean good = it.length > 0;
+            java.util.HashSet<String> seen = new java.util.HashSet<String>();
+            for (String x : it) {
+                if (x.length() == 0 || !seen.add(x) || !LayoutText.cleanSwipe(x, LayoutText.MAX_OUT).equals(x)) { good = false; System.out.println("bad pick " + gi + " " + x); }
+                if (gi == 7 && !LayoutText.AT_ACTIONS.contains(x)) good = false;
+            }
+            t("picker group " + gi + " clean + unique", good);
+        }
+        t("picker unknown group empty", LayoutEditPlan.pickItems(99).length == 0 && LayoutEditPlan.pickItems(-1).length == 0);
+        t("picker has taka sign", java.util.Arrays.asList(LayoutEditPlan.pickItems(2)).contains("\u09F3"));
+        t("picker actions = whole whitelist", LayoutEditPlan.pickItems(7).length == LayoutText.AT_ACTIONS.size());
+        t("every @action has a name", allNamed());
+        t("pick name zwj", LayoutEditPlan.pickName("\u200D").contains("ZWJ") && LayoutEditPlan.pickName("\u200C").contains("ZWNJ"));
+        t("pick name action", LayoutEditPlan.pickName("@paste").equals("@paste = Paste"));
+        // a picked swipe text goes through the real op
+        LayoutDef sw = LayoutOps.setSwipe(m, "en_q", 0, "@paste");
+        t("swipe action saved", sw != m && LayoutEditPlan.findKey(sw, "en", "en_q").sw[0].equals("@paste") && LayoutOps.valid(sw) == null);
+        LayoutDef sw2 = LayoutOps.setSwipe(sw, "en_q", 2, "@bogus");
+        t("unknown @action refused (cleaned)", LayoutEditPlan.findKey(sw2, "en", "en_q").sw[2].equals(""));
+        LayoutDef sw3 = LayoutOps.setSwipe(m, "en_q", 1, "\u09F3");
+        t("taka swipe", LayoutEditPlan.findKey(sw3, "en", "en_q").sw[1].equals("\u09F3"));
+        // warnings
+        t("defaults: no warning of this layer worse than info", LayoutEditPlan.warnKeyIds(LayoutCheck.check(m), "en", LayoutCheck.LOW).isEmpty());
+        LayoutDef dup = LayoutOps.setOut(m, "en_w", 0, "q");
+        java.util.List<LayoutCheck.Warn> dw = LayoutCheck.check(dup);
+        java.util.Set<String> dk = LayoutEditPlan.warnKeyIds(dw, "en", LayoutCheck.LOW);
+        t("duplicate: both keys outlined", dk.contains("en_q") && dk.contains("en_w"));
+        t("duplicate: other layer untouched", LayoutEditPlan.warnKeyIds(dw, "pb", LayoutCheck.LOW).isEmpty());
+        t("duplicate: warn line", LayoutEditPlan.warnLine(LayoutEditPlan.warnsOf(dw, "en").get(0)).startsWith("[") );
+        LayoutCheck.Warn fx = null;
+        for (LayoutCheck.Warn wd : dw) if (LayoutCheck.W_DUP.equals(wd.code)) fx = wd;
+        LayoutDef fixed = fx == null ? dup : LayoutCheck.autoFix(dup, fx);
+        t("auto-fix clears the duplicate", fx != null && fixed != dup && LayoutEditPlan.warnKeyIds(LayoutCheck.check(fixed), "en", LayoutCheck.MED).isEmpty());
+        // coverage chips + first empty spot
+        LayoutDef gone = LayoutOps.makeSpacer(m, "en_z");
+        gone = LayoutOps.setOut(gone, "en_z", 0, "");
+        java.util.List<String> chips = LayoutEditPlan.coverageItems(LayoutCheck.check(gone), "en");
+        t("coverage chip z", chips.contains("z"));
+        t("first empty spot found (is a spacer)", LayoutEditPlan.firstSpacerId(gone, "en").length() > 0 && LayoutEditPlan.findKey(gone, "en", LayoutEditPlan.firstSpacerId(gone, "en")).kind == KeyDef.SPACER);
+        t("no empty spot = empty id", LayoutEditPlan.firstSpacerId(m, "en").equals("") || LayoutEditPlan.findKey(m, "en", LayoutEditPlan.firstSpacerId(m, "en")).kind == KeyDef.SPACER);
+        LayoutDef put = LayoutOps.fill(gone, "en_z", "z");
+        t("chip tap puts z back, warning gone", LayoutEditPlan.coverageItems(LayoutCheck.check(put), "en").isEmpty());
+        t("warnsOf sorted worst first", sortedOk(LayoutEditPlan.warnsOf(LayoutCheck.check(gone), "en")));
+        t("severity names", LayoutEditPlan.severityName(3).equals("High") && LayoutEditPlan.severityName(0).equals("Info"));
+        t("null safe", LayoutEditPlan.warnKeyIds(null, "en", 0).isEmpty() && LayoutEditPlan.coverageItems(null, "en").isEmpty() && LayoutEditPlan.warnsOf(null, "en").isEmpty() && LayoutEditPlan.warnLine(null).equals(""));
         System.out.println("LayoutEditPlanTest: " + ok + " ok, " + bad + " bad");
         if (bad > 0) System.exit(1);
     }
