@@ -988,3 +988,11 @@ Z132  v0.17.40  M7  Paste with format + Aa tag (Cards view)
  [ ] 4. Settings > Clipboard & tools > "Paste keeps format (card tap)" OFF: body tap = plain, Aa tap = with format.
  [ ] 5. WhatsApp / a plain field: pastes plain text, no crash. Password field: nothing odd.
  [ ] 6. After a formatted paste the clipboard list has NO duplicate of that clip and the order did not jump. List view / New panel style still paste plain.
+
+Z133  v0.17.41  M8  Format in List view + select mode (final check of the clipboard-format feature)
+ [ ] 1. Clipboard in List view: a clip copied with format shows a small "Aa" tag in its row. Row tap = pasted by the setting (default with format), "Aa" tap = the other way. Clipboard stays open.
+ [ ] 2. Same in Settings > Clipboard & tools > Panel style = New.
+ [ ] 3. Hold a clip = select mode, choose ONE clip with format, Paste = pasted with format. Choose 2 clips, Paste = plain, joined by a blank line. "Paste in 1 line" = plain.
+ [ ] 4. No "Aa" tag is shown while selecting; Cards view still works as in Z132.
+ [ ] 5. Privacy > Clear clipboard history now, then copy again: no crash, no old format comes back for a deleted clip.
+ [ ] 6. FINAL (whole feature): copy A, B, C with different formats in Chrome / Docs, paste each one into Gmail / Keep in its own format, and each one again as plain with the Aa tag.

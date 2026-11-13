@@ -241,6 +241,12 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
         val mode = try { com.mgb.keyboard.typing.ClipPasteMode.decide(keepFmtOnTap(), badge, store.hasFmt(item.text)) } catch (_: Throwable) { com.mgb.keyboard.typing.ClipPasteMode.PLAIN }
         pasteClip(item.text, item, false, mode)
     }
+    /** v0.17.40+ (M8): select-mode Paste: ONE chosen clip with a stored format follows the card-tap choice; several clips = plain, joined as before. */
+    private fun pasteChosen(chosen: List<ClipList.Item>, text: String) {
+        val one = if (chosen.size == 1) chosen[0] else null
+        val mode = if (one != null) { try { com.mgb.keyboard.typing.ClipPasteMode.decide(keepFmtOnTap(), false, store.hasFmt(one.text)) } catch (_: Throwable) { com.mgb.keyboard.typing.ClipPasteMode.PLAIN } } else com.mgb.keyboard.typing.ClipPasteMode.PLAIN
+        pasteClip(text, if (mode == com.mgb.keyboard.typing.ClipPasteMode.FORMAT) one else null, true, mode)
+    }
     private fun pasteClip(text: String, item: ClipList.Item?, rebuild: Boolean, mode: Int = com.mgb.keyboard.typing.ClipPasteMode.PLAIN) {
         var done = false
         if (mode == com.mgb.keyboard.typing.ClipPasteMode.FORMAT && item != null) {   // v0.17.40 (M7): format paste, any problem = plain paste below
@@ -693,7 +699,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
         if (chosen.isEmpty()) { msg = "Nothing selected"; confirmDel = false; refresh(); return }
         val text = if (oneLine) chosen.joinToString(" ") { it.text.replace(Regex("\\s*\\n\\s*"), " ").trim() } else chosen.joinToString("\n\n") { it.text }
         sel.leave(); confirmDel = false; moreOpen = false
-        pasteClip(text, null, true)   // v0.17.37 (M4)
+        if (oneLine) pasteClip(text, null, true) else pasteChosen(chosen, text)   // v0.17.37 (M4); v0.17.41 (M8): one clip = with format
     }
 
     private fun actMerge() {
@@ -876,7 +882,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
             else {
                 val joined = chosen.joinToString("\n\n") { it.text }
                 sel.leave(); confirmDel = false
-                pasteClip(joined, null, true)   // v0.17.37 (M4)
+                pasteChosen(chosen, joined)   // v0.17.37 (M4); v0.17.41 (M8): one clip = with format, several = plain
             }
         })
         r.addView(btn("Done", 1f, 34) { sel.leave(); confirmDel = false; refresh() })
@@ -978,7 +984,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
             if (sel.isOn) {   // v0.2.5.3: tap toggles, NO paste
                 sel.toggle(item); confirmDel = false; refresh()
             } else {
-                pasteClip(item.text, item, false)   // v0.17.37 (M4)
+                pasteItem(item, false)   // v0.17.37 (M4); v0.17.41 (M8): plain or with format (ClipPasteMode)
             }
         }
         val t = btn(prefix + item.text.replace("\n", " ⏎ "), 1f, rowH) { act() }
@@ -994,6 +1000,15 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
         t.setPadding(dp(8), 0, dp(8), 0)
         r.addView(t)
         try { ClipLook.tag(ctx, pf, item.text)?.let { tg -> tg.setPadding(dp(5), dp(1), dp(5), dp(1)); r.addView(tg) } } catch (_: Throwable) { }   // v0.10.24 (C1): kind tag (Link / Email / Code / Phone / Bangla)
+        try {   // v0.17.41 (M8): Aa tag = this clip has a stored format; tap = paste the OTHER way (not in select mode)
+            if (!selOn && store.hasFmt(item.text)) ClipLook.fmtTag(ctx, pf)?.let { ft ->
+                ft.setOnClickListener { try { host.feedback(ft) } catch (_: Throwable) { }; pasteItem(item, true) }
+                val flp = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT)
+                flp.setMargins(dp(3), 0, dp(3), 0)
+                ft.layoutParams = flp
+                r.addView(ft)
+            }
+        } catch (_: Throwable) { }
         try {   // v0.4.3: char count (small grey) between the text and the star
             val inf = infoLine(item)
             if (inf.isNotEmpty()) {
