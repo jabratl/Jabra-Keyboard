@@ -915,3 +915,11 @@ Z123 (v0.17.30, UI6: Clipboard top buttons follow the keyboard keys)
  [ ] 4. "Clear" has a red label that is easy to read. Tap it: "Sure?" / "Yes, clear" still asks first, red label still readable. Try one light and one dark theme.
  [ ] 5. Set Look = Classic: the panel looks exactly like v0.17.29 (no capsules, no blue Done, no red label).
  [ ] 6. Same in the New panel style (Panel style setting) and in Borderless key mode: everything works, only colours / shapes differ.
+
+Z124 (v0.17.31, UI7: hold preview bubble)
+ [ ] 1. More settings: Key popup = ON. In any text box press and HOLD "m" until "?" is typed: the bubble above the key changes from "m" to "?" and stays while you hold. Lift: the bubble disappears, only ONE "?" typed (no "m").
+ [ ] 2. Same for a number-row key (hold "1" or "q" = its hint), for a key in the top row and one at the far right edge: the bubble stays on screen.
+ [ ] 3. Fast bubble ON and OFF: both show the "?" bubble, no flicker.
+ [ ] 4. Key popup = OFF: no bubble at all (hold still types the hint as before).
+ [ ] 5. Custom keyboard ON, a key with ONE long-press text "?": hold = "?" bubble. A key with 2+ options = the slide bar as before (no extra bubble). Long-press text "@paste" = no bubble, the action runs.
+ [ ] 6. Quick tap on "m" still shows the normal "m" bubble and types "m". Hold, slide off the key, lift: bubble hides, nothing breaks.

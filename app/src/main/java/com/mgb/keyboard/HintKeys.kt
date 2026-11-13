@@ -49,6 +49,7 @@ object HintKeys {
                 val hint = (if (isNum) HintStyle.digitHintFor(c, prefs.bool("hint_digits", false), prefs.bool("numrow_bn", false), host.banglaNumbers()) else LongPressHints.hintFor(c, prefs.bool("numrow", true), prefs.str("hint_custom", ""))) ?: return@Runnable   // v0.5.2 (custom override first); v0.9.4: digitHintFor (numrow_bn)
                 fired = true
                 host.typeHint(hint)
+                HoldBubble.show(b, hint, prefs)   // v0.17.31 (UI7): the bubble shows what the hold typed
                 if (KeyCfg.hintBuzz(b)) host.hintFeedback(b)   // v0.9.1: no 2nd buzz when fb_down already buzzed at finger-down
             } catch (_: Throwable) { }
         }

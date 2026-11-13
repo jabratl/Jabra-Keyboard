@@ -132,6 +132,7 @@ class CustomRows(private val host: CustomHost, private val prefs: JabraPrefs, pr
                     return@Runnable
                 }
                 host.typeExtra(k, lp)
+                HoldBubble.show(b, lp, prefs)   // v0.17.31 (UI7): the bubble shows what the hold typed
                 if (KeyCfg.hintBuzz(b)) host.feedbackAt(b)
             } catch (_: Throwable) { }
         }
