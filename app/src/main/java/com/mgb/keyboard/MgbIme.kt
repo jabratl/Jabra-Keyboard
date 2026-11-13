@@ -363,12 +363,14 @@ class MgbIme : InputMethodService() {
             pwdField = v == InputType.TYPE_TEXT_VARIATION_PASSWORD || v == InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD ||
                 v == InputType.TYPE_TEXT_VARIATION_WEB_PASSWORD ||
                 (cls == InputType.TYPE_CLASS_NUMBER && v == InputType.TYPE_NUMBER_VARIATION_PASSWORD)   // v0.0.6
-            if (sgTools) { sgTools = false; showLetters() }   // v0.10.1 (G2): a new field starts with the suggestion row again
+            val keepP = try { com.mgb.keyboard.typing.PanelKeep.keepPanel(restarting, inPanel, autoNumpad) } catch (_: Throwable) { false }   // v0.17.35 (M2): input restart must not close a panel the user opened (cursor pad, clipboard ...)
+            if (sgTools) { sgTools = false; if (!(try { com.mgb.keyboard.typing.PanelKeep.keepForRowReset(inPanel, autoNumpad) } catch (_: Throwable) { false })) showLetters() }   // v0.10.1 (G2): a new field starts with the suggestion row again; v0.17.35 (M2): not on a restart with a panel open
             captureClip()   // v0.0.6: catch text copied while we were not listening
             // v0.0.5: number / phone field -> number pad automatically (setting "numpad_auto"); other field -> back to letters
             try {
                 val isNum = cls == InputType.TYPE_CLASS_NUMBER || cls == InputType.TYPE_CLASS_PHONE
-                if (isNum && prefs.bool("numpad_auto", true)) { autoNumpad = true; showPanel("numpad") }
+                if (keepP) { }   // v0.17.35 (M2): restart with a user-opened panel: leave it alone
+                else if (isNum && prefs.bool("numpad_auto", true)) { autoNumpad = true; showPanel("numpad") }
                 else if (autoNumpad) { autoNumpad = false; showLetters() }
             } catch (_: Throwable) { }
             try { shiftSt.reset(); autoCapUpdate() } catch (_: Throwable) { }   // v0.0.9: new field = shift/caps off, then sentence-start rule
@@ -404,7 +406,7 @@ class MgbIme : InputMethodService() {
         val p = com.mgb.keyboard.typing.AppProfileApply.find(name, store.get(), com.mgb.keyboard.typing.ProfileCodec.starters()) ?: return   // deleted profile = ignored
         apLast = name
         if (!com.mgb.keyboard.typing.AppProfileApply.differs(p.values, getSharedPreferences("jabra", MODE_PRIVATE).all)) return   // nothing would change: no rebuild
-        if (store.apply(p) && !autoNumpad) showLetters()   // number pad open (number field): the new look shows when the letters come back
+        if (store.apply(p) && !autoNumpad && !inPanel) showLetters()   // number pad open (number field): the new look shows when the letters come back
     }
 
     /** v0.3.1: no full-screen "extract" editor in landscape (it hides the app and breaks many apps). Hidden pref fs_extract = true gives the old system behaviour. */
@@ -1008,7 +1010,7 @@ class MgbIme : InputMethodService() {
         val c = container ?: return
         commitWord()
         if (PanelGuard.blocked(this, name)) { BackupStore.toast(this, "Panel switched off after 2 crashes. See Health Check in the app screen."); showLetters(); return }   // v0.5.3
-        val v = try { if (name == "clipboard") { try { clipPanel.fitPx = if (!inPanel && c.height > 0) c.height else lettersH } catch (_: Throwable) { }; clipPanel.build() } else if (name == "format") fmtPanel.build() else if (name == "more") morePanel.build() else if (name == "emoji") emojiPanel.build() else if (name == "typing") typingPanel.build() else if (name == "size") sizePanel.build() else if (name == "toolbar") toolbarPanel.build() else if (name == "tbquick") toolbarQuick.build() else if (name == "pad") padPanel.build() else if (name == "themes") themePanel.build() else if (name == "vault") vaultPanel.build() else if (name == "tt") ttPanel.build() else if (name == "profiles") profilePanel.build() else if (name == "keymap") { try { keyMapPanel.fitPx = if (!inPanel && c.height > 0) c.height else lettersH } catch (_: Throwable) { }; keyMapPanel.build() } else if (name == "tstudio") studioPanel.build() else panels.build(name) } catch (_: Throwable) { try { PanelGuard.failed(this, name) } catch (_: Throwable) { }; null }   // v0.0.8: "format"; v0.1.0: "emoji"; v0.1.1: "typing"
+        val v = try { if (name == "clipboard") { try { clipPanel.fitPx = if (!inPanel && c.height > 0) c.height else lettersH } catch (_: Throwable) { }; clipPanel.build() } else if (name == "format") fmtPanel.build() else if (name == "more") morePanel.build() else if (name == "emoji") emojiPanel.build() else if (name == "typing") typingPanel.build() else if (name == "size") sizePanel.build() else if (name == "toolbar") toolbarPanel.build() else if (name == "tbquick") toolbarQuick.build() else if (name == "pad") padPanel.build(inPanel && shownPanel == "pad") else if (name == "themes") themePanel.build() else if (name == "vault") vaultPanel.build() else if (name == "tt") ttPanel.build() else if (name == "profiles") profilePanel.build() else if (name == "keymap") { try { keyMapPanel.fitPx = if (!inPanel && c.height > 0) c.height else lettersH } catch (_: Throwable) { }; keyMapPanel.build() } else if (name == "tstudio") studioPanel.build() else panels.build(name) } catch (_: Throwable) { try { PanelGuard.failed(this, name) } catch (_: Throwable) { }; null }   // v0.0.8: "format"; v0.1.0: "emoji"; v0.1.1: "typing"
         if (v == null) { showLetters(); return }
         try { PanelGuard.ok(this, name) } catch (_: Throwable) { }   // v0.5.3
         try { JabraOneHand.apply(this, prefs, v) } catch (_: Throwable) { }   // v0.1.0

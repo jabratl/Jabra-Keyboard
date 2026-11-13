@@ -942,3 +942,11 @@ Z126 (v0.17.34 M1: Space before , . ! ? in normal typing)
  [ ] 6. Tap a suggestion (word + space) then ",": the space is removed as in v0.10.6.
  [ ] 7. Switch the setting OFF: "hello" SPACE "," keeps "hello ,".
 
+Z127 (v0.17.35 M2: Cursor pad stays open)
+ [ ] 1. Open the Cursor pad (toolbar). Tap into the text, move the cursor, select a word in the app: the pad stays on screen (try a notes app, a browser field, a chat app).
+ [ ] 2. Tap Select (it turns blue "Select ON"), then select text in the app / rotate nothing: Select stays ON until you tap it again or tap ABC.
+ [ ] 3. ABC closes the pad and brings the letters (with the suggestion row if it is ON). Open the pad again: Select starts OFF.
+ [ ] 4. Open the Clipboard panel, tap in the app text: the Clipboard also stays.
+ [ ] 5. Close the keyboard and open it in another field with the letters showing: letters as before. A number field with "Number pad automatically" ON: the number pad still opens by itself.
+ [ ] 6. App profile per app ON (Profiles > App): switching to a mapped app while a panel is open does not close the panel.
+

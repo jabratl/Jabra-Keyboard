@@ -99,10 +99,11 @@ class PadPanel(private val ctx: Context, private val host: JabraHost, private va
     }
 
     /** Returns null on any problem -> keyboard shows normal letters. */
-    fun build(): View? = try { make() } catch (_: Throwable) { null }
+    /** v0.17.35 (M2): keepSelect = the pad is rebuilt while it is already open (Select stays as the user left it). A fresh open starts with Select OFF as before. */
+    fun build(keepSelect: Boolean = false): View? = try { make(keepSelect) } catch (_: Throwable) { null }
 
-    private fun make(): View {
-        state.setSelect(false)   // Select always starts OFF when the pad opens
+    private fun make(keepSelect: Boolean): View {
+        if (!keepSelect) state.setSelect(false)   // Select starts OFF when the pad opens (v0.17.35: not when it is only rebuilt)
         val root = LinearLayout(ctx)
         root.orientation = LinearLayout.VERTICAL
         root.setBackgroundColor(Color.parseColor("#DDDDDD"))
@@ -138,7 +139,7 @@ class PadPanel(private val ctx: Context, private val host: JabraHost, private va
         root.addView(note("Select ON + arrows / Home / End = extend the selection. Arrows, Home, End need an app that reads key events (same limit as PC mode); All / Copy / Cut / Paste work in every app."))
 
         val r4 = row()
-        r4.addView(pk("ABC", 1f) { host.showLetters() })
+        r4.addView(pk("ABC", 1f) { state.setSelect(false); host.showLetters() })   // v0.17.35 (M2): ABC is the only way out; Select ends with it
         root.addView(r4)
         return root
     }
