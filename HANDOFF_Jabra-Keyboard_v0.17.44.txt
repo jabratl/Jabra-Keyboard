@@ -1,0 +1,6 @@
+HANDOFF Jabra-Keyboard v0.17.44 (P1)
+Done: ... v0.17.43 (clipboard/pad notes) | P1 = Ridmik-style popup. Current version: v0.17.44.
+Changed: BubbleOverlay.kt (stem + bold) | KeyPopup.kt (gap 6dp, passes key rect) | LpBar.kt (2-row grid, move(x,y)) | CustomRows.kt, SymKeyTouch.kt (pass rawY) | layout/LpBarPlan.java (grid rules) | tools/LpBarPlanTest.java (+11) | app/build.gradle.kts (version) | CHANGELOG.txt
+Checks: Java suite 120/120, bracket balance of 5 Kotlin files.
+NOT tested: Kotlin compile, phone (stem dark/light/themes, 360dp, grid near screen top, row slide).
+NEXT P2: keyboard-design (Theme Studio) upgrade. NEXT P3: accent popup (long-press vowel -> u: ù û ū ü), default "," "." options, MAX_LPLIST 8 -> 16.

@@ -53,6 +53,23 @@ public final class LpBarPlan {
         return Math.max(0, Math.min(count - 1, i));
     }
 
+    // v0.17.44 (P1): 6 or more options = 2-row grid (Ridmik style). Option 0 sits in the BOTTOM row at the key, the rest fill the top row.
+    public static final int GRID_MIN = 6;
+
+    public static int rows(int count) { return count >= GRID_MIN ? 2 : 1; }
+
+    /** Cells per row (the bottom row is always full; the top row may have fewer). */
+    public static int perRow(int count) { int r = rows(count); return r <= 1 ? Math.max(count, 0) : (count + r - 1) / r; }
+
+    /** Option index under the finger in a 2-row grid (raw screen x / y). Below the grid = bottom row, above = top row; columns are clamped. */
+    public static int indexAtGrid(float rawX, float rawY, int left, int top, int cell, int rowH, int perRow, int count) {
+        if (count <= 0 || cell <= 0 || rowH <= 0 || perRow <= 0) return 0;
+        int c = Math.max(0, Math.min(perRow - 1, (int) Math.floor((rawX - left) / (double) cell)));
+        int r = Math.max(0, Math.min(1, (int) Math.floor((rawY - top) / (double) rowH)));
+        int i = r == 1 ? c : perRow + c;
+        return Math.max(0, Math.min(count - 1, i));
+    }
+
     /** Text drawn in a cell: an @action shows its name without "@". */
     public static String shown(String item) {
         if (item == null) return "";

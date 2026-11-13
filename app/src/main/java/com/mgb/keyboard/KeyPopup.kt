@@ -232,12 +232,12 @@ object KeyPopup {
                 sp = 26f
             }
             val r = relRect(b, c) ?: return false
-            val gap = (4 * d).toInt()
+            val gap = (6 * d).toInt()   // v0.17.44 (P1): 4 -> 6 dp = room for the stem
             if (com.mgb.keyboard.typing.BubblePlan.mode(true, true, r[1], h, gap) != com.mgb.keyboard.typing.BubblePlan.OVERLAY) return false
             val x = com.mgb.keyboard.typing.BubblePlan.x(r[0], b.width, w, c.width)
             val y = com.mgb.keyboard.typing.BubblePlan.y(r[1], h, gap)
             try { if (ct?.visibility == View.VISIBLE) { ct?.visibility = View.INVISIBLE; if (cpw != null) { hnd.removeCallbacks(idle); hnd.postDelayed(idle, IDLE_MS) } } } catch (_: Throwable) { }   // a window bubble of the last key goes away
-            o.show(label, x, y, w, h, android.util.TypedValue.applyDimension(android.util.TypedValue.COMPLEX_UNIT_SP, sp, b.resources.displayMetrics))
+            o.show(label, x, y, w, h, android.util.TypedValue.applyDimension(android.util.TypedValue.COMPLEX_UNIT_SP, sp, b.resources.displayMetrics), r[0], b.width, gap)   // v0.17.44 (P1): key rect -> stem
             owner = b
             return true
         } catch (_: Throwable) {

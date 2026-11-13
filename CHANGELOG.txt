@@ -1,3 +1,12 @@
+v0.17.44 - MODIFY (P1): Ridmik-style key bubble (stem) + 2-row long-press grid
+- WHY: compared with the Ridmik video: Ridmik's bubble is bold with a neck that joins the key, and a long-press with many options opens a 2-row grid you slide over. Jabra had a floating outlined pill and only a 1-row bar.
+- What you get: (1) key bubble: bold letter + a small tapered neck joining the bubble to its key (same colours as before, still follows theme). (2) long-press options bar: 6 or more options = 2 rows (option 1 is in the bottom row right above the key, the rest in the top row); slide up/down/left/right, lift = type. 1-5 options = the same single bar as before. Lift without moving = first option, as before.
+- Code: BubbleOverlay.kt (stem + bold, show() got 3 optional params), KeyPopup.kt (gap 4 -> 6 dp + passes key rect), LpBar.kt (grid window, move(rawX, rawY)), CustomRows.kt + SymKeyTouch.kt (1 call each: pass e.rawY), layout/LpBarPlan.java (rows / perRow / indexAtGrid), tools/LpBarPlanTest.java (+11 checks). // v0.17.44 marks every hook. No new pref, no permission, no storage change.
+- BROKE: nothing known. Top-row keys with less than 2 dp spare room above them may now use the old window bubble (no stem there).
+- TESTED here: full Java suite 120/120 green, bracket balance of the 5 Kotlin files OK.
+- NOT tested: Kotlin NOT compiled; NOT phone-tested (stem look dark + light + each theme, 360 dp, grid near the top of the screen, slide between rows, Bangla layout).
+- Rollback: restore the 7 files from v0.17.43 (or set gap back to 4 and drop the last 3 args of o.show(...) = no stem).
+
 v0.17.43 - MODIFY (UX): Cursor pad note is shorter and clearer
 - WHY: the grey help text under the pad keys was one 245-character sentence (it took extra height on a 360 dp screen and was hard to scan).
 - What you get: two short lines: "Select ON: arrows, Home, End, Top, Bottom extend the selection." / "Home / End = this line, Top / Bottom = whole text. Arrows need an app that reads key events." Same facts about Select, line vs whole text and the key-event limit. The line "All / Copy / Cut / Paste work in every app" was dropped (nothing says they do not). No key, handler, id or layout change.

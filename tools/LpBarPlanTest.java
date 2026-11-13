@@ -58,6 +58,20 @@ public class LpBarPlanTest {
         eq("parse cuts long item", LpBarPlan.parse("abcdefghijklmnopqrstuvwxyz").get(0).length(), 16);
         eq("join", LpBarPlan.join(Arrays.asList("a", "b")), "a b");
         eq("join null", LpBarPlan.join(null), "");
+
+        // v0.17.44 (P1): 2-row grid. 8 options = 2 rows x 4; option 0..3 bottom row (under the key), 4..7 top row.
+        eq("rows 5", LpBarPlan.rows(5), 1);
+        eq("rows 6", LpBarPlan.rows(6), 2);
+        eq("perRow 8", LpBarPlan.perRow(8), 4);
+        eq("perRow 7", LpBarPlan.perRow(7), 4);
+        eq("perRow 3 single", LpBarPlan.perRow(3), 3);
+        eq("grid bottom-left = first", LpBarPlan.indexAtGrid(105f, 500f, 100, 400, 80, 50, 4, 8), 0);
+        eq("grid bottom col 2", LpBarPlan.indexAtGrid(270f, 460f, 100, 400, 80, 50, 4, 8), 2);
+        eq("grid top row col 0", LpBarPlan.indexAtGrid(105f, 410f, 100, 400, 80, 50, 4, 8), 4);
+        eq("grid top row col 3", LpBarPlan.indexAtGrid(9999f, 380f, 100, 400, 80, 50, 4, 8), 7);
+        eq("grid finger on key (below) = bottom row", LpBarPlan.indexAtGrid(105f, 900f, 100, 400, 80, 50, 4, 8), 0);
+        eq("grid short top row clamps to last", LpBarPlan.indexAtGrid(9999f, 410f, 100, 400, 80, 50, 4, 7), 6);
+        eq("grid zero count", LpBarPlan.indexAtGrid(5f, 5f, 0, 0, 80, 50, 4, 0), 0);
         eq("round trip", LpBarPlan.parse(LpBarPlan.join(Arrays.asList("\u0995", "@tab", "x"))), Arrays.asList("\u0995", "@tab", "x"));
 
         // model round trip through ops + codec

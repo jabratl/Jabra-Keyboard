@@ -3,6 +3,8 @@ package com.mgb.keyboard
 import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Paint
+import android.graphics.Path
+import android.graphics.Typeface
 import android.graphics.RectF
 import android.view.MotionEvent
 import android.view.View
@@ -27,6 +29,10 @@ class BubbleOverlay(ctx: Context) : View(ctx) {
     private var bh = 0
     private var radius = 0f
     private var strokeW = 1f
+    private val stem = Path()   // v0.17.44 (P1): Ridmik-style neck between the bubble and its key
+    private var kl = 0
+    private var kw = 0
+    private var gp = 0
 
     init {
         isClickable = false
@@ -35,6 +41,7 @@ class BubbleOverlay(ctx: Context) : View(ctx) {
         strokeP.style = Paint.Style.STROKE
         fillP.style = Paint.Style.FILL
         textP.textAlign = Paint.Align.CENTER
+        try { textP.typeface = Typeface.DEFAULT_BOLD } catch (_: Throwable) { }   // v0.17.44 (P1): bold letter like Ridmik
     }
 
     fun setLook(fill: Int, stroke: Int, strokeWidth: Float, textColor: Int, cornerRadius: Float) {
@@ -48,19 +55,20 @@ class BubbleOverlay(ctx: Context) : View(ctx) {
     }
 
     /** Show [label] in a bubble of [w] x [h] px at [left] / [top] (container pixels). */
-    fun show(label: String, left: Int, top: Int, w: Int, h: Int, textPx: Float) {
-        if (shown) invalidate(bl, bt, bl + bw, bt + bh)   // old place
+    fun show(label: String, left: Int, top: Int, w: Int, h: Int, textPx: Float, keyLeft: Int = 0, keyW: Int = 0, gapPx: Int = 0) {
+        if (shown) invalidate(bl, bt, bl + bw, bt + bh + gp)   // old place (+ stem)
         text = label
         bl = left; bt = top; bw = w; bh = h
+        kl = keyLeft; kw = keyW; gp = if (keyW > 0 && gapPx > 0) gapPx else 0
         textP.textSize = textPx
         shown = true
-        invalidate(bl, bt, bl + bw, bt + bh)              // new place
+        invalidate(bl, bt, bl + bw, bt + bh + gp)         // new place (+ stem)
     }
 
     fun hideNow() {
         if (!shown) return
         shown = false
-        invalidate(bl, bt, bl + bw, bt + bh)
+        invalidate(bl, bt, bl + bw, bt + bh + gp)
     }
 
     fun isShown2(): Boolean = shown
@@ -71,6 +79,20 @@ class BubbleOverlay(ctx: Context) : View(ctx) {
         box.set(bl + half, bt + half, bl + bw - half, bt + bh - half)
         canvas.drawRoundRect(box, radius, radius, fillP)
         canvas.drawRoundRect(box, radius, radius, strokeP)
+        if (gp > 0) {   // v0.17.44 (P1): neck from the bubble bottom to the key top; covers the bottom stroke, only the 2 sides get a line
+            val yb = (bt + bh).toFloat()
+            val yTop = yb - strokeW - 0.5f
+            val yKey = yb + gp
+            val kc = (kl + kw / 2f).coerceIn(bl + radius, bl + bw - radius)
+            val topHalf = Math.min(bw / 2f - radius, kw * 0.35f).coerceAtLeast(strokeW * 3f)
+            val botHalf = (kw / 2f - strokeW * 3f).coerceAtLeast(topHalf)
+            stem.reset()
+            stem.moveTo(kc - topHalf, yTop); stem.lineTo(kc + topHalf, yTop)
+            stem.lineTo(kl + kw / 2f + botHalf, yKey); stem.lineTo(kl + kw / 2f - botHalf, yKey); stem.close()
+            canvas.drawPath(stem, fillP)
+            canvas.drawLine(kc - topHalf, yb - strokeW, kl + kw / 2f - botHalf, yKey, strokeP)
+            canvas.drawLine(kc + topHalf, yb - strokeW, kl + kw / 2f + botHalf, yKey, strokeP)
+        }
         val fm = textP.fontMetrics
         val cy = bt + bh / 2f - (fm.ascent + fm.descent) / 2f
         canvas.drawText(text, bl + bw / 2f, cy, textP)

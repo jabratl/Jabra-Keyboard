@@ -48,7 +48,7 @@ object SymKeyTouch {
                             }
                             false
                         }
-                        MotionEvent.ACTION_MOVE -> if (barOn) { LpBar.move(e.rawX); true } else {
+                        MotionEvent.ACTION_MOVE -> if (barOn) { LpBar.move(e.rawX, e.rawY); true } else {
                             if (e.x < 0f || e.y < 0f || e.x > v.width || e.y > v.height) h.removeCallbacks(r)
                             if (hasSw && !fired) {
                                 val t = SwipeDir.textFor(k, SwipeDir.classify(e.x - x0, e.y - y0, minPx))

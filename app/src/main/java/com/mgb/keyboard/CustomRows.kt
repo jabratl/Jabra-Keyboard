@@ -152,7 +152,7 @@ class CustomRows(private val host: CustomHost, private val prefs: JabraPrefs, pr
                         }
                         false
                     }
-                    MotionEvent.ACTION_MOVE -> if (barOn) { LpBar.move(e.rawX); true } else {   // v0.17.20 (L5a)
+                    MotionEvent.ACTION_MOVE -> if (barOn) { LpBar.move(e.rawX, e.rawY); true } else {   // v0.17.20 (L5a)
                         if (e.x < 0f || e.y < 0f || e.x > v.width || e.y > v.height) h.removeCallbacks(r)
                         if (hasSw && !fired) {   // v0.17.7 (K5b): swipe up / down / left / right; a swipe with a text cancels the long-press
                             val t = SwipeDir.textFor(k, SwipeDir.classify(e.x - x0, e.y - y0, minPx))
