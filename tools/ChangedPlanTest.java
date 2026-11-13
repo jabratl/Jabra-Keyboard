@@ -32,7 +32,7 @@ public class ChangedPlanTest {
             {"Languages & layouts", "bn_layout", "Bangla"}, {"Languages & layouts", "sp_step", "Switching"}, {"Languages & layouts", "pc_mode", "Number row & mode"},
             {"Keys & gestures", "haptic", "Feedback"}, {"Keys & gestures", "ac_on", "Smart typing"}, {"Keys & gestures", "cursor_speed", "Timing"}, {"Keys & gestures", "key_qm", "Extra keys"},
             {"Typing", "autocap", "Editing"}, {"Typing", "hint_on", "Spaces & hints"}, {"Typing", "zzz", ""},
-            {"Clipboard & tools", "clip_on", "History"}, {"Clipboard & tools", "clip_view", "Look of clips"}, {"Clipboard & tools", "clip_order", "Look of clips"}, {"Clipboard & tools", "clip_fit", "Look of clips"}, {"Clipboard & tools", "panel_ui", "Look of clips"}, {"Clipboard & tools", "clip_hold", "Look of clips"}, {"Clipboard & tools", "clip_btn_pct", "Look of clips"}, {"Clipboard & tools", "clip_card_pct", "Look of clips"}, {"Clipboard & tools", "clip_sens", "Privacy"}, {"Clipboard & tools", "clip_expire", "Privacy"},
+            {"Clipboard & tools", "clip_on", "History"}, {"Clipboard & tools", "clip_stay", "History"}, {"Clipboard & tools", "clip_view", "Look of clips"}, {"Clipboard & tools", "clip_order", "Look of clips"}, {"Clipboard & tools", "clip_fit", "Look of clips"}, {"Clipboard & tools", "panel_ui", "Look of clips"}, {"Clipboard & tools", "clip_hold", "Look of clips"}, {"Clipboard & tools", "clip_btn_pct", "Look of clips"}, {"Clipboard & tools", "clip_card_pct", "Look of clips"}, {"Clipboard & tools", "clip_sens", "Privacy"}, {"Clipboard & tools", "clip_expire", "Privacy"},
             {"Tools & Panels", "edit_bar", "Toolbar"}, {"Tools & Panels", "tb_vault", "Toolbar"}, {"Tools & Panels", "fmt_on", "Formatter"}, {"Tools & Panels", "zzz", ""}, {"Look", "nope", ""}, {null, "x", ""}, {"Look", null, ""},
         };
         for (String[] r : rows) eq("sectionOf " + r[0] + "/" + r[1], ChangedPlan.sectionOf(r[0], r[1]), r[2]);
@@ -51,7 +51,7 @@ public class ChangedPlanTest {
         // v0.15.3 (N3): every section of the new groups is used by at least one row, and every row of those groups has a section
         String[][] ng = {
             {"Typing", "bs_repeat,bs_word,autocap,enter_action,ds_period,ds_tab,hint_on,hint_custom,xrow_chars"},
-            {"Clipboard & tools", "clip_on,clip_lines,clip_view,clip_sort,clip_order,clip_count,clip_expire,clip_fit,clip_sens,panel_ui,clip_hold,clip_btn_pct,clip_card_pct"},
+            {"Clipboard & tools", "clip_on,clip_stay,clip_lines,clip_view,clip_sort,clip_order,clip_count,clip_expire,clip_fit,clip_sens,panel_ui,clip_hold,clip_btn_pct,clip_card_pct"},
             {"Tools & Panels", "edit_bar,tb_vault,tb_custom,tb_auto,tb_fold,tb_hpct,tb_ipct,fmt_on,vault_sort,vault_dest"} };
         for (String[] g : ng) {
             java.util.Set<String> used = new java.util.HashSet<>();

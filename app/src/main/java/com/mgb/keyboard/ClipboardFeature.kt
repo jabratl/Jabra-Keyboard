@@ -216,6 +216,21 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
     }
     private fun refreshTop() { keepY = -1; fromRefresh = false; host.showPanel("clipboard") }
 
+    // v0.17.37 (M4): ONE place for "after a paste". clip_stay (default ON) = stay in the clipboard, OFF = old way (back to letters).
+    private var pasteToast: android.widget.Toast? = null
+    private fun stayOn(): Boolean = try { JabraPrefs(ctx).bool("clip_stay", true) } catch (_: Throwable) { true }
+    private fun afterPaste(rebuild: Boolean) {
+        if (!stayOn()) { host.showLetters(); return }
+        try { pasteToast?.cancel(); val t = android.widget.Toast.makeText(ctx, "Pasted", android.widget.Toast.LENGTH_SHORT); pasteToast = t; t.show() } catch (_: Throwable) { }
+        if (rebuild) refresh()   // select mode was left: redraw, scroll position kept (keepY)
+    }
+    private fun pasteClip(text: String, item: ClipList.Item?, rebuild: Boolean) {
+        host.commitWord()
+        host.typeText(text)
+        if (item != null) store.noteUse(item)   // v0.4.3 (stay = no redraw, so the order does not jump)
+        afterPaste(rebuild)
+    }
+
     /** Returns null on any problem -> keyboard shows normal letters. */
     fun build(): View? = try { make() } catch (_: Throwable) { null }
 
@@ -343,7 +358,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
                 { it2 -> store.togglePin(it2); refresh() },
                 { it2 -> keepUndo(listOf(it2)); store.remove(it2); refresh() },
                 SelectMode(selOn, { x -> sel.isSelected(x) }, { x -> sel.toggle(x); confirmDel = false; refresh() }, { x -> sel.enterWith(x); confirmDel = false; refresh() },
-                    { x -> store.noteUse(x) }, { x -> infoLine(x) }, clipHoldMs()), ClipOrder.recentFirst(ordMode), ordSwap)   // v0.4.3; v0.15.2: order + header tap
+                    { x -> store.noteUse(x) }, { x -> infoLine(x) }, clipHoldMs(), { afterPaste(false) }), ClipOrder.recentFirst(ordMode), ordSwap)   // v0.4.3; v0.15.2: order + header tap
         } else null
         if (cards != null) {
             col.addView(cards)
@@ -534,7 +549,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
                 { it2 -> store.togglePin(it2); refresh() },
                 { it2 -> keepUndo(listOf(it2)); store.remove(it2); refresh() },
                 SelectMode(selOn, { x -> sel.isSelected(x) }, { x -> sel.toggle(x); confirmDel = false; refresh() }, { x -> sel.enterWith(x); confirmDel = false; refresh() },
-                    { x -> store.noteUse(x) }, { x -> infoLine(x) }, clipHoldMs()), ClipOrder.recentFirst(ordMode), ordSwap)
+                    { x -> store.noteUse(x) }, { x -> infoLine(x) }, clipHoldMs(), { afterPaste(false) }), ClipOrder.recentFirst(ordMode), ordSwap)
         } else null
         if (cards != null) {
             col.addView(cards)
@@ -654,9 +669,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
         if (chosen.isEmpty()) { msg = "Nothing selected"; confirmDel = false; refresh(); return }
         val text = if (oneLine) chosen.joinToString(" ") { it.text.replace(Regex("\\s*\\n\\s*"), " ").trim() } else chosen.joinToString("\n\n") { it.text }
         sel.leave(); confirmDel = false; moreOpen = false
-        host.commitWord()
-        host.typeText(text)
-        host.showLetters()
+        pasteClip(text, null, true)   // v0.17.37 (M4)
     }
 
     private fun actMerge() {
@@ -830,9 +843,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
             else {
                 val joined = chosen.joinToString("\n\n") { it.text }
                 sel.leave(); confirmDel = false
-                host.commitWord()
-                host.typeText(joined)
-                host.showLetters()
+                pasteClip(joined, null, true)   // v0.17.37 (M4)
             }
         })
         r.addView(btn("Done", 1f, 34) { sel.leave(); confirmDel = false; refresh() })
@@ -862,9 +873,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
             else {
                 val one = chosen.joinToString(" ") { it.text.replace(Regex("\\s*\\n\\s*"), " ").trim() }
                 sel.leave(); confirmDel = false
-                host.commitWord()
-                host.typeText(one)
-                host.showLetters()
+                pasteClip(one, null, true)   // v0.17.37 (M4)
             }
         })
         if (toVault != null) {   // v0.4.4: copy the ticked clips into the Text Vault (folder last used there); clips stay in the history
@@ -936,10 +945,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
             if (sel.isOn) {   // v0.2.5.3: tap toggles, NO paste
                 sel.toggle(item); confirmDel = false; refresh()
             } else {
-                host.commitWord()
-                host.typeText(item.text)
-                store.noteUse(item)   // v0.4.3
-                host.showLetters()
+                pasteClip(item.text, item, false)   // v0.17.37 (M4)
             }
         }
         val t = btn(prefix + item.text.replace("\n", " ⏎ "), 1f, rowH) { act() }

@@ -959,3 +959,10 @@ Z128 (v0.17.36 M3: Cursor pad Top / Bottom)
  [ ] 6. Empty field and a one-word field: nothing breaks. Try Bangla text and a very long text (more than 20000 characters) and a browser / WebView field (an app that ignores it = nothing happens, no crash).
  [ ] 7. ABC still closes the pad (v0.17.35: Select goes OFF), Home / End / arrows / All / Copy / Cut / Paste work as before.
 
+
+Z129  v0.17.37  M4  Clipboard stays open after paste
+ [ ] 1. Clipboard (Cards view): tap a clip = text appears in the field, "Pasted" toast, clipboard still open, list did not scroll or jump. Tap a second clip = pasted after the first.
+ [ ] 2. Same in List view, and with Panel style = New (Settings > Clipboard & tools).
+ [ ] 3. Hold a clip = select mode; tick 2 clips, Paste = both pasted, select mode off, clipboard still open at the same place. Same for "Paste in 1 line".
+ [ ] 4. Settings > Clipboard & tools > "Stay in clipboard after paste" OFF: a tap pastes and returns to letters (old way). ON again = stays.
+ [ ] 5. ABC always returns to letters. Search field / password field: nothing breaks.

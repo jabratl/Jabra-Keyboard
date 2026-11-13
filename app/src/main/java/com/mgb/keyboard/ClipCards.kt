@@ -25,7 +25,8 @@ class SelectMode(
     val onLong: (ClipList.Item) -> Unit = { },
     val onPaste: (ClipList.Item) -> Unit = { },   // v0.4.3: paste counter
     val info: (ClipList.Item) -> String = { "" },   // v0.4.3: small grey line under the text ("123 chars"), "" = none
-    val holdMs: Int = 0   // v0.16.16 (E2): hold time (ms) to start select mode; 0 = old system long-click
+    val holdMs: Int = 0,   // v0.16.16 (E2): hold time (ms) to start select mode; 0 = old system long-click
+    val afterPaste: (() -> Unit)? = null   // v0.17.37 (M4): what to do after a card paste (null = old: back to letters)
 )
 
 object ClipCards {
@@ -144,7 +145,8 @@ object ClipCards {
                 host.commitWord()
                 host.typeText(item.text)
                 try { sm.onPaste(item) } catch (_: Throwable) { }   // v0.4.3
-                host.showLetters()
+                val ap = sm.afterPaste   // v0.17.37 (M4)
+                if (ap != null) ap() else host.showLetters()
             } catch (_: Throwable) { }
         }
         t.setOnClickListener { act() }

@@ -81,7 +81,7 @@ public final class ChangedPlan {
             if (in(key, "ds_period", "ds_tab", "hint_on")) return "Spaces & hints";
             if (in(key, "hint_custom", "xrow_chars")) return "Custom characters";
         } else if (group.equals("Clipboard & tools")) {
-            if (in(key, "clip_on", "clip_count")) return "History";
+            if (in(key, "clip_on", "clip_count", "clip_stay")) return "History";
             if (in(key, "clip_view", "clip_sort", "clip_order", "clip_lines", "clip_fit", "panel_ui", "clip_hold", "clip_btn_pct", "clip_card_pct")) return "Look of clips";
             if (in(key, "clip_expire", "clip_sens")) return "Privacy";
         } else if (group.equals("Tools & Panels")) {

@@ -48,7 +48,8 @@ public final class ProfileCodec {
         "sp_wpct:i", "sp_hpct:i", "sp_anim:b",   // v0.17.2 (K2)
         "kb_custom:i",   // v0.17.5 (K5a.1)
         "clip_btn_pct:i",   // v0.17.32 (UI8)
-        "clip_card_pct:i"   // v0.17.33 (UI9)
+        "clip_card_pct:i",   // v0.17.33 (UI9)
+        "clip_stay:b"   // v0.17.37 (M4)
     };
     public static final String[] KEYS = new String[SPEC.length];
     private static final char[] TYPE = new char[SPEC.length];
