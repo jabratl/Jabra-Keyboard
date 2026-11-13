@@ -620,17 +620,37 @@ class MgbIme : InputMethodService() {
                     KeyDots.attach(lb, prefs)
                     customLangBtn = lb; lb
                 }
-                else -> return null   // tab, undo, redo, clip ... come with K5b (the key stays inert)
+                "tab" -> JabraIcons.putThemed(this@MgbIme, key("Tab", k.weight) { padSend(KeyEvent.KEYCODE_TAB, 0) }, "tab")   // v0.17.7 (K5b)
+                "undo" -> key("\u21B6", k.weight) { atAction("@undo") }
+                "redo" -> key("\u21B7", k.weight) { atAction("@redo") }
+                "clip" -> JabraIcons.putThemed(this@MgbIme, key("\u2398", k.weight) { openClipboard() }, "clip")
+                "comma", "period" -> {   // plain text keys; the classic ',' / '.' keys of the default layout are CHAR keys and do not come here
+                    val ch = if (k.action == "comma") "," else "."
+                    key(if (k.label[0].isNotEmpty()) k.label[0] else ch, k.weight) { commitWord(); typeText(ch) }
+                }
+                else -> return null   // combo (PC-mode keys) is not built yet: the key stays inert
             }
-            return fn(hgt(b))
+            return if (k.action == "comma" || k.action == "period") hgt(b) else fn(hgt(b))
         }
         override fun feedbackAt(v: View) { this@MgbIme.feedback(v) }
     }
 
-    /** v0.17.5 (K5a.1): swipe / long-press @actions that exist today. The rest of the whitelist comes with K5b. */
+    /** v0.17.5 (K5a.1) / v0.17.7 (K5b): swipe / long-press @actions = the whole whitelist (layout/ActionPlan.AT_DONE, checked by ActionPlanTest). */
     private fun atAction(a: String) {
         try {
             when (a) {
+                "@tab" -> padSend(KeyEvent.KEYCODE_TAB, 0)
+                "@undo" -> padSend(KeyEvent.KEYCODE_Z, KeyEvent.META_CTRL_ON or KeyEvent.META_CTRL_LEFT_ON)   // same as the toolbar undo
+                "@redo" -> padSend(KeyEvent.KEYCODE_Z, KeyEvent.META_CTRL_ON or KeyEvent.META_CTRL_LEFT_ON or KeyEvent.META_SHIFT_ON or KeyEvent.META_SHIFT_LEFT_ON)
+                "@paste" -> editAction("paste")
+                "@copy" -> editAction("copy")
+                "@cut" -> editAction("cut")
+                "@selall" -> editAction("all")
+                "@left" -> moveCursor(-1)
+                "@right" -> moveCursor(1)
+                "@home" -> padSend(KeyEvent.KEYCODE_MOVE_HOME, 0)
+                "@end" -> padSend(KeyEvent.KEYCODE_MOVE_END, 0)
+                "@del_word" -> { commitWord(); onBackspaceWord() }
                 "@sym" -> showPanel("symbols")
                 "@emoji" -> { try { emojiPanel.reset() } catch (_: Throwable) { }; showPanel("emoji") }   // v0.17.6: same as the classic "," long-press
                 "@clip" -> showPanel("clipboard")

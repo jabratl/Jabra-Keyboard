@@ -12,6 +12,7 @@ import com.mgb.keyboard.layout.KeyDef
 import com.mgb.keyboard.layout.LayoutDef
 import com.mgb.keyboard.layout.LayoutText
 import com.mgb.keyboard.layout.RowDef
+import com.mgb.keyboard.layout.SwipeDir
 import com.mgb.keyboard.typing.HintStyle
 
 /** v0.17.5 (K5a.1): what CustomRows needs from the keyboard (implemented in MgbIme, which owns the private typing functions). */
@@ -28,7 +29,7 @@ interface CustomHost {
     fun typeExtra(k: KeyDef, s: String)
     /** v0.17.6: the label to SHOW now (Bangla digits on the number row, danda on the "?" key); [base] = the model label. */
     fun dynLabel(k: KeyDef, layer: String, base: String): String
-    /** An ACTION key (shift, backspace, enter, sym, space, lang). null = not supported in this version (K5b): the key stays inert. */
+    /** An ACTION key (layout/ActionPlan.ACTION_DONE). null = not supported (e.g. combo): the key stays inert. */
     fun actionKey(k: KeyDef, pct: Int): Button?
     fun feedbackAt(v: View)
 }
@@ -114,6 +115,9 @@ class CustomRows(private val host: CustomHost, private val prefs: JabraPrefs, pr
         try { KeyPopup.attach(b, prefs) } catch (_: Throwable) { }   // popup bubble + detach cleanup (the listener below calls KeyPopup.touch itself)
         val h = Handler(Looper.getMainLooper())
         var fired = false
+        val hasSw = SwipeDir.hasAny(k)   // v0.17.7 (K5b): the move is tracked only on keys that have a swipe text
+        val minPx = SwipeDir.minPx(b.resources.displayMetrics.density)
+        var x0 = 0f; var y0 = 0f; var swipeTxt = ""
         val r = Runnable {
             try {
                 if (lp.isEmpty()) return@Runnable
@@ -130,6 +134,7 @@ class CustomRows(private val host: CustomHost, private val prefs: JabraPrefs, pr
                 when (e.actionMasked) {
                     MotionEvent.ACTION_DOWN -> {
                         fired = false
+                        x0 = e.x; y0 = e.y; swipeTxt = ""   // v0.17.7
                         h.removeCallbacks(r)
                         if (lp.isNotEmpty()) {
                             val ms = KeyCfg.lpMs(prefs)
@@ -137,12 +142,26 @@ class CustomRows(private val host: CustomHost, private val prefs: JabraPrefs, pr
                         }
                         false
                     }
-                    MotionEvent.ACTION_MOVE -> { if (e.x < 0f || e.y < 0f || e.x > v.width || e.y > v.height) h.removeCallbacks(r); false }
+                    MotionEvent.ACTION_MOVE -> {
+                        if (e.x < 0f || e.y < 0f || e.x > v.width || e.y > v.height) h.removeCallbacks(r)
+                        if (hasSw && !fired) {   // v0.17.7 (K5b): swipe up / down / left / right; a swipe with a text cancels the long-press
+                            val t = SwipeDir.textFor(k, SwipeDir.classify(e.x - x0, e.y - y0, minPx))
+                            swipeTxt = t
+                            if (t.isNotEmpty()) h.removeCallbacks(r)
+                        }
+                        false
+                    }
                     MotionEvent.ACTION_UP -> {
                         h.removeCallbacks(r)
-                        if (fired) { fired = false; v.isPressed = false; KeyPopup.dismiss(); true } else false   // long-press typed: no tap
+                        if (fired) { fired = false; v.isPressed = false; KeyPopup.dismiss(); true }   // long-press typed: no tap
+                        else if (swipeTxt.isNotEmpty()) {   // v0.17.7: swipe typed: no tap
+                            val t = swipeTxt; swipeTxt = ""
+                            v.isPressed = false; KeyPopup.dismiss()
+                            try { host.typeExtra(k, t); if (KeyCfg.hintBuzz(b)) host.feedbackAt(b) } catch (_: Throwable) { }
+                            true
+                        } else false
                     }
-                    MotionEvent.ACTION_CANCEL -> { h.removeCallbacks(r); fired = false; KeyCfg.cancelBuzz(v); false }
+                    MotionEvent.ACTION_CANCEL -> { h.removeCallbacks(r); fired = false; swipeTxt = ""; KeyCfg.cancelBuzz(v); false }
                     else -> false
                 }
             } catch (_: Throwable) { false }

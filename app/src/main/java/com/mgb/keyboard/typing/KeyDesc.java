@@ -36,6 +36,8 @@ public final class KeyDesc {
             case ".": return "Period";
             case "↶": return "Undo";
             case "↷": return "Redo";
+            case "Tab": return "Tab";   // v0.17.7 (K5b)
+            case "⎘": return "Clipboard";
             case "✎": return "Edit";
             case "+": return "Plus";
             case "−": case "-": return "Minus";
@@ -115,6 +117,7 @@ public final class KeyDesc {
             case "lineend": return "Line end";
             case "dupline": return "Duplicate line";
             case "selnone": return "Select none";
+            case "tab": return "Tab";   // v0.17.7 (K5b)
             default: return icon;
         }
     }

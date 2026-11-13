@@ -22,7 +22,8 @@ object JabraIcons {
     val NAMES = listOf(
         "clip", "all", "cut", "copy", "paste", "plain", "search", "close",
         "pin", "pinned", "gear", "shift", "back", "enter", "space", "fmt", "globe", "mic", "emoji", "mode_phone", "mode_pc", "numpad", "sym", "theme", "onehand", "size", "pad", "vault", "tt", "profiles", "keymap",
-        "selword", "selline", "delword", "delline", "linestart", "lineend", "dupline", "selnone"   // v0.16.13 (X13): 8 edit items
+        "selword", "selline", "delword", "delline", "linestart", "lineend", "dupline", "selnone",   // v0.16.13 (X13): 8 edit items
+        "tab"   // v0.17.7 (K5b)
         // v0.16.5: keymap; v0.5.1: profiles; v0.4.6: tt; v0.4.4: vault; v0.1.2; v0.2.2: 5 names; v0.2.3: pad
     )
 
@@ -191,6 +192,12 @@ object JabraIcons {
                     c.drawPath(path, p)
                     line(c, s, 0.34f, 0.44f, 0.14f, 0.64f)
                     line(c, s, 0.34f, 0.84f, 0.14f, 0.64f)
+                }
+                "tab" -> {    // v0.17.7 (K5b): arrow to the right + stop bar
+                    line(c, s, 0.08f, 0.50f, 0.78f, 0.50f)
+                    line(c, s, 0.56f, 0.28f, 0.78f, 0.50f)
+                    line(c, s, 0.56f, 0.72f, 0.78f, 0.50f)
+                    line(c, s, 0.92f, 0.20f, 0.92f, 0.80f)
                 }
                 "fmt" -> {    // v0.0.8 formatter: paragraph lines, first line indented
                     line(c, s, 0.30f, 0.14f, 0.96f, 0.14f)

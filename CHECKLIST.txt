@@ -770,3 +770,9 @@ Z101) v0.17.2 Space bar size + smoother language swipe (K2)  [portrait + landsca
  [ ] Password / email field with Bangla selected = English keys. Ctrl + C in PC mode works. Edit bar OFF: PH / PC key is in the bottom row.
  [ ] Settings: number row mode / large / own characters, bottom row Ridmik-like, space bar width / height, ? key ON = same look in the custom keyboard after Rebuild.
  [ ] Rotation, one-hand mode, key height, letter size, themes. Page shows "Custom layout: OK".
+
+=== Z106 (v0.17.7, K5b: swipe gestures + ACTION keys on the custom keyboard, EXPERIMENTAL) ===
+ [ ] Push the zip. Actions: "Java tests: 101/101 green" (99 + SwipeDirTest + ActionPlanTest) then the APK. If RED: paste the Kotlin errors (Kotlin of v0.17.5 - v0.17.7 was never compiled in chat).
+ [ ] Switch OFF (default) = keyboard exactly as before. Switch ON: English / Bangla typing, shift, backspace hold, long-press hints, space bar, bottom row all still like v0.17.6 (swipe code must not disturb taps).
+ [ ] Swipes cannot be set yet (no editor): this step only proves nothing broke. Swipe check comes with K6 / K7.
+ [ ] ACTION keys (Tab, Undo, Redo, Clipboard, Comma, Period) can be added only by the editor (K8): check later.
