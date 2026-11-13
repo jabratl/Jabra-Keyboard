@@ -601,12 +601,13 @@ object SettingsGroups {
             try {   // v0.17.5 (K5a.1): status line + the "settings that do nothing" note (plan 6.9) + one-tap safety button (S3)
                 val st = android.widget.TextView(ctx)
                 val on = prefs.int("kb_custom", 0) == 1
-                st.text = LayoutStore.status(ctx, prefs) + (if (on) "\nWhile it is ON: Home row side gap, Shift / Backspace gap and Long-press override do nothing for the English letter rows (they come back when you switch to Off)." else "")
+                st.text = LayoutStore.status(ctx, prefs) + (if (on) "\nWhile it is ON the letter rows (English, Bangla Avro, Bangla Probhat), the number row and the bottom row come from the saved layout. These settings do nothing then: Home row side gap, Shift / Backspace gap, Long-press override, Number row options, Bottom row, ? key, EN / Globe / Voice / Emoji keys, Space bar width and height. They come back when you switch to Off; after changing them tap \"Rebuild layout from current settings\" and reopen the keyboard." else "")
                 st.textSize = 12f
                 st.setTextColor(0xFF888888.toInt())
                 st.setPadding(dp(8), 0, dp(8), dp(4))
                 g.addView(st)
                 g.addView(btn("Restore last good layout") { v -> (v as Button).text = if (LayoutStore.restoreLastGood(ctx)) "Last good layout restored" else "No saved layout yet" })
+                g.addView(btn("Rebuild layout from current settings") { v -> (v as Button).text = if (LayoutStore.rebuildFromSettings(ctx, prefs)) "Layout rebuilt: reopen the keyboard" else "Could not rebuild the layout" })   // v0.17.6 (K5a.2)
             } catch (_: Throwable) { }
             stepper(g, "Key corner radius", "key_radius", com.mgb.keyboard.typing.EdgePlan.R_MIN, com.mgb.keyboard.typing.EdgePlan.R_MAX, 1, " dp",
                 { com.mgb.keyboard.typing.EdgePlan.radiusDp(prefs.int("key_radius", -1)) }, -1)   // v0.10.28 (P3): Jabra look only; Ridmik about 6

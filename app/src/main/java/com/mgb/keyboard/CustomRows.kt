@@ -22,24 +22,26 @@ interface CustomHost {
     fun styleLetter(b: Button)
     /** Empty spot: draws nothing, types nothing. */
     fun gapView(weight: Float, pct: Int): View
-    /** Tap of a character key (shift, caps lock, PC Ctrl / Alt, typing). */
-    fun tapChar(k: KeyDef)
-    /** Long-press text (several characters allowed) or an @action. */
-    fun typeExtra(s: String)
+    /** Tap of a character key of [layer] (en / av / pb = shift, caps lock, PC Ctrl / Alt, per-language typing; nr / bot = commit + type). */
+    fun tapChar(k: KeyDef, layer: String)
+    /** Long-press text (several characters allowed) or an @action of key [k]. */
+    fun typeExtra(k: KeyDef, s: String)
+    /** v0.17.6: the label to SHOW now (Bangla digits on the number row, danda on the "?" key); [base] = the model label. */
+    fun dynLabel(k: KeyDef, layer: String, base: String): String
     /** An ACTION key (shift, backspace, enter, sym, space, lang). null = not supported in this version (K5b): the key stays inert. */
     fun actionKey(k: KeyDef, pct: Int): Button?
     fun feedbackAt(v: View)
 }
 
 /** Tag of a custom key (letter keys use Char tags and are not touched by relabelLetters / HintKeys). */
-class CustomKeyTag(val key: KeyDef)
+class CustomKeyTag(val key: KeyDef, val layer: String = "en")
 
 /**
- * v0.17.5 (K5a.1) builds the rows of layer "en" from a LayoutDef: character keys (tap, shift output, long-press text, popup, feedback),
- * ACTION keys through the host, empty spots. Reference rows (shared number row / bottom row) are skipped: the classic ones stay.
+ * v0.17.5 (K5a.1) / v0.17.6 (K5a.2) builds the rows of ONE layer (en / av / pb) or of a shared row (nr / bot) from a LayoutDef: character keys (tap, shift output, long-press text, popup, feedback),
+ * ACTION keys through the host, empty spots. Reference rows (shared number row / bottom row) are skipped here: the shared layers get their own CustomRows (shared = true).
  * ONE touch listener per key (like HintKeys.attach): feedback at down, KeyPopup.touch, long-press via Handler.
  */
-class CustomRows(private val host: CustomHost, private val prefs: JabraPrefs) {
+class CustomRows(private val host: CustomHost, private val prefs: JabraPrefs, private val layer: String = "en", private val shared: Boolean = false) {
     val rows = mutableListOf<LinearLayout>()
     private val charKeys = mutableListOf<Button>()
 
@@ -47,7 +49,8 @@ class CustomRows(private val host: CustomHost, private val prefs: JabraPrefs) {
     fun build(model: LayoutDef, newRow: () -> LinearLayout): List<LinearLayout> {
         rows.clear(); charKeys.clear()
         try {
-            val own: List<RowDef> = model.layer("en")?.rows?.filter { !it.isRef() } ?: return rows
+            // v0.17.6: letter layers (en / av / pb) = their own rows; shared layers (nr / bot) = the first row of that layer
+            val own: List<RowDef> = (if (shared) model.layer(layer)?.rows?.take(1)?.filter { !it.isRef() } else model.layer(layer)?.rows?.filter { !it.isRef() }) ?: return rows
             for (rd in own) {
                 val r = newRow()
                 for (k in rd.keys) {
@@ -68,7 +71,7 @@ class CustomRows(private val host: CustomHost, private val prefs: JabraPrefs) {
     fun relabel(shift: Boolean) {
         for (b in charKeys) {
             val k = (b.tag as? CustomKeyTag)?.key ?: continue
-            val t = labelOf(k, shift)
+            val t = host.dynLabel(k, layer, labelOf(k, shift && !shared))
             if (!t.contentEquals(b.text)) b.text = t
         }
     }
@@ -87,13 +90,13 @@ class CustomRows(private val host: CustomHost, private val prefs: JabraPrefs) {
     }
 
     private fun charKey(k: KeyDef, pct: Int): Button {
-        val b = host.newKey(labelOf(k, false), k.weight, pct) { host.tapChar(k) }
-        b.tag = CustomKeyTag(k)
+        val b = host.newKey(host.dynLabel(k, layer, labelOf(k, false)), k.weight, pct) { host.tapChar(k, layer) }
+        b.tag = CustomKeyTag(k, layer)
         host.styleLetter(b)
         charKeys.add(b)
         val lp = if (k.lp.isNotEmpty()) k.lp else (k.lpList.firstOrNull() ?: "")
-        if (lp.isNotEmpty() && !lp.startsWith("@")) showHint(b, lp)
-        attachTouch(b, lp)
+        if (lp.isNotEmpty() && !lp.startsWith("@") && layer != "bot") showHint(b, lp)   // v0.17.6: the classic bottom row shows no hint on "."
+        attachTouch(b, k, lp)
         return b
     }
 
@@ -107,7 +110,7 @@ class CustomRows(private val host: CustomHost, private val prefs: JabraPrefs) {
         } catch (_: Throwable) { }
     }
 
-    private fun attachTouch(b: Button, lp: String) {
+    private fun attachTouch(b: Button, k: KeyDef, lp: String) {
         try { KeyPopup.attach(b, prefs) } catch (_: Throwable) { }   // popup bubble + detach cleanup (the listener below calls KeyPopup.touch itself)
         val h = Handler(Looper.getMainLooper())
         var fired = false
@@ -115,7 +118,7 @@ class CustomRows(private val host: CustomHost, private val prefs: JabraPrefs) {
             try {
                 if (lp.isEmpty()) return@Runnable
                 fired = true
-                host.typeExtra(lp)
+                host.typeExtra(k, lp)
                 if (KeyCfg.hintBuzz(b)) host.feedbackAt(b)
             } catch (_: Throwable) { }
         }

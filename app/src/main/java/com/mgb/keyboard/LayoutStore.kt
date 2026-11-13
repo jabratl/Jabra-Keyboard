@@ -7,6 +7,7 @@ import com.mgb.keyboard.layout.LayoutCodec
 import com.mgb.keyboard.layout.LayoutDef
 import com.mgb.keyboard.layout.LayoutDefaults
 import com.mgb.keyboard.layout.LayoutGuard
+import com.mgb.keyboard.layout.LayoutRoute
 
 /**
  * v0.17.5 (K5a.1) storage + safety net of the custom keyboard layout (plan K 6.8).
@@ -18,6 +19,8 @@ object LayoutStore {
     private const val K_LAYOUT = "layout_v1"
     private const val K_GOOD = "good_v1"
     private const val K_SAFE = "safe_n"
+    private const val K_BUILT = "built_v"      // v0.17.6: version stamp of a layout built from the settings (see LayoutRoute.needsRebuild)
+    private const val K_EDITED = "edited"      // v0.17.6: set by the editor (K6) so a user's own layout is never rebuilt
 
     @Volatile private var cacheText: String? = null
     @Volatile private var cacheModel: LayoutDef? = null
@@ -33,16 +36,12 @@ object LayoutStore {
             val s = sp(ctx)
             var text = s.getString(K_LAYOUT, null)
             if (text != null && text == cacheText && cacheModel != null) return cacheModel
+            if (text != null && LayoutRoute.needsRebuild(s.getInt(K_BUILT, 0), s.getBoolean(K_EDITED, false))) text = null   // v0.17.6: a v0.17.5 default (built with fewer settings) is rebuilt once; the editor does not exist yet, nothing is lost
             var g = LayoutGuard.gate(text)
             if (g.code == LayoutGuard.EMPTY) {   // nothing saved yet: build the default = exactly the classic keyboard
-                val o = LayoutDefaults.Options()
-                try { o.rowGap = prefs.bool("row_gap", true) } catch (_: Throwable) { }
-                try { o.numRow = prefs.bool("numrow", true) } catch (_: Throwable) { }
-                try { o.keyDp = prefs.keyHeightDp(JabraPrefs.isLand(ctx)) } catch (_: Throwable) { }
-                try { o.hints = prefs.bool("hint_on", true); o.hintCustom = prefs.str("hint_custom", "") } catch (_: Throwable) { }
-                text = LayoutCodec.encode(LayoutDefaults.build(o))
+                text = buildDefaultText(ctx, prefs)
                 if (text != null) {
-                    s.edit().putString(K_LAYOUT, text).putString(K_GOOD, text).apply()
+                    s.edit().putString(K_LAYOUT, text).putString(K_GOOD, text).putInt(K_BUILT, LayoutRoute.BUILT_VERSION).apply()
                     g = LayoutGuard.gate(text)
                 }
             }
@@ -51,6 +50,39 @@ object LayoutStore {
             cacheText = text; cacheModel = g.model
             return g.model
         } catch (_: Throwable) { lastProblem = "layout could not be read"; return null }
+    }
+
+    /** v0.17.6: today's keyboard (all the settings that shape it) as layout text. null = could not be built. */
+    private fun buildDefaultText(ctx: Context, prefs: JabraPrefs): String? {
+        val o = LayoutDefaults.Options()
+        try { o.rowGap = prefs.bool("row_gap", true) } catch (_: Throwable) { }
+        try { o.numRow = prefs.bool("numrow", true) } catch (_: Throwable) { }
+        try { o.keyDp = prefs.keyHeightDp(JabraPrefs.isLand(ctx)) } catch (_: Throwable) { }
+        try { o.hints = prefs.bool("hint_on", true); o.hintCustom = prefs.str("hint_custom", "") } catch (_: Throwable) { }
+        try { o.nrMode = com.mgb.keyboard.typing.NumRowPlan.sanitizeMode(prefs.int("nr_mode", 0)); o.nrChars = prefs.str("nr_chars", "") } catch (_: Throwable) { }
+        try { o.nrHpct = prefs.int("nr_hpct", 100); o.numRowLarge = prefs.bool("numrow_large", false) } catch (_: Throwable) { }
+        try { o.pbHomeGap = prefs.bool("pb_home_gap", false) } catch (_: Throwable) { }
+        try { o.botStyle = prefs.int("bot_style", 0) } catch (_: Throwable) { }
+        try { o.qmShown = prefs.bool("key_qm", false) } catch (_: Throwable) { }
+        try { o.keyLang = com.mgb.keyboard.typing.LangSwipe.langKeyVisible(prefs.bool("key_lang", true), prefs.bool("space_lang", false)) } catch (_: Throwable) { }
+        try { o.keyGlobe = prefs.bool("key_globe", false); o.keyVoice = prefs.bool("key_voice", false); o.keyEmoji = prefs.bool("key_emoji", false) } catch (_: Throwable) { }
+        try { o.spWpct = prefs.int("sp_wpct", 100); o.spHpct = prefs.int("sp_hpct", 100) } catch (_: Throwable) { }
+        try {
+            val dens = ctx.resources.displayMetrics.density
+            o.rowDp = ctx.resources.displayMetrics.widthPixels / dens - 2f * com.mgb.keyboard.typing.EdgePlan.edgeDp(prefs.int("edge_dp", -1))
+        } catch (_: Throwable) { }
+        return try { LayoutCodec.encode(LayoutDefaults.build(o)) } catch (_: Throwable) { null }
+    }
+
+    /** v0.17.6: "Rebuild layout from current settings" (app page): the layout becomes today's classic keyboard again, built from the settings now. True = done. */
+    fun rebuildFromSettings(ctx: Context, prefs: JabraPrefs): Boolean {
+        try {
+            val text = buildDefaultText(ctx, prefs) ?: return false
+            if (!LayoutGuard.gate(text).ok()) return false
+            sp(ctx).edit().putString(K_LAYOUT, text).putString(K_GOOD, text).putInt(K_BUILT, LayoutRoute.BUILT_VERSION).putBoolean(K_EDITED, false).putInt(K_SAFE, 0).apply()
+            cacheText = null; cacheModel = null; lastProblem = ""
+            return true
+        } catch (_: Throwable) { return false }
     }
 
     /**

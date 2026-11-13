@@ -25,9 +25,19 @@ class MgbIme : InputMethodService() {
         set(v) { shiftSt.setShift(v) }
     private var shiftBtn: Button? = null                         // v0.0.9: to show caps-lock state
     private val letterKeys = mutableListOf<Button>()
-    private var customRows: CustomRows? = null            // v0.17.5 (K5a.1): custom English letter rows (null = classic only)
+    private var customLetters: Map<String, CustomRows> = emptyMap()   // v0.17.6 (K5a.2): custom letter rows per layer "en" / "av" / "pb" (empty = classic only)
     private var classicLetterRows: List<View> = emptyList()   // v0.17.5: the 3 classic rows, hidden while the custom rows show
-    private var customShiftBtn: Button? = null                // v0.17.5: shift key of the custom rows (blue tint like the classic one)
+    private val customShiftBtns = mutableListOf<Button>()     // v0.17.6: shift keys of the custom rows (blue tint like the classic one)
+    private var customNr: CustomRows? = null                  // v0.17.6: shared number row (layer "nr")
+    private var customBot: CustomRows? = null                 // v0.17.6: shared bottom row (layer "bot")
+    private var customRefNr: Set<String> = emptySet()         // v0.17.6: layers whose model refs the number row
+    private var customRefBot: Set<String> = emptySet()        // v0.17.6: layers whose model refs the bottom row
+    private var classicNrRow: View? = null                    // v0.17.6: classic number row / bottom row (hidden while the custom ones show)
+    private var classicBotRow: View? = null
+    private var classicSpaceBtn: Button? = null
+    private var classicLangBtn: Button? = null
+    private var customSpaceBtn: Button? = null
+    private var customLangBtn: Button? = null
     private val numKeys = mutableListOf<Button>()   // v0.8.6: number-row keys that carry a Bangla digit hint
 
     // v0.0.3: Avro phonetic state
@@ -441,7 +451,7 @@ class MgbIme : InputMethodService() {
     private fun shiftVisual() {
         val tint: Int? = if (shiftSt.isCaps()) Color.parseColor("#2271B1") else if (shiftSt.isShift()) Color.parseColor("#9CC3E6") else null
         val tl = if (tint == null) (try { JabraThemes.keyTint(prefs) } catch (_: Throwable) { null }) else android.content.res.ColorStateList.valueOf(tint)   // v0.1.0: off = theme key colour (Classic = null as before)
-        try { customShiftBtn?.backgroundTintList = tl } catch (_: Throwable) { }   // v0.17.5 (K5a.1)
+        try { customShiftBtns.forEach { it.backgroundTintList = tl } } catch (_: Throwable) { }   // v0.17.5 (K5a.1), v0.17.6: every custom shift key
         val b = shiftBtn ?: return
         b.backgroundTintList = tl
     }
@@ -473,15 +483,64 @@ class MgbIme : InputMethodService() {
         } catch (_: Throwable) { }
     }
 
-    /** v0.17.5 (K5a.1): custom rows show in English (or password / email / URL fields), classic rows in Bangla; labels follow shift. No-op when custom is off. */
+    /**
+     * v0.17.6 (K5a.2): shows the custom rows of the layer of the current language (en / av / pb; password / email / URL fields = en) and hides the classic rows;
+     * a layer without custom rows keeps the classic keyboard. The shared number row / bottom row follow the layer's references. Labels follow shift. No-op when custom is off.
+     */
     private fun refreshCustomRows() {
-        val cr = customRows ?: return
-        val english = !bangla || latinOnly
-        val vis = if (english) View.VISIBLE else View.GONE
-        val cv = if (english) View.GONE else View.VISIBLE
-        cr.rows.forEach { if (it.visibility != vis) it.visibility = vis }
+        if (customLetters.isEmpty()) return
+        val layer = com.mgb.keyboard.layout.LayoutRoute.layerFor(bangla, latinOnly, probhat)
+        val active = customLetters[layer]
+        val useC = active != null
+        for ((id, cr) in customLetters) {
+            val v = if (useC && id == layer) View.VISIBLE else View.GONE
+            cr.rows.forEach { if (it.visibility != v) it.visibility = v }
+        }
+        val cv = if (useC) View.GONE else View.VISIBLE
         classicLetterRows.forEach { if (it.visibility != cv) it.visibility = cv }
-        if (english) cr.relabel(shift)
+        classicNrRow?.let { if (it.visibility != cv) it.visibility = cv }
+        val nrV = if (useC && customRefNr.contains(layer)) View.VISIBLE else View.GONE
+        customNr?.rows?.forEach { if (it.visibility != nrV) it.visibility = nrV }
+        val botShow = useC && customRefBot.contains(layer) && customBot != null
+        val botV = if (botShow) View.VISIBLE else View.GONE
+        customBot?.rows?.forEach { if (it.visibility != botV) it.visibility = botV }
+        val clB = if (botShow) View.GONE else View.VISIBLE   // the classic bottom row is the safety net: it shows whenever the custom one does not
+        classicBotRow?.let { if (it.visibility != clB) it.visibility = clB }
+        spaceBtn = if (botShow) customSpaceBtn else classicSpaceBtn
+        langBtn = if (botShow) customLangBtn else classicLangBtn
+        try {
+            val lb = langBtn
+            if (lb != null) { val t = langLabel(); if (!t.contentEquals(lb.text)) lb.text = t }
+            val sbn = spaceBtn
+            if (sbn != null && prefs.bool("space_lang", false)) { val t = com.mgb.keyboard.typing.LangSwipe.spaceLabel(bangla, probhat); if (!t.contentEquals(sbn.text)) sbn.text = t }
+        } catch (_: Throwable) { }
+        if (useC) {
+            active?.relabel(shift)
+            if (nrV == View.VISIBLE) customNr?.relabel(shift)
+            if (botShow) customBot?.relabel(shift)
+        }
+    }
+
+    /** v0.17.6: number-row text: a Latin digit follows numrow_bn (Bangla digits), anything else is kept. */
+    private fun numCustom(o: String): String = if (com.mgb.keyboard.layout.LayoutRoute.isDigit(o)) numDigit(o[0]) else o
+
+    /** v0.17.6 (K5a.2): the space bar of the custom bottom row = the same wiring as the classic one (label slide, language swipe, cursor drag, double space). */
+    private fun customSpaceKey(k: com.mgb.keyboard.layout.KeyDef): Button {
+        val spaceAction = { commitWord(); spaceKey() }
+        val slideOn = try { com.mgb.keyboard.typing.SpacePlan.animOn(prefs.bool("space_lang", false), prefs.bool("sp_anim", true), AppMotion.scale(this)) } catch (_: Throwable) { false }
+        val sb = key(if (k.label[0].isNotEmpty()) k.label[0] else "space", k.weight, mk = { if (slideOn) SlideButton(this) else Button(this) }) { spaceAction() }
+        try { JabraLook.shape(prefs, sb, JabraLook.PILL) } catch (_: Throwable) { }
+        val spaceLangOn = try { prefs.bool("space_lang", false) } catch (_: Throwable) { false }
+        customSpaceBtn = if (spaceLangOn) sb else null
+        if (spaceLangOn) { try { sb.text = com.mgb.keyboard.typing.LangSwipe.spaceLabel(bangla, probhat); sb.contentDescription = com.mgb.keyboard.typing.KeyDesc.spaceDesc(sb.text.toString()) } catch (_: Throwable) { } }
+        try {
+            val sdh = SpaceDragHelper(resources.displayMetrics.density, { n -> moveCursor(n) }, { spaceAction() }, { v -> feedback(v) }, com.mgb.keyboard.typing.TypingLevels.stepDp(prefs.int("cursor_speed", com.mgb.keyboard.typing.TypingLevels.CS_DEFAULT)))
+            if (spaceLangOn) sdh.attachLang(sb, { n -> swipeLang(n) }, { v -> try { v.performHapticFeedback(android.view.HapticFeedbackConstants.LONG_PRESS) } catch (_: Throwable) { } },
+                { v -> langBubble(v) }, { try { KeyPopup.hide() } catch (_: Throwable) { } },
+                { c -> endLangSwipe(c) }, { try { com.mgb.keyboard.typing.LangSwipe.stepDp(prefs.int("sp_step", com.mgb.keyboard.typing.LangSwipe.STEP_DEFAULT)) } catch (_: Throwable) { com.mgb.keyboard.typing.LangSwipe.STEP_DP } },
+                onSlide = { p, fin -> try { (sb as? SlideButton)?.let { if (fin) it.release(true) else it.follow(com.mgb.keyboard.typing.SpacePlan.slidePx(p, it.width.toFloat(), resources.displayMetrics.density)) } } catch (_: Throwable) { } }) else sdh.attach(sb)
+        } catch (_: Throwable) { }
+        return sb
     }
 
     private val customHost = object : CustomHost {
@@ -501,24 +560,47 @@ class MgbIme : InputMethodService() {
             v.layoutParams = LinearLayout.LayoutParams(0, dp(keyDp() * pct / 100), weight)
             return v
         }
-        override fun tapChar(k: com.mgb.keyboard.layout.KeyDef) {
+        override fun tapChar(k: com.mgb.keyboard.layout.KeyDef, layer: String) {
+            if (layer == "nr" || layer == "bot") {   // v0.17.6: number row / bottom row = finish the word, then type (same as the classic keys)
+                commitWord()
+                val o = k.out[0]
+                val t = if (layer == "nr") numCustom(o) else com.mgb.keyboard.layout.LayoutRoute.mapQm(k.id, o, bangla && !latinOnly)
+                if (t.isNotEmpty()) typeText(t)
+                return
+            }
             val t0 = k.out[0]
             try { if (t0.length == 1 && t0[0] in 'a'..'z' && pcState.isPc() && pcState.meta() != 0) { pcSend(KeyEvent.KEYCODE_A + (t0[0] - 'a'), 0); return } } catch (_: Throwable) { }   // PC mode: Ctrl / Alt + letter
             val sh = shift
             val s = if (sh) k.shiftOut() else t0
             if (s.isEmpty()) return
             if (sh && s != t0) { shiftSt.typed(); refreshLetters() }   // caps lock stays, one-shot shift ends (only when shift changed the output)
-            typeText(s)
+            when (layer) {   // v0.17.6: same three meanings as onLetter
+                "av" -> if (phoneticOn() && com.mgb.keyboard.layout.LayoutRoute.avBuffer(s)) { buf.append(s); renderWord() } else { commitWord(); typeText(s) }
+                "pb" -> { commitWord(); typeText(s) }
+                else -> typeText(s)
+            }
         }
-        override fun typeExtra(s: String) {
+        override fun typeExtra(k: com.mgb.keyboard.layout.KeyDef, s: String) {
             if (s.startsWith("@")) { atAction(s); return }
-            commitWord(); typeText(s)
+            commitWord(); typeText(com.mgb.keyboard.layout.LayoutRoute.mapQm(k.id, s, bangla && !latinOnly))
+        }
+        override fun dynLabel(k: com.mgb.keyboard.layout.KeyDef, layer: String, base: String): String {
+            if (layer == "nr") return if (com.mgb.keyboard.layout.LayoutRoute.isDigit(base)) numDigit(base[0]) else base
+            if (layer == "bot") return com.mgb.keyboard.layout.LayoutRoute.qmLabel(k.id, base, bangla)
+            return base
         }
         override fun actionKey(k: com.mgb.keyboard.layout.KeyDef, pct: Int): Button? {
+            fun hgt(b: Button): Button { if (pct != 100) (b.layoutParams as LinearLayout.LayoutParams).height = dp(keyDp() * pct / 100); return b }
+            when (k.action) {   // same look as the classic keys: these are NOT passed through fn()
+                "space" -> return hgt(customSpaceKey(k))
+                "globe" -> return hgt(JabraIcons.putThemed(this@MgbIme, key("\uD83C\uDF10", k.weight) { commitWord(); switcher.globe() }, "globe"))
+                "voice" -> return hgt(JabraIcons.putThemed(this@MgbIme, key("\uD83C\uDFA4", k.weight) { commitWord(); switcher.voice() }, "mic"))
+                "emoji" -> return hgt(JabraIcons.putThemed(this@MgbIme, key("\u263A", k.weight) { emojiPanel.reset(); showPanel("emoji") }, "emoji"))
+            }
             val b: Button = when (k.action) {
                 "shift" -> {
                     val sb = JabraIcons.putThemed(this@MgbIme, key("\u21E7", k.weight) { shiftSt.tap(android.os.SystemClock.uptimeMillis()); refreshLetters() }, "shift")
-                    customShiftBtn = sb; sb
+                    customShiftBtns.add(sb); sb
                 }
                 "backspace" -> {
                     val bk = JabraIcons.putThemed(this@MgbIme, key("\u232B", k.weight) { onBackspace() }, "back")
@@ -529,14 +611,18 @@ class MgbIme : InputMethodService() {
                 "sym" -> {
                     val sk = key(if (k.label[0].isNotEmpty()) k.label[0] else "?123", k.weight) { showPanel("symbols") }
                     try { JabraLongPress.attach(sk, prefs) { pickKeyboard() } } catch (_: Throwable) { }
+                    KeyDots.attach(sk, prefs)
                     sk
                 }
-                "space" -> key(if (k.label[0].isNotEmpty()) k.label[0] else " ", k.weight) { spaceKey() }
-                "lang" -> key(langLabel(), k.weight) { toggleLang() }
-                else -> return null   // other action keys come with K5b
+                "lang" -> {   // v0.17.6: long-press = Avro <-> Probhat, "..." mark, like the classic EN key
+                    val lb = key(langLabel(), k.weight) { toggleLang() }
+                    try { JabraLongPress.attach(lb, prefs) { switchBnLayout() } } catch (_: Throwable) { }
+                    KeyDots.attach(lb, prefs)
+                    customLangBtn = lb; lb
+                }
+                else -> return null   // tab, undo, redo, clip ... come with K5b (the key stays inert)
             }
-            if (pct != 100) (b.layoutParams as LinearLayout.LayoutParams).height = dp(keyDp() * pct / 100)
-            return fn(b)
+            return fn(hgt(b))
         }
         override fun feedbackAt(v: View) { this@MgbIme.feedback(v) }
     }
@@ -546,7 +632,7 @@ class MgbIme : InputMethodService() {
         try {
             when (a) {
                 "@sym" -> showPanel("symbols")
-                "@emoji" -> showPanel("emoji")
+                "@emoji" -> { try { emojiPanel.reset() } catch (_: Throwable) { }; showPanel("emoji") }   // v0.17.6: same as the classic "," long-press
                 "@clip" -> showPanel("clipboard")
                 "@lang" -> toggleLang()
                 "@caps" -> { shiftSt.tap(android.os.SystemClock.uptimeMillis()); refreshLetters() }
@@ -1078,6 +1164,7 @@ class MgbIme : InputMethodService() {
             val cr = com.mgb.keyboard.typing.LangOrder.customRow(prefs.str("xrow_chars", ""))
             if (cr.isNotEmpty()) { val xr = row(); cr.forEach { c -> xr.addView(key(c, 1f) { commitWord(); typeText(c) }) }; root.addView(xr) }
         } catch (_: Throwable) { }
+        classicNrRow = null   // v0.17.6 (K5a.2)
         // v0.0.5: number row (setting "numrow", default ON). If it fails the keyboard just has no number row.
         try {
             if (prefs.bool("numrow", true)) {
@@ -1114,6 +1201,7 @@ class MgbIme : InputMethodService() {
                     if (nrPct != 100) { val hpx = dp(com.mgb.keyboard.typing.NumRowPlan.heightDp(keyDp(), prefs.bool("numrow_large", false), nrPct)); for (i in 0 until nr.childCount) (nr.getChildAt(i).layoutParams as LinearLayout.LayoutParams).height = hpx }
                 } catch (_: Throwable) { }
                 root.addView(nr)
+                classicNrRow = nr   // v0.17.6 (K5a.2)
             }
         } catch (_: Throwable) { }
         // v0.0.4: Probhat extra row (vowels, ঁ ঃ ৎ). Hidden (GONE) unless Probhat is active.
@@ -1156,21 +1244,44 @@ class MgbIme : InputMethodService() {
         } catch (_: Throwable) { }
         root.addView(r3)
 
-        // v0.17.5 (K5a.1): custom English letter rows (pref kb_custom = 1 + a valid layout). Any problem = nothing changes (the classic rows stay).
-        customRows = null; classicLetterRows = emptyList(); customShiftBtn = null
+        // v0.17.5 (K5a.1) / v0.17.6 (K5a.2): custom rows (pref kb_custom = 1 + a valid layout): number row + letter rows of en / av / pb (the bottom row follows below r4).
+        // Any problem = nothing changes (the classic rows stay). The English layer is the anchor: without it the classic keyboard runs.
+        customLetters = emptyMap(); customNr = null; customBot = null; customRefNr = emptySet(); customRefBot = emptySet()
+        classicLetterRows = emptyList(); customShiftBtns.clear(); customSpaceBtn = null; customLangBtn = null
+        var cmModel: com.mgb.keyboard.layout.LayoutDef? = null
+        val insertedViews = mutableListOf<View>()
         try {
             val cm = LayoutStore.activeModel(this, prefs)
             if (cm != null) {
-                val cr = CustomRows(customHost, prefs)
-                val built = cr.build(cm) { row() }
-                if (built.isNotEmpty()) {
+                val sets = LinkedHashMap<String, CustomRows>()
+                var at = letterRowsAt
+                var nrSet: CustomRows? = null
+                val nrc = CustomRows(customHost, prefs, "nr", true)
+                val nrBuilt = nrc.build(cm) { row() }
+                if (nrBuilt.isNotEmpty()) { nrBuilt.forEach { root.addView(it, at++); insertedViews.add(it) }; nrSet = nrc }
+                for (id in arrayOf("en", "av", "pb")) {
+                    val cr = CustomRows(customHost, prefs, id)
+                    val built = cr.build(cm) { row() }
+                    if (built.isNotEmpty()) { built.forEach { root.addView(it, at++); insertedViews.add(it) }; sets[id] = cr }
+                }
+                if (sets.containsKey("en")) {
+                    val refN = HashSet<String>(); val refB = HashSet<String>()
+                    for (id in sets.keys) cm.layer(id)?.rows?.forEach { if (it.share == "nr") refN.add(id); if (it.share == "bot") refB.add(id) }
+                    customRefNr = refN; customRefBot = refB
+                    customNr = nrSet
                     classicLetterRows = listOf(r1, r2, r3)
-                    built.forEachIndexed { i, v -> root.addView(v, letterRowsAt + i) }
-                    customRows = cr
+                    customLetters = sets
+                    cmModel = cm
                     LayoutStore.disarmLater(this)
+                } else {
+                    insertedViews.forEach { root.removeView(it) }
+                    customShiftBtns.clear()
                 }
             }
-        } catch (_: Throwable) { customRows = null; classicLetterRows = emptyList(); customShiftBtn = null }
+        } catch (_: Throwable) {
+            try { insertedViews.forEach { root.removeView(it) } } catch (_: Throwable) { }
+            customLetters = emptyMap(); customNr = null; customRefNr = emptySet(); customRefBot = emptySet(); classicLetterRows = emptyList(); customShiftBtns.clear(); cmModel = null
+        }
 
         val r4 = row()
         val bst = try { com.mgb.keyboard.typing.BottomPlan.style(prefs.int("bot_style", 0)) } catch (_: Throwable) { 0 }   // v0.10.27: bottom row style (0 = old)
@@ -1247,6 +1358,20 @@ class MgbIme : InputMethodService() {
             }
         } catch (_: Throwable) { }
         root.addView(r4)
+        classicBotRow = r4; classicSpaceBtn = spaceBtn; classicLangBtn = langBtn   // v0.17.6 (K5a.2): the classic bottom row stays as the safety net
+        try {   // v0.17.6: custom bottom row (layer "bot"); the mode key (edit bar OFF) is not part of the model, so it is added here like in the classic row
+            val cmm = cmModel
+            if (cmm != null && customLetters.isNotEmpty()) {
+                val bc = CustomRows(customHost, prefs, "bot", true)
+                val bb = bc.build(cmm) { row() }
+                if (bb.isNotEmpty()) {
+                    val br = bb[0]
+                    try { if (prefs.bool("mode_key", true) && !prefs.bool("edit_bar", true)) { val ix = com.mgb.keyboard.layout.LayoutRoute.modeKeyIndex(cmm.layer("bot")?.rows?.firstOrNull()); br.addView(modeKey(null), if (ix < br.childCount) ix else br.childCount) } } catch (_: Throwable) { }
+                    root.addView(br)
+                    customBot = bc
+                }
+            }
+        } catch (_: Throwable) { customBot = null }
 
         try { refreshLetters() } catch (_: Throwable) { }   // v0.0.4: right labels from the start (Probhat after rebuild / rotate)
         try { JabraOneHand.apply(this, prefs, root) } catch (_: Throwable) { }   // v0.1.0: one-handed mode (setting "onehand")

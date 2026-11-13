@@ -759,3 +759,14 @@ Z101) v0.17.2 Space bar size + smoother language swipe (K2)  [portrait + landsca
  [ ] Rotation, one-hand mode, key height %, letter size %, key gap: custom rows follow.
  [ ] Page shows "Custom layout: OK". Switch OFF = classic again at once. "Restore last good layout" shows "Last good layout restored".
  [ ] (Optional) Damage test: Android Settings > Apps > Jabra > no editor yet, so skip; the load gate is covered by LayoutGuardTest.
+
+=== Z105 (v0.17.6, K5a.2: custom Bangla layers + number row + bottom row, EXPERIMENTAL) ===
+ [ ] Push the zip. Actions: "Java tests: 99/99 green" (98 + LayoutRouteTest) then the APK. If RED: paste the Kotlin errors (v0.17.5 + v0.17.6 Kotlin was never compiled in chat).
+ [ ] Switch OFF (default) = keyboard exactly as before. Switch ON, then tap "Rebuild layout from current settings", reopen the keyboard.
+ [ ] English: letters, shift (one tap, double tap = caps lock), backspace hold, long-press hint letters, number row (digits), bottom row looks like the classic (?123, EN, comma, space, period, enter).
+ [ ] Bangla Avro: type "ami" = Bangla word; shift letters; number row + comma / period finish the word first; space bar swipe = language, drag = cursor, label slide, double space.
+ [ ] Bangla Probhat: letters + the extra keys (vowels, chandrabindu) type Bangla; shift gives the second letter.
+ [ ] Long-press "." = ? (Bangla: danda); long-press "," = emoji panel; ?123 opens symbols, long-press ?123 = keyboard picker; long-press EN = Avro <-> Probhat; Globe / Voice / Emoji keys if switched on.
+ [ ] Password / email field with Bangla selected = English keys. Ctrl + C in PC mode works. Edit bar OFF: PH / PC key is in the bottom row.
+ [ ] Settings: number row mode / large / own characters, bottom row Ridmik-like, space bar width / height, ? key ON = same look in the custom keyboard after Rebuild.
+ [ ] Rotation, one-hand mode, key height, letter size, themes. Page shows "Custom layout: OK".
