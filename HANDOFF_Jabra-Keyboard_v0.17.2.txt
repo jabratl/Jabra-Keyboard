@@ -1,6 +1,7 @@
-JABRA KEYBOARD - HANDOFF   code = v0.17.1   PLAN K (keyboard layout editor) written 2026-11-13 by a PLANNING chat (read-only audit, NO code changed) | REV 2 = SENIOR REVIEW 2026-11-13 (checked against the real repo zip, see 6.13 + section 7b)
+JABRA KEYBOARD - HANDOFF   code = v0.17.2   PLAN K (keyboard layout editor) written 2026-11-13 by a PLANNING chat (read-only audit, NO code changed) | REV 2 = SENIOR REVIEW 2026-11-13 (checked against the real repo zip, see 6.13 + section 7b)
 =====================================================================================================================================
 Paste this file + the newest Jabra-Keyboard-main zip at the start of EVERY chat. This file is SELF-CONTAINED and REPLACES the file of the same name.
+WHAT TO GIVE EVERY CHAT (answer to the user): ONLY (1) this HANDOFF txt (the newest version number) and (2) the full Jabra-Keyboard-main repo zip. NOT needed: jabra_plan_k_review_docs.zip (it only holds an older copy of this handoff + the archive of the old plan X, which is grep-only; it was a docs patch for the repo, not chat input). Old HANDOFF_* files in the repo root = stale, never give them.
 The old long handoff (plan X, sections 1-11) is kept UNCHANGED in docs/ARCHIVE_HANDOFF_v0.16.10_before_plan_K.txt (grep only, never read fully).
 ASSUMPTIONS (1 line): (a) "extra ? key" = the ? key between space and "." in the last row (MgbIme.kt dandaBtn: "?" in English, "।" in Bangla); (b) "space tab" = the SPACE bar with "< English >" (swipe = language, drag = cursor); (c) the user's phone showed version 0.16.10 (build 156) in the screenshot = old build, v0.16.15 is not installed yet; (d) the video is a RIDMIK reference (not Jabra): space bar "< name >" with a language bubble while swiping, symbols page with Tab key, Bangla pages.
 
@@ -61,7 +62,7 @@ ASSUMPTIONS (1 line): (a) "extra ? key" = the ? key between space and "." in the
   Panel routes: clipboard format more emoji settings typing size themes tstudio vault tt profiles numpad symbols tbquick toolbar pad keymap (letters = showLetters()). NEW in plan K: none in the keyboard until K10 (in-keyboard edit); app route "layout_editor" (K6).
   Clipboard prefs (v0.16.16): clip_hold (int level 0 System / 1 0.8 s / 2 1.2 s / 3 1.5 s default / 4 2 s; in ProfileCodec.SPEC).
   Language prefs: bn_layout ("avro" | "probhat"), lang_avro_on, lang_probhat_on, lang_tap, lang_fav, bn_map. VALUES STAY.
-  Bottom row prefs: key_qm (v0.17.1, bool default false), bot_style, key_lang, space_lang, sp_step, key_globe, key_voice, key_emoji, key_dots, mode_key, edit_bar, row_gap, fn_gap, edge_dp, letter_pct, numrow, nr_mode, nr_chars, xrow_chars.
+  Bottom row prefs: sp_wpct / sp_hpct / sp_anim (v0.17.2: int 60..200 default 100 / int 80..160 default 100 / bool default ON; typing/SpacePlan.java, SpaceSlide.kt), key_qm (v0.17.1, bool default false), bot_style, key_lang, space_lang, sp_step, key_globe, key_voice, key_emoji, key_dots, mode_key, edit_bar, row_gap, fn_gap, edge_dp, letter_pct, numrow, nr_mode, nr_chars, xrow_chars.
   Clip data: clips_v1 "<0|1 pinned>,<urlencoded text>" (ClipList.MAX_LEN 2000 for Add / Edit, MAX_CAPTURE 20000 for copied text), clip_meta_v1.
   PLAN K NEW PREFS (names grep-checked free on 2026-11-13; grep AGAIN before use; avoid names that are a substring of an old key, e.g. "tb_h"):
     key_qm   (bool, "? / । key in the bottom row"; K1; DEFAULT = HIDDEN because the user asked to remove it; setting row lets him bring it back)
@@ -139,7 +140,8 @@ ASSUMPTIONS (1 line): (a) "extra ? key" = the ? key between space and "." in the
       Dependencies: none. Design note: no new colour; the long-press hint of "." uses the existing hint look only if HintKeys is already on that key (do NOT add a second listener: use the existing JabraLongPress.attach pattern the comma key uses).
       Checks (phone): English + Bangla: no ? key, space wider; long-press "." gives ? / ।; setting ON = old row back; preview in the app matches; rotation; one-hand mode; password field.
 
-  [ ] K2   v0.17.2    Space bar: bigger / resizable + smoother swipe                mode MODIFY   size M (~40%)
+  [x] K2   v0.17.2    DONE 2026-11-13: SpacePlan.java (+Test 76), SpaceSlide.kt (SlideButton), prefs sp_wpct / sp_hpct / sp_anim, MgbIme + JabraExtras (onSlide) + preview + 3 settings rows; width cap = narrowest other key >= 24 dp (not weight 0.9); sp_ud NOT built; NOT phone-tested (CHECKLIST Z101)
+      (original plan text follows)
       Goal (video reference): space bar can be made wider and taller; language swipe on space feels smooth (label slides with the finger, bubble with the next language, haptic tick per step, no accidental space); cursor drag stays smooth.
       Add (pure): typing/SpacePlan.java (width % -> weight within allowed range using the other keys' sum; height % -> dp; swipe step dp from level; progress 0..1 of a swipe; sanitize all) + tools/SpacePlanTest.java (>= 40 checks).
       Modify (patch only): MgbIme.kt bottom row block (L1086-1118): apply sp_wpct to the space weight (after the Ridmik-style rule; range 60..200 % of the computed weight, never below 1.5 or above what leaves 4 other keys >= 0.9), sp_hpct as height of the whole bottom row (default 100 = same code path), sp_anim -> label slide: extras/SpaceDrag.java / SpaceGesture.java get an optional progress callback (patch, the old callbacks stay), langBubble(v) already exists. Prefs sp_wpct sp_hpct sp_anim (+ rows in the Layout & Size page, SettingsIndex, ProfileCodec, Migrate, ChangedPlan, tests). KeyboardPreview.kt follows width / height.
@@ -229,7 +231,7 @@ ASSUMPTIONS (1 line): (a) "extra ? key" = the ? key between space and "." in the
   G. NOT CHANGED: package name, prefs file "jabra", RULE 0, patch-only rule, one step per chat, exclusion list, design rules, Classic theme, default = old behaviour.
 
 8) STATUS
-  Code = v0.17.1 (plan X done, E1 E2 E3 done, K1 done; E2 + K1 NOT phone-tested yet: CHECKLIST Z99, Z100). NEXT = K2. Plan K = planned only (this chat); REV 2 senior review done the same day, still no code changed. v0.16.15 build on GitHub: result NOT known in the planning chat; ask the user. Kotlin has never been compiled in these chats (no kotlinc / github.com): the first chat that can must run tools/KOTLIN_CHECK.txt and FIX before new work.
+  Code = v0.17.2 (plan X done, E1 E2 E3 done, K1 + K2 done; E2 + K1 + K2 NOT phone-tested yet: CHECKLIST Z99, Z100, Z101). NEXT = K0 (ASK the user first: CI test gate yes / no), then K3. Plan K = planned only (this chat); REV 2 senior review done the same day, still no code changed. v0.16.15 build on GitHub: result NOT known in the planning chat; ask the user. Kotlin has never been compiled in these chats (no kotlinc / github.com): the first chat that can must run tools/KOTLIN_CHECK.txt and FIX before new work.
   panel_ui default is still 0 (Classic panels): ASK the user, flip to 1 only after phone OK of X9-X12.
   The user's phone showed Jabra Keyboard 0.16.10 (build 156): remind him to update (App > Check for updates) so E3 (long clips, gold pinned) can be tested.
 
@@ -253,6 +255,7 @@ ASSUMPTIONS (1 line): (a) "extra ? key" = the ? key between space and "." in the
 
   2026-11-13 PLAN K REV 2 DONE (senior review, repo zip checked read-only, sections 6.1b 6.8-6.13 7b + steps K0 K9b K13 added, K5a split) -> jabra_plan_k_review_docs.zip
   2026-11-13 E2 DONE (v0.16.16): ClipHold.kt NEW, ClipCards.kt / ClipboardFeature.kt hold + tick fix, clip_hold setting (6 registration files), HoldSelectTest 47, all 91 tests green -> jabra_v0_16_16.zip (user applies by pushing it to the repo root)
+  2026-11-13 K2 DONE (v0.17.2): SpacePlan.java + SpacePlanTest (76), SpaceSlide.kt NEW, MgbIme / JabraExtras / KeyboardPreview / SettingsGroups + 4 registration files, ProfileTest 65 keys, SettingsIndexTest 77, all 92 tests green, Kotlin NOT compiled -> jabra_v0_17_2.zip
   2026-11-13 K1 DONE (v0.17.1): key_qm hidden by default, space wider, long-press "." = ? / ।, preview + setting + 5 registration files, BottomPlanTest 37, all 91 tests green -> jabra_v0_17_1.zip
 
 11) NEXT (ideas, NOT planned, ask the user first)
@@ -262,4 +265,4 @@ ASSUMPTIONS (1 line): (a) "extra ? key" = the ? key between space and "." in the
   - Clipboard: quick-paste popup on long-press of the clipboard toolbar icon; "remove duplicates" button; clip templates with {date} / {clipboard}.
 
 12) KICKOFF LINE FOR THE NEXT CHAT (copy-paste)
-  "Jabra-Keyboard plan K. Read HANDOFF_Jabra-Keyboard_v0.16.15.txt (in the zip). Do the FIRST unchecked step of section 7 (E2, then K1, K2 ...). I upload the FULL repo zip (input only). Deliver ONLY a patch zip (name jabra_v0_X_Y_Z.zip, root folder Jabra-Keyboard-main/) and tell me how much is left. GitHub build of the last version: GREEN / errors pasted below (if errors: FIX first)."
+  "Jabra-Keyboard plan K. Read HANDOFF_Jabra-Keyboard_v0.17.2.txt. Do the FIRST unchecked step of section 7 (K0 = ask me first, then K3, K4 ...). I upload the FULL repo zip (input only). Deliver ONLY a patch zip (name jabra_v0_X_Y_Z.zip, root folder Jabra-Keyboard-main/) and tell me how much is left. GitHub build of the last version: GREEN / errors pasted below (if errors: FIX first)."

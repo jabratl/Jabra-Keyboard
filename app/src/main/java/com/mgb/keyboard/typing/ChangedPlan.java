@@ -57,7 +57,7 @@ public final class ChangedPlan {
             if (in(key, "kh_pct_p", "kh_pct_l", "letter_pct", "letter_bold")) return "Size";
             if (in(key, "key_gap", "row_gap", "edge_dp", "row_vgap", "fn_gap")) return "Spacing";
             if (in(key, "key_radius")) return "Shape";
-            if (in(key, "bot_style", "key_dots", "pb_home_gap")) return "Bottom row";
+            if (in(key, "bot_style", "key_dots", "pb_home_gap", "sp_wpct", "sp_hpct")) return "Bottom row";   // v0.17.2 (K2): sp_wpct, sp_hpct
             if (in(key, "oh_w_p", "oh_w_l")) return "One-hand";
         } else if (group.equals("Look")) {
             if (in(key, "theme", "look", "key_border", "icons_on")) return "Theme & style";
@@ -67,7 +67,7 @@ public final class ChangedPlan {
             if (in(key, "onehand", "tb_tip")) return "Other";
         } else if (group.equals("Languages & layouts")) {
             if (in(key, "bn_layout", "bn_map", "lang_avro_on", "lang_probhat_on")) return "Bangla";
-            if (in(key, "lang_tap", "lang_fav", "space_lang", "sp_preview", "sp_tick", "sp_step", "key_lang")) return "Switching";
+            if (in(key, "lang_tap", "lang_fav", "space_lang", "sp_preview", "sp_tick", "sp_step", "key_lang", "sp_anim")) return "Switching";   // v0.17.2 (K2): sp_anim
             if (in(key, "numrow", "numpad_auto", "pc_mode", "mode_key", "pc_remember")) return "Number row & mode";
         } else if (group.equals("Keys & gestures")) {
             if (in(key, "haptic", "fb_down", "haptic_native", "sound")) return "Feedback";

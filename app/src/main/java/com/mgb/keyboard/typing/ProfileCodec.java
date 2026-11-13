@@ -44,7 +44,8 @@ public final class ProfileCodec {
         "nr_hpct:i", "nr_mode:i", "nr_chars:s",   // v0.16.7
         "panel_ui:i",   // v0.16.9
         "clip_hold:i",   // v0.16.16 (E2)
-        "key_qm:b"   // v0.17.1 (K1)
+        "key_qm:b",   // v0.17.1 (K1)
+        "sp_wpct:i", "sp_hpct:i", "sp_anim:b"   // v0.17.2 (K2)
     };
     public static final String[] KEYS = new String[SPEC.length];
     private static final char[] TYPE = new char[SPEC.length];
@@ -86,6 +87,8 @@ public final class ProfileCodec {
             if (key.equals("bn_map") && (n < 0 || n > 1)) return INVALID;   // v0.16.3
             if ((key.equals("tb_hpct") || key.equals("tb_ipct") || key.equals("nr_hpct")) && (n < 70 || n > 150)) return INVALID;   // v0.16.6 / v0.16.7
             if (key.equals("nr_mode") && (n < 0 || n > 2)) return INVALID;   // v0.16.7
+            if (key.equals("sp_wpct") && (n < 60 || n > 200)) return INVALID;   // v0.17.2 (K2)
+            if (key.equals("sp_hpct") && (n < 80 || n > 160)) return INVALID;   // v0.17.2 (K2)
             if (key.equals("panel_ui") && (n < 0 || n > 1)) return INVALID;   // v0.16.9
             if ((key.equals("onehand") || key.equals("lang_tap") || key.equals("lang_fav")) && (n < 0 || n > 2)) return INVALID;
             return Integer.valueOf(n);

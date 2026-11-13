@@ -727,3 +727,13 @@ Z100) v0.17.1 No "?" key in the bottom row (K1)  [English, Bangla phonetic, Bang
  [ ] App > Keys & gestures > "Show ? / । key" = ON: the old "?" / "।" key is back and the space bar is as before (Bangla shows "।"). OFF again: it disappears at once.
  [ ] App "Live preview" shows the same bottom row for ON and OFF. Settings > Bottom row style "Ridmik-like" and "Old": both look right, space is wider in both when the key is OFF.
  [ ] Symbols page (?123) still has "?". Rotation and one-hand mode: row fits, no crash.
+
+Z101) v0.17.2 Space bar size + smoother language swipe (K2)  [portrait + landscape; Space swipe = language ON for the slide]
+ [ ] App > Data & About shows 0.17.2. Open any text field: the bottom row looks exactly as in 0.17.1 (all three new settings are at their default).
+ [ ] App > Layout & size > "Space bar width": 60 / 100 / 150 / 200 %. The space bar gets narrower / wider, the other keys stay tappable (none is tiny). Live preview shows the same.
+ [ ] "Space bar width" 200 % on a small phone: it stops growing at some point (the other keys keep about 24 dp) - not a bug.
+ [ ] "Bottom row height": 80 / 100 / 160 %. Only the last row changes height. Open the clipboard / emoji / settings panel and come back: no jump, keyboard not taller than the panel. Live preview agrees.
+ [ ] Space swipe = language ON: put the finger on the space bar and move left / right: the word on the bar slides with the finger, the language changes after one step (bubble + tick as before), the word glides back to the middle when you lift. A plain tap still types a space. A swipe never types a space.
+ [ ] "Label slides while swiping" OFF: the label does not move (bubble + tick still work). Space swipe OFF: dragging on space still moves the cursor as before.
+ [ ] Phone setting "Remove animations" ON: no slide, swipe still works.
+ [ ] Double-space period, language key (EN), rotation, one-hand mode, password field, Ridmik-like bottom row style: all still fine.

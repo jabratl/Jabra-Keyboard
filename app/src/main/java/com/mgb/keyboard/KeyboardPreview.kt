@@ -153,14 +153,18 @@ object KeyboardPreview {
         val r4 = row()
         val bst = BottomPlan.style(p.int("bot_style", 0))   // v0.10.27
         val qmShown = try { p.bool("key_qm", false) } catch (_: Throwable) { false }   // v0.17.1 (K1)
-        r4.addView(key("?123", BottomPlan.symWeight(bst), 1))
-        r4.addView(key(if (probhat) com.mgb.keyboard.typing.LangNames.keyLabel(true) else "EN", BottomPlan.langWeight(bst), 1))
-        r4.addView(key(",", 1f, 0))
+        val hB = try { keyH * com.mgb.keyboard.typing.SpacePlan.sanitizeH(p.int("sp_hpct", 100)) / 100f } catch (_: Throwable) { keyH }   // v0.17.2 (K2): bottom row height % (100 = same)
+        r4.addView(key("?123", BottomPlan.symWeight(bst), 1, hB))
+        r4.addView(key(if (probhat) com.mgb.keyboard.typing.LangNames.keyLabel(true) else "EN", BottomPlan.langWeight(bst), 1, hB))
+        r4.addView(key(",", 1f, 0, hB))
         val spaceLabel = if (p.bool("space_lang", false)) (if (probhat) com.mgb.keyboard.typing.LangNames.name(true) else "English") else "space"
-        r4.addView(key(spaceLabel, BottomPlan.spaceWeight(bst, BottomPlan.symWeight(bst) + BottomPlan.langWeight(bst) + BottomPlan.enterWeight(bst) + (if (qmShown) 3f else 2f), qmShown), 2))
-        if (qmShown) r4.addView(key(if (probhat) "\u0964" else "?", 1f, 0))   // v0.17.1 (K1): follows the setting key_qm (default hidden)
-        r4.addView(key(".", 1f, 0))
-        val en = key("\u23CE", BottomPlan.enterWeight(bst), 1)
+        val spOthers = BottomPlan.symWeight(bst) + BottomPlan.langWeight(bst) + BottomPlan.enterWeight(bst) + (if (qmShown) 3f else 2f)
+        val spBase = BottomPlan.spaceWeight(bst, spOthers, qmShown)
+        val spW = try { com.mgb.keyboard.typing.SpacePlan.spaceWeight(spBase, p.int("sp_wpct", 100), spOthers, 1f, ctx.resources.displayMetrics.widthPixels / d - 2f * edgeDp) } catch (_: Throwable) { spBase }   // v0.17.2 (K2): same width rule as the real keyboard
+        r4.addView(key(spaceLabel, spW, 2, hB))
+        if (qmShown) r4.addView(key(if (probhat) "\u0964" else "?", 1f, 0, hB))   // v0.17.1 (K1): follows the setting key_qm (default hidden)
+        r4.addView(key(".", 1f, 0, hB))
+        val en = key("\u23CE", BottomPlan.enterWeight(bst), 1, hB)
         try { JabraIcons.putThemed(ctx, en, "enter") } catch (_: Throwable) { }
         r4.addView(en)
         root.addView(r4)

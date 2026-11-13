@@ -115,8 +115,9 @@ class SpaceDragHelper(
      * v0.8.9: like attach(), plus: v0.9.3: swipe at once (no hold) = [onLang] steps (+ = next language) instead of cursor steps.
      * A quick drag is still the cursor. Armed but not swiped = a normal space. Logic = extras/SpaceGesture.java (tested). Used only when setting space_lang is ON.
      */
-    fun attachLang(v: View, onLang: (Int) -> Unit, onArm: (View) -> Unit, onShow: (View) -> Unit = { }, onHide: () -> Unit = { }, onEnd: (Boolean) -> Unit = { }, langStepDp: () -> Float = { LangSwipe.STEP_DP }) {   // v0.9.2: onShow = live language bubble, onHide = remove it; v0.9.8: onEnd(cancelled) = finger up (save once) / cancel (restore), langStepDp = swipe distance read at each touch
+    fun attachLang(v: View, onLang: (Int) -> Unit, onArm: (View) -> Unit, onShow: (View) -> Unit = { }, onHide: () -> Unit = { }, onEnd: (Boolean) -> Unit = { }, langStepDp: () -> Float = { LangSwipe.STEP_DP }, onSlide: (Float, Boolean) -> Unit = { _, _ -> }) {   // v0.17.2 (K2): onSlide(progress -1..1, finished) = label slide; old callers unchanged   // v0.9.2: onShow = live language bubble, onHide = remove it; v0.9.8: onEnd(cancelled) = finger up (save once) / cancel (restore), langStepDp = swipe distance read at each touch
         var g = SpaceGesture(cursorPx, LangSwipe.STEP_DP * dens)
+        var downX = 0f; var stepPx = LangSwipe.STEP_DP * dens; var maxTravel = 0f   // v0.17.2 (K2)
         val h = android.os.Handler(android.os.Looper.getMainLooper())
         val arm = Runnable { try { if (g.arm()) { v.isPressed = true; onArm(v); try { onShow(v) } catch (_: Throwable) { } } } catch (_: Throwable) { } }   // v0.9.2
         v.setOnTouchListener { view, ev ->
@@ -125,6 +126,8 @@ class SpaceDragHelper(
                     MotionEvent.ACTION_DOWN -> {
                         view.isPressed = true
                         try { g = SpaceGesture(cursorPx, langStepDp() * dens) } catch (_: Throwable) { }   // v0.9.8: sp_step read at touch time (no rebuild needed)
+                        try { stepPx = langStepDp() * dens } catch (_: Throwable) { }
+                        downX = ev.x; maxTravel = 0f   // v0.17.2 (K2)
                         g.down(ev.x)
                         h.removeCallbacks(arm)
                         if (LangSwipe.ARM_MS <= 0L) g.arm() else h.postDelayed(arm, LangSwipe.ARM_MS)   // v0.9.3: armed at once = no 0.2 s hold (bubble shows from the first language step)
@@ -133,6 +136,7 @@ class SpaceDragHelper(
                     MotionEvent.ACTION_MOVE -> {
                         val n = g.move(ev.x)
                         if (n != 0) { if (g.kind() == SpaceGesture.LANG) { onLang(n); try { onShow(view) } catch (_: Throwable) { } } else onStep(n) }   // v0.9.2: bubble follows each language step
+                        try { val tr = Math.abs(ev.x - downX); if (tr > maxTravel) maxTravel = tr; onSlide(if (g.langNet() == 0) com.mgb.keyboard.typing.SpacePlan.progress(ev.x - downX, stepPx) else 0f, false) } catch (_: Throwable) { }   // v0.17.2 (K2): label follows the finger until the language changes
                         true
                     }
                     MotionEvent.ACTION_UP -> {
@@ -140,13 +144,15 @@ class SpaceDragHelper(
                         try { onHide() } catch (_: Throwable) { }   // v0.9.2
                         try { onEnd(false) } catch (_: Throwable) { }   // v0.9.8: save the language ONCE
                         view.isPressed = false
-                        if (g.up()) { onFeedback(view); onTap() }
+                        try { onSlide(0f, true) } catch (_: Throwable) { }   // v0.17.2 (K2)
+                        if (g.up() && !com.mgb.keyboard.typing.SpacePlan.cancelsTap(maxTravel, stepPx)) { onFeedback(view); onTap() }   // v0.17.2 (K2): a swipe of one step or more never types a space
                         true
                     }
                     MotionEvent.ACTION_CANCEL -> {
                         h.removeCallbacks(arm)
                         try { onHide() } catch (_: Throwable) { }   // v0.9.2
                         try { onEnd(true) } catch (_: Throwable) { }   // v0.9.8: cancelled swipe = back to the start language
+                        try { onSlide(0f, true) } catch (_: Throwable) { }   // v0.17.2 (K2)
                         view.isPressed = false
                         true
                     }

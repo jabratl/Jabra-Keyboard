@@ -124,8 +124,8 @@ class MgbIme : InputMethodService() {
 
     private fun dp(v: Int): Int = (v * resources.displayMetrics.density).toInt()
 
-    private fun key(label: String, weight: Float, onClick: () -> Unit): Button {
-        val b = Button(this)
+    private fun key(label: String, weight: Float, mk: () -> Button = { Button(this) }, onClick: () -> Unit): Button {   // v0.17.2 (K2): mk = which Button class (default = the same Button as before)
+        val b = mk()
         b.text = label
         b.isAllCaps = false
         b.minWidth = 0
@@ -1092,7 +1092,8 @@ class MgbIme : InputMethodService() {
         r4.addView(commaKey)
         val spaceAction = { commitWord(); spaceKey() }   // v0.1.1: double space
         val qmShown = try { prefs.bool("key_qm", false) } catch (_: Throwable) { false }   // v0.17.1 (K1): the "?" / "।" key is HIDDEN by default (setting "Show ? / । key")
-        val sb = key("space", com.mgb.keyboard.typing.BottomPlan.spaceOld(qmShown)) { spaceAction() }   // v0.17.1: old style, key hidden = space takes the freed width
+        val slideOn = try { com.mgb.keyboard.typing.SpacePlan.animOn(prefs.bool("space_lang", false), prefs.bool("sp_anim", true), AppMotion.scale(this)) } catch (_: Throwable) { false }   // v0.17.2 (K2): label slides with the finger (needs Space swipe ON, sp_anim ON, system animations ON)
+        val sb = key("space", com.mgb.keyboard.typing.BottomPlan.spaceOld(qmShown), mk = { if (slideOn) SlideButton(this) else Button(this) }) { spaceAction() }   // v0.17.1: old style, key hidden = space takes the freed width
         try { JabraLook.shape(prefs, sb, JabraLook.PILL) } catch (_: Throwable) { }   // v0.1.5: pill space key
         val spaceLangOn = try { prefs.bool("space_lang", false) } catch (_: Throwable) { false }   // v0.8.9
         spaceBtn = if (spaceLangOn) sb else null
@@ -1102,7 +1103,8 @@ class MgbIme : InputMethodService() {
             val sdh = SpaceDragHelper(resources.displayMetrics.density, { n -> moveCursor(n) }, { spaceAction() }, { v -> feedback(v) }, com.mgb.keyboard.typing.TypingLevels.stepDp(prefs.int("cursor_speed", com.mgb.keyboard.typing.TypingLevels.CS_DEFAULT)))
             if (spaceLangOn) sdh.attachLang(sb, { n -> swipeLang(n) }, { v -> try { v.performHapticFeedback(android.view.HapticFeedbackConstants.LONG_PRESS) } catch (_: Throwable) { } },
                 { v -> langBubble(v) }, { try { KeyPopup.hide() } catch (_: Throwable) { } },
-                { c -> endLangSwipe(c) }, { try { com.mgb.keyboard.typing.LangSwipe.stepDp(prefs.int("sp_step", com.mgb.keyboard.typing.LangSwipe.STEP_DEFAULT)) } catch (_: Throwable) { com.mgb.keyboard.typing.LangSwipe.STEP_DP } }) else sdh.attach(sb)   // v0.9.8: save once at finger up, sp_step   // v0.9.2 (R3): live language bubble
+                { c -> endLangSwipe(c) }, { try { com.mgb.keyboard.typing.LangSwipe.stepDp(prefs.int("sp_step", com.mgb.keyboard.typing.LangSwipe.STEP_DEFAULT)) } catch (_: Throwable) { com.mgb.keyboard.typing.LangSwipe.STEP_DP } },
+                onSlide = { p, fin -> try { (sb as? SlideButton)?.let { if (fin) it.release(true) else it.follow(com.mgb.keyboard.typing.SpacePlan.slidePx(p, it.width.toFloat(), resources.displayMetrics.density)) } } catch (_: Throwable) { } }) else sdh.attach(sb)   // v0.17.2 (K2): label slide   // v0.9.8: save once at finger up, sp_step   // v0.9.2 (R3): live language bubble
         } catch (_: Throwable) { }
         r4.addView(sb)
         if (qmShown) {   // v0.17.1 (K1): shown only when the setting is ON (same key as before)
@@ -1119,6 +1121,24 @@ class MgbIme : InputMethodService() {
                 var others = 0f
                 for (i in 0 until r4.childCount) { val c = r4.getChildAt(i); if (c !== sb) others += (c.layoutParams as LinearLayout.LayoutParams).weight }
                 (sb.layoutParams as LinearLayout.LayoutParams).weight = com.mgb.keyboard.typing.BottomPlan.spaceWeight(bst, others, qmShown)
+            }
+        } catch (_: Throwable) { }
+        try {   // v0.17.2 (K2): space bar width % (pref sp_wpct, 100 = nothing changes). Applied AFTER the Ridmik-style weight above, capped so the narrowest other key stays >= 24 dp.
+            val wp = prefs.int("sp_wpct", com.mgb.keyboard.typing.SpacePlan.W_DEF)
+            if (com.mgb.keyboard.typing.SpacePlan.sanitizeW(wp) != com.mgb.keyboard.typing.SpacePlan.W_DEF) {
+                var others = 0f; var minO = Float.MAX_VALUE
+                for (i in 0 until r4.childCount) { val c = r4.getChildAt(i); if (c !== sb) { val w = (c.layoutParams as LinearLayout.LayoutParams).weight; others += w; if (w < minO) minO = w } }
+                val dens = resources.displayMetrics.density
+                val rowDp = resources.displayMetrics.widthPixels / dens - 2f * com.mgb.keyboard.typing.EdgePlan.edgeDp(prefs.int("edge_dp", -1))
+                val slp = sb.layoutParams as LinearLayout.LayoutParams
+                slp.weight = com.mgb.keyboard.typing.SpacePlan.spaceWeight(slp.weight, wp, others, minO, rowDp)
+            }
+        } catch (_: Throwable) { }
+        try {   // v0.17.2 (K2): bottom row height % (pref sp_hpct, 100 = nothing changes): every key of the row
+            val hp = prefs.int("sp_hpct", com.mgb.keyboard.typing.SpacePlan.H_DEF)
+            if (com.mgb.keyboard.typing.SpacePlan.sanitizeH(hp) != com.mgb.keyboard.typing.SpacePlan.H_DEF) {
+                val hpx = dp(com.mgb.keyboard.typing.SpacePlan.heightDp(keyDp(), hp))
+                for (i in 0 until r4.childCount) { val c = r4.getChildAt(i); val l = c.layoutParams; if (l != null) { l.height = hpx; c.layoutParams = l } }
             }
         } catch (_: Throwable) { }
         root.addView(r4)

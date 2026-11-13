@@ -521,6 +521,7 @@ object SettingsGroups {
             toggle(g, "Language bubble on swipe", "sp_preview", true)   // v0.9.2 (R3): works only while Space swipe is ON
             toggle(g, "Tick on swipe", "sp_tick", true)   // v0.9.8 (V3): soft tick per language step; works only while Space swipe is ON
             level(g, "Swipe distance", "sp_step", com.mgb.keyboard.typing.LangSwipe.STEP_DEFAULT, com.mgb.keyboard.typing.LangSwipe.STEP_NAMES)   // v0.9.8 (V3)
+            toggle(g, "Label slides while swiping", "sp_anim", true)   // v0.17.2 (K2): works only while Space swipe is ON
             toggle(g, "Show language key (EN)", "key_lang", true)   // v0.8.9: hidden only when Space swipe is ON
             toggle(g, "Number row", "numrow", true)
             toggle(g, "Auto numpad (number / phone fields)", "numpad_auto", true)
@@ -607,6 +608,10 @@ object SettingsGroups {
                 { com.mgb.keyboard.typing.EdgePlan.fnGapDp(prefs.int("fn_gap", -1)) }, -1)
             // v0.10.27 (P2): bottom row like Ridmik, "..." marks on long-press keys, Probhat home row gap. All default = old look.
             cycle(g, "Bottom row", "bot_style", { arrayOf("Old", "Ridmik-like") }, { prefs.int("bot_style", 0).coerceIn(0, 1) }, { prefs.setInt("bot_style", it) }, 0)
+            stepper(g, "Space bar width", "sp_wpct", com.mgb.keyboard.typing.SpacePlan.W_MIN, com.mgb.keyboard.typing.SpacePlan.W_MAX, com.mgb.keyboard.typing.SpacePlan.W_STEP, "%",
+                { com.mgb.keyboard.typing.SpacePlan.sanitizeW(prefs.int("sp_wpct", -1)) }, -1)   // v0.17.2 (K2): 100 = as before
+            stepper(g, "Bottom row height", "sp_hpct", com.mgb.keyboard.typing.SpacePlan.H_MIN, com.mgb.keyboard.typing.SpacePlan.H_MAX, com.mgb.keyboard.typing.SpacePlan.H_STEP, "%",
+                { com.mgb.keyboard.typing.SpacePlan.sanitizeH(prefs.int("sp_hpct", -1)) }, -1)   // v0.17.2 (K2): 100 = as before
             toggle(g, "Long-press dots", "key_dots", false)
             toggle(g, "${com.mgb.keyboard.typing.LangNames.PROBHAT} home row gap", "pb_home_gap", false)
             run {   // v0.10.26: one tap = Ridmik-style numbers (height 120 / 100 %, gap 2, edge 1, row gap 2, Shift gap 4). Two taps to apply, one tap to undo.

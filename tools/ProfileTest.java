@@ -11,7 +11,7 @@ public class ProfileTest {
         // whitelist
         t("allowed theme", ProfileCodec.allowed("theme") && ProfileCodec.allowed("xrow_chars") && ProfileCodec.allowed("haptic_lv"));
         t("ct_json NOT allowed", !ProfileCodec.allowed("ct_json") && !ProfileCodec.allowed("clips_v1") && !ProfileCodec.allowed("fmt_cur") && !ProfileCodec.allowed(null));
-        t("62 keys", ProfileCodec.KEYS.length == 62);   // v0.17.1: +key_qm; v0.16.16: +clip_hold; v0.16.9: +panel_ui; v0.16.7: +nr_hpct, nr_mode, nr_chars;   // v0.16.6: +tb_hpct, tb_ipct; v0.16.3: +bn_map   // v0.9.9: +pop_fast; v0.10.1: +sg_on
+        t("65 keys", ProfileCodec.KEYS.length == 65);   // v0.17.2: +sp_wpct, sp_hpct, sp_anim; v0.17.1: +key_qm; v0.16.16: +clip_hold; v0.16.9: +panel_ui; v0.16.7: +nr_hpct, nr_mode, nr_chars;   // v0.16.6: +tb_hpct, tb_ipct; v0.16.3: +bn_map   // v0.9.9: +pop_fast; v0.10.1: +sg_on
         Set<String> seen = new HashSet<String>(Arrays.asList(ProfileCodec.KEYS));
         t("keys unique", seen.size() == ProfileCodec.KEYS.length);
 
@@ -28,6 +28,14 @@ public class ProfileTest {
         r2.put("theme", 21); t("theme 21 dropped", ProfileCodec.clean(r2).isEmpty());
         r2.clear(); r2.put("theme", 20); t("theme 20 ok (custom slot)", ProfileCodec.clean(r2).size() == 1);
         r2.clear(); r2.put("kh_pct_p", 5000); t("big int dropped", ProfileCodec.clean(r2).isEmpty());
+        // v0.17.2 (K2): space bar prefs
+        r2.clear(); r2.put("sp_wpct", 150); r2.put("sp_hpct", 120); r2.put("sp_anim", false); t("sp prefs ok", ProfileCodec.clean(r2).size() == 3);
+        r2.clear(); r2.put("sp_wpct", 59); t("sp_wpct 59 dropped", ProfileCodec.clean(r2).isEmpty());
+        r2.clear(); r2.put("sp_wpct", 201); t("sp_wpct 201 dropped", ProfileCodec.clean(r2).isEmpty());
+        r2.clear(); r2.put("sp_hpct", 79); t("sp_hpct 79 dropped", ProfileCodec.clean(r2).isEmpty());
+        r2.clear(); r2.put("sp_hpct", 161); t("sp_hpct 161 dropped", ProfileCodec.clean(r2).isEmpty());
+        r2.clear(); r2.put("sp_anim", 1); t("sp_anim wrong type dropped", ProfileCodec.clean(r2).isEmpty());
+        r2.clear(); r2.put("sp_wpct", 60); r2.put("sp_hpct", 160); t("sp range edges ok", ProfileCodec.clean(r2).size() == 2);
         r2.clear(); r2.put("kh_pct_p", Long.valueOf(90)); t("Long accepted as int", ProfileCodec.clean(r2).get("kh_pct_p").equals(90));
         StringBuilder big = new StringBuilder(); for (int i = 0; i < 700; i++) big.append('x');
         r2.clear(); r2.put("tb_order", big.toString()); t("long string dropped", ProfileCodec.clean(r2).isEmpty());
