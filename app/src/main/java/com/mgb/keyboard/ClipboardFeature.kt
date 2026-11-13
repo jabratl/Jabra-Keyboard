@@ -139,6 +139,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
     private var editing: ClipList.Item? = null   // v0.4.3.1: clip being edited (null = normal panel)
     private var editText = ""
     private var editCaps = false
+    private var editPos = 0   // v0.17.56 (C1): caret position inside editText (was: always the end)
     private var confirmSave = false
     /** v0.4.4: set by MgbIme: saves the given clip texts into the Text Vault and returns a short message. null = no "To Vault" button. */
     var toVault: ((List<String>) -> String)? = null
@@ -729,7 +730,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
     private fun actEdit() {
         val chosen = sel.selection()
         if (chosen.size != 1) msg = "Select ONE clip to edit"
-        else { editing = chosen[0]; editText = chosen[0].text; editCaps = false; confirmSave = false }
+        else { editing = chosen[0]; editText = chosen[0].text; editPos = editText.length; editCaps = false; confirmSave = false }
         confirmDel = false
         refresh()
     }
@@ -780,7 +781,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
         top.addView(btn("Cancel", 1f, 40) { editing = null; confirmSave = false; refresh() })
         top.addView(btn("Use field text", 1.6f, 40) {
             val t = try { fieldText() } catch (_: Throwable) { "" }
-            if (t.isBlank()) msg = "Field is empty" else editText = t
+            if (t.isBlank()) msg = "Field is empty" else { editText = t; editPos = t.length }
             confirmSave = false
             refresh()
         })
@@ -812,25 +813,59 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
         val sv = ScrollView(ctx)
         sv.layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(64))
         val tv = TextView(ctx)
-        tv.text = editText.replace("\n", " \u23CE ") + "\u258F"
+        editPos = com.mgb.keyboard.typing.ClipCaret.clamp(editText, editPos)   // v0.17.56 (C1)
+        val shownPos = editPos
+        tv.text = com.mgb.keyboard.typing.ClipCaret.display(editText, shownPos)
         tv.textSize = 14f
         tv.setTextColor(ink())
         tv.setPadding(dp(8), dp(2), dp(8), dp(2))
         sv.addView(tv)
+        try {   // v0.17.56 (C1): tap on the text = put the caret there (nearest gap); a drag still scrolls
+            tv.setOnTouchListener { v, ev ->
+                if (ev.action == android.view.MotionEvent.ACTION_UP && ev.eventTime - ev.downTime < 400L) {
+                    try {
+                        val t = v as TextView
+                        val lay = t.layout
+                        if (lay != null) {
+                            val y = (ev.y - t.totalPaddingTop + t.scrollY).toInt().coerceIn(0, lay.height - 1)
+                            val line = lay.getLineForVertical(y)
+                            val off = lay.getOffsetForHorizontal(line, ev.x - t.totalPaddingLeft)
+                            editPos = com.mgb.keyboard.typing.ClipCaret.posFromDisplay(editText, shownPos, off)
+                            confirmSave = false
+                            refresh()
+                        }
+                    } catch (_: Throwable) { }
+                }
+                true
+            }
+        } catch (_: Throwable) { }
         root.addView(sv)
+
+        // v0.17.56 (C1): caret keys
+        val nav = row()
+        val cc = com.mgb.keyboard.typing.ClipCaret
+        nav.addView(btn("|\u25C0", 1f, 34) { touched { editPos = cc.lineStart(editText, editPos) } })
+        nav.addView(btn("\u25C0", 1f, 34) { touched { editPos = cc.left(editText, editPos) } })
+        nav.addView(btn("\u25B2", 1f, 34) { touched { editPos = cc.up(editText, editPos) } })
+        nav.addView(btn("\u25BC", 1f, 34) { touched { editPos = cc.down(editText, editPos) } })
+        nav.addView(btn("\u25B6", 1f, 34) { touched { editPos = cc.right(editText, editPos) } })
+        nav.addView(btn("\u25B6|", 1f, 34) { touched { editPos = cc.lineEnd(editText, editPos) } })
+        root.addView(nav)
+
+        fun ins(s: String) { val np = cc.afterInsert(editText, editPos, s); editText = cc.insert(editText, editPos, s); editPos = np }
 
         fun ch(c: Char): String = if (editCaps) c.uppercaseChar().toString() else c.toString()
         for (letters in arrayOf("1234567890", "qwertyuiop", "asdfghjkl", "zxcvbnm")) {
             val r = row()
             if (letters == "zxcvbnm") r.addView(btn(if (editCaps) "\u21E7 ON" else "\u21E7", 1.5f, 34) { touched { editCaps = !editCaps } })
-            letters.forEach { c -> r.addView(btn(ch(c), 1f, 34) { touched { editText += ch(c); editCaps = false } }) }
-            if (letters == "zxcvbnm") r.addView(btn("\u232B", 1.5f, 34) { touched { if (editText.isNotEmpty()) editText = editText.dropLast(1) } })
+            letters.forEach { c -> r.addView(btn(ch(c), 1f, 34) { touched { ins(ch(c)); editCaps = false } }) }
+            if (letters == "zxcvbnm") r.addView(btn("\u232B", 1.5f, 34) { touched { val np = cc.afterBackspace(editText, editPos); editText = cc.backspace(editText, editPos); editPos = np } })
             root.addView(r)
         }
         val last = row()
-        for (p in arrayOf(".", ",", "?", "!", "-", "'")) last.addView(btn(p, 1f, 34) { touched { editText += p } })
-        last.addView(btn("space", 2.5f, 34) { touched { editText += " " } })
-        last.addView(btn("\u23CE", 1.2f, 34) { touched { editText += "\n" } })
+        for (p in arrayOf(".", ",", "?", "!", "-", "'")) last.addView(btn(p, 1f, 34) { touched { ins(p) } })
+        last.addView(btn("space", 2.5f, 34) { touched { ins(" ") } })
+        last.addView(btn("\u23CE", 1.2f, 34) { touched { ins("\n") } })
         root.addView(last)
         return root
     }
@@ -914,7 +949,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
         r2.addView(btn("Edit", 0.6f, 34) {   // v0.4.3.1: edit ONE ticked clip
             val chosen = sel.selection()
             if (chosen.size != 1) msg = "Select ONE clip to edit"
-            else { editing = chosen[0]; editText = chosen[0].text; editCaps = false; confirmSave = false }
+            else { editing = chosen[0]; editText = chosen[0].text; editPos = editText.length; editCaps = false; confirmSave = false }
             confirmDel = false
             refresh()
         })

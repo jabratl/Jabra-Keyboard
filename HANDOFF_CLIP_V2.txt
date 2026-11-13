@@ -1,0 +1,22 @@
+HANDOFF - Jabra Keyboard clipboard upgrade (C1 done, v0.17.56). Paste this file at the start of the next chat, with the step prompt below.
+
+DONE: C1 (v0.17.56) clip Edit caret. Plan for C2, C3 is in PLAN_CLIP_V2.txt. Before this: v0.17.55 (M3 Bangla number page).
+
+WHAT CHANGED (file: 1 line)
+- app/src/main/java/com/mgb/keyboard/typing/ClipCaret.java (NEW): pure caret logic (insert, backspace, left, right, up, down, line start / end, display text, tap -> position).
+- app/src/main/java/com/mgb/keyboard/ClipboardFeature.kt: editPos var; makeEdit(): tap-to-place caret, caret key row, keys write at the caret; editPos set when edit opens / "Use field text".
+- tools/ClipCaretTest.java (NEW): 81 checks.
+- app/build.gradle.kts: 0.17.56.   CHANGELOG.txt: v0.17.56 entry.   PLAN_CLIP_V2.txt (NEW).   HANDOFF_CLIP_V2.txt (NEW, this file).
+
+CHECKS DONE: tools/run_tests.sh = 128/128 green (ClipCaretTest NEW); bracket balance of ClipboardFeature.kt OK; no duplicate ids (no ids added).
+NOT TESTED (needs real use): Kotlin NOT compiled (if the GitHub build fails: paste the error log, FIX first). Phone: tap places the caret on long and multi-line clips; scroll vs tap in the small box; caret row look at 360 / 1280 dp dark + light; edit screen height with "fit" ON; emoji and Bangla text in the box. The render check at 360 / 1280 dp could NOT be run here (no Android).
+
+KNOWN FACTS for the next steps: clip html format is stored per clip (clip/ClipFmt.java, ClipFmtStore.kt, v0.17.39) but nothing reads it yet. FileProvider + file_paths.xml exist (Updater.kt). SettingsActivity.kt ~line 304 uses ACTION_CREATE_DOCUMENT. Select-mode bottom bar and More tray are in ClipboardFeature.kt (~line 641-740: Pin / Delete / Paste / More: All / Unpin / Merge / Edit / Paste in 1 line / To Vault).
+
+NEXT: C2 - export clips to .txt / .docx with format (see PLAN_CLIP_V2.txt). Then C3 - clipboard design.
+
+PROMPT FOR THE NEXT CHAT (copy):
+Jabra Keyboard step C2. Mode: BUILD. Previous version: v0.17.56. Attached: HANDOFF_CLIP_V2.txt, PLAN_CLIP_V2.txt, app/src/main/java/com/mgb/keyboard/ClipboardFeature.kt, ClipFmtStore.kt, clip/ClipFmt.java, res/xml/file_paths.xml (+ zip of repo if needed for tools/run_tests.sh).
+Goal: export clips (selected or all) to .txt and .docx with format, shared via the Android share sheet.
+Context: Done: C1 (caret in clip Edit). Current version v0.17.56. Next: C2, then C3 (design).
+Rules: same as before (patch only, grep then view small ranges, plan <= 5 lines, node/Java checks, CHANGELOG + handoff, zip only changed files, final reply < 10 lines, stop at ~90% session).

@@ -1,0 +1,30 @@
+PLAN_CLIP_V2 - Clipboard upgrade in 3 steps (user request 2026-11-14)
+=====================================================================
+User wants: (1) in clip Edit the cursor must be movable / placeable anywhere (was stuck at the end);
+(2) export copied clips WITH format to .txt or .docx directly; (3) neater, easier, clearer clipboard design.
+One step = one version = one topic. Patch only. Keep ids, handlers, prefs, file names.
+
+STEP C1 - FIX  (v0.17.56)  DONE
+  Goal: caret can be placed / moved in the clip Edit screen.
+  Root cause: ClipPanel.makeEdit() used editText += x / dropLast(1) (always the end).
+  Built: typing/ClipCaret.java (pure) + tap-to-place + caret key row (|< < up down > >|) + insert / backspace at caret.
+  Files: ClipboardFeature.kt, typing/ClipCaret.java, tools/ClipCaretTest.java, app/build.gradle.kts, CHANGELOG.txt, PLAN_CLIP_V2.txt, HANDOFF_CLIP_V2.txt
+
+STEP C2 - BUILD (v0.17.57)  NEXT
+  Goal: export clips to .txt and .docx (with format) from the clipboard.
+  Facts found (no re-reading needed): clip html is already stored per clip by clip/ClipFmt.java + ClipFmtStore.kt (v0.17.39, key = clip text, value = html; "data only, nothing reads it yet").
+    FileProvider already exists (AndroidManifest provider ${applicationId}.fileprovider + res/xml/file_paths.xml, used by Updater.kt) = share a file with NO new permission.
+    SettingsActivity.kt line ~304 already uses ACTION_CREATE_DOCUMENT (backup) = save-to-folder path exists in the app.
+  Plan (max 5 lines):
+   1. New pure Java typing/ClipExport.java: toTxt(list) (clips separated by a line "----", pinned first, optional date line), toDocx(list, html map) = minimal .docx built with java.util.zip (no library): [Content_Types].xml, _rels/.rels, word/document.xml; html -> runs: bold / italic / underline / line breaks / paragraphs; no html = plain paragraph. Bangla needs a font hint (w:rFonts Nirmala UI) - NOT tested in Word.
+   2. Hook in clipboard select mode: More tray gets "Export" (selected clips) and the header / Manage area gets "Export all"; choose .txt or .docx; file written to cacheDir/exports (add one path line to file_paths.xml only if the current one does not cover it) and opened with the Android share sheet (ACTION_SEND via FileProvider). "Save to folder" (ACTION_CREATE_DOCUMENT) only if time is left: it needs the Activity, so it may go to NEXT.
+   3. Tests: tools/ClipExportTest.java (txt text, docx zip entries + valid XML + escaping of & < > and Bangla, empty list, 1000 clips, html with bold / italic).
+   4. Risks: docx not opened in a real Word / Google Docs / WPS (NOT tested); a share sheet from inside a keyboard window may need FLAG_ACTIVITY_NEW_TASK; sensitive clips (ClipSensitive) must be skipped or asked before export.
+  Rollback: setting / button off; delete ClipExport.java + test + the hook lines marked v0.17.57.
+
+STEP C3 - MODIFY (v0.17.58)
+  Goal: clipboard design neater, easy to navigate, clear (UI only, no logic change).
+  Plan: (a) look at the panel at 360 and 1280 dp, dark + light, list what is crowded (header, chips, card text size, pin mark, bottom bar, More tray); (b) clearer header: title + count, search icon, one "Manage" entry; (c) cards: consistent padding, line limit, pinned mark, selected state with a visible check; (d) bottom bar: only the 3-4 most used buttons, rest in More; bigger touch targets (>= 40 dp); (e) same look rules for the Edit screen of C1 (box height, key row spacing).
+  Files expected: ClipCards.kt, ClipLook.kt, ClipBar.kt, ClipboardFeature.kt (hooks only), typing/ClipCardSize.java if sizes change.
+  Rule: keep every old action reachable; any layout change behind the existing "clip view" setting or a new ON/OFF so the old look stays.
+  Rollback: switch the new look OFF.
