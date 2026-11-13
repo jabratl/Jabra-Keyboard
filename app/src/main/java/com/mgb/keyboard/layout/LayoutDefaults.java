@@ -41,6 +41,7 @@ public final class LayoutDefaults {
         public boolean keyGlobe = false, keyVoice = false, keyEmoji = false;
         public int spWpct = 100, spHpct = 100; // sp_wpct, sp_hpct
         public boolean hints = true;           // hint_on
+        public boolean avroHints = true;       // bn_hints (v0.17.54 M2): Ridmik Avro hints on the Bangla phonetic (av) layer
         public String hintCustom = "";         // hint_custom
         public boolean accents = false;        // lp_accents (v0.17.46 P3): accent letters on hold
         public boolean punct = false;          // lp_punct (v0.17.46 P3): symbol options on the , and . keys
@@ -181,6 +182,9 @@ public final class LayoutDefaults {
                 if (!ls.equals(k.out[1])) k.label[1] = ls;
             } else if (english && o.hints) {
                 String h = LongPressHints.hintFor(c, o.numRow, o.hintCustom);
+                if (h != null) k.lp = h;
+            } else if (layer.equals("av") && o.hints && o.avroHints) {   // v0.17.54 (M2)
+                String h = com.mgb.keyboard.typing.AvroHints.hintFor(c, o.numRow);
                 if (h != null) k.lp = h;
             }
             if (english && o.accents && !layer.equals("pb")) k.lpList.addAll(LpAccents.accents(c));   // v0.17.46 (P3): hint (if any) stays the first option

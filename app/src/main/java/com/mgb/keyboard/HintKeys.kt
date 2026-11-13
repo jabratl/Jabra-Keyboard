@@ -32,11 +32,17 @@ interface HintHost {
     fun hintFeedback(v: View)
     /** v0.9.4 (R4): true = a Bangla layout is active and the field accepts Bangla (not password / email / URL / number). Default false = old behaviour. */
     fun banglaNumbers(): Boolean = false
+    /** v0.17.54 (M2): true = phonetic Bangla uses the Ridmik Avro hint table (default false = English table as before). */
+    fun avroHints(): Boolean = false
 }
 
 object HintKeys {
 
     private fun letterOf(b: View): Char? = b.tag as? Char
+
+    /** v0.17.54 (M2): the hint of a letter: Avro table in phonetic Bangla (when on), else the English table (custom text first) as before. */
+    private fun hintOf(c: Char, numrow: Boolean, custom: String, host: HintHost): String? =
+        if (try { host.avroHints() } catch (_: Throwable) { false }) com.mgb.keyboard.typing.AvroHints.hintFor(c, numrow) else LongPressHints.hintFor(c, numrow, custom)
 
     fun attach(b: Button, prefs: JabraPrefs, host: HintHost) {
         val h = Handler(Looper.getMainLooper())
@@ -46,7 +52,7 @@ object HintKeys {
                 val c = letterOf(b) ?: return@Runnable
                 val isNum = HintStyle.isDigit(c)   // v0.8.6: number-row key (Bangla digit hint); language does not matter
                 if ((!isNum && !host.hintTypingActive()) || !prefs.bool("hint_on", true)) return@Runnable
-                val hint = (if (isNum) HintStyle.digitHintFor(c, prefs.bool("hint_digits", false), prefs.bool("numrow_bn", false), host.banglaNumbers()) else LongPressHints.hintFor(c, prefs.bool("numrow", true), prefs.str("hint_custom", ""))) ?: return@Runnable   // v0.5.2 (custom override first); v0.9.4: digitHintFor (numrow_bn)
+                val hint = (if (isNum) HintStyle.digitHintFor(c, prefs.bool("hint_digits", false), prefs.bool("numrow_bn", false), host.banglaNumbers()) else hintOf(c, prefs.bool("numrow", true), prefs.str("hint_custom", ""), host)) ?: return@Runnable   // v0.5.2 (custom override first); v0.9.4: digitHintFor (numrow_bn)
                 fired = true
                 host.typeHint(hint)
                 HoldBubble.show(b, hint, prefs)   // v0.17.31 (UI7): the bubble shows what the hold typed
@@ -95,7 +101,7 @@ object HintKeys {
             val on = KeyCfg.hintOn(prefs)   // v0.6.1: cached
             val isNum = c != null && HintStyle.isDigit(c)   // v0.8.6
             val show = c != null && LongPressHints.labelVisible(on && (isNum || host.hintLabelActive()), hide ?: prefs.bool("hint_hide", false))
-            val t = if (!show) null else if (isNum) HintStyle.digitHintFor(c!!, prefs.bool("hint_digits", false), prefs.bool("numrow_bn", false), host.banglaNumbers()) else LongPressHints.hintFor(c!!, numrow ?: prefs.bool("numrow", true), custom ?: prefs.str("hint_custom", ""))   // v0.5.2; v0.9.4: digitHintFor (numrow_bn)
+            val t = if (!show) null else if (isNum) HintStyle.digitHintFor(c!!, prefs.bool("hint_digits", false), prefs.bool("numrow_bn", false), host.banglaNumbers()) else hintOf(c!!, numrow ?: prefs.bool("numrow", true), custom ?: prefs.str("hint_custom", ""), host)   // v0.5.2; v0.9.4: digitHintFor (numrow_bn)
             if (t == null) { if (b.foreground is HintDrawable) b.foreground = null; return }
             val col = try { JabraThemes.iconColor(prefs) } catch (_: Throwable) { Color.parseColor("#222222") }
             val cur = b.foreground

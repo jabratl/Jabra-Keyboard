@@ -15,7 +15,7 @@ STEPS (one step per chat; each ends with zip of changed files + handoff)
 M1  v0.17.53  MODIFY  DONE
     Tools row stays on the number / symbol page (and the manual number pad), all 3 languages. Pref tools_keep (default ON).
     Files: MgbIme.kt (withTools / keepsTools / reshowTop, 3 call sites), SettingsGroups.kt, typing/SettingsIndex.java, typing/ChangedPlan.java, app/build.gradle.kts.
-M2  v0.17.54  MODIFY  Bangla letter legends (Ridmik table)
+M2  v0.17.54  MODIFY  DONE  Bangla letter legends (Ridmik table)  [done as planned; plus LayoutRoute.BUILT_VERSION 3 so unedited default layouts rebuild]
     - NEW typing/AvroHints.java (pure): hintFor(letter) = the table above; digits on q..p only when the number row is OFF (else symbols as today); tools/AvroHintsTest.java.
     - MgbIme.kt hintTypingActive / hintLabelActive: phonetic Bangla (not Bangla-fixed, not latinOnly) allowed when pref bn_hints (default ON); HintKeys.kt: pick AvroHints table for phonetic Bangla (grep: LongPressHints.hintFor in lines ~49 / ~98).
     - layout/LayoutDefaults.java letters("av"): same table (grep: LongPressHints.hintFor at ~183) so the custom-keyboard path matches.

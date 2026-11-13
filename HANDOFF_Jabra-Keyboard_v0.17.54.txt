@@ -1,0 +1,21 @@
+HANDOFF Jabra-Keyboard v0.17.54 (M2 done = Avro hints on Bangla keys)  -  paste this + PLAN_AVRO_LOOK.txt at the start of the next chat
+
+DONE LIST
+- P1-P5 v0.17.44-48 | PC1-PC4 v0.17.49-52 | Avro look plan: M1 v0.17.53 (tools row on number page) | M2 v0.17.54 (Bangla letter hints, this step)
+- Current version: v0.17.54. Kotlin NEVER compiled yet; nothing phone-tested for v0.17.44-54.
+
+WHAT CHANGED (file: 1 line each)
+- typing/AvroHints.java (NEW): Ridmik hint table (q..p digits only when numrow OFF, a..l signs, z b n m) + gate active(setting, bangla, probhat, latinOnly).
+- HintKeys.kt: HintHost.avroHints() (default false) + hintOf() used by long-press typing and the label. MgbIme.kt: avroHintsOn(); hintTypingActive / hintLabelActive no longer treat phonetic Bangla as "Bangla = no hints"; avroHints override.
+- layout/LayoutDefaults.java + LayoutStore.kt: custom-keyboard av layer gets the same hints (Options.avroHints). layout/LayoutRoute.java: BUILT_VERSION 3 (unedited default layouts rebuild once).
+- SettingsGroups.kt / typing/SettingsIndex.java / typing/ChangedPlan.java: toggle "Avro hints on Bangla keys" (bn_hints, default ON). tools/AvroHintsTest.java (NEW, 103 checks). build.gradle.kts 0.17.54. CHANGELOG, CHECKLIST_SMOKE (38), PLAN status.
+
+CHECKS DONE: bash tools/run_tests.sh = 126/126 green; bracket balance of 4 changed Kotlin files OK.
+
+NOT TESTED (needs real use)
+- Kotlin compile of ALL v0.17.44-54 (build error log -> FIX mode first).
+- Phone: legends look + hold-to-type in Bangla, language switch, numrow ON / OFF, custom keyboard ON (unedited + edited layout), password / email fields. M1 list (tools row on number page) too.
+- Known limits: edited custom layouts keep old keys; bn_hints toggle in the custom path shows after a layout rebuild; hint_custom is English only; Ridmik colours / emoji key / "Done" label / space label not part of the plan.
+
+NEXT: M3 (v0.17.55) Bangla number page in the Ridmik sign set (Bengali digits with 1-0 hints; @ # TAKA % & * - + ( ) ; = ! " ' : ; / ? backspace; ABC , space . Enter), default ON (pref bn_numpage), only phonetic Bangla; see PLAN_AVRO_LOOK.txt.
+Start line for the next chat: "M3 koro" or "FIX: build error log". Attach: JabraExtras.kt (grep symbols / symbolsFromModel / rootView / pk / cs / sym only), HintKeys.kt (HintDrawable only), typing/SymbolPages.java, typing/HintStyle.java, SettingsGroups.kt, typing/SettingsIndex.java, typing/ChangedPlan.java, PLAN_AVRO_LOOK.txt.

@@ -213,11 +213,15 @@ class MgbIme : InputMethodService() {
         return b
     }
 
-    /** v0.1.6: long-press hint letters (English only). */
+    /** v0.17.54 (M2): phonetic Bangla shows + types the Ridmik Avro hints (pref bn_hints, default ON). Bangla fixed keeps no hints. */
+    private fun avroHintsOn(): Boolean = try { com.mgb.keyboard.typing.AvroHints.active(prefs.bool("bn_hints", true), bangla, probhat, latinOnly) } catch (_: Throwable) { false }
+
+    /** v0.1.6: long-press hint letters (English only; v0.17.54: + phonetic Bangla). */
     private val hintHost = object : HintHost {
-        override fun hintTypingActive(): Boolean = try { com.mgb.keyboard.typing.LongPressHints.active(true, bangla && !latinOnly, pcState.isPc() && pcState.meta() != 0) } catch (_: Throwable) { false }
-        override fun hintLabelActive(): Boolean = try { com.mgb.keyboard.typing.LongPressHints.active(true, bangla && !latinOnly, false) } catch (_: Throwable) { false }
+        override fun hintTypingActive(): Boolean = try { com.mgb.keyboard.typing.LongPressHints.active(true, bangla && !latinOnly && !avroHintsOn(), pcState.isPc() && pcState.meta() != 0) } catch (_: Throwable) { false }
+        override fun hintLabelActive(): Boolean = try { com.mgb.keyboard.typing.LongPressHints.active(true, bangla && !latinOnly && !avroHintsOn(), false) } catch (_: Throwable) { false }
         override fun banglaNumbers(): Boolean = bangla && !latinOnly   // v0.9.4 (R4)
+        override fun avroHints(): Boolean = avroHintsOn()   // v0.17.54 (M2)
         override fun typeHint(s: String) { commitWord(); typeText(s) }
         override fun hintFeedback(v: View) { feedback(v) }
     }
