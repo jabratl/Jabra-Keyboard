@@ -1,6 +1,6 @@
-HANDOFF - Jabra Keyboard clipboard upgrade (C1 + C2 + C3 + C4 done, current v0.17.59). Paste this file at the start of the next chat.
+HANDOFF - Jabra Keyboard clipboard upgrade (C1 - C5 done, current v0.17.60). Paste this file at the start of the next chat.
 
-DONE: C1 v0.17.56 clip Edit caret. C2 v0.17.57 export .txt / .docx (+ .57.1 build fix). C3 v0.17.58 clipboard new look. C4 v0.17.59 Edit + Export card look + delete with Undo.
+DONE: C5 v0.17.60 "More / Less" expand for cut clips in Cards (ClipCards.kt) + Undo message on list-row x (ClipboardFeature.kt). C1 v0.17.56 clip Edit caret. C2 v0.17.57 export .txt / .docx (+ .57.1 build fix). C3 v0.17.58 clipboard new look. C4 v0.17.59 Edit + Export card look + delete with Undo.
 
 WHAT CHANGED (file: 1 line)
 - typing/ClipCopy.java (NEW): pure texts (title, count line, empty / no-result, quick-delete rule 1-2 clips).
@@ -16,4 +16,4 @@ NOT TESTED (needs real use): Kotlin NOT compiled (if the GitHub build fails: pas
 
 KNOWN FACTS: with new look ON the redesigned panel (makeNew) is used even when panel_ui = Classic; OFF = panel_ui decides as before. Kotlin trap: a Java class cannot be put in a val (use import).
 
-NEXT: C5 (only if you want): long clip fade + "more" expand in place (ClipCards.kt), press scale, Undo message for list-mode x. Or FIX from the first build log / phone test.
+NEXT: FIX from the first build log / phone test of C1-C5. Not built (only if asked): colour fade at the cut, press scale.

@@ -1249,7 +1249,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
         } catch (_: Throwable) { }
         if (selOn) return r   // v0.2.5.3: no star / x while selecting
         r.addView(JabraIcons.putThemed(ctx, btn(if (item.pinned) "★" else "☆", 0f, rowH) { store.togglePin(item); refresh() }.also { it.minimumWidth = dp(44); it.minWidth = dp(44) }, if (item.pinned) "pinned" else "pin"))   // v0.0.7
-        r.addView(JabraIcons.putThemed(ctx, btn("✕", 0f, rowH) { keepUndo(listOf(item)); store.remove(item); refresh() }.also { it.minimumWidth = dp(44); it.minWidth = dp(44) }, "close"))   // v0.0.7
+        r.addView(JabraIcons.putThemed(ctx, btn("✕", 0f, rowH) { keepUndo(listOf(item)); store.remove(item); if (nl()) msg = ClipCopy.deleted(1); refresh() }.also { it.minimumWidth = dp(44); it.minWidth = dp(44) }, "close"))   // v0.0.7
         return r
     }
 }

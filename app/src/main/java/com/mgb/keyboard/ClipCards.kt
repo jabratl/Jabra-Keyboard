@@ -161,6 +161,34 @@ object ClipCards {
         }
         t.layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f)
         box.addView(t)
+        try {   // v0.17.60 (C5): long clip = small "More" under the text; tap opens the whole card in place (12 lines), "Less" closes it. New look only.
+            if (ClipLook.newLook(pf) && !sm.on && item.text.length > 40) {
+                val lim = t.maxLines
+                val more = TextView(ctx)
+                more.text = "More \u25BE"
+                more.textSize = 11f
+                more.setTypeface(more.typeface, Typeface.BOLD)
+                more.setTextColor(try { JabraTokens.cardNote(pf!!) } catch (_: Throwable) { Color.GRAY })
+                more.gravity = Gravity.CENTER_VERTICAL
+                more.minimumHeight = dp(ctx, 28)
+                more.setPadding(dp(ctx, 8), 0, dp(ctx, 8), 0)
+                more.visibility = View.GONE
+                var open = false
+                more.setOnClickListener {
+                    try { host.feedback(more) } catch (_: Throwable) { }
+                    open = !open
+                    t.maxLines = if (open) 12 else lim
+                    more.text = if (open) "Less \u25B4" else "More \u25BE"
+                }
+                box.addView(more)
+                t.post {   // show the tag only when the text really is cut (ellipsis on the last line)
+                    try {
+                        val l = t.layout
+                        if (l != null && l.lineCount > 0 && l.getEllipsisCount(l.lineCount - 1) > 0) more.visibility = View.VISIBLE
+                    } catch (_: Throwable) { }
+                }
+            }
+        } catch (_: Throwable) { }
         try {   // v0.4.3: char count line (v0.10.24 C1: + kind tag on the left + age in the text)
             val inf = sm.info(item)
             val tg = ClipLook.tag(ctx, pf, item.text)

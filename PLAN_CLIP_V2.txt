@@ -42,3 +42,6 @@ STEP C3 - MODIFY (v0.17.58)  DONE (rules d + f + c; see CHANGELOG; g + i = C4)
 
 STEP C4 - MODIFY (v0.17.59)  DONE: rule g (1-2 clips delete + Undo) and rule i (Edit + Export card look + primary button).
 NEXT (not built): long clip fade + "more" expand in place (ClipCards.kt), press scale (AppMotion), list-mode row x also shows the Undo message, phone check of C3 + C4.
+
+STEP C5 - MODIFY (v0.17.60)  DONE: "More / Less" in place for cut clips (Cards), Undo message on list-row x. Dropped: colour fade, press scale (reasons in CHANGELOG).
+NEXT: phone test of C1-C5 or FIX from the build log.
