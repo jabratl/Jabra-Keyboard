@@ -1,0 +1,41 @@
+PLAN_CLIP_V2 - Clipboard upgrade in 3 steps (user request 2026-11-14)
+=====================================================================
+User wants: (1) in clip Edit the cursor must be movable / placeable anywhere (was stuck at the end);
+(2) export copied clips WITH format to .txt or .docx directly; (3) neater, easier, clearer clipboard design.
+One step = one version = one topic. Patch only. Keep ids, handlers, prefs, file names.
+
+STEP C1 - FIX  (v0.17.56)  DONE
+  Goal: caret can be placed / moved in the clip Edit screen.
+  Root cause: ClipPanel.makeEdit() used editText += x / dropLast(1) (always the end).
+  Built: typing/ClipCaret.java (pure) + tap-to-place + caret key row (|< < up down > >|) + insert / backspace at caret.
+  Files: ClipboardFeature.kt, typing/ClipCaret.java, tools/ClipCaretTest.java, app/build.gradle.kts, CHANGELOG.txt, PLAN_CLIP_V2.txt, HANDOFF_CLIP_V2.txt
+
+STEP C2 - BUILD (v0.17.57)  DONE (as designed below, improved after reading the code)
+  Goal: export clips (selected / all / pinned) to .txt and .docx with format.
+  Design decisions (why this is the best fit for THIS app):
+   - No library, no permission, no manifest change: DOCX is built with java.util.zip; share uses the FileProvider that Updater.kt already has (only +1 cache-path line); "Save" uses MediaStore Downloads (Android 10+).
+   - Pure logic in clip/ClipExport.java so it is testable on a PC: prepare() (drop empty, skip OTP-like codes, max 500), toTxt/toTxtBytes (BOM), toDocx (styles.xml with Calibri + Nirmala UI for Bangla, A4), html -> runs parser (bold, italic, underline, strike, mono, h1-h6, ul / ol, br, p / div, pre, td tab, entities, ignores style / script / head), colours deliberately NOT exported.
+   - Safety: never throws (null / plain-text fallback), XML-invalid characters and lone surrogates removed, unclosed / broken html cannot break the file (3000-case fuzz).
+   - UX: one Export screen (scope chips, 3 option chips that are remembered, a live summary line "N clips - M with format - K code-like left out", 2 Share + 2 Save buttons), result message in the same screen.
+  Validated: python-docx + pandoc + LibreOffice render (Bangla, bold, italic, lists, code, separators all correct).
+  NEXT / ideas NOT built (do only if the user asks): Export-all shortcut in the header (goes into C3), Markdown / HTML export, import a .txt back as clips, per-clip "Share" on long-press, "Save to a chosen folder" (needs an Activity = manifest), date-range scope, export of the Vault.
+
+STEP C3 - MODIFY (v0.17.58)  NEXT   (improved plan: design first, then code)
+  Goal: clipboard looks neat and is easy and clear to use, UI only - no change of what any action does.
+  FINDINGS (read from code, no need to re-read): (1) pref panel_ui default = 0 = CLASSIC panel; the redesigned panel (ClipboardFeature.makeNew, ClipFilter chips, selectBarNew + More tray) exists but is opt-in, so most users never see it. (2) Header (new panel) = ABC | Search | Add | Manage (4 buttons) + chip row + list + bottom bar in select mode. (3) Cards live in ClipCards.kt, tags / colours in ClipLook.kt, header pill look in ClipBar.kt, sizes in typing/ClipCardSize.java + ClipBtn.java, theme colours via JabraTokens. (4) Edit screen (C1) and Export screen (C2) are plain button stacks without the card look.
+  STEP 0 (30 min of the session): look first. Render the panel at 360 and 1280 dp, dark + light (Robolectric is not available: build a tiny pure-Java layout calculator OR draw an HTML mock in the chat) and write a 10-line list of what is crowded / unclear. Fix the list, not guesses.
+  DESIGN RULES (what a good mobile designer would hold to):
+   a. One 8 dp grid: paddings 8 / 12, gaps 8, corner 12 for cards, 20 for pills. Touch targets >= 40 dp (48 for the main button). Text scale only 3 sizes: 11-12 (meta), 14 (clip text), 16 (titles).
+   b. Contrast: text >= 4.5:1, icons / borders >= 3:1 on every theme; check with a new pure test (tools/ClipContrastTest.java) on the theme colours that JabraTokens returns, dark + light + 3 popular themes.
+   c. Clear states: normal / pressed / selected (blue check badge + stronger border) / pinned (gold pin) - never colour alone (always a shape: check, pin).
+   d. Hierarchy: header = title + count + 2 icon buttons (search, more); the primary action Add is the only filled button; everything rare goes into one overflow "...": Manage, Export all, Sort, View (list / cards), Clear unpinned.
+   e. Progressive disclosure: the select bar shows the 3 most used (Pin, Delete, Paste) + More; keep every old action reachable.
+   f. Helpful empty and edge states: "Nothing copied yet - copy any text and it appears here"; "No result for 'x'"; long clips fade out at the line limit with a small "more" tap area that expands the card in place.
+   g. Safe destructive actions: Delete = removes at once with an UNDO bar (undoBuf already exists) instead of "Sure?" when only 1-2 clips; keep "Sure?" for Clear.
+   h. Motion / feedback: tiny press scale (reuse AppMotion), no long animations, haptic as now.
+   i. Same look for the Edit (C1) and Export (C2) screens: card background, 12 dp corner, title row, primary button right, caret keys as a compact row.
+   j. Respect user sizes: clip_btn_pct, clip_list_pct, clip_lines, clip_fit must still work.
+  SAFETY: new look behind ONE new pref clip_new_look (default ON, clipboard only; OFF = exactly today's panel). Other panels untouched (panel_ui keeps its meaning). New pure helpers get tests (ClipCardSize, contrast, label / count text).
+  Files expected: ClipboardFeature.kt (hooks), ClipCards.kt, ClipBar.kt, ClipLook.kt, typing/ClipCardSize.java, typing/ClipCopy.java (NEW, pure: empty-state + count texts), tools/ClipContrastTest.java (NEW), SettingsGroups.kt + typing/SettingsIndex.java + typing/ChangedPlan.java (1 toggle), build.gradle.kts, CHANGELOG, handoff.
+  If the session is too short: do d + f + c first (header, empty states, states), put g + i into C4 (v0.17.59).
+  Rollback: switch "Clipboard new look" OFF.

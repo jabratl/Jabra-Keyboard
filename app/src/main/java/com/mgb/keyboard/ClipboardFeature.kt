@@ -11,6 +11,8 @@ import android.widget.ScrollView
 import android.widget.TextView
 import com.mgb.keyboard.clip.ClipList
 import com.mgb.keyboard.clip.ClipMeta
+import com.mgb.keyboard.clip.ClipExport   // v0.17.57 (C2)
+import com.mgb.keyboard.typing.ClipCaret   // v0.17.56 (C1)
 import com.mgb.keyboard.typing.ClipSelect
 import com.mgb.keyboard.typing.ClipOrder   // v0.15.2 (N2)
 import com.mgb.keyboard.typing.ClipSensitive   // v0.10.10 (W4)
@@ -139,6 +141,11 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
     private var editing: ClipList.Item? = null   // v0.4.3.1: clip being edited (null = normal panel)
     private var editText = ""
     private var editCaps = false
+    private var editPos = 0   // v0.17.56 (C1): caret position inside editText (was: always the end)
+    private var exporting = false   // v0.17.57 (C2): export screen is open
+    private var expScope = 0        // 0 = selected clips, 1 = all clips, 2 = pinned clips
+    private var expSel: List<ClipList.Item> = emptyList()   // the selection at the moment Export was tapped
+    private var expMsg = ""
     private var confirmSave = false
     /** v0.4.4: set by MgbIme: saves the given clip texts into the Text Vault and returns a short message. null = no "To Vault" button. */
     var toVault: ((List<String>) -> String)? = null
@@ -164,7 +171,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
         refresh()
     }
 
-    fun reset() { editing = null; confirmSave = false; undoBuf = emptyList(); searching = false; query = ""; confirmClear = false; msg = ""; sel.leave(); confirmDel = false; keepY = -1; fromRefresh = false; fChip = 0; moreOpen = false }   // v0.16.1 (X1); v0.16.9 (X9): chip + More tray start fresh
+    fun reset() { editing = null; confirmSave = false; undoBuf = emptyList(); searching = false; query = ""; confirmClear = false; msg = ""; sel.leave(); confirmDel = false; keepY = -1; fromRefresh = false; fChip = 0; moreOpen = false; exporting = false; expMsg = "" }   // v0.16.1 (X1); v0.17.57 (C2): export screen closed; v0.16.9 (X9): chip + More tray start fresh
 
     private fun dp(v: Int): Int = (v * ctx.resources.displayMetrics.density).toInt()
 
@@ -278,6 +285,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
         val restoreY = if (fromRefresh) keepY else -1   // v0.16.1 (X1)
         fromRefresh = false
         if (restoreY < 0 && editing == null) keepY = -1   // fresh open = start at the top
+        if (exporting) { try { return fitEdit(makeExport()) } catch (_: Throwable) { exporting = false } }   // v0.17.57 (C2)
         if (editing != null) { try { return fitEdit(makeEdit()) } catch (_: Throwable) { editing = null } }   // v0.15.1: fitEdit   // v0.4.3.1
         // v0.16.9 (X9): pref panel_ui = 1 -> the NEW panel (makeNew below). Default 0 / any problem = the classic code that follows, untouched.
         val newUi = try { PanelLayout.isNewStyle(JabraPrefs(ctx).int("panel_ui", 0)) } catch (_: Throwable) { false }
@@ -653,6 +661,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
             acts.add("Edit" to { actEdit() }); ws.add(0.8f)
             acts.add("Paste in 1 line" to { actPaste(true) }); ws.add(1.6f)
             if (toVault != null) { acts.add("To Vault" to { actToVault() }); ws.add(1f) }
+            acts.add("Export" to { actExport() }); ws.add(1f)   // v0.17.57 (C2)
             all.addView(PanelKit.stickyBar(ctx, pf, host, acts, ws))
         }
         val n = sel.count()
@@ -729,9 +738,116 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
     private fun actEdit() {
         val chosen = sel.selection()
         if (chosen.size != 1) msg = "Select ONE clip to edit"
-        else { editing = chosen[0]; editText = chosen[0].text; editCaps = false; confirmSave = false }
+        else { editing = chosen[0]; editText = chosen[0].text; editPos = editText.length; editCaps = false; confirmSave = false }
         confirmDel = false
         refresh()
+    }
+
+    // v0.17.57 (C2): Export (More tray in select mode). Selected clips if any, else the "All" scope.
+    private fun actExport() {
+        val chosen = sel.selection()
+        expSel = chosen
+        expScope = if (chosen.isEmpty()) 1 else 0
+        expMsg = ""
+        exporting = true; moreOpen = false; confirmDel = false
+        refresh()
+    }
+
+    private fun expOrder(): List<ClipList.Item> = store.pinnedView("") + store.recentView("")
+
+    /** The clips of the chosen scope, in panel order (pinned first), as export entries. */
+    private fun expSource(): List<ClipList.Item> = when (expScope) {
+        0 -> { val o = expOrder(); expSel.sortedBy { x -> o.indexOfFirst { it === x }.let { if (it < 0) Int.MAX_VALUE else it } } }
+        1 -> expOrder()
+        else -> store.pinnedView("")
+    }
+
+    private fun expEntries(skip: Boolean, skipped: IntArray): List<ClipExport.Entry> =
+        ClipExport.prepare(
+            expSource().map { ClipExport.Entry(it.text, store.fmtOf(it.text), it.pinned, store.madeOf(it.text)) }, skip, skipped)
+
+    private fun doExport(docx: Boolean, save: Boolean) {
+        val pr = JabraPrefs(ctx)
+        val o = ClipExport.Options()
+        o.details = pr.bool("clip_exp_details", true); o.format = pr.bool("clip_exp_fmt", true); o.skipCode = pr.bool("clip_exp_skip", true)
+        o.now = System.currentTimeMillis()
+        val list = expEntries(o.skipCode, IntArray(1))
+        if (list.isEmpty()) { expMsg = "Nothing to export"; refresh(); return }
+        val bytes = if (docx) ClipExport.toDocx(list, o) else ClipExport.toTxtBytes(list, o)
+        if (bytes == null) { expMsg = "Could not build the file"; refresh(); return }
+        val name = ClipExport.fileName(if (docx) "docx" else "txt", o.now, o.tz)
+        val mime = if (docx) ClipExport.MIME_DOCX else ClipExport.MIME_TXT
+        expMsg = if (save) ClipExporter.saveToDownloads(ctx, name, mime, bytes) else ClipExporter.share(ctx, name, mime, bytes)
+        refresh()
+    }
+
+    /** v0.17.57 (C2): export screen: scope chips, option chips, summary, Share / Save buttons. */
+    private fun makeExport(): View {
+        val pr = JabraPrefs(ctx)
+        val t40 = PanelLayout.MIN_TOUCH
+        val outer = LinearLayout(ctx)
+        outer.orientation = LinearLayout.VERTICAL
+        paintBg(outer)
+        outer.setPadding(dp(2), dp(4), dp(2), dp(4))
+        fun fb(v: View) { try { host.feedback(v) } catch (_: Throwable) { } }
+
+        val top = row()
+        top.addView(btn("\u2039 Back", 1f, t40) { exporting = false; expMsg = ""; refresh() })
+        val title = TextView(ctx)
+        title.text = "Export clips"
+        title.textSize = fs(14f)
+        title.setTextColor(ink())
+        title.setTypeface(title.typeface, android.graphics.Typeface.BOLD)
+        title.gravity = Gravity.CENTER_VERTICAL
+        title.setPadding(dp(10), 0, dp(4), 0)
+        title.layoutParams = LinearLayout.LayoutParams(0, dp(sz(t40)), 2f)
+        top.addView(title)
+        outer.addView(top)
+
+        val nAll = expOrder().size
+        val nPin = store.pinnedView("").size
+        val scopes = row()
+        val labels = arrayOf("Selected (" + expSel.size + ")", "All ($nAll)", "Pinned ($nPin)")
+        for (i in 0 until 3) scopes.addView(UiKit.chip(ctx, pf, labels[i], i == expScope, sz(t40), { v -> fb(v) }) { expScope = i; expMsg = ""; refresh() })
+        outer.addView(scopes)
+
+        val optD = pr.bool("clip_exp_details", true); val optF = pr.bool("clip_exp_fmt", true); val optS = pr.bool("clip_exp_skip", true)
+        val opts = row()
+        opts.addView(UiKit.chip(ctx, pf, if (optD) "\u2713 Details" else "Details", optD, sz(t40), { v -> fb(v) }) { pr.setBool("clip_exp_details", !optD); expMsg = ""; refresh() })
+        opts.addView(UiKit.chip(ctx, pf, if (optF) "\u2713 Format" else "Format", optF, sz(t40), { v -> fb(v) }) { pr.setBool("clip_exp_fmt", !optF); expMsg = ""; refresh() })
+        opts.addView(UiKit.chip(ctx, pf, if (optS) "\u2713 Skip codes" else "Skip codes", optS, sz(t40), { v -> fb(v) }) { pr.setBool("clip_exp_skip", !optS); expMsg = ""; refresh() })
+        outer.addView(opts)
+
+        val skipped = IntArray(1)
+        val es = expEntries(optS, skipped)
+        val withFmt = if (optF) es.count { it.html != null && it.html.isNotEmpty() } else 0
+        val info = TextView(ctx)
+        info.text = if (expMsg.isNotEmpty()) expMsg else (es.size.toString() + (if (es.size == 1) " clip" else " clips") +
+            (if (withFmt > 0) "  \u2022  $withFmt with format (DOCX)" else "") + (if (skipped[0] > 0) "  \u2022  ${skipped[0]} code-like left out" else ""))
+        info.textSize = fs(12f)
+        info.setTextColor(if (expMsg.isNotEmpty()) ink() else dim())
+        info.setPadding(dp(8), dp(4), dp(8), dp(2))
+        outer.addView(info)
+        val hint = TextView(ctx)
+        hint.text = "TXT = plain text.  DOCX = Word file; keeps bold / italic / lists when the clip has format."
+        hint.textSize = fs(11f)
+        hint.setTextColor(hush())
+        hint.setPadding(dp(8), 0, dp(8), dp(4))
+        outer.addView(hint)
+
+        val share = row()
+        share.addView(btn("Share .txt", 1f, t40) { doExport(false, false) })
+        share.addView(btn("Share .docx", 1f, t40) { doExport(true, false) })
+        outer.addView(share)
+        if (ClipExporter.canSave()) {
+            val save = row()
+            save.addView(btn("Save .txt", 1f, t40) { doExport(false, true) })
+            save.addView(btn("Save .docx", 1f, t40) { doExport(true, true) })
+            outer.addView(save)
+        }
+        val sv = ScrollView(ctx)
+        sv.addView(outer)
+        return sv
     }
 
     private fun actToVault() {
@@ -780,7 +896,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
         top.addView(btn("Cancel", 1f, 40) { editing = null; confirmSave = false; refresh() })
         top.addView(btn("Use field text", 1.6f, 40) {
             val t = try { fieldText() } catch (_: Throwable) { "" }
-            if (t.isBlank()) msg = "Field is empty" else editText = t
+            if (t.isBlank()) msg = "Field is empty" else { editText = t; editPos = t.length }
             confirmSave = false
             refresh()
         })
@@ -812,25 +928,58 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
         val sv = ScrollView(ctx)
         sv.layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(64))
         val tv = TextView(ctx)
-        tv.text = editText.replace("\n", " \u23CE ") + "\u258F"
+        editPos = ClipCaret.clamp(editText, editPos)   // v0.17.56 (C1)
+        val shownPos = editPos
+        tv.text = ClipCaret.display(editText, shownPos)
         tv.textSize = 14f
         tv.setTextColor(ink())
         tv.setPadding(dp(8), dp(2), dp(8), dp(2))
         sv.addView(tv)
+        try {   // v0.17.56 (C1): tap on the text = put the caret there (nearest gap); a drag still scrolls
+            tv.setOnTouchListener { v, ev ->
+                if (ev.action == android.view.MotionEvent.ACTION_UP && ev.eventTime - ev.downTime < 400L) {
+                    try {
+                        val t = v as TextView
+                        val lay = t.layout
+                        if (lay != null) {
+                            val y = (ev.y - t.totalPaddingTop + t.scrollY).toInt().coerceIn(0, lay.height - 1)
+                            val line = lay.getLineForVertical(y)
+                            val off = lay.getOffsetForHorizontal(line, ev.x - t.totalPaddingLeft)
+                            editPos = ClipCaret.posFromDisplay(editText, shownPos, off)
+                            confirmSave = false
+                            refresh()
+                        }
+                    } catch (_: Throwable) { }
+                }
+                true
+            }
+        } catch (_: Throwable) { }
         root.addView(sv)
+
+        // v0.17.56 (C1): caret keys
+        val nav = row()
+        nav.addView(btn("|\u25C0", 1f, 34) { touched { editPos = ClipCaret.lineStart(editText, editPos) } })
+        nav.addView(btn("\u25C0", 1f, 34) { touched { editPos = ClipCaret.left(editText, editPos) } })
+        nav.addView(btn("\u25B2", 1f, 34) { touched { editPos = ClipCaret.up(editText, editPos) } })
+        nav.addView(btn("\u25BC", 1f, 34) { touched { editPos = ClipCaret.down(editText, editPos) } })
+        nav.addView(btn("\u25B6", 1f, 34) { touched { editPos = ClipCaret.right(editText, editPos) } })
+        nav.addView(btn("\u25B6|", 1f, 34) { touched { editPos = ClipCaret.lineEnd(editText, editPos) } })
+        root.addView(nav)
+
+        fun ins(s: String) { val np = ClipCaret.afterInsert(editText, editPos, s); editText = ClipCaret.insert(editText, editPos, s); editPos = np }
 
         fun ch(c: Char): String = if (editCaps) c.uppercaseChar().toString() else c.toString()
         for (letters in arrayOf("1234567890", "qwertyuiop", "asdfghjkl", "zxcvbnm")) {
             val r = row()
             if (letters == "zxcvbnm") r.addView(btn(if (editCaps) "\u21E7 ON" else "\u21E7", 1.5f, 34) { touched { editCaps = !editCaps } })
-            letters.forEach { c -> r.addView(btn(ch(c), 1f, 34) { touched { editText += ch(c); editCaps = false } }) }
-            if (letters == "zxcvbnm") r.addView(btn("\u232B", 1.5f, 34) { touched { if (editText.isNotEmpty()) editText = editText.dropLast(1) } })
+            letters.forEach { c -> r.addView(btn(ch(c), 1f, 34) { touched { ins(ch(c)); editCaps = false } }) }
+            if (letters == "zxcvbnm") r.addView(btn("\u232B", 1.5f, 34) { touched { val np = ClipCaret.afterBackspace(editText, editPos); editText = ClipCaret.backspace(editText, editPos); editPos = np } })
             root.addView(r)
         }
         val last = row()
-        for (p in arrayOf(".", ",", "?", "!", "-", "'")) last.addView(btn(p, 1f, 34) { touched { editText += p } })
-        last.addView(btn("space", 2.5f, 34) { touched { editText += " " } })
-        last.addView(btn("\u23CE", 1.2f, 34) { touched { editText += "\n" } })
+        for (p in arrayOf(".", ",", "?", "!", "-", "'")) last.addView(btn(p, 1f, 34) { touched { ins(p) } })
+        last.addView(btn("space", 2.5f, 34) { touched { ins(" ") } })
+        last.addView(btn("\u23CE", 1.2f, 34) { touched { ins("\n") } })
         root.addView(last)
         return root
     }
@@ -914,7 +1063,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
         r2.addView(btn("Edit", 0.6f, 34) {   // v0.4.3.1: edit ONE ticked clip
             val chosen = sel.selection()
             if (chosen.size != 1) msg = "Select ONE clip to edit"
-            else { editing = chosen[0]; editText = chosen[0].text; editCaps = false; confirmSave = false }
+            else { editing = chosen[0]; editText = chosen[0].text; editPos = editText.length; editCaps = false; confirmSave = false }
             confirmDel = false
             refresh()
         })
@@ -938,6 +1087,9 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
             vb.textSize = fs(12f)
             r2.addView(vb)
         }
+        val eb = btn("Export", 0.8f, 34) { actExport() }   // v0.17.57 (C2): classic panel gets Export too (panel_ui default is Classic)
+        eb.textSize = fs(12f)
+        r2.addView(eb)
         val colAll = LinearLayout(ctx)
         colAll.orientation = LinearLayout.VERTICAL
         colAll.addView(r)
