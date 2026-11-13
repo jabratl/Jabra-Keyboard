@@ -661,6 +661,24 @@ class MgbIme : InputMethodService() {
         }
         override fun actionKey(k: com.mgb.keyboard.layout.KeyDef, pct: Int): Button? {
             fun hgt(b: Button): Button { if (pct != 100) (b.layoutParams as LinearLayout.LayoutParams).height = dp(keyDp() * pct / 100); return b }
+            if (com.mgb.keyboard.typing.PcActions.valid(k.action)) {   // v0.17.50 (PC2): PC keys as layout keys (modifiers are sticky via PcState; Del / PgUp / PgDn / arrows repeat while held)
+                val pa = k.action
+                val lab = if (k.label[0].isNotEmpty()) k.label[0] else com.mgb.keyboard.typing.PcActions.label(pa)
+                val code = com.mgb.keyboard.typing.PcActions.keyCode(pa)
+                val pb: Button = if (code > 0) {
+                    val kb = key(lab, k.weight) { if (!com.mgb.keyboard.typing.PcActions.isRepeat(pa)) pcSend(code, 0) }
+                    if (com.mgb.keyboard.typing.PcActions.isRepeat(pa)) PcHold.attach(kb, code, pcIo)
+                    kb
+                } else {
+                    val mb = key(lab, k.weight) { pcTapMod(pa) }
+                    pcLayerMods[pa] = mb
+                    mb
+                }
+                pb.textSize = com.mgb.keyboard.typing.PcActions.textSp(pa)
+                val res = fn(hgt(pb))
+                pcRefresh()
+                return res
+            }
             when (k.action) {   // same look as the classic keys: these are NOT passed through fn()
                 "space" -> return hgt(customSpaceKey(k))
                 "globe" -> return hgt(JabraIcons.putThemed(this@MgbIme, key("\uD83C\uDF10", k.weight) { commitWord(); switcher.globe() }, "globe"))
@@ -960,7 +978,7 @@ class MgbIme : InputMethodService() {
         val real = try { prefs.bool("pc_real_mods", true) } catch (_: Throwable) { true }
         InputSafe.pcKey(ic, code, mods, real)   // v0.17.49: keyCombo -> key (meta bits) -> context menu (Ctrl+A/C/V/X/Z)
         pcState.keySent()
-        try { pcRows?.refresh() } catch (_: Throwable) { }
+        pcRefresh()   // v0.17.50 (PC2): PC rows + layer keys
     }
 
     // ---------- v0.17.49 (PC1): hold-repeat + stuck-modifier guard ----------
@@ -974,10 +992,37 @@ class MgbIme : InputMethodService() {
     private val pcIdleTick = object : Runnable {
         override fun run() {
             try {
-                if (pcState.expireOnce(android.os.SystemClock.uptimeMillis(), 8000L)) pcRows?.refresh()
+                if (pcState.expireOnce(android.os.SystemClock.uptimeMillis(), 8000L)) pcRefresh()
                 if (pcState.hasOnce()) pcIdleHandler.postDelayed(this, 1000L)
             } catch (_: Throwable) { }
         }
+    }
+
+    // ---------- v0.17.50 (PC2): PC rows as a layout layer ----------
+    private val pcLayerMods = HashMap<String, Button>()   // pc_ctrl / pc_alt / pc_shift / pc_win -> the key of the layer (rebuilt with the keyboard)
+
+    /** Same colours as the PC rows and Shift: ONCE light blue, LOCK dark blue, off = theme key colour. */
+    private fun pcRefresh() {
+        try { pcRows?.refresh() } catch (_: Throwable) { }
+        try {
+            for ((a, b) in pcLayerMods) {
+                val lv = when (a) { "pc_ctrl" -> pcState.ctrl(); "pc_alt" -> pcState.alt(); "pc_shift" -> pcState.shift(); else -> pcState.win() }
+                b.backgroundTintList = when (lv) {
+                    com.mgb.keyboard.typing.PcState.LOCK -> android.content.res.ColorStateList.valueOf(Color.parseColor("#2271B1"))
+                    com.mgb.keyboard.typing.PcState.ONCE -> android.content.res.ColorStateList.valueOf(Color.parseColor("#9CC3E6"))
+                    else -> (try { JabraThemes.keyTint(prefs) } catch (_: Throwable) { null })
+                }
+            }
+        } catch (_: Throwable) { }
+    }
+
+    private fun pcTapMod(a: String) {
+        try {
+            val now = android.os.SystemClock.uptimeMillis()
+            when (a) { "pc_ctrl" -> pcState.tapCtrl(now); "pc_alt" -> pcState.tapAlt(now); "pc_shift" -> pcState.tapShift(now); "pc_win" -> pcState.tapWin(now) }
+            pcRefresh()
+            pcArmIdle()
+        } catch (_: Throwable) { }
     }
 
     /** A modifier was tapped: a ONCE modifier that nobody uses ends after 8 s. */
@@ -1002,7 +1047,7 @@ class MgbIme : InputMethodService() {
                 if (!pcHeld) { pcHeldPlain = true; pcHeld = InputSafe.pcKey(ic, code, pcHeldMods, false) }
             }
             pcState.keySent()
-            try { pcRows?.refresh() } catch (_: Throwable) { }
+            pcRefresh()   // v0.17.50 (PC2)
         } catch (_: Throwable) { }
     }
 
@@ -1028,7 +1073,7 @@ class MgbIme : InputMethodService() {
     private fun pcResetMods() {
         try { pcHoldEnd() } catch (_: Throwable) { }
         try { pcIdleHandler.removeCallbacks(pcIdleTick) } catch (_: Throwable) { }
-        try { if (pcState.mods() != 0) { pcState.clearMods(); pcRows?.refresh() } } catch (_: Throwable) { }
+        try { if (pcState.mods() != 0) { pcState.clearMods(); pcRefresh() } } catch (_: Throwable) { }
     }
 
     /** Mode key: one tap = Phone <-> PC (pref pc_mode), then the keyboard is rebuilt. */
@@ -1355,7 +1400,23 @@ class MgbIme : InputMethodService() {
 
         try { sg.attach(root, sgTools) } catch (_: Throwable) { }   // v0.10.1 (G2): suggestion row at the top of the keyboard (pref sg_on; replaces the toolbar; its left icon opens the toolbar)
         // v0.1.2: PC rows (only in PC mode)
-        try { if (pcState.isPc()) { val pr = PcRows(this, pcState, pcIo); pcRows = pr; val pv = pr.view(); if (pv != null) root.addView(pv) } } catch (_: Throwable) { }
+        pcLayerMods.clear(); pcRows = null
+        try {
+            if (pcState.isPc()) {
+                // v0.17.50 (PC2): PC rows as a layout layer (custom keyboard ON + pref pc_layer, default ON); any problem = the old PcRows (fallback, unchanged)
+                var viaLayer = false
+                val pcAdded = mutableListOf<View>()
+                try {
+                    if (prefs.bool("pc_layer", true) && com.mgb.keyboard.layout.LayoutGuard.customOn(prefs.int("kb_custom", 0))) {
+                        val pcr = CustomRows(customHost, prefs, "pc")
+                        val built = pcr.build(com.mgb.keyboard.layout.LayoutDefaults.pcModel(prefs.bool("pc_frow", true))) { row() }
+                        if (built.isNotEmpty()) { built.forEach { root.addView(it); pcAdded.add(it) }; viaLayer = true }
+                    }
+                } catch (_: Throwable) { viaLayer = false; pcLayerMods.clear(); try { pcAdded.forEach { root.removeView(it) } } catch (_: Throwable) { } }
+                if (!viaLayer) { val pr = PcRows(this, pcState, pcIo); pcRows = pr; val pv = pr.view(); if (pv != null) root.addView(pv) }
+                pcRefresh()
+            }
+        } catch (_: Throwable) { }
         // v0.5.0: custom character row (pref xrow_chars, set in Typing options; default empty = no row)
         try {
             val cr = com.mgb.keyboard.typing.LangOrder.customRow(prefs.str("xrow_chars", ""))

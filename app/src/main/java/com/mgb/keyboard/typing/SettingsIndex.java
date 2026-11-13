@@ -99,6 +99,8 @@ public final class SettingsIndex {
             case "pc_mode": return "Phone = normal keys. PC = extra Esc / Ctrl / F-keys / arrows rows.";
             case "mode_key": return "Shows the Phone / PC switch key in the edit bar.";
             case "pc_remember": return "OFF = the keyboard always opens in Phone mode.";
+            case "pc_layer": return "ON = PC rows look like the other keys (needs the custom keyboard). OFF = old rows.";   // v0.17.50 (PC2)
+            case "pc_frow": return "Shows the F1-F12 row in PC mode (PC rows as layout keys only).";   // v0.17.50 (PC2)
             case "pc_real_mods": return "ON = PC keys send real Ctrl / Alt / Shift / Win presses. OFF = old way.";   // v0.17.49 (PC1)
             case "bs_repeat": return "Holding backspace keeps deleting.";
             case "bs_word": return "A long hold on backspace deletes whole words.";

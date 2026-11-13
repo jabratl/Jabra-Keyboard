@@ -20,6 +20,9 @@ public final class LayoutText {
             "shift", "backspace", "enter", "space", "sym", "lang", "emoji", "globe", "voice", "tab", "clip",
             "comma", "period", "undo", "redo", "combo"));
 
+    /** v0.17.50 (PC2): a valid ACTION key id = the whitelist above OR a PC key action (pc_ctrl, pc_key_f5 ... see typing/PcActions). */
+    public static boolean isAction(String a) { return ACTIONS.contains(a) || com.mgb.keyboard.typing.PcActions.valid(a); }
+
     /** R3 whitelist of "@actions" usable as swipe / long-press value. */
     public static final Set<String> AT_ACTIONS = new HashSet<String>(Arrays.asList(
             "@tab", "@undo", "@redo", "@paste", "@copy", "@cut", "@selall", "@emoji", "@clip", "@lang", "@caps",

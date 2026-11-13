@@ -104,7 +104,7 @@ public final class LayoutOps {
         k.lpList = lpl;
         for (int i = 0; i < 4; i++) k.sw[i] = LayoutText.cleanSwipe(k.sw[i], LayoutText.MAX_OUT);
         k.action = LayoutText.cleanWord(k.action, 16);
-        if (!LayoutText.ACTIONS.contains(k.action)) k.action = "";
+        if (!LayoutText.isAction(k.action)) k.action = "";   // v0.17.50 (PC2): pc_* actions are valid too
         k.combo = LayoutText.clean(k.combo, LayoutText.MAX_COMBO);
         k.labelIcon = LayoutText.cleanWord(k.labelIcon, 16);
         if (k.kind == KeyDef.ACTION && k.action.length() == 0) k.kind = KeyDef.SPACER;
@@ -185,7 +185,7 @@ public final class LayoutOps {
         if (k.lpList.size() > LayoutText.MAX_LPLIST) return "bad lpList";
         for (String s : k.lpList) if (s.length() == 0 || !LayoutText.cleanSwipe(s, LayoutText.MAX_LP).equals(s)) return "bad lpList item";
         for (int i = 0; i < 4; i++) if (!LayoutText.cleanSwipe(k.sw[i], LayoutText.MAX_OUT).equals(k.sw[i])) return "bad swipe";
-        if (k.kind == KeyDef.ACTION && !LayoutText.ACTIONS.contains(k.action)) return "bad action";
+        if (k.kind == KeyDef.ACTION && !LayoutText.isAction(k.action)) return "bad action";   // v0.17.50 (PC2)
         if (k.kind != KeyDef.ACTION && k.action.length() > 0) return "action on non-action key";
         if (k.kind == KeyDef.SPACER && (k.out[0].length() + k.out[1].length() + k.lp.length() + k.sw[0].length() > 0)) return "spacer has content";
         return null;
@@ -277,7 +277,7 @@ public final class LayoutOps {
 
     /** Turns the key into an ACTION key (action must be in LayoutText.ACTIONS, else refused). */
     public static LayoutDef setAction(LayoutDef m, String id, String action) {
-        Ctx x = ctx(m, id); if (x == null || action == null || !LayoutText.ACTIONS.contains(action)) return m;
+        Ctx x = ctx(m, id); if (x == null || action == null || !LayoutText.isAction(action)) return m;   // v0.17.50 (PC2)
         if (x.K.kind == KeyDef.ACTION && x.K.action.equals(action)) return m;
         x.K.kind = KeyDef.ACTION; x.K.action = action;
         return fin(x.c);

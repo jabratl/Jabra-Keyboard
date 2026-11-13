@@ -1,0 +1,24 @@
+HANDOFF Jabra-Keyboard v0.17.50 (PC2 done)  -  paste this + the plan file at the start of the next chat
+
+DONE LIST
+- P1-P5 v0.17.44-48 (bubble stem, outline, accents, shadow, press animation) | PC1 v0.17.49 (real modifiers, Shift / Win, hold-repeat, stuck-modifier guard)
+- PC2 v0.17.50 PC rows as a layout layer (this step). Current version: v0.17.50. Kotlin NEVER compiled yet; nothing phone-tested for v0.17.44-50.
+
+WHAT CHANGED (file: 1 line each)
+- typing/PcActions.java (NEW): pc_ctrl / pc_alt / pc_shift / pc_win + pc_key_<name> (24 keys): key codes, labels, repeat set, text size.
+- layout/LayoutDefaults.java: pcModel(fRow) = draw-time model with layer "pc" (3 rows, 75 % height). NOT part of build() / the saved layout.
+- layout/LayoutText.java + LayoutOps.java: isAction() = old whitelist OR pc action (3 call sites).
+- PcHold.kt (NEW): hold-repeat for layer keys through PcIo (same as PcRows.held).
+- MgbIme.kt: actionKey pc branch, pcLayerMods, pcRefresh (rows + layer tints), pcTapMod; layer inserted where PcRows was (custom keyboard ON + pc_layer), else PcRows fallback.
+- SettingsGroups.kt / SettingsIndex.java / ChangedPlan.java: pc_layer, pc_frow (both default ON).
+- tools/LayoutPcTest.java (NEW).
+
+CHECKS DONE: bash tools/run_tests.sh = 123/123 green; bracket balance of PcHold.kt, MgbIme.kt, SettingsGroups.kt OK.
+
+NOT TESTED (needs real use)
+- Kotlin compile of ALL v0.17.44-50. Build error log -> FIX mode first.
+- Phone: custom keyboard ON + PC mode: look / height at 360 dp (3 extra rows), landscape, dark + light, sticky tint, hold-repeat, pc_layer / pc_frow switches, fallback with custom keyboard OFF, layout rules (language / app) while in PC mode. Plus everything listed in the v0.17.49 handoff.
+- Known gaps: layer has no ^A ^C ^V ^X ^Z row (PC3 chips); the layout EDITOR does not show the pc layer; PC keys have no popup bubble.
+
+NEXT: PC3 (v0.17.51) full PC key set: "More" key + panel (PrtSc ScrLk Pause Menu CapsLock NumLock AltGr), numpad panel, shortcut chips (pref pc_chips, typing/PcChord.java parse "Ctrl+Shift+Z" -> mods + code, tested). Needs PcKeyPlan / InputSafe.pcKey (PC1) and the pc layer (PC2: add a "More" key as pc_key_more or a 4th row).
+Start line for the next chat: "PC3 koro". Attach: PcMode.kt, PcHold.kt, MgbIme.kt (grep pcSend / pcRefresh / actionKey only), InputSafe.kt, typing/PcActions.java, typing/PcKeyPlan.java, layout/LayoutDefaults.java, PadPanel.kt (style reference), SettingsGroups.kt, typing/SettingsIndex.java.

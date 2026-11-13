@@ -64,6 +64,37 @@ public final class LayoutDefaults {
         return LayoutOps.normalize(m);
     }
 
+    // ---------- v0.17.50 (PC2): PC rows as a layout layer ----------
+    /** Row height of the PC rows in % of the key height (75 = about the 36 dp of the old PC rows at 48 dp keys). */
+    public static final int PC_ROW_PCT = 75;
+    private static final String[] PC_ROW1 = { "pc_key_esc", "pc_key_tab", "pc_ctrl", "pc_alt", "pc_shift", "pc_win", "pc_key_del", "pc_key_ins" };
+    private static final String[] PC_ROW3 = { "pc_key_home", "pc_key_pgup", "pc_key_up", "pc_key_pgdn", "pc_key_end", "pc_key_left", "pc_key_down", "pc_key_right" };
+
+    private static RowDef pcRow(String[] actions) {
+        RowDef r = row(PC_ROW_PCT);
+        for (String a : actions) r.keys.add(act(a, a, 1f, com.mgb.keyboard.typing.PcActions.label(a), ""));   // key id = action name (unique inside the layer)
+        return r;
+    }
+
+    /**
+     * The PC layer (id "pc", NOT stored in the saved layout: built at draw time so it also works with an edited layout):
+     * row 1 Esc Tab Ctrl Alt Shift Win Del Ins, row 2 F1-F12 (only when [fRow]), row 3 Home PgUp Up PgDn End Left Down Right.
+     * Returns a model that holds only this layer.
+     */
+    public static LayoutDef pcModel(boolean fRow) {
+        LayoutDef m = new LayoutDef();
+        LayerDef l = new LayerDef("pc");
+        l.rows.add(pcRow(PC_ROW1));
+        if (fRow) {
+            String[] f = new String[12];
+            for (int i = 0; i < 12; i++) f[i] = "pc_key_f" + (i + 1);
+            l.rows.add(pcRow(f));
+        }
+        l.rows.add(pcRow(PC_ROW3));
+        m.layers.add(l);
+        return m;
+    }
+
     // ---------- helpers ----------
     private static int clampPct(int v) { return v < RowDef.H_MIN ? RowDef.H_MIN : (v > RowDef.H_MAX ? RowDef.H_MAX : v); }
 
