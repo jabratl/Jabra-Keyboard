@@ -17,6 +17,7 @@ import com.mgb.keyboard.typing.ClipSelect
 import com.mgb.keyboard.typing.ClipOrder   // v0.15.2 (N2)
 import com.mgb.keyboard.typing.ClipSensitive   // v0.10.10 (W4)
 import com.mgb.keyboard.typing.ClipFilter   // v0.16.9 (X9)
+import com.mgb.keyboard.typing.ClipCopy   // v0.17.58 (C3)
 import com.mgb.keyboard.typing.PanelLayout   // v0.16.9 (X9)
 
 /*
@@ -171,7 +172,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
         refresh()
     }
 
-    fun reset() { editing = null; confirmSave = false; undoBuf = emptyList(); searching = false; query = ""; confirmClear = false; msg = ""; sel.leave(); confirmDel = false; keepY = -1; fromRefresh = false; fChip = 0; moreOpen = false; exporting = false; expMsg = "" }   // v0.16.1 (X1); v0.17.57 (C2): export screen closed; v0.16.9 (X9): chip + More tray start fresh
+    fun reset() { editing = null; confirmSave = false; undoBuf = emptyList(); searching = false; query = ""; confirmClear = false; msg = ""; sel.leave(); confirmDel = false; keepY = -1; fromRefresh = false; fChip = 0; moreOpen = false; ovOpen = false; exporting = false; expMsg = "" }   // v0.16.1 (X1); v0.17.57 (C2): export screen closed; v0.16.9 (X9): chip + More tray start fresh
 
     private fun dp(v: Int): Int = (v * ctx.resources.displayMetrics.density).toInt()
 
@@ -289,7 +290,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
         if (editing != null) { try { return fitEdit(makeEdit()) } catch (_: Throwable) { editing = null } }   // v0.15.1: fitEdit   // v0.4.3.1
         // v0.16.9 (X9): pref panel_ui = 1 -> the NEW panel (makeNew below). Default 0 / any problem = the classic code that follows, untouched.
         val newUi = try { PanelLayout.isNewStyle(JabraPrefs(ctx).int("panel_ui", 0)) } catch (_: Throwable) { false }
-        if (newUi) { try { return makeNew(restoreY) } catch (_: Throwable) { } }
+        if (newUi || nl()) { try { return makeNew(restoreY) } catch (_: Throwable) { } }   // v0.17.58 (C3): new look ON = the redesigned panel for everyone; OFF = panel_ui decides as before
         val root = LinearLayout(ctx)
         root.orientation = LinearLayout.VERTICAL
         paintBg(root)   // v0.8.7
@@ -457,6 +458,8 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
     // New: sticky top bar (ABC | Search | Add | Manage / Done), filter chips (All | Pinned | Text | Links | Numbers), 40 dp tap targets,
     // and in select mode a bottom summary bar ("3 selected" + Pin | Delete | Paste | More). Any exception = make() goes on with the classic panel.
     private var fChip = 0            // v0.16.9: filter chip (not saved: a fresh open starts at All)
+    private var ovOpen = false       // v0.17.58 (C3): the header overflow tray (Manage / Sort / View / Export all / Clear)
+    private fun nl(): Boolean = try { ClipLook.newLook(pf) } catch (_: Throwable) { false }   // v0.17.58 (C3): pref clip_new_look (default ON)
     private var moreOpen = false     // v0.16.9: the "More" tray of the bottom bar (All / Unpin / Merge / Edit / Paste in 1 line / To Vault)
 
     private fun makeNew(restoreY: Int): View {
@@ -468,21 +471,39 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
         try { sel.prune(store.pinnedView("") + store.recentView("")) } catch (_: Throwable) { sel.leave() }
         val selOn = sel.isOn
         if (!selOn) moreOpen = false
+        val nlOn = nl()   // v0.17.58 (C3)
+        if (selOn || searching || !nlOn) ovOpen = false
         fChip = ClipFilter.sanitize(fChip)
 
         // ---- sticky top bar
         val top = row()
         top.addView(ClipBar.func(pf, btn("ABC", 1.0f, t40) { sel.leave(); confirmDel = false; moreOpen = false; host.showLetters() }))   // v0.17.30 (UI6): function-key look
-        val searchBtn = btn(if (searching) "✕ Search" else "🔍 Search", 1.6f, t40) {
+        val slim = nlOn && !selOn && !searching   // v0.17.58 (C3): header = ABC | title + count | search | Add | more
+        if (slim) {
+            val ttl = TextView(ctx)
+            ttl.text = ClipCopy.title(store.pinnedView("").size + store.recentView("").size)
+            ttl.textSize = fs(14f)
+            ttl.setTextColor(ink())
+            ttl.setTypeface(ttl.typeface, android.graphics.Typeface.BOLD)
+            ttl.gravity = Gravity.CENTER_VERTICAL
+            ttl.setPadding(dp(8), 0, dp(4), 0)
+            ttl.maxLines = 1
+            ttl.ellipsize = TextUtils.TruncateAt.END
+            ttl.layoutParams = LinearLayout.LayoutParams(0, dp(sz(t40)), 2.2f)
+            top.addView(ttl)
+        }
+        val searchBtn = btn(if (searching) "✕ Search" else if (slim) "🔍" else "🔍 Search", if (slim) 0.9f else 1.6f, t40) {
             searching = !searching
             query = ""
             confirmClear = false
+            ovOpen = false
             refreshTop()
         }
         JabraIcons.putThemed(ctx, searchBtn, if (searching) "close" else "search")
         top.addView(searchBtn)
-        if (!selOn) top.addView(btn("Add", 1.0f, t40) { addFromField() })
-        val manageNew = btn(if (selOn) "Done" else "Manage", 1.3f, t40) {
+        if (!selOn) { val addB = btn("Add", 1.0f, t40) { addFromField() }; top.addView(if (nlOn) ClipBar.on(ctx, pf, addB) else addB) }   // v0.17.58 (C3): Add = the one filled (primary) button
+        val manageNew = btn(if (selOn) "Done" else if (slim) (if (ovOpen) "\u25B4" else "\u22EF") else "Manage", if (slim) 0.8f else 1.3f, t40) {
+            if (slim) { ovOpen = !ovOpen; confirmClear = false; refresh(); return@btn }   // v0.17.58 (C3): \u22EF = overflow tray
             if (selOn) { sel.leave(); moreOpen = false } else sel.enter()
             confirmClear = false
             confirmDel = false
@@ -523,7 +544,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
             val head = row()
             head.gravity = Gravity.CENTER_VERTICAL
             val m = TextView(ctx)
-            m.text = if (confirmClear) "Delete all unpinned clips?" else shownMsg
+            m.text = if (confirmClear) "Delete all unpinned clips?" else if (shownMsg.isEmpty() && nlOn && !selOn) ClipCopy.countLine(store.pinnedView("").size + store.recentView("").size, store.pinnedCount()) else shownMsg   // v0.17.58 (C3): quiet count line
             m.textSize = 12f
             m.setTextColor(dim())
             m.setPadding(dp(8), 0, dp(4), 0)
@@ -542,7 +563,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
                 head.addView(ClipBar.danger(pf, small("Yes, clear") { keepUndo(store.recentView("")); store.clearUnpinned(); confirmClear = false; refresh() }))   // v0.17.30 (UI6)
             } else {
                 if (undoBuf.isNotEmpty()) head.addView(small("↶ Undo") { doUndo() })
-                if (!selOn) {
+                if (!selOn && !nlOn) {   // v0.17.58 (C3): new look moves Sort / View / Clear into the overflow tray
                     head.addView(small("\u2195 " + arrayOf("Newest", "Oldest", "A-Z", "Used")[sortLv]) {
                         try { JabraPrefs(ctx).setInt("clip_sort", (sortLv + 1) % 4) } catch (_: Throwable) { }
                         confirmClear = false
@@ -557,6 +578,27 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
                 }
             }
             root.addView(head)
+            if (nlOn && !selOn && ovOpen && !confirmClear) {   // v0.17.58 (C3): overflow tray = every rare action in one place
+                val tray = row()
+                fun tp(label: String, w: Float, onClick: () -> Unit): Button {
+                    val b = btn(label, w, 34) { onClick() }
+                    b.textSize = fs(12f)
+                    b.setPadding(dp(6), 0, dp(6), 0)
+                    return ClipBar.pill(pf, b)
+                }
+                tray.addView(tp("Manage", 1f) { ovOpen = false; sel.enter(); confirmClear = false; confirmDel = false; refresh() })
+                tray.addView(tp("\u2195 " + arrayOf("Newest", "Oldest", "A-Z", "Used")[sortLv], 1.2f) {
+                    try { JabraPrefs(ctx).setInt("clip_sort", (sortLv + 1) % 4) } catch (_: Throwable) { }
+                    refreshTop()
+                })
+                tray.addView(tp(if (cardsOn) "View: Cards" else "View: List", 1.3f) {
+                    try { JabraPrefs(ctx).setInt("clip_view", if (cardsOn) 0 else 1) } catch (_: Throwable) { }
+                    refreshTop()
+                })
+                tray.addView(tp("Export all", 1.2f) { ovOpen = false; expSel = emptyList(); expScope = 1; expMsg = ""; exporting = true; moreOpen = false; confirmDel = false; refresh() })
+                tray.addView(ClipBar.danger(pf, tp("Clear", 0.9f) { ovOpen = false; confirmClear = true; refresh() }))
+                root.addView(tray)
+            }
         }
 
         if (searching) {
@@ -582,7 +624,8 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
         col.orientation = LinearLayout.VERTICAL
         if (visible.isEmpty()) {
             val t = TextView(ctx)
-            t.text = ClipFilter.emptyText(fChip, searching)
+            t.text = if (nlOn) ClipCopy.empty(fChip, searching, query) else ClipFilter.emptyText(fChip, searching)   // v0.17.58 (C3)
+            if (nlOn) t.textSize = 14f
             t.setPadding(dp(16), dp(12), dp(16), dp(12))
             t.setTextColor(dim())
             t.gravity = Gravity.CENTER   // v0.18
@@ -597,7 +640,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
         val cards: View? = if (cardsOn && visible.isNotEmpty()) {
             ClipCards.build(ctx, host, pinnedItems, recentItems, !searching, lines,
                 { it2 -> store.togglePin(it2); refresh() },
-                { it2 -> keepUndo(listOf(it2)); store.remove(it2); refresh() },
+                { it2 -> keepUndo(listOf(it2)); store.remove(it2); if (nlOn) msg = ClipCopy.deleted(1); refresh() },
                 SelectMode(selOn, { x -> sel.isSelected(x) }, { x -> sel.toggle(x); confirmDel = false; refresh() }, { x -> sel.enterWith(x); confirmDel = false; refresh() },
                     { x -> store.noteUse(x) }, { x -> infoLine(x) }, clipHoldMs(), { afterPaste(false) }, { x -> store.hasFmt(x.text) }, { x, b -> pasteItem(x, b) }), ClipOrder.recentFirst(ordMode), ordSwap)
         } else null
@@ -705,6 +748,13 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
     private fun actDelete() {
         val n = sel.count()
         if (n == 0) { msg = "Nothing selected"; confirmDel = false }
+        else if (nl() && !confirmDel && ClipCopy.quickDelete(n)) {   // v0.17.58 (C4): 1-2 clips = gone at once + Undo bar (no "Sure?")
+            keepUndo(sel.selection())
+            val gone = store.removeAll(sel.selection())
+            sel.clear()
+            msg = ClipCopy.deleted(gone)
+            confirmDel = false
+        }
         else if (confirmDel) {
             keepUndo(sel.selection())
             val gone = store.removeAll(sel.selection())
@@ -782,6 +832,15 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
     }
 
     /** v0.17.57 (C2): export screen: scope chips, option chips, summary, Share / Save buttons. */
+    /** v0.17.58 (C4): the info line of the Edit / Export screens as a rounded card (new look only). Look only. */
+    private fun cardInfo(t: TextView) {
+        try {
+            t.background = UiKit.cardBackground(ctx, pf)
+            t.setPadding(dp(12), dp(8), dp(12), dp(8))
+            t.layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).also { it.setMargins(dp(4), dp(4), dp(4), dp(4)) }
+        } catch (_: Throwable) { }
+    }
+
     private fun makeExport(): View {
         val pr = JabraPrefs(ctx)
         val t40 = PanelLayout.MIN_TOUCH
@@ -827,6 +886,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
         info.textSize = fs(12f)
         info.setTextColor(if (expMsg.isNotEmpty()) ink() else dim())
         info.setPadding(dp(8), dp(4), dp(8), dp(2))
+        if (nl()) cardInfo(info)   // v0.17.58 (C4): same card look as the clips
         outer.addView(info)
         val hint = TextView(ctx)
         hint.text = "TXT = plain text.  DOCX = Word file; keeps bold / italic / lists when the clip has format."
@@ -837,7 +897,8 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
 
         val share = row()
         share.addView(btn("Share .txt", 1f, t40) { doExport(false, false) })
-        share.addView(btn("Share .docx", 1f, t40) { doExport(true, false) })
+        val shDocx = btn("Share .docx", 1f, t40) { doExport(true, false) }
+        share.addView(if (nl()) ClipBar.on(ctx, pf, shDocx) else shDocx)   // v0.17.58 (C4): primary button
         outer.addView(share)
         if (ClipExporter.canSave()) {
             val save = row()
@@ -914,7 +975,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
                 refresh()
             }
         }
-        top.addView(saveBtn)
+        top.addView(if (nl()) ClipBar.on(ctx, pf, saveBtn) else saveBtn)   // v0.17.58 (C4): Save = primary
         root.addView(top)
 
         val info = TextView(ctx)
@@ -923,6 +984,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
         info.textSize = 12f
         info.setTextColor(dim())
         info.setPadding(dp(8), dp(2), dp(8), dp(2))
+        if (nl()) cardInfo(info)   // v0.17.58 (C4)
         root.addView(info)
 
         val sv = ScrollView(ctx)
@@ -934,6 +996,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
         tv.textSize = 14f
         tv.setTextColor(ink())
         tv.setPadding(dp(8), dp(2), dp(8), dp(2))
+        if (nl()) { try { sv.background = UiKit.cardBackground(ctx, pf) } catch (_: Throwable) { }; tv.setPadding(dp(12), dp(6), dp(12), dp(6)) }   // v0.17.58 (C4): text box = card
         sv.addView(tv)
         try {   // v0.17.56 (C1): tap on the text = put the caret there (nearest gap); a drag still scrolls
             tv.setOnTouchListener { v, ev ->
@@ -1104,7 +1167,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
         if (onTap != null) { h.minimumHeight = dp(30); h.gravity = Gravity.CENTER_VERTICAL; h.setOnClickListener { try { onTap() } catch (_: Throwable) { } } }
         h.textSize = 12f
         h.setTypeface(h.typeface, android.graphics.Typeface.BOLD)
-        h.setTextColor(if (label == "Pinned") (try { ClipLook.pinColor(JabraTokens.isDark(pf)) } catch (_: Throwable) { dim() }) else dim())
+        h.setTextColor(if (label == "Pinned") (try { ClipLook.pinText(pf, JabraTokens.isDark(pf)) } catch (_: Throwable) { dim() }) else dim())
         h.setPadding(dp(8), dp(4), dp(8), dp(2))
         return h
     }

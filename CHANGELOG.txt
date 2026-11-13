@@ -1,3 +1,20 @@
+v0.17.59 - MODIFY (C4): Edit + Export screens in the card look, delete with Undo (same pref clip_new_look)
+- WHY: Edit (C1) and Export (C2) screens were plain button stacks; deleting 1 clip needed a "Sure?" tap although Undo exists.
+- What you get: (1) Edit + Export: the info line (and the Edit text box) are rounded cards like the clips; Save (Edit) and Share .docx (Export) are the one filled button. (2) 1-2 selected clips: Delete removes at once and shows "Deleted N - tap Undo to restore" with the Undo button (3+ clips keep "Sure? delete N"; Clear keeps "Yes, clear"). Card x also shows the Undo message.
+- Code: ClipboardFeature.kt (cardInfo(), 5 hooks in makeEdit / makeExport / actDelete / card x). // v0.17.59 + v0.17.58 mark hooks.
+- BROKE: nothing known. Pref OFF = old behaviour (Sure? always, plain screens).
+- NOT tested: see v0.17.58.
+
+v0.17.58 - MODIFY (C3): clipboard new look (header, overflow menu, empty states, contrast) behind pref clip_new_look (default ON)
+- WHY: the neat panel (makeNew) was opt-in (panel_ui = Classic by default) so most users never saw it; header was crowded (ABC | Search | Add | Manage + Sort + View + Clear); empty texts were weak; the word "Pinned" was too light on grey.
+- What you get: (1) New look ON = everyone gets the redesigned panel (chips, select bar, More tray; all old actions stay). (2) Header: ABC | "Clipboard - 12" | search icon | Add (the only filled button) | the three-dot menu. The menu opens one row: Manage | Sort | View | Export all | Clear. The quiet line under the header shows "12 clips - 3 pinned" (or the message / Undo). (3) Empty texts: "Nothing copied yet / Copy any text and it appears here", "No result for 'x'", pinned / links / numbers variants. (4) "Pinned" word in light themes is a darker gold (4.5:1; before 3.4:1 on the classic grey). Setting: Clipboard > "Clipboard new look" (pref clip_new_look, default ON). OFF = exactly the old panel (panel_ui decides as before).
+- Code: typing/ClipCopy.java (NEW, pure: title, count, empty texts, quick-delete rule), typing/ClipContrast.java (NEW, pure WCAG ratio), ClipLook.kt (newLook(), pinText()), ClipCards.kt (2 lines pinText), ClipboardFeature.kt (nl(), ovOpen, routing in make(), header + tray + empty + count line in makeNew, 1 line in sectionHeader, reset), SettingsGroups.kt (+1 toggle), typing/SettingsIndex.java, typing/ChangedPlan.java, tools/ClipCopyTest.java (66), tools/ClipContrastTest.java (NEW), app/build.gradle.kts 0.17.59.
+- Changed from the plan: no long-clip fade + "more" expand and no press-scale (NEXT). Sort / View / Clear moved from the info line into the menu (new look only).
+- BROKE: nothing known. Sort / View / Clear need 2 taps now (menu, then action). Select mode header is as before (ABC | Search | Done).
+- TESTED here: Java suite 131/131 green (ClipCopyTest, ClipContrastTest NEW); bracket balance of ClipboardFeature.kt, ClipLook.kt, ClipCards.kt, SettingsGroups.kt OK.
+- NOT tested: Kotlin NOT compiled (build error log -> FIX first; likely spots: return@btn in the menu button, tp() in the tray); NOT phone-tested: header at 360 / 1280 dp dark + light (title ellipsis, 5 items in one row), menu row fit, Add look, empty + no-result text, count line, delete 1-2 + Undo, "Pinned" colour, Edit + Export card look, new look OFF = old panel, Bangla clips.
+- Rollback: switch "Clipboard new look" OFF, or restore ClipboardFeature.kt, ClipLook.kt, ClipCards.kt, SettingsGroups.kt, SettingsIndex.java, ChangedPlan.java from v0.17.57.1 and delete typing/ClipCopy.java, typing/ClipContrast.java and the 2 new tests.
+
 v0.17.57.1 - FIX: build error in ClipboardFeature.kt (ClipCaret)
 - BUG: "ClipboardFeature.kt line 846: Classifier 'ClipCaret' does not have a companion object, and thus must be initialized here".
 - ROOT CAUSE: makeEdit() (v0.17.56) had "val cc = com.mgb.keyboard.typing.ClipCaret". Kotlin does not allow a Java class name as a value.

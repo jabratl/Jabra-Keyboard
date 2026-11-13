@@ -74,7 +74,7 @@ object ClipCards {
         if (onTap != null) { h.minimumHeight = dp(ctx, 30); h.gravity = android.view.Gravity.CENTER_VERTICAL; h.setOnClickListener { try { onTap() } catch (_: Throwable) { } } }
         h.textSize = 12f
         h.setTypeface(h.typeface, Typeface.BOLD)
-        h.setTextColor(try { if (label == "Pinned") ClipLook.pinColor(JabraTokens.isDark(JabraPrefs(ctx))) else JabraTokens.dimText(JabraPrefs(ctx)) } catch (_: Throwable) { Color.DKGRAY })   // v0.8.7; v0.18: Pinned = gold
+        h.setTextColor(try { if (label == "Pinned") ClipLook.pinText(JabraPrefs(ctx), JabraTokens.isDark(JabraPrefs(ctx))) else JabraTokens.dimText(JabraPrefs(ctx)) } catch (_: Throwable) { Color.DKGRAY })   // v0.8.7; v0.18: Pinned = gold
         h.setPadding(dp(ctx, 8), dp(ctx, 4), dp(ctx, 8), dp(ctx, 2))
         return h
     }
@@ -229,7 +229,7 @@ object ClipCards {
                 pt.text = "Pinned"
                 pt.textSize = 11f
                 pt.setTypeface(pt.typeface, Typeface.BOLD)
-                pt.setTextColor(try { ClipLook.pinColor(JabraTokens.isDark(pf!!)) } catch (_: Throwable) { Color.parseColor("#B7791F") })   // v0.16.15 (E3)
+                pt.setTextColor(try { ClipLook.pinText(pf, JabraTokens.isDark(pf!!)) } catch (_: Throwable) { Color.parseColor("#B7791F") })   // v0.16.15 (E3)
                 bar.addView(pt)
             }
             val fill = View(ctx)

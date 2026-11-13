@@ -15,6 +15,12 @@ object ClipLook {
     /** v0.16.15 (E3): colour of PINNED clips = warm gold. Blue is only for SELECTED clips (before: pinned and selected were both blue). */
     fun pinColor(dark: Boolean): Int = if (dark) 0xFFFFD54F.toInt() else 0xFFB7791F.toInt()
 
+    /** v0.17.58 (C3): clipboard new look ON (pref clip_new_look, default ON). OFF = every look below is exactly as before. */
+    fun newLook(p: JabraPrefs?): Boolean = try { p?.bool("clip_new_look", true) ?: true } catch (_: Throwable) { true }
+
+    /** v0.17.58 (C3): gold for the WORD "Pinned" (text needs 4.5:1; #B7791F gave only 3.4:1 on the classic grey). New look: darker gold in light themes. OFF = pinColor(). */
+    fun pinText(p: JabraPrefs?, dark: Boolean): Int = if (newLook(p) && !dark) 0xFF7A5000.toInt() else pinColor(dark)
+
     /** v0.17.40 (M7): small "Aa" tag on a card whose clip has a stored format. Theme colours (dim text, NOT blue), tap target >= 28 dp. */
     fun fmtTag(ctx: Context, p: JabraPrefs?): TextView? = try {
         val d = ctx.resources.displayMetrics.density

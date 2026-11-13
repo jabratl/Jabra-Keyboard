@@ -1,25 +1,19 @@
-HANDOFF - Jabra Keyboard clipboard upgrade (C1 + C2 done, current v0.17.57). Paste this file at the start of the next chat, with the step prompt below.
+HANDOFF - Jabra Keyboard clipboard upgrade (C1 + C2 + C3 + C4 done, current v0.17.59). Paste this file at the start of the next chat.
 
-DONE: C1 (v0.17.56) clip Edit caret. C2 (v0.17.57) export to .txt / .docx. Plan for C3 (improved, with design rules) is in PLAN_CLIP_V2.txt. Before this: v0.17.55 (M3 Bangla number page).
+DONE: C1 v0.17.56 clip Edit caret. C2 v0.17.57 export .txt / .docx (+ .57.1 build fix). C3 v0.17.58 clipboard new look. C4 v0.17.59 Edit + Export card look + delete with Undo.
 
-WHAT CHANGED in C2 (file: 1 line)
-- app/src/main/java/com/mgb/keyboard/clip/ClipExport.java (NEW): pure export logic (prepare, toTxt, toTxtBytes, toDocx, html -> runs parser, fileName).
-- app/src/main/java/com/mgb/keyboard/ClipExporter.kt (NEW): share via FileProvider (cache/exports), save to Downloads via MediaStore (Android 10+).
-- app/src/main/java/com/mgb/keyboard/ClipboardFeature.kt: exporting / expScope / expSel / expMsg state, makeExport() screen, actExport(), doExport(), Export button in classic r2 row and in new More tray, reset() and make() hooks. (also holds C1 caret code)
-- app/src/main/res/xml/file_paths.xml: +1 line cache-path "exports".
-- tools/ClipExportTest.java (NEW): 3058 checks (incl. fuzz).
-- app/build.gradle.kts 0.17.57, CHANGELOG.txt, PLAN_CLIP_V2.txt, HANDOFF_CLIP_V2.txt.
-- Earlier (C1, already sent): typing/ClipCaret.java, tools/ClipCaretTest.java.
+WHAT CHANGED (file: 1 line)
+- typing/ClipCopy.java (NEW): pure texts (title, count line, empty / no-result, quick-delete rule 1-2 clips).
+- typing/ClipContrast.java (NEW): pure WCAG ratio.
+- ClipLook.kt: newLook() (pref clip_new_look, default ON) + pinText() (darker gold for the word "Pinned" in light themes).
+- ClipCards.kt: 2 lines use pinText.
+- ClipboardFeature.kt: nl(), ovOpen, make() routes to makeNew when new look is ON, new header (title + count | search | Add | menu), overflow tray (Manage / Sort / View / Export all / Clear), empty texts, count line, delete 1-2 + Undo, cardInfo() for Edit + Export, Save / Share .docx = primary button.
+- SettingsGroups.kt, typing/SettingsIndex.java, typing/ChangedPlan.java: toggle "Clipboard new look".
+- tools/ClipCopyTest.java, tools/ClipContrastTest.java (NEW); app/build.gradle.kts 0.17.59; CHANGELOG.txt, PLAN_CLIP_V2.txt.
 
-CHECKS DONE: tools/run_tests.sh = 129/129 green. Sample .docx validated with python-docx, pandoc, LibreOffice (rendered + looked at). Bracket balance of ClipboardFeature.kt OK. No ids added (no duplicates possible).
-NOT TESTED (needs real use): Kotlin NOT compiled (if the GitHub build fails: paste the error log, FIX first; most likely spots = makeExport() chips / lambdas and ClipExporter.kt). NOT opened in real MS Word / Google Docs / WPS. Phone: Export screen look at 360 / 1280 dp dark + light; share sheet from the keyboard window; Save really lands in Downloads; Bangla in .txt; C1 tap-to-place caret on long / multi-line clips. The render check at 360 / 1280 dp could NOT be run here (no Android).
+CHECKS DONE: tools/run_tests.sh = 131/131 green. Bracket balance OK (ClipboardFeature, ClipLook, ClipCards, SettingsGroups). No XML ids added.
+NOT TESTED (needs real use): Kotlin NOT compiled (if the GitHub build fails: paste the error log, FIX first; likely spots: return@btn in the menu button, tp() local fun in makeNew). Phone: header at 360 / 1280 dp dark + light, menu row fit, empty + no-result text, delete 1-2 + Undo, Edit + Export look, new look OFF = old panel, C1 caret on long clips, C2 export / share / save.
 
-KNOWN FACTS for C3 (do not re-read the whole code): pref panel_ui default = 0 = CLASSIC clipboard panel; the new panel is makeNew() + selectBarNew() (ClipboardFeature.kt) and is opt-in. Header = ABC | Search | Add | Manage; chips = ClipFilter; cards = ClipCards.kt; tags = ClipLook.kt; pill / function looks = ClipBar.kt; sizes = typing/ClipCardSize.java + ClipBtn.java; theme colours = JabraTokens (pf = JabraPrefs). Edit screen = makeEdit(), Export screen = makeExport() (both plain button stacks). Select-mode actions: actPin / actDelete / actPaste / actMerge / actEdit / actToVault / actExport. Kotlin trap met in this chat: a Java class cannot be put in a val (val X = JavaClass is an error): use import.
+KNOWN FACTS: with new look ON the redesigned panel (makeNew) is used even when panel_ui = Classic; OFF = panel_ui decides as before. Kotlin trap: a Java class cannot be put in a val (use import).
 
-NEXT: C3 - clipboard design (full plan, design rules and fallback order in PLAN_CLIP_V2.txt). Idea list NOT built (only if the user asks): export shortcut in header (planned inside C3), Markdown / HTML export, import .txt as clips, per-clip Share, save to a chosen folder, Bangla mini keys in the Edit screen.
-
-PROMPT FOR THE NEXT CHAT (copy):
-Jabra Keyboard step C3. Mode: MODIFY. Previous version: v0.17.57. Attached: HANDOFF_CLIP_V2.txt, PLAN_CLIP_V2.txt, app/src/main/java/com/mgb/keyboard/ClipboardFeature.kt, ClipCards.kt, ClipBar.kt, ClipLook.kt, typing/ClipCardSize.java (+ zip of the repo only if tools/run_tests.sh is needed).
-Goal: clipboard design neat, easy to navigate, clear (header, cards, states, empty states, Edit + Export screens), behind pref clip_new_look; every old action stays reachable.
-Context: Done: C1 caret, C2 export. Current version v0.17.57. Next: C3, then C4 only if C3 ran out of session.
-Rules: same as before (patch only, grep then view small ranges, plan <= 5 lines, Java tests + bracket balance, CHANGELOG + handoff, zip only changed files, final reply < 10 lines, stop at ~90% session).
+NEXT: C5 (only if you want): long clip fade + "more" expand in place (ClipCards.kt), press scale, Undo message for list-mode x. Or FIX from the first build log / phone test.

@@ -184,6 +184,7 @@ public final class SettingsIndex {
             case "clip_sort": return "Order of clips in the clipboard: Newest, Oldest, A-Z or Most used.";
             case "clip_count": return "Shows the number of characters (and paste count) on each clip.";
             case "clip_expire": return "Deletes unpinned clips after this time. Pinned clips are never deleted.";
+            case "clip_new_look": return "Neater clipboard: title + count, one filled Add button, a \u22EF menu for Manage / Sort / View / Export all / Clear, clearer empty texts, 1-2 clips delete with Undo. OFF = old panel.";   // v0.17.58 (C3)
             case "clip_fit": return "Clipboard opens as tall as the keyboard (no shrink). OFF = old fixed size.";   // v0.15.1
             case "panel_ui": return "New panels (Clipboard, Vault, Gear, More, Toolbar): Classic = old, New = chips / tiles.";   // v0.16.12 (X12)
             case "clip_list_pct": return "Height of the clip list. Smaller = shorter list. 100% = as tall as the keyboard.";   // v0.17.38 (M5)

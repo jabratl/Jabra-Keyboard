@@ -20,7 +20,7 @@ STEP C2 - BUILD (v0.17.57)  DONE (as designed below, improved after reading the 
   Validated: python-docx + pandoc + LibreOffice render (Bangla, bold, italic, lists, code, separators all correct).
   NEXT / ideas NOT built (do only if the user asks): Export-all shortcut in the header (goes into C3), Markdown / HTML export, import a .txt back as clips, per-clip "Share" on long-press, "Save to a chosen folder" (needs an Activity = manifest), date-range scope, export of the Vault.
 
-STEP C3 - MODIFY (v0.17.58)  NEXT   (improved plan: design first, then code)
+STEP C3 - MODIFY (v0.17.58)  DONE (rules d + f + c; see CHANGELOG; g + i = C4)
   Goal: clipboard looks neat and is easy and clear to use, UI only - no change of what any action does.
   FINDINGS (read from code, no need to re-read): (1) pref panel_ui default = 0 = CLASSIC panel; the redesigned panel (ClipboardFeature.makeNew, ClipFilter chips, selectBarNew + More tray) exists but is opt-in, so most users never see it. (2) Header (new panel) = ABC | Search | Add | Manage (4 buttons) + chip row + list + bottom bar in select mode. (3) Cards live in ClipCards.kt, tags / colours in ClipLook.kt, header pill look in ClipBar.kt, sizes in typing/ClipCardSize.java + ClipBtn.java, theme colours via JabraTokens. (4) Edit screen (C1) and Export screen (C2) are plain button stacks without the card look.
   STEP 0 (30 min of the session): look first. Render the panel at 360 and 1280 dp, dark + light (Robolectric is not available: build a tiny pure-Java layout calculator OR draw an HTML mock in the chat) and write a 10-line list of what is crowded / unclear. Fix the list, not guesses.
@@ -39,3 +39,6 @@ STEP C3 - MODIFY (v0.17.58)  NEXT   (improved plan: design first, then code)
   Files expected: ClipboardFeature.kt (hooks), ClipCards.kt, ClipBar.kt, ClipLook.kt, typing/ClipCardSize.java, typing/ClipCopy.java (NEW, pure: empty-state + count texts), tools/ClipContrastTest.java (NEW), SettingsGroups.kt + typing/SettingsIndex.java + typing/ChangedPlan.java (1 toggle), build.gradle.kts, CHANGELOG, handoff.
   If the session is too short: do d + f + c first (header, empty states, states), put g + i into C4 (v0.17.59).
   Rollback: switch "Clipboard new look" OFF.
+
+STEP C4 - MODIFY (v0.17.59)  DONE: rule g (1-2 clips delete + Undo) and rule i (Edit + Export card look + primary button).
+NEXT (not built): long clip fade + "more" expand in place (ClipCards.kt), press scale (AppMotion), list-mode row x also shows the Undo message, phone check of C3 + C4.
