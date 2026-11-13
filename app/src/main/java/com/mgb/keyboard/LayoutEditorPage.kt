@@ -280,6 +280,8 @@ class LayoutEditorPage(private val act: Activity, private val prefs: JabraPrefs,
         for (i in 0..3) {
             addField(card, LayoutEditPlan.SWIPE_NAMES[i] + " (text or @action)", LayoutEditPlan.limit(LayoutEditPlan.F_SWIPE), { k -> k.sw[i] }, { m, id, t -> LayoutOps.setSwipe(m, id, i, t) })
         }
+        // v0.17.20 (L5a): several long-press options = a slide-to-pick bar on the keyboard (items separated by spaces; field 9 in fillInspector)
+        addField(card, "Long-press options (2 or more, separated by spaces: a bar to slide and pick)", com.mgb.keyboard.layout.LpBarPlan.MAX_TEXT, { k -> com.mgb.keyboard.layout.LpBarPlan.join(k.lpList) }, { m, id, t -> LayoutOps.setLpList(m, id, com.mgb.keyboard.layout.LpBarPlan.parse(t)) })
         card.addView(btn("Pick from list (symbols, Bangla, taka, actions)") { pick() })
 
         val wr = LinearLayout(act)
@@ -1001,7 +1003,7 @@ class LayoutEditorPage(private val act: Activity, private val prefs: JabraPrefs,
         val mask = if (k == null) 0 else LayoutEditPlan.fields(k.kind)
         loading = true
         try {
-            val charMask = intArrayOf(LayoutEditPlan.F_LABEL, LayoutEditPlan.F_OUT, LayoutEditPlan.F_SHIFT, LayoutEditPlan.F_LP, LayoutEditPlan.F_SWIPE, LayoutEditPlan.F_SWIPE, LayoutEditPlan.F_SWIPE, LayoutEditPlan.F_SWIPE)
+            val charMask = intArrayOf(LayoutEditPlan.F_LABEL, LayoutEditPlan.F_OUT, LayoutEditPlan.F_SHIFT, LayoutEditPlan.F_LP, LayoutEditPlan.F_SWIPE, LayoutEditPlan.F_SWIPE, LayoutEditPlan.F_SWIPE, LayoutEditPlan.F_SWIPE, LayoutEditPlan.F_LP)
             for (i in fields.indices) {
                 val f = fields[i]
                 val show = k != null && LayoutEditPlan.has(mask, charMask[i])

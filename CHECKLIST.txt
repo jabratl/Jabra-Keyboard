@@ -874,3 +874,11 @@ Z117 (v0.17.19, L3: own bottom row per language)
  [ ] 4. [Share bottom row] on a tab: that language shows the shared row again. Undo / Redo works for both buttons.
  [ ] 5. English tab: [Own bottom row] = note "Open the Avro or Probhat tab first". Space bar swipe (language) and cursor drag work in every bottom row.
  [ ] 6. Old saved layouts and presets: no change. Dot key in Bangla = danda (L1) also in an own bottom row.
+
+Z118 (v0.17.20, L5a: long-press options bar)
+ [ ] 1. Custom keyboard ON. Editor > select "a" > field "Long-press options": type "1 2 3". Open the Test pad.
+ [ ] 2. Hold "a": a bar with 3 cells shows above the key, the first cell is blue. Lift without moving: "1" is typed.
+ [ ] 3. Hold "a", slide right to the third cell (blue moves), lift: "3" is typed. Slide far left / right past the bar: first / last cell.
+ [ ] 4. Hold "a" on the top letter row and at the far left / far right of the screen: the bar stays fully visible.
+ [ ] 5. Options "@paste @copy": slide to a cell and lift = that action runs. Short tap still types the letter. Swipe texts still work.
+ [ ] 6. Empty the options field: the key long-press works as before (single long-press text). Rotate / dark theme: bar readable.

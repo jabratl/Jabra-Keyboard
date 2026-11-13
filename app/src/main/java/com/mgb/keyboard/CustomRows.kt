@@ -118,10 +118,19 @@ class CustomRows(private val host: CustomHost, private val prefs: JabraPrefs, pr
         val hasSw = SwipeDir.hasAny(k)   // v0.17.7 (K5b): the move is tracked only on keys that have a swipe text
         val minPx = SwipeDir.minPx(b.resources.displayMetrics.density)
         var x0 = 0f; var y0 = 0f; var swipeTxt = ""
+        val opts = com.mgb.keyboard.layout.LpBarPlan.options(k)   // v0.17.20 (L5a): 2 or more long-press options = slide-to-pick bar
+        val useBar = opts.size >= com.mgb.keyboard.layout.LpBarPlan.MIN_OPTIONS
+        var barOn = false
         val r = Runnable {
             try {
                 if (lp.isEmpty()) return@Runnable
                 fired = true
+                if (useBar && LpBar.show(b, opts, prefs)) {   // v0.17.20: the bar is up; the finger decides on lift (MOVE / UP below)
+                    barOn = true
+                    KeyPopup.dismiss()
+                    if (KeyCfg.hintBuzz(b)) host.feedbackAt(b)
+                    return@Runnable
+                }
                 host.typeExtra(k, lp)
                 if (KeyCfg.hintBuzz(b)) host.feedbackAt(b)
             } catch (_: Throwable) { }
@@ -142,7 +151,7 @@ class CustomRows(private val host: CustomHost, private val prefs: JabraPrefs, pr
                         }
                         false
                     }
-                    MotionEvent.ACTION_MOVE -> {
+                    MotionEvent.ACTION_MOVE -> if (barOn) { LpBar.move(e.rawX); true } else {   // v0.17.20 (L5a)
                         if (e.x < 0f || e.y < 0f || e.x > v.width || e.y > v.height) h.removeCallbacks(r)
                         if (hasSw && !fired) {   // v0.17.7 (K5b): swipe up / down / left / right; a swipe with a text cancels the long-press
                             val t = SwipeDir.textFor(k, SwipeDir.classify(e.x - x0, e.y - y0, minPx))
@@ -153,7 +162,13 @@ class CustomRows(private val host: CustomHost, private val prefs: JabraPrefs, pr
                     }
                     MotionEvent.ACTION_UP -> {
                         h.removeCallbacks(r)
-                        if (fired) { fired = false; v.isPressed = false; KeyPopup.dismiss(); true }   // long-press typed: no tap
+                        if (barOn) {   // v0.17.20 (L5a): lift = type the option under the finger (first one when the finger never moved)
+                            barOn = false; fired = false
+                            val s = LpBar.picked()
+                            LpBar.dismiss(); v.isPressed = false; KeyPopup.dismiss()
+                            try { if (s != null) { host.typeExtra(k, s); if (KeyCfg.hintBuzz(b)) host.feedbackAt(b) } } catch (_: Throwable) { }
+                            true
+                        } else if (fired) { fired = false; v.isPressed = false; KeyPopup.dismiss(); true }   // long-press typed: no tap
                         else if (swipeTxt.isNotEmpty()) {   // v0.17.7: swipe typed: no tap
                             val t = swipeTxt; swipeTxt = ""
                             v.isPressed = false; KeyPopup.dismiss()
@@ -161,14 +176,14 @@ class CustomRows(private val host: CustomHost, private val prefs: JabraPrefs, pr
                             true
                         } else false
                     }
-                    MotionEvent.ACTION_CANCEL -> { h.removeCallbacks(r); fired = false; swipeTxt = ""; KeyCfg.cancelBuzz(v); false }
+                    MotionEvent.ACTION_CANCEL -> { h.removeCallbacks(r); if (barOn) { barOn = false; LpBar.dismiss() }; fired = false; swipeTxt = ""; KeyCfg.cancelBuzz(v); false }
                     else -> false
                 }
             } catch (_: Throwable) { false }
         }
         b.addOnAttachStateChangeListener(object : View.OnAttachStateChangeListener {
             override fun onViewAttachedToWindow(v: View) { }
-            override fun onViewDetachedFromWindow(v: View) { h.removeCallbacks(r) }
+            override fun onViewDetachedFromWindow(v: View) { h.removeCallbacks(r); if (barOn) { barOn = false; LpBar.dismiss() } }
         })
     }
 }
