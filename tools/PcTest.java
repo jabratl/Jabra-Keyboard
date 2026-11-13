@@ -1,4 +1,5 @@
 import com.mgb.keyboard.typing.PcState;
+import com.mgb.keyboard.typing.PcKeyPlan;
 
 /** v0.1.2 logic tests (computer only).  java -m jdk.compiler/com.sun.tools.javac.Main -encoding UTF-8 -d out app/src/main/java/com/mgb/keyboard/typing/*.java tools/PcTest.java ; java -cp out PcTest */
 public class PcTest {
@@ -39,6 +40,37 @@ public class PcTest {
         s.toggleMode();
         t("toggle out clears", s.ctrl() == PcState.OFF && !s.isPc());
         t("meta values match Android", PcState.META_CTRL == 0x1000 && PcState.META_ALT == 0x02);
+        // v0.17.49 (PC1): Shift + Win, real meta, mods mask, idle expiry
+        PcState p = new PcState();
+        p.tapShift(100);
+        t("shift once", p.shift() == PcState.ONCE && p.meta() == PcState.META_SHIFT && p.mods() == PcKeyPlan.MOD_SHIFT);
+        p.tapShift(300);
+        t("shift lock (2nd tap within 400ms)", p.shift() == PcState.LOCK);
+        p.keySent();
+        t("shift lock stays", p.shift() == PcState.LOCK);
+        p.tapShift(9000);
+        t("shift off", p.shift() == PcState.OFF && p.mods() == 0);
+        p.tapWin(100);
+        t("win once", p.win() == PcState.ONCE && p.meta() == PcState.META_WIN && p.mods() == PcKeyPlan.MOD_META);
+        p.keySent();
+        t("win once ends", p.win() == PcState.OFF);
+        p.tapCtrl(10); p.tapAlt(10); p.tapShift(10); p.tapWin(10);
+        t("all four mods mask", p.mods() == 15);
+        t("metaReal has plain + left bits", p.metaReal() == (0x1000 | 0x2000 | 0x02 | 0x10 | 0x01 | 0x40 | 0x10000 | 0x20000));
+        t("meta() legacy has plain bits only", p.meta() == (0x1000 | 0x02 | 0x01 | 0x10000));
+        t("hasOnce true", p.hasOnce());
+        t("not expired before 8 s", !p.expireOnce(8009, 8000) && p.mods() == 15);
+        t("expired after 8 s", p.expireOnce(8010, 8000) && p.mods() == 0 && !p.hasOnce());
+        p.tapCtrl(100); p.tapCtrl(200);
+        t("lock never expires", p.ctrl() == PcState.LOCK && !p.expireOnce(900000, 8000) && p.ctrl() == PcState.LOCK);
+        p.tapAlt(1000);
+        t("expire only the once one", p.expireOnce(9000, 8000) && p.alt() == PcState.OFF && p.ctrl() == PcState.LOCK);
+        p.tapAlt(50000); p.tapAlt(49000);
+        t("clock back: alt off, no crash", p.alt() == PcState.OFF);
+        p.tapShift(1); p.tapWin(1); p.setPc(true); p.setPc(false);
+        t("leaving PC clears shift + win + lock", p.mods() == 0 && p.ctrl() == PcState.OFF);
+        p.tapShift(5); p.clearMods();
+        t("clearMods clears shift", p.shift() == PcState.OFF && p.mods() == 0);
         System.out.println("PcTest ok=" + ok + " bad=" + bad);
         if (bad > 0) System.exit(1);
     }

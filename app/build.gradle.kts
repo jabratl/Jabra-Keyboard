@@ -4,7 +4,7 @@ plugins {
 }
 
 // Version: change ONLY this line to bump the version (the workflow reads it).
-val appVersionName = "0.17.48"
+val appVersionName = "0.17.49"
 // versionCode = GitHub run number (always goes up, so Android accepts the update).
 val runNumber = System.getenv("GITHUB_RUN_NUMBER")?.toIntOrNull() ?: 1
 

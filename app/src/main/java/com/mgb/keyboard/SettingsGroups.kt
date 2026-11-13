@@ -538,6 +538,7 @@ object SettingsGroups {
             cycle(g, "Mode", "pc_mode", { arrayOf("Phone", "PC") }, { if (prefs.bool("pc_mode", false)) 1 else 0 }, { prefs.setBool("pc_mode", it == 1) })
             toggle(g, "Mode key", "mode_key", true)
             toggle(g, "Remember mode", "pc_remember", true)
+            toggle(g, "Real modifier keys (PC)", "pc_real_mods", true)   // v0.17.49 (PC1)
         }
 
         group("Typing") { g ->

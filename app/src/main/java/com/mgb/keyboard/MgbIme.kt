@@ -376,6 +376,7 @@ class MgbIme : InputMethodService() {
 
     override fun onStartInputView(info: EditorInfo?, restarting: Boolean) {
         super.onStartInputView(info, restarting)
+        try { val pk = info?.packageName; if (pk != pcLastPkg) { if (pcLastPkg != null) pcResetMods(); pcLastPkg = pk } } catch (_: Throwable) { }   // v0.17.49 (PC1): app (package) change = no stuck Ctrl
         try { if (prefs.bool("bk_auto", true) && prefs.int("bk_day", 0) != BackupStore.today()) BackupStore.autoIfDue(this) } catch (_: Throwable) { }   // v0.4.0: auto backup once per day (background Thread)
         try { if (!prefs.bool("pc_remember", true) && prefs.bool("pc_mode", false)) { prefs.setBool("pc_mode", false); pcState.setPc(false); showLetters() } } catch (_: Throwable) { }   // v0.1.2: Remember mode OFF = always start in Phone mode
         try {
@@ -443,8 +444,19 @@ class MgbIme : InputMethodService() {
     override fun onEvaluateFullscreenMode(): Boolean =
         try { if (prefs.bool("fs_extract", false)) super.onEvaluateFullscreenMode() else false } catch (_: Throwable) { super.onEvaluateFullscreenMode() }
 
+    override fun onFinishInputView(finishingInput: Boolean) {
+        super.onFinishInputView(finishingInput)
+        pcResetMods()   // v0.17.49 (PC1): Ctrl must not stay on after the keyboard closes
+    }
+
+    override fun onWindowHidden() {
+        super.onWindowHidden()
+        pcResetMods()   // v0.17.49 (PC1)
+    }
+
     override fun onFinishInput() {
         super.onFinishInput()
+        pcResetMods()   // v0.17.49 (PC1)
         try { sg.flushLearned() } catch (_: Throwable) { }   // v0.10.2 (G3.1)
         buf.setLength(0)
         pwdField = false   // v0.16.15 (E3): was stuck on after a password field = text copied in other apps was never saved
@@ -934,21 +946,95 @@ class MgbIme : InputMethodService() {
         override fun edit(kind: String) { this@MgbIme.editAction(kind) }
         override fun feedback(v: View) { this@MgbIme.feedback(v) }
         override fun keyDp(): Int = this@MgbIme.keyDp()
+        override fun holdStart(code: Int) { this@MgbIme.pcHoldStart(code) }   // v0.17.49 (PC1)
+        override fun holdRepeat(code: Int, n: Int) { this@MgbIme.pcHoldRepeat(code, n) }   // v0.17.49
+        override fun holdEnd() { this@MgbIme.pcHoldEnd() }   // v0.17.49
+        override fun modTouched() { this@MgbIme.pcArmIdle() }   // v0.17.49
     }
 
-    /** Key down + up with the sticky Ctrl / Alt (a once-modifier ends after this key). */
+    /** Key down + up with the sticky Ctrl / Alt / Shift / Win (a once-modifier ends after this key). v0.17.49 (PC1): real modifier events (pref pc_real_mods, default ON; OFF = meta bits only like before). */
     private fun pcSend(code: Int, extraMeta: Int) {
         commitWord()
         val ic = currentInputConnection ?: return
-        val m = pcState.meta() or extraMeta
-        InputSafe.key(ic, code, m)   // v0.3.1: same event + soft-keyboard flags
+        val mods = pcState.mods() or com.mgb.keyboard.typing.PcKeyPlan.modsFromMeta(extraMeta)
+        val real = try { prefs.bool("pc_real_mods", true) } catch (_: Throwable) { true }
+        InputSafe.pcKey(ic, code, mods, real)   // v0.17.49: keyCombo -> key (meta bits) -> context menu (Ctrl+A/C/V/X/Z)
         pcState.keySent()
         try { pcRows?.refresh() } catch (_: Throwable) { }
+    }
+
+    // ---------- v0.17.49 (PC1): hold-repeat + stuck-modifier guard ----------
+    private var pcHeld = false
+    private var pcHeldCode = 0
+    private var pcHeldMods = 0
+    private var pcHeldReal = true
+    private var pcHeldPlain = false   // true = first event was refused: every repeat is a plain down + up (old behaviour)
+    private var pcLastPkg: String? = null
+    private val pcIdleHandler = android.os.Handler(android.os.Looper.getMainLooper())
+    private val pcIdleTick = object : Runnable {
+        override fun run() {
+            try {
+                if (pcState.expireOnce(android.os.SystemClock.uptimeMillis(), 8000L)) pcRows?.refresh()
+                if (pcState.hasOnce()) pcIdleHandler.postDelayed(this, 1000L)
+            } catch (_: Throwable) { }
+        }
+    }
+
+    /** A modifier was tapped: a ONCE modifier that nobody uses ends after 8 s. */
+    private fun pcArmIdle() {
+        try { pcIdleHandler.removeCallbacks(pcIdleTick); if (pcState.hasOnce()) pcIdleHandler.postDelayed(pcIdleTick, 1000L) } catch (_: Throwable) { }
+    }
+
+    private fun pcHoldStart(code: Int) {
+        try {
+            commitWord()
+            pcHoldEnd()
+            val ic = currentInputConnection ?: return
+            pcHeldMods = pcState.mods()
+            pcHeldReal = prefs.bool("pc_real_mods", true) && pcHeldMods != 0
+            pcHeldCode = code
+            pcHeldPlain = false
+            if (pcHeldMods == 0) {
+                pcHeld = InputSafe.holdDown(ic, code, 0, false)
+                if (!pcHeld) { pcHeldPlain = true; pcHeld = InputSafe.key(ic, code, 0) }
+            } else {
+                pcHeld = InputSafe.holdDown(ic, code, pcHeldMods, pcHeldReal)
+                if (!pcHeld) { pcHeldPlain = true; pcHeld = InputSafe.pcKey(ic, code, pcHeldMods, false) }
+            }
+            pcState.keySent()
+            try { pcRows?.refresh() } catch (_: Throwable) { }
+        } catch (_: Throwable) { }
+    }
+
+    private fun pcHoldRepeat(code: Int, n: Int) {
+        try {
+            if (!pcHeld || code != pcHeldCode) return
+            val ic = currentInputConnection ?: return
+            if (pcHeldPlain) InputSafe.pcKey(ic, code, pcHeldMods, false)
+            else InputSafe.holdRepeat(ic, code, pcHeldMods, pcHeldReal, n)
+        } catch (_: Throwable) { }
+    }
+
+    private fun pcHoldEnd() {
+        try {
+            if (!pcHeld) return
+            pcHeld = false
+            if (!pcHeldPlain) InputSafe.holdUp(currentInputConnection, pcHeldCode, pcHeldMods, pcHeldReal)
+            pcHeldPlain = false
+        } catch (_: Throwable) { }
+    }
+
+    /** Stuck-modifier guard: release a held key and clear Ctrl / Alt / Shift / Win (app change, keyboard hidden, input finished, PC mode off). */
+    private fun pcResetMods() {
+        try { pcHoldEnd() } catch (_: Throwable) { }
+        try { pcIdleHandler.removeCallbacks(pcIdleTick) } catch (_: Throwable) { }
+        try { if (pcState.mods() != 0) { pcState.clearMods(); pcRows?.refresh() } } catch (_: Throwable) { }
     }
 
     /** Mode key: one tap = Phone <-> PC (pref pc_mode), then the keyboard is rebuilt. */
     private fun toggleMode() {
         commitWord()
+        try { pcResetMods() } catch (_: Throwable) { }   // v0.17.49 (PC1): no modifier / held key survives a mode switch
         pcState.setPc(!prefs.bool("pc_mode", false))
         prefs.setBool("pc_mode", pcState.isPc())
         showLetters()

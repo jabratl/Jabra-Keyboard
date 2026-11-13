@@ -1,0 +1,25 @@
+HANDOFF Jabra-Keyboard v0.17.49 (PC1 done)  -  paste this + the plan file at the start of the next chat
+
+DONE LIST
+- P1 v0.17.44 bubble stem + 2-row long-press grid | P2 v0.17.45 key outline | P3 v0.17.46 accents + , . grid | P4 v0.17.47 Shift-aware accents + shadow | P5 v0.17.48 press animation + outline / shadow buttons in studio
+- PC1 v0.17.49 PC mode reliability + full modifiers (this step)
+- Current version: v0.17.49. Kotlin NEVER compiled yet; nothing phone-tested for v0.17.44-49.
+
+WHAT CHANGED (file: 1 line)
+- typing/PcKeyPlan.java (NEW): pure plan (code, mods) -> ordered key events; real modifier codes + meta flags; legacyMeta / modsFromMeta / modsDown / modsUp.
+- typing/PcState.java: + Shift and Win (OFF / ONCE / LOCK), mods() mask, metaReal(), hasOnce(), expireOnce(now, idle). meta() and old constants unchanged.
+- InputSafe.kt: keyCombo (returns COMBO_REFUSED / PARTIAL / OK), pcKey (combo -> meta bits -> context menu A/C/V/X/Z), holdDown / holdRepeat / holdUp. key() untouched.
+- PcMode.kt: Shift + Win buttons (row 1: Esc Tab Ctrl Alt Shift Win Del Ins), held() keys (Del, PgUp, PgDn, 4 arrows), PcIo + holdStart / holdRepeat / holdEnd / modTouched.
+- MgbIme.kt: pcSend -> InputSafe.pcKey; pcHoldStart / Repeat / End, pcArmIdle (8 s), pcResetMods; hooks: onFinishInputView, onWindowHidden, onFinishInput, onStartInputView (package change), toggleMode.
+- SettingsGroups.kt / typing/SettingsIndex.java / typing/ChangedPlan.java: setting pc_real_mods (default ON; OFF = old meta-bits-only behaviour).
+- tools/PcTest.java (+19 checks), tools/PcKeyPlanTest.java (NEW, 29 checks).
+
+CHECKS DONE: bash tools/run_tests.sh = 122/122 green; bracket balance of InputSafe.kt, PcMode.kt, MgbIme.kt, SettingsGroups.kt OK.
+
+NOT TESTED (needs real use)
+- Kotlin compile of ALL v0.17.44-49 changes. If the GitHub build fails: send the error log -> FIX mode first (root cause 1-2 lines).
+- Phone: Termux Ctrl+C, Chrome / code-server Ctrl+Shift+P, Ctrl+Z in Keep / Docs, remote-desktop app, switching app with Ctrl locked, hold-repeat (no key stuck after release), Shift / Win tints, 8-key row at 360 dp dark + light, 8 s auto-release of a ONCE modifier.
+- Known limit: letters typed with a sticky modifier go through pcSend only for a-z (digits / symbols with Ctrl are not covered yet).
+
+NEXT: PC2 (v0.17.50) PC rows as a layout layer. Goal: PC rows get popup bubble, press animation, outline, shadow, theme and layout-editor support; PcRows stays as fallback (pref pc_layer). It needs the actions pc_ctrl / pc_alt / pc_shift / pc_win / pc_key:<NAME> (now backed by PcState + InputSafe.pcKey).
+Start line for the next chat: "PC2 koro". Attach: PcMode.kt, MgbIme.kt (grep actionKey / pcSend only), layout/LayoutDefaults.java, layout/ActionPlan.java, LayoutStore.kt, SettingsGroups.kt, typing/SettingsIndex.java.
