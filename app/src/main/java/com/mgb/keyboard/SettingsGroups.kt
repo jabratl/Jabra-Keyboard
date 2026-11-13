@@ -418,6 +418,7 @@ object SettingsGroups {
             if (sink != null) {   // v0.12.0 (M2): sections of this page (rows are put into their section box by addRowNew)
                 for (sn in ChangedPlan.sections(title)) {
                     val hd = AppRows.sectionHeader(ctx, sn)
+                    hd.tag = "sechead:" + sn   // v0.17.65 (R5): AppPages finds the section headers for the jump bar
                     val bx = LinearLayout(ctx)
                     bx.orientation = LinearLayout.VERTICAL
                     try {   // v0.18 (easy browse): every section is one outlined card, so the rows of a section read as one block

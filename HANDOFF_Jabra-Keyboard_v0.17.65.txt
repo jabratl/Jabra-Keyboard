@@ -1,0 +1,6 @@
+HANDOFF Jabra-Keyboard v0.17.65 (R5)
+DONE: v0.17.63 R3 export rename + ZIP | v0.17.64 R4 Home polish | v0.17.65 R5 jump-to-section bar on pages. CURRENT: 0.17.65
+CHANGED: AppPages.kt (jumpBar, findHeads), SettingsGroups.kt (1 tag line), app/build.gradle.kts, CHANGELOG.txt.
+CHECKS: bracket balance; Java suite green (135/135 at R4, no Java changed since).
+NOT TESTED: Kotlin never compiled in these chats (R3-R5): if GitHub build fails send the error log -> FIX first. Phone: R3 export flow, R4 Home look, R5 chips (look + scroll target).
+NEXT: R6 = phone-check results / FIX, or help-text shortening + search result look.

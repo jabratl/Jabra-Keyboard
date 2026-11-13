@@ -1,3 +1,13 @@
+v0.17.65 - MODIFY (R5): Settings pages: "jump to section" bar (easy to browse long pages)
+- WHY: pages like Layout & size (6 sections), Look (5), Keys & gestures (5) are long; to reach "Bottom row" or "Hints" you had to scroll a lot.
+- What you get: on any page with 3+ visible sections, a row of small chips (one per section) is fixed under the title. Tap a chip = the page scrolls to that section. The row itself scrolls sideways. Pages with fewer sections look as before.
+- Code: AppPages.kt (jumpBar() + findHeads(), 1 line in build()), SettingsGroups.kt (1 line: tag "sechead:<name>" on the section header), app/build.gradle.kts 0.17.65. // v0.17.65 marks hooks. No pref, key, row or text of a setting changed.
+- BROKE: nothing known. While a search text is typed the chips stay (they only scroll; hidden sections do nothing).
+- TESTED here: bracket balance of AppPages.kt + SettingsGroups.kt OK; Java suite unchanged.
+- NOT tested: Kotlin NOT compiled; phone: chip row height / look at 360 + 1280 dp dark + light, tap scrolls to the right section on each page (Layout, Look, Typing, Keys, Clipboard), two-pane (tablet) layout, back to Home keeps working.
+- NEXT (not built): shorter help texts, search result look, Customize Home as a cleaner list, keyboard panels, key look.
+- Rollback: restore AppPages.kt + SettingsGroups.kt from v0.17.64 (the tag line is harmless alone).
+
 v0.17.64 - MODIFY (R4): Settings Home: cleaner and more consistent (UI only, small step 1)
 - WHY: user wants the settings app easier to browse and less confusing. Home headings looked different from the page headings, the test field was a bare line, and Quick looks had no explanation.
 - What changed (Home only): (1) headings "Settings / Quick looks / Try the keyboard" use the same small-caps + thin divider as the page sections. (2) Quick looks has a one-line help: "One tap sets key size and spacing. You can undo it." (3) test field = card look, 48 dp tall, theme text + hint colours. (4) tile summary max 2 lines (ellipsis) so tiles stay even. (5) version line 12 sp.

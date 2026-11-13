@@ -8,6 +8,7 @@ import android.view.ViewGroup
 import android.view.ViewTreeObserver
 import android.widget.Button
 import android.widget.FrameLayout
+import android.widget.HorizontalScrollView
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
@@ -241,8 +242,61 @@ class AppPages(private val act: SettingsActivity, private val sink: PageSink, pr
         sv.isFillViewport = true
         sv.addView(col)
         scrolls[id] = sv   // v0.13.0 (M3): for reveal()
+        try { jumpBar(col, sv)?.let { outer.addView(it) } } catch (_: Throwable) { }   // v0.17.65 (R5): fixed "jump to section" bar under the title
         outer.addView(sv, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f))
         return outer
+    }
+
+    private fun findHeads(v: View, out: MutableList<Pair<String, View>>) {
+        val t = v.tag
+        if (t is String && t.startsWith("sechead:")) out.add(Pair(t.substring(8), v))
+        if (v is ViewGroup) for (i in 0 until v.childCount) findHeads(v.getChildAt(i), out)
+    }
+
+    /** v0.17.65 (R5): a page with 3+ sections gets one row of small chips (one per section, fixed under the title). Tap = the page scrolls to that section. Never throws; null = no bar. */
+    private fun jumpBar(col: LinearLayout, sv: ScrollView): View? {
+        val heads = ArrayList<Pair<String, View>>()
+        findHeads(col, heads)
+        val shown = heads.filter { it.second.visibility == View.VISIBLE }
+        if (shown.size < 3) return null
+        val dark = try { AppUi.isDark(act) } catch (_: Throwable) { false }
+        val hs = HorizontalScrollView(act)
+        hs.isHorizontalScrollBarEnabled = false
+        val row = LinearLayout(act)
+        row.orientation = LinearLayout.HORIZONTAL
+        row.setPadding(dp(AppTokens.S4), dp(AppTokens.S1), dp(AppTokens.S4), dp(AppTokens.S1))
+        for ((name, hd) in shown) {
+            val b = Button(act)
+            b.text = name
+            b.isAllCaps = false
+            b.textSize = 13f
+            b.minWidth = 0; b.minimumWidth = 0
+            b.minHeight = dp(36); b.minimumHeight = dp(36)
+            b.setPadding(dp(AppTokens.S3), 0, dp(AppTokens.S3), 0)
+            b.stateListAnimator = null
+            try { b.setTextColor(AppUi.text(act)) } catch (_: Throwable) { }
+            try {
+                val g = GradientDrawable()
+                g.setColor(com.mgb.keyboard.typing.AppPalette.card(dark))
+                g.cornerRadius = dp(18).toFloat()
+                g.setStroke(dp(1), (AppUi.dim(act) and 0x00FFFFFF) or 0x40000000)
+                b.background = g
+            } catch (_: Throwable) { }
+            b.contentDescription = "Jump to " + name
+            b.setOnClickListener {
+                try {
+                    var y = 0
+                    var v: View? = hd
+                    while (v != null && v !== col) { y += v.top; v = v.parent as? View }
+                    sv.smoothScrollTo(0, Math.max(0, y - dp(AppTokens.S2)))
+                } catch (_: Throwable) { }
+            }
+            val lp = LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, dp(36))
+            lp.setMargins(0, 0, dp(AppTokens.S2), 0)
+            row.addView(b, lp)
+        }
+        hs.addView(row)
+        return hs
     }
 
     private fun sectionHeader(text: String): View {
