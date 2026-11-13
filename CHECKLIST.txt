@@ -888,3 +888,9 @@ Z119 (v0.17.21, L5b: Tab / Undo / Redo on the symbols panel)
  [ ] 2. Tap it: the Tab key event is sent (app that handles Tab moves focus / inserts a tab). Same for "undo" (Ctrl+Z) and "redo" (Ctrl+Shift+Z).
  [ ] 3. Classic panels (custom keyboard OFF) and symbol pages without these keys look and work as before. Page key, backspace, enter, space still work.
 
+Z120 (v0.17.22, L5b.2: long-press options + swipe on the symbols panel)
+ [ ] 1. Custom keyboard ON. Editor > symbol page 1 > select "@" > field "Long-press options": "@ & #". Press ?123.
+ [ ] 2. Hold "@": a bar with 3 cells shows; slide and lift = that cell is typed. Lift without moving = first option. Short tap = "@".
+ [ ] 3. Give a symbol key a swipe-up text "!": swipe up on it = "!" typed, no tap. A text "@paste" runs paste.
+ [ ] 4. Top row of the symbols panel: the bar stays visible. Keys without extras, page key, backspace, enter work as before. Classic panels unchanged.
+

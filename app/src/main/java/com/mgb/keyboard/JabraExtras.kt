@@ -270,7 +270,9 @@ class JabraPanels(private val ctx: Context, private val host: JabraHost) {
         if (k.kind == com.mgb.keyboard.layout.KeyDef.CHAR) {
             val o = k.out[0]
             if (o.isEmpty()) return null
-            return fit(cs(pk(if (lab.isNotEmpty()) lab else o, w) { sym(o) }))
+            val cb = fit(cs(pk(if (lab.isNotEmpty()) lab else o, w) { sym(o) }))
+            try { SymKeyTouch.attach(cb, k, prefs, { t -> if (t.startsWith("@")) host.runAction(t) else sym(t) }, { v -> host.feedback(v) }) } catch (_: Throwable) { }   // v0.17.21 (L5b.2): long-press / swipe texts
+            return cb
         }
         return when (k.action) {
             "sym" -> if (k.id.endsWith("_page"))

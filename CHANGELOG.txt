@@ -1,3 +1,12 @@
+v0.17.22 - NEW (L5b.2): long-press options bar + swipe texts on the keys of the symbols panel (custom keyboard)
+- WHY: plan L5b.2. Character keys on symbol pages (layers s1 - s3) only had a plain tap; the long-press / swipe / options fields set in the editor worked on the letter rows only.
+- What you get: custom keyboard ON. Editor > symbol page > select a key > "Long-press options" / long-press text / swipe texts. In the symbols panel: hold = text, or a slide-to-pick bar when 2 or more options; swipe up / down / left / right = that text; a text starting with @ (@tab, @undo, @paste ...) runs the action. Short tap = the symbol as before. Keys without any of these have no new listener = unchanged.
+- Code (hooks marked v0.17.22 in the comment text v0.17.21 L5b.2): NEW SymKeyTouch.kt (small copy of the CustomRows touch logic, uses LpBar / LpBarPlan / SwipeDir / KeyCfg.lpMs); JabraExtras.kt (symKey CHAR branch attaches it). No Java, no format, no pref change.
+- NOT built: bar on the classic (non custom) symbols panel; L5c Ridmik-like symbols preset.
+- BROKE: nothing known.
+- NOT tested: Kotlin NOT compiled (no javac / kotlinc here; brackets balanced, API names checked by grep); NOT phone-tested (CHECKLIST Z120). Risk: bar position at the top row of the symbols panel, finger-slide feel.
+- Rollback: empty the key's long-press / swipe fields, or push the v0.17.21 JabraExtras.kt back and delete SymKeyTouch.kt.
+
 v0.17.21 - NEW (L5b): Tab / Undo / Redo keys now work on the symbols panel (custom keyboard)
 - WHY: plan L5b. The symbols panel had no action runner, so an action key (Tab, Undo, Redo) placed on a symbol page (layers s1 - s3) stayed inert. The keyboard already ran these actions on the letter rows.
 - What you get: custom keyboard ON. Editor > symbol page > make a key an action key "tab" / "undo" / "redo". On the keyboard, in the symbols panel, the key works: Tab = Tab key event, Undo = Ctrl+Z, Redo = Ctrl+Shift+Z (same as the letters rows). An own label on the key is shown.
