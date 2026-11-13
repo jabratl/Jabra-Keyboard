@@ -743,3 +743,8 @@ Z101) v0.17.2 Space bar size + smoother language swipe (K2)  [portrait + landsca
  [ ] Install the APK: the keyboard looks and types exactly like v0.17.2 (nothing visible changed).
  [ ] (Optional) Test the red path: add a scratch commit that breaks one test -> the run stops at "Java tests" with the list of red tests, no release. Then fix it.
  [ ] (Emergency only) An empty file SKIP_TESTS.txt in the repo root = tests skipped + a note in the summary.
+
+=== Z103 (v0.17.4, K4: layout codec + defaults + warnings, pure Java) ===
+ [ ] Push the zip. Actions run: step "Java tests" is green and shows "Java tests: 97/97 green", then the APK is built.
+ [ ] Install the APK: App > Data & About shows 0.17.4. The keyboard looks and types exactly like 0.17.3 (nothing visible changed, no new setting).
+ [ ] (Info) K3 + K4 are still invisible: the first visible custom keyboard comes with K5a.1 / K5a.2.

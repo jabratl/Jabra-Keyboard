@@ -140,6 +140,9 @@ public final class LayoutOps {
         return m;
     }
 
+    /** v0.17.4 (K4): a normalised COPY of any model (texts cleaned, weights / heights clamped, duplicate ids renamed); null stays null. Used by the codec. */
+    public static LayoutDef normalize(LayoutDef m) { return m == null ? null : fin(m.copy()); }
+
     // ---------- validation ----------
     /** Structural check. null = valid, else a short reason (used by tests and by the load gate). */
     public static String valid(LayoutDef m) {
