@@ -1,3 +1,11 @@
+v0.17.42 - MODIFY (UX): Empty clipboard shows a short "how to use" line
+- WHY: a new user (or after "Clear") saw only "Nothing copied yet" and did not know what a tap, a hold or the star does.
+- What you get: when the clipboard is empty (not while searching, All filter), a small grey line under the old text: "Tap a clip = paste · hold = select · ☆ = pin (keeps it)". Classic and New panel style. Nothing else changes; the old empty text is untouched.
+- Code: ClipboardFeature.kt only (emptyHint() + 2 one-line calls, // v0.17.42). No new pref, no permission, no storage change.
+- BROKE: nothing known. ClipFilterTest (old empty text) unchanged and green.
+- TESTED here: full Java suite 120/120 green, bracket balance OK. NOT tested: Kotlin NOT compiled; NOT phone-tested (360 dp width, dark + light, Classic theme).
+- Rollback: delete the 2 emptyHint() calls.
+
 v0.17.41 - MODIFY (M8): Paste with format also in the List view and in select mode (end of plan M clipboard-format feature)
 - WHY: since v0.17.40 only the Cards view could paste a clip with its own format. Now every way to paste ONE clip follows the same rule.
 - What you get: (1) List view rows (Classic AND New panel style, both use the same row): a clip with a stored format shows the small "Aa" tag; tap the row = paste by the setting "Paste keeps format (card tap)", tap "Aa" = the other way. (2) Select mode: Paste with exactly ONE clip chosen (Classic bar and New panel bar) uses the same choice; several clips = plain, joined as before. "Paste in 1 line", Merge and Edit stay PLAIN (they change the text, so the format cannot apply). No Aa tag while selecting. Clipboard stays open after paste (M4).

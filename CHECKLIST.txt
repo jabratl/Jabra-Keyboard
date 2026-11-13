@@ -996,3 +996,7 @@ Z133  v0.17.41  M8  Format in List view + select mode (final check of the clipbo
  [ ] 4. No "Aa" tag is shown while selecting; Cards view still works as in Z132.
  [ ] 5. Privacy > Clear clipboard history now, then copy again: no crash, no old format comes back for a deleted clip.
  [ ] 6. FINAL (whole feature): copy A, B, C with different formats in Chrome / Docs, paste each one into Gmail / Keep in its own format, and each one again as plain with the Aa tag.
+
+Z134  v0.17.42  Empty clipboard hint
+ [ ] 1. Clear all unpinned clips (no pinned): clipboard shows the old "Nothing copied yet" text AND the small grey hint line under it; readable in dark and light themes.
+ [ ] 2. Type in the search box with no match: only "No match" (no hint). With a clip present: no hint. Cards view and List view, Classic and New style.

@@ -235,6 +235,16 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
         try { pasteToast?.cancel(); val t = android.widget.Toast.makeText(ctx, "Pasted", android.widget.Toast.LENGTH_SHORT); pasteToast = t; t.show() } catch (_: Throwable) { }
         if (rebuild) refresh()   // select mode was left: redraw, scroll position kept (keepY)
     }
+    /** v0.17.42: one small grey line under the empty-clipboard text: what a tap / hold / star does. Same colour as the empty text, no new pref. */
+    private fun emptyHint(): View {
+        val h = TextView(ctx)
+        h.text = "Tap a clip = paste  \u00B7  hold = select  \u00B7  \u2606 = pin (keeps it)"
+        h.textSize = 11f
+        h.gravity = Gravity.CENTER
+        h.setPadding(dp(16), 0, dp(16), dp(12))
+        try { h.setTextColor(dim()) } catch (_: Throwable) { }
+        return h
+    }
     private fun keepFmtOnTap(): Boolean = try { JabraPrefs(ctx).bool("clip_fmt_tap", true) } catch (_: Throwable) { true }   // v0.17.40 (M7)
     /** v0.17.40 (M7): a card tap (badge = the Aa tag): with or without format, by ClipPasteMode. */
     private fun pasteItem(item: ClipList.Item, badge: Boolean) {
@@ -374,6 +384,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
             t.gravity = Gravity.CENTER   // v0.18
             if (!searching) t.text = "\uD83D\uDCCB\n" + t.text
             col.addView(t)
+            if (!searching) col.addView(emptyHint())   // v0.17.42: how to use (first-time help)
         }
         // v0.2.5.1: "Pinned" / "Recent" header lines (only when both groups have items and not searching)
         val pinnedItems = store.sorted(store.pinnedView(query), sortLv)   // v0.4.3 (Newest = unchanged)
@@ -569,6 +580,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
             t.gravity = Gravity.CENTER   // v0.18
             if (!searching) t.text = "\uD83D\uDCCB\n" + t.text
             col.addView(t)
+            if (!searching && fChip == 0) col.addView(emptyHint())   // v0.17.42: how to use (first-time help)
         }
         val showHeaders = ClipOrder.showHeaders(searching, pinnedItems.size, recentItems.size)
         val ordMode = try { ClipOrder.sanitize(JabraPrefs(ctx).int("clip_order", 0)) } catch (_: Throwable) { 0 }
