@@ -59,6 +59,11 @@ object ClipCards {
 
     private fun dp(ctx: Context, v: Int): Int = (v * ctx.resources.displayMetrics.density).toInt()
 
+    /** v0.17.33 (UI9): clip card size % (pref clip_card_pct, 70..140, 100 = old). Any problem = 100. */
+    private fun cardPct(ctx: Context): Int = try { com.mgb.keyboard.typing.ClipCardSize.sanitize(JabraPrefs(ctx).int("clip_card_pct", com.mgb.keyboard.typing.ClipCardSize.DEF)) } catch (_: Throwable) { 100 }
+    private fun cardMinDp(ctx: Context): Int = try { com.mgb.keyboard.typing.ClipCardSize.minHeightDp(72, cardPct(ctx)) } catch (_: Throwable) { 72 }
+    private fun cardSp(ctx: Context, sp: Float): Float = try { com.mgb.keyboard.typing.ClipCardSize.textSize(sp, cardPct(ctx)) } catch (_: Throwable) { sp }
+
     private fun header(ctx: Context, label: String, onTap: (() -> Unit)? = null, arrow: Boolean = false): View {   // v0.15.2: onTap = swap Pinned / Recent order; arrow only on the first header
         val h = TextView(ctx)
         val base = if (label == "Pinned") "\u2605 " + label else label   // v0.18: gold star on the Pinned header
@@ -109,12 +114,12 @@ object ClipCards {
         val lp = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 1f)   // equal width, same height as the other card in the row
         lp.setMargins(dp(ctx, 3), dp(ctx, 3), dp(ctx, 3), dp(ctx, 3))
         box.layoutParams = lp
-        box.minimumHeight = dp(ctx, 72)   // v0.10.5: a card can never collapse to zero height (normal cards are taller than this, so no visible change)
+        box.minimumHeight = dp(ctx, cardMinDp(ctx))   // v0.17.33 (UI9): scaled by clip_card_pct (100 = 72 as before); v0.10.5: a card can never collapse to zero height (normal cards are taller than this, so no visible change)
 
         // body = the clip text; tap = paste + back to letters (same 3 lines as the List view)
         val t = TextView(ctx)
         t.text = item.text.replace("\n", " ⏎ ")
-        t.textSize = 12.5f
+        t.textSize = cardSp(ctx, 12.5f)   // v0.17.33 (UI9): clip_card_pct (100 = 12.5 as before)
         t.setTextColor(try { JabraTokens.cardText(pf!!) } catch (_: Throwable) { Color.BLACK })
         t.maxLines = 2 + 2 * lv
         t.ellipsize = TextUtils.TruncateAt.END

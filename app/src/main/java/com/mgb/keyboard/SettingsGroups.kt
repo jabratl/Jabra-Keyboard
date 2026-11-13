@@ -723,6 +723,8 @@ object SettingsGroups {
             level(g, "Panel style", "panel_ui", 0, com.mgb.keyboard.typing.PanelLayout.STYLE_NAMES)   // v0.16.9 (X9): 0 Classic = today's clipboard (default in the first build), 1 New
             stepper(g, "Clipboard button size", "clip_btn_pct", com.mgb.keyboard.typing.ClipBtn.MIN, com.mgb.keyboard.typing.ClipBtn.MAX, com.mgb.keyboard.typing.ClipBtn.STEP, "%",
                 { com.mgb.keyboard.typing.ClipBtn.sanitize(prefs.int("clip_btn_pct", com.mgb.keyboard.typing.ClipBtn.DEF)) }, com.mgb.keyboard.typing.ClipBtn.DEF)   // v0.17.32 (UI8): 100 = as before; smaller buttons = more list
+            stepper(g, "Clipboard card size", "clip_card_pct", com.mgb.keyboard.typing.ClipCardSize.MIN, com.mgb.keyboard.typing.ClipCardSize.MAX, com.mgb.keyboard.typing.ClipCardSize.STEP, "%",
+                { com.mgb.keyboard.typing.ClipCardSize.sanitize(prefs.int("clip_card_pct", com.mgb.keyboard.typing.ClipCardSize.DEF)) }, com.mgb.keyboard.typing.ClipCardSize.DEF)   // v0.17.33 (UI9): 100 = as before; smaller cards = more clips visible
             level(g, "Hold to select a clip", "clip_hold", com.mgb.keyboard.typing.HoldSelect.LEVEL_DEFAULT, com.mgb.keyboard.typing.HoldSelect.LEVEL_NAMES)   // v0.16.16 (E2): hold the first clip = select mode; System = old long-press
             toggle(g, "Clip code guard (2 min)", "clip_sens", false)   // v0.10.10 (W4): copied one-time codes leave the history after 2 minutes (default OFF)
         }

@@ -923,3 +923,12 @@ Z124 (v0.17.31, UI7: hold preview bubble)
  [ ] 4. Key popup = OFF: no bubble at all (hold still types the hint as before).
  [ ] 5. Custom keyboard ON, a key with ONE long-press text "?": hold = "?" bubble. A key with 2+ options = the slide bar as before (no extra bubble). Long-press text "@paste" = no bubble, the action runs.
  [ ] 6. Quick tap on "m" still shows the normal "m" bubble and types "m". Hold, slide off the key, lift: bubble hides, nothing breaks.
+
+Z125 (v0.17.32 UI8 + v0.17.33 UI9: Clipboard button size + card size)
+ [ ] 1. Settings > Clipboard & tools: "Clipboard button size" 70%: the top buttons, chips and Undo / Sort / View bar get smaller, the clip list grows and shows more clips. 140%: bigger buttons, text not cut. 100% = like before.
+ [ ] 2. Same in Panel style = New and in select mode (the Pin / Delete bar follows the size).
+ [ ] 3. "Clipboard card size" 70%: the clip cards get smaller (smaller text), more clips and more text fit. The pin star and the x of a card are not cut.
+ [ ] 4. Card size 140%: bigger text and taller cards, nothing overlaps; the card text still ends with "..." when it is long.
+ [ ] 5. Card size 100% and button size 100% = the Clipboard looks exactly like v0.17.31.
+ [ ] 6. Font scale 130% (phone settings): both settings still look fine at 70% and 140%.
+ [ ] 7. Settings > Profiles: save / load a profile: both sizes come back (clip_btn_pct, clip_card_pct). Long-press a size row = reset to 100%.
