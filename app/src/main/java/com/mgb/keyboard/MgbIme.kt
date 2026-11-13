@@ -250,8 +250,10 @@ class MgbIme : InputMethodService() {
             if (d.itemCount == 0) return
             val sensitive = try { d.description?.extras?.getBoolean("android.content.extra.IS_SENSITIVE", false) ?: false } catch (_: Throwable) { false }
             if (sensitive) return
-            val t = d.getItemAt(0).coerceToText(this)?.toString() ?: return
-            clipStore.add(t)
+            var t: String? = null   // v0.16.15 (E3): first item that has text (was: item 0 only)
+            for (i in 0 until d.itemCount) { val s = try { d.getItemAt(i).coerceToText(this)?.toString() } catch (_: Throwable) { null }; if (!s.isNullOrBlank()) { t = s; break } }
+            if (t == null) return
+            clipStore.addCaptured(t)   // v0.16.15 (E3): texts longer than 2000 characters were dropped before (now up to 20000)
         } catch (_: Throwable) { }
     }
 
@@ -305,6 +307,7 @@ class MgbIme : InputMethodService() {
     } catch (_: Throwable) { "" }
 
     private fun openClipboard() {
+        captureClip()   // v0.16.15 (E3): catch a copy the listener missed
         clipPanel.reset()
         showPanel("clipboard")
     }
@@ -378,6 +381,7 @@ class MgbIme : InputMethodService() {
         super.onFinishInput()
         try { sg.flushLearned() } catch (_: Throwable) { }   // v0.10.2 (G3.1)
         buf.setLength(0)
+        pwdField = false   // v0.16.15 (E3): was stuck on after a password field = text copied in other apps was never saved
     }
 
     override fun onUpdateSelection(

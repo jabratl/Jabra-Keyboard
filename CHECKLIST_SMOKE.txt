@@ -1,4 +1,4 @@
-JABRA KEYBOARD - 10-MINUTE SMOKE TEST (v0.16.14, plan N: N1 - N8 + plan X: X1 - X13)
+JABRA KEYBOARD - 10-MINUTE SMOKE TEST (v0.16.15, plan N: N1 - N8 + plan X: X1 - X13)
 =========================================================================
 Use this FIRST after installing a new build. It touches every new thing of plan N and plan X once.
 If all lines are OK, the long lists in CHECKLIST.txt (Z77 - Z96) are only needed when something looks wrong.

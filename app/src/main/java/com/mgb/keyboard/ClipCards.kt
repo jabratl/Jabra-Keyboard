@@ -191,7 +191,7 @@ object ClipCards {
                 pt.text = "Pinned"
                 pt.textSize = 11f
                 pt.setTypeface(pt.typeface, Typeface.BOLD)
-                pt.setTextColor(try { if (JabraTokens.isDark(pf!!)) JabraTokens.ACCENT_SOFT else JabraTokens.ACCENT } catch (_: Throwable) { Color.parseColor("#2271B1") })
+                pt.setTextColor(try { ClipLook.pinColor(JabraTokens.isDark(pf!!)) } catch (_: Throwable) { Color.parseColor("#B7791F") })   // v0.16.15 (E3)
                 bar.addView(pt)
             }
             val fill = View(ctx)
@@ -207,9 +207,10 @@ object ClipCards {
     private fun pinnedBg(ctx: Context, p: JabraPrefs): GradientDrawable {
         val g = GradientDrawable()
         val base = JabraTokens.cardFill(p, false)
-        g.setColor(androidx.core.graphics.ColorUtils.compositeColors(JabraTokens.withAlpha(JabraTokens.ACCENT, 0x30), base))
+        val gold = ClipLook.pinColor(try { JabraTokens.isDark(p) } catch (_: Throwable) { false })   // v0.16.15 (E3): gold, not the blue of "selected"
+        g.setColor(androidx.core.graphics.ColorUtils.compositeColors(JabraTokens.withAlpha(gold, 0x22), base))
         g.cornerRadius = JabraTokens.dp(ctx, JabraTokens.R_CARD).toFloat()
-        g.setStroke(dp(ctx, 2), JabraTokens.ACCENT)
+        g.setStroke(dp(ctx, 2), gold)
         return g
     }
 

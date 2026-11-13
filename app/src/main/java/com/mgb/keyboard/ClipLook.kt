@@ -12,6 +12,9 @@ import com.mgb.keyboard.clip.ClipKind
  * Colours: the existing accent blue (Code = the existing warning orange). Any problem = null = no tag (the row looks as before).
  */
 object ClipLook {
+    /** v0.16.15 (E3): colour of PINNED clips = warm gold. Blue is only for SELECTED clips (before: pinned and selected were both blue). */
+    fun pinColor(dark: Boolean): Int = if (dark) 0xFFFFD54F.toInt() else 0xFFB7791F.toInt()
+
     fun tag(ctx: Context, p: JabraPrefs?, text: String): TextView? = try {
         val k = ClipKind.kind(text)
         if (k == ClipKind.NONE) null else {

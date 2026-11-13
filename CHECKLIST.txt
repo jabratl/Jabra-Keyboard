@@ -697,3 +697,12 @@ Z97) v0.16.14 Final check + docs for plan X (X14) - docs only, no screen change
  [ ] App > Data & About shows version 0.16.14. Check for updates works.
  [ ] Run CHECKLIST_SMOKE.txt lines 1 - 21 once (10 minutes). Any failing line: send its number + what you see.
  [ ] panel_ui default is still 0 (Classic) until you say OK to flip it to 1 (New). Set App > Clipboard & tools > Panel style = New to test X9 - X13.
+
+Z98) v0.16.15 Clipboard: long copies + pinned look (E3), HoldSelect logic only (E1, no screen)
+ [ ] In a note app write / paste a text of about 5000 characters, select all, copy. Open the clipboard: the clip is there (before it was missing). Tap it: all text is pasted.
+ [ ] Copy a normal short text from a web page / chat app that has no keyboard open. Open any field, open the clipboard: it is saved.
+ [ ] After using a password field, copy text in another app: it is saved.
+ [ ] Cards view: pin one clip: gold border, faint gold tint, gold "Pinned" tag - NOT blue. Long-press another clip: it turns blue with a tick. A pinned clip that is selected turns blue; unselected pinned clips stay gold.
+ [ ] List view: pinned clips are marked by the star only, selected rows are blue as before.
+ [ ] Clipboard with 8+ clips of 20000 characters: the oldest normal clips disappear, pinned ones stay, the panel is not slow.
+ [ ] Cards view, select mode: tapping the tick box still does nothing (known, fixed in E2). Tapping the text works.

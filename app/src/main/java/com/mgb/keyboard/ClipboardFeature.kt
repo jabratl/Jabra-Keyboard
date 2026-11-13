@@ -99,6 +99,8 @@ class ClipStore(private val prefs: JabraPrefs) {
     } catch (_: Throwable) { 0 }
 
     fun add(t: String) { try { val isNew = !has(t); if (list.add(t)) save(); if (isNew) { meta.made(t, System.currentTimeMillis()); saveMeta() } else if (prefs.bool("clip_sens", false) && ClipSensitive.looksLikeCode(t)) { meta.remake(t, System.currentTimeMillis()); saveMeta() }; expireNow() } catch (_: Throwable) { } }   // v0.4.3: records "made" for new clips
+    /** v0.16.15 (E3): for text copied in other apps: long texts (up to ClipList.MAX_CAPTURE) are kept. Same bookkeeping as add(). */
+    fun addCaptured(t: String) { try { val isNew = !has(t); if (list.addCaptured(t)) save(); if (isNew && has(t)) { meta.made(t, System.currentTimeMillis()); saveMeta() } else if (!isNew && prefs.bool("clip_sens", false) && ClipSensitive.looksLikeCode(t)) { meta.remake(t, System.currentTimeMillis()); saveMeta() }; expireNow() } catch (_: Throwable) { } }
     fun view(q: String): List<ClipList.Item> = try { list.view(q) } catch (_: Throwable) { emptyList() }
     fun togglePin(i: ClipList.Item): Boolean = try { val ok = list.togglePin(i); if (ok) save(); ok } catch (_: Throwable) { false }
     fun remove(i: ClipList.Item) { try { if (list.remove(i)) save() } catch (_: Throwable) { } }

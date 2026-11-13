@@ -1,11 +1,13 @@
-HANDOFF - Jabra-Keyboard - after X14 = PART D (written 2026-11-12)
+HANDOFF - Jabra-Keyboard - after E1 + E3 (written 2026-11-13)
 =====================================================================
 READ THIS FIRST. Short, only what the next chats need. The big rules + key ids + test commands
 are in HANDOFF_Jabra-Keyboard_v0.16.10.txt (sections 1-6, "RULE 0", touch-listener rule, prefs rule).
 Language with the user: Banglish. Keep answers short. User wants: do the part, give ONE zip with only
 changed files at exact repo paths, say how much is left.
 
-1) STATE NOW (code = v0.16.14, appVersionName "0.16.14"; X14 changed docs only)
+1) STATE NOW (code = v0.16.15, appVersionName "0.16.15")
+  v0.16.15 = E1 (root cause + typing/HoldSelect.java + tools/HoldSelectTest.java 40 checks, NOT wired) + E3 (user request: long copied text kept up to 20000 chars via ClipList.addCaptured, pinned clips gold instead of blue, capture fixes in MgbIme.captureClip). See CHANGELOG top. Root cause of "tick does not select": Cards view check box (ClipCards.card "ck") has no click listener. Fix it in E2.
+  PLAN CHANGE: E2 now bumps to v0.16.16 (not 0.16.15).
   DONE: X1-X10, X11 (parts 1, 2a, 2b: gear + More tiles + in-keyboard search), X12 (B1 toolbar cards, B2 quick toolbar + preview strip + Add tool row), X13 (C1 EditOps, C2 8 toolbar edit items: EditActions.kt + MgbIme.editAction else-branch), X14 (D: 90/90 tests green, smoke list section G, docs, CHANGELOG 81 KB). panel_ui default still 0: ASK the user, flip to 1 only after phone OK of X9-X12.
   NOT compiled (Kotlin), NOT phone-tested. All tools/*Test.java green (WordBuildTest needs  -sourcepath app/src/main/java:tools). javac here = java --add-modules jdk.compiler -m jdk.compiler/com.sun.tools.javac.Main
   If GitHub shows errors: EditActions.kt / "v0.16.13 (X13)" lines (MgbIme.kt, Toolbar.kt, JabraIcons.kt), then ToolbarPanel.kt / ToolbarQuick.kt blocks "v0.16.12 (X12)", then JabraExtras.kt "v0.16.11", TypingExtras.kt makeNew(), PanelSearchUi.kt. FIX comes before new work.
@@ -39,18 +41,18 @@ changed files at exact repo paths, say how much is left.
 
   ---------------------------------------------------------------
   PART E1  X15 part 1: root cause + pure HoldSelect + tests            size S (~20%)       BUMP: no
-  PART E2  X15 part 2: wire hold-to-select + pref + docs               size M (~25%)       BUMP: v0.16.15
+  PART E2  X15 part 2: wire hold-to-select + pref + docs               size M (~25%)       BUMP: v0.16.16
   ---------------------------------------------------------------
   User report (Banglish): in the keyboard clipboard, select starts only after press-and-hold; clicking the tick does not select. WANT: press and hold the FIRST clip ~1.5 s = selection starts with that clip selected; then every other clip = plain TAP; the tick must work.
   E1 (RULE 0, root cause BEFORE any change): read ClipboardFeature.kt (select state `sel` ~L122, SelectMode lambdas ~L327, selectBar ~L444-532, itemRow ~L585-650 with long-click at ~L624 and "no star / x while selecting" ~L645) + ClipCards.kt (SelectMode ~L21, long-press ~L133, check box ~L167) + typing/ClipSelect.java (enter / enterWith / toggle works only while on / leave). Line numbers may have moved after X9 (New style duplicates the select bar actions: actPin / actDelete / actPaste / actMerge / actEdit / actToVault). Find WHY the tick tap does not select (candidates: tap goes to the row's paste click; toggle() while `on` is false; refresh() rebuilds between DOWN and UP; check box not clickable). Write the root cause in CHANGELOG. grep the same pattern in VaultPanel.kt. Then: typing/HoldSelect.java (pure state machine IDLE -> HOLDING -> STARTED / CANCELLED, time passed in as a number; hold-time sanitize 600..2500, default 1500; cancel when moved > slop / scrolled / released early) + tools/HoldSelectTest.java (>= 25 checks: tap, early release, move cancels, scroll cancels, exact threshold, double start, hold in select mode = toggle not restart, bad / huge values).
-  E2: pref clip_hold_ms (int 600..2500, default 1500): row in SettingsGroups.kt + SettingsIndex help line + SettingsIndexTest count + ProfileCodec.SPEC + ProfileTest count + ChangedPlan default + ChangedPlanTest + CHECKLIST + CHANGELOG (full prefs rule, section 5 of the v0.16.10 handoff). ClipboardFeature.kt + ClipCards.kt: ONE OnTouchListener per View; Handler.postDelayed on ACTION_DOWN, removed on UP / CANCEL / big MOVE (pattern = HintKeys.attach); old long-click stays as fallback if the pref is unset / invalid; in select mode ONE TAP toggles and the scroll position is kept (ScrollKeep, X1). Fix BOTH classic rows and the New rows (rows / cards are shared, only the bars differ). Manage button + select bar unchanged. Version 0.16.15.
+  E2: pref clip_hold_ms (int 600..2500, default 1500): row in SettingsGroups.kt + SettingsIndex help line + SettingsIndexTest count + ProfileCodec.SPEC + ProfileTest count + ChangedPlan default + ChangedPlanTest + CHECKLIST + CHANGELOG (full prefs rule, section 5 of the v0.16.10 handoff). ClipboardFeature.kt + ClipCards.kt: ONE OnTouchListener per View; Handler.postDelayed on ACTION_DOWN, removed on UP / CANCEL / big MOVE (pattern = HintKeys.attach); old long-click stays as fallback if the pref is unset / invalid; in select mode ONE TAP toggles and the scroll position is kept (ScrollKeep, X1). Fix BOTH classic rows and the New rows (rows / cards are shared, only the bars differ). Manage button + select bar unchanged. Version 0.16.16. ALSO: make the tick (ck) in ClipCards.card clickable = same toggle as the text; use HoldSelect (E1, done) in the touch listener.
   NEEDS (E1): ClipboardFeature.kt, ClipCards.kt, ClipSelect.java, VaultPanel.kt (read-only grep), ScrollKeep.java. NEEDS (E2): the E1 result + SettingsGroups.kt, SettingsIndex.java, ProfileCodec.java, ChangedPlan.java + the 4 tests (SettingsIndexTest, ProfileTest, ChangedPlanTest, HoldSelectTest), HintKeys.kt (read-only pattern), CHANGELOG.txt, CHECKLIST.txt, build.gradle.kts.
   Checks (phone): hold 1.5 s on the first clip -> selected; tap 3 others -> ticked at once; tap the tick -> toggles; scroll while holding -> no selection; plain tap outside select mode still pastes; Pin / Delete / All / Done work; cards + list + search on; password field = clipboard hidden as before.
 
 4) PROGRESS TABLE
   [x] X11 (all)  [x] A  [x] B1  [x] B2
-  [x] C1  [x] C2  [x] D  X14  [ ] E1  [ ] E2
-  About 2 more chats of size S-M. Order must stay: E1, E2.
+  [x] C1  [x] C2  [x] D  X14  [x] E1 (v0.16.15)  [x] E3 (v0.16.15)  [ ] E2
+  About 1 more chat of size M (E2).
 
 5) COPY-PASTE START MESSAGE FOR THE NEXT CHAT (PART E1)
-  "Jabra-Keyboard plan X. Read HANDOFF_Jabra-Keyboard_v0.16.14.txt (in the repo zip). Do PART E1 (X15 part 1: root cause + HoldSelect + tests). I upload the FULL repo zip (input only). Deliver ONLY a patch zip and tell me how much is left. GitHub build of v0.16.14: GREEN / errors pasted below. (If errors: FIX first, they are in EditActions.kt or the lines marked v0.16.13.)"
+  "Jabra-Keyboard plan X. Read HANDOFF_Jabra-Keyboard_v0.16.15.txt (in the repo zip). Do PART E2 (X15 part 2: wire hold-to-select + tick fix, HoldSelect.java already exists). I upload the FULL repo zip (input only). Deliver ONLY a patch zip and tell me how much is left. GitHub build of v0.16.15: GREEN / errors pasted below. (If errors: FIX first, they are in the lines marked v0.16.15 (E3), then EditActions.kt / v0.16.13.)"

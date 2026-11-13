@@ -14,6 +14,10 @@ public final class ClipList {
     public static final int MAX_UNPINNED = 40;
     public static final int MAX_PINNED = 30;
     public static final int MAX_LEN = 2000;
+    /** v0.16.15 (E3): texts COPIED in other apps are kept up to this length (the Add / Edit buttons still use MAX_LEN). */
+    public static final int MAX_CAPTURE = 20000;
+    /** v0.16.15 (E3): total characters of all UNPINNED clips; the oldest unpinned clips go first. Pinned clips are never touched. */
+    public static final int MAX_UNPINNED_CHARS = 150000;
 
     public static final class Item {
         public final String text;
@@ -38,6 +42,36 @@ public final class ClipList {
         int unpinned = 0;
         for (int i = 0; i < items.size(); i++) {
             if (!items.get(i).pinned && ++unpinned > MAX_UNPINNED) { items.remove(i); i--; }
+        }
+        return true;
+    }
+
+
+    /**
+     * v0.16.15 (E3): like add(), but for text copied in other apps: up to MAX_CAPTURE characters, and the
+     * oldest unpinned clips are dropped when all unpinned clips together pass MAX_UNPINNED_CHARS.
+     * The newest clip is never dropped by the character budget. add() is unchanged (MAX_LEN).
+     */
+    public boolean addCaptured(String t) {
+        if (t == null || t.trim().length() == 0 || t.length() > MAX_CAPTURE) return false;
+        for (int i = 0; i < items.size(); i++) {
+            if (items.get(i).text.equals(t)) {
+                if (i == 0) return false;
+                Item it = items.remove(i);
+                items.add(0, it);
+                return true;
+            }
+        }
+        items.add(0, new Item(t, false));
+        int unpinned = 0;
+        long chars = 0;
+        for (int i = 0; i < items.size(); i++) {
+            if (items.get(i).pinned) continue;
+            if (++unpinned > MAX_UNPINNED) { items.remove(i); i--; } else chars += items.get(i).text.length();
+        }
+        for (int i = items.size() - 1; i > 0 && chars > MAX_UNPINNED_CHARS; i--) {
+            Item x = items.get(i);
+            if (!x.pinned) { chars -= x.text.length(); items.remove(i); }
         }
         return true;
     }
@@ -169,7 +203,7 @@ public final class ClipList {
                 int comma = line.indexOf(',');
                 if (comma != 1) continue;
                 String text = URLDecoder.decode(line.substring(2), "UTF-8");
-                if (text.trim().length() == 0 || text.length() > MAX_LEN) continue;
+                if (text.trim().length() == 0 || text.length() > MAX_CAPTURE) continue;   // v0.16.15 (E3): was MAX_LEN, long copied clips must survive a restart
                 c.items.add(new Item(text, line.charAt(0) == '1'));   // keeps saved order (newest first)
             } catch (Exception e) { /* skip bad line */ }
         }

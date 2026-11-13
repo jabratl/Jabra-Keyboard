@@ -77,6 +77,42 @@ public class ClipTest {
         String longClip = new String(new char[ClipList.MAX_LEN]).replace('\0', 'y');
         ok(n2.add(longClip) && n2.size() == 1, "add of an Add-button clip works");
         ok(ClipList.parse(n2.serialize()).size() == 1, "format unchanged: 2000-char clip round trip");
+        // ---- v0.16.15 (E3): copied long text ----
+        ClipList q1 = new ClipList();
+        String l2001 = new String(new char[ClipList.MAX_LEN + 1]).replace('\0', 'x');
+        ok(!q1.add(l2001) && q1.size() == 0, "E3: add() still refuses 2001");
+        ok(q1.addCaptured(l2001) && q1.size() == 1, "E3: addCaptured keeps 2001");
+        ok(ClipList.check(l2001) == 2, "E3: check() still says too long for the Add button");
+        ok(q1.addCaptured(new String(new char[ClipList.MAX_CAPTURE]).replace('\0', 'y')), "E3: exactly MAX_CAPTURE ok");
+        ok(!q1.addCaptured(new String(new char[ClipList.MAX_CAPTURE + 1]).replace('\0', 'z')), "E3: MAX_CAPTURE+1 refused");
+        ok(!q1.addCaptured(null) && !q1.addCaptured("  \n ") && !q1.addCaptured(""), "E3: blank / null refused");
+        ClipList q2 = new ClipList();
+        q2.addCaptured("a"); q2.addCaptured("b"); ok(q2.addCaptured("a") && q2.view("").get(0).text.equals("a") && q2.size() == 2, "E3: duplicate moves to front");
+        ok(!q2.addCaptured("a"), "E3: same on top = no change");
+        ClipList q3 = new ClipList();
+        String big = new String(new char[15000]).replace('\0', 'k') + "\nবাংলা, 😀";
+        q3.addCaptured(big);
+        ClipList q3b = ClipList.parse(q3.serialize());
+        ok(q3b.size() == 1 && q3b.view("").get(0).text.equals(big), "E3: 15000-char clip survives save / load");
+        ok(ClipList.parse("0," + new String(new char[ClipList.MAX_CAPTURE + 1]).replace('\0', 'x')).size() == 0, "E3: parse skips > MAX_CAPTURE");
+        ok(ClipList.parse("0," + new String(new char[ClipList.MAX_CAPTURE]).replace('\0', 'x')).size() == 1, "E3: parse keeps MAX_CAPTURE");
+        ClipList q4 = new ClipList();
+        String last = null;
+        for (int i = 0; i < 12; i++) { last = "n" + i + new String(new char[19990]).replace('\0', 'w'); q4.addCaptured(last); }
+        int tot = 0; for (ClipList.Item i : q4.view("")) tot += i.text.length();
+        ok(tot <= ClipList.MAX_UNPINNED_CHARS && q4.size() == 7, "E3: char budget keeps 7 big clips, got " + q4.size());
+        ok(q4.view("").get(0).text.equals(last), "E3: newest big clip is kept");
+        ClipList q5 = new ClipList();
+        String keep = "KEEP" + new String(new char[19990]).replace('\0', 'p');
+        q5.addCaptured(keep); q5.togglePin(q5.view("").get(0));
+        for (int i = 0; i < 12; i++) q5.addCaptured("m" + i + new String(new char[19990]).replace('\0', 'w'));
+        boolean kept = false; for (ClipList.Item i : q5.view("")) if (i.pinned && i.text.equals(keep)) kept = true;
+        ok(kept, "E3: pinned long clip is never dropped by the budget");
+        ClipList q6 = new ClipList();
+        for (int i = 0; i < 100; i++) q6.addCaptured("short" + i);
+        ok(q6.size() == ClipList.MAX_UNPINNED && q6.view("").get(0).text.equals("short99"), "E3: count limit still applies");
+        ClipList.Item big1 = q1.view("").get(0);
+        ok(q1.replace(big1, big1.text) == 0 || q1.replace(big1, big1.text) == 2, "E3: replace never throws on a long clip");
         System.out.println((total - fail) + "/" + total + " passed");
         if (fail > 0) System.exit(1);
     }
