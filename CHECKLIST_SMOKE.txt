@@ -1,4 +1,4 @@
-JABRA KEYBOARD - 10-MINUTE SMOKE TEST (v0.16.15, plan N: N1 - N8 + plan X: X1 - X13)
+JABRA KEYBOARD - 10-MINUTE SMOKE TEST (v0.17.15, plan N: N1 - N8 + plan X: X1 - X13 + plan K: K1 - K9b)
 =========================================================================
 Use this FIRST after installing a new build. It touches every new thing of plan N and plan X once.
 If all lines are OK, the long lists in CHECKLIST.txt (Z77 - Z96) are only needed when something looks wrong.
@@ -40,3 +40,14 @@ G. PLAN X (X1 - X13)                                                   [Z85 - Z9
  [ ] 19. (X9 - X12) App > Clipboard & tools > Look of clips > Panel style = New. Clipboard, Vault, Gear panel (tiles + settings search) and Edit toolbar / Quick toolbar open in the new look. Panel style = Classic: all of them are exactly the old panels.
  [ ] 20. (X13) Edit toolbar > turn on Select word + Delete line + Line end. In a multi-line note: each one works on the line with the cursor. Password field: they do nothing.
  [ ] 21. After steps 16 - 20: type English + Bangla in a real app again: typing, backspace, clipboard paste feel as before.
+
+H. PLAN K = KEYBOARD LAYOUT EDITOR (K1 - K9b)                          [Z100 - Z112]
+ [ ] 22. (K1) Bottom row has NO "?" key. Hold "." : "?" appears (Bangla: danda). Space bar is wider than before.
+ [ ] 23. (K2) Space bar width / height settings change the bar; swiping on the space bar changes the language smoothly.
+ [ ] 24. (K5) App > Layout & Size > Custom keyboard: turn ON. Type English, Bangla Avro and Bangla fixed: the keys look and type as before. Turn OFF: classic keyboard again.
+ [ ] 25. (K6, K7) Open the layout editor: tap a key, change its letter and width, give a swipe. Two keys with the same letter get an orange outline + a warning; tap Fix. Undo / Redo work.
+ [ ] 26. (K8) Editor tabs Numbers / Bottom row / Symbols 1-3: make a Tab key with "Function key". On the keyboard: Tab types a tab; ?123 shows your edited symbol page; ABC returns.
+ [ ] 27. (K9) Save as "Work", change a key, Switch to the other layout and back. Export (copy), paste in a note, Import as a new name. Reset to default: asks first.
+ [ ] 28. (K9b) Presets: add "Coder", switch to it: no number row, swipe down on "v" pastes. Test pad: Open test pad shows the keyboard and you can type.
+ [ ] 29. If the custom keyboard ever looks wrong: App > Layout & Size > "Restore last good layout" / turn Custom keyboard OFF. The classic keyboard must come back at once.
+ [ ] 30. After 22 - 29: type English + Bangla in a real app: typing, backspace, clipboard paste feel as before.

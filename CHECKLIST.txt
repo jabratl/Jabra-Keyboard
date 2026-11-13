@@ -835,3 +835,7 @@ Z112. v0.17.14 (K9b) presets + test pad (NOT phone-tested)
  [ ] Pick the same preset again: added as "Coder 2" (nothing replaced). Switch back to Classic (today) any time with Switch...
  [ ] "Test pad" card: Open test pad shows the Jabra keyboard under the box; typing works with the active layout. With the custom keyboard OFF the card says so.
  [ ] Export (copy), paste in a note: the first line is "JKL1 <name>". Import (paste): the name box is already filled with that name.
+
+Z113. v0.17.15 (K12) docs only (NOT phone-tested)
+ [ ] Nothing to test in the keyboard. Run CHECKLIST_SMOKE.txt section H (lines 22 - 30) once after installing.
+ [ ] App version shows 0.17.15.
