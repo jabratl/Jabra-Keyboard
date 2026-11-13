@@ -966,3 +966,10 @@ Z129  v0.17.37  M4  Clipboard stays open after paste
  [ ] 3. Hold a clip = select mode; tick 2 clips, Paste = both pasted, select mode off, clipboard still open at the same place. Same for "Paste in 1 line".
  [ ] 4. Settings > Clipboard & tools > "Stay in clipboard after paste" OFF: a tap pastes and returns to letters (old way). ON again = stays.
  [ ] 5. ABC always returns to letters. Search field / password field: nothing breaks.
+
+Z130  v0.17.38  M5  Clipboard list height slider
+ [ ] 1. Settings > Clipboard & tools > "Clipboard list height" = 100 %: clipboard looks exactly like before.
+ [ ] 2. Set 70 %, then 50 %: open the clipboard, the list is shorter each time, never taller than the letters keyboard; at least one card is visible.
+ [ ] 3. Check Cards view and List view, Panel style Classic and New, with the search box open.
+ [ ] 4. "Clipboard follows keyboard height" OFF + 70 %: list is still shorter. Back to 100 = old size.
+ [ ] 5. Paste / select mode / scroll still work at 50 %.

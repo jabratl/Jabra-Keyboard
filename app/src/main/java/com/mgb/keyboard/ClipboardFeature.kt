@@ -705,10 +705,19 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
     private fun fitOn(): Boolean = try { JabraPrefs(ctx).bool("clip_fit", true) && fitPx > 0 } catch (_: Throwable) { false }
     private fun fitList(root: View, sv: ScrollView) {
         try {
-            if (!fitOn()) return
-            root.measure(View.MeasureSpec.makeMeasureSpec(ctx.resources.displayMetrics.widthPixels, View.MeasureSpec.EXACTLY), View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED))
-            val extra = com.mgb.keyboard.typing.ClipFit.extraPx(fitPx, root.measuredHeight, dp(com.mgb.keyboard.typing.ClipFit.MAX_EXTRA_DP))
-            if (extra > 0) { val lp = sv.layoutParams; lp.height = lp.height + extra; sv.layoutParams = lp }
+            if (fitOn()) {
+                root.measure(View.MeasureSpec.makeMeasureSpec(ctx.resources.displayMetrics.widthPixels, View.MeasureSpec.EXACTLY), View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED))
+                val extra = com.mgb.keyboard.typing.ClipFit.extraPx(fitPx, root.measuredHeight, dp(com.mgb.keyboard.typing.ClipFit.MAX_EXTRA_DP))
+                if (extra > 0) { val lp = sv.layoutParams; lp.height = lp.height + extra; sv.layoutParams = lp }
+            }
+        } catch (_: Throwable) { }
+        try {   // v0.17.38 (M5): own list height %, only shrinks the final list (works with clip_fit ON and OFF); 100 = untouched
+            val pct = com.mgb.keyboard.typing.ClipListH.sanitize(JabraPrefs(ctx).int("clip_list_pct", com.mgb.keyboard.typing.ClipListH.DEF))
+            if (pct != com.mgb.keyboard.typing.ClipListH.DEF) {
+                val lp = sv.layoutParams
+                val h = com.mgb.keyboard.typing.ClipListH.heightPx(lp.height, pct, dp(com.mgb.keyboard.typing.ClipListH.MIN_DP))
+                if (h != lp.height) { lp.height = h; sv.layoutParams = lp }
+            }
         } catch (_: Throwable) { }
     }
     private fun fitEdit(v: View): View {

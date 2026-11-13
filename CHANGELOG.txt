@@ -1,3 +1,13 @@
+v0.17.38 - NEW (M5): Separate "Clipboard list height" setting
+- WHY: the clip list always followed the keyboard height (and the button size); there was no own way to make only the list shorter.
+- What you get: Settings > Clipboard & tools > "Clipboard list height" (50-100 %, step 10, tap the number to type). 100 = exactly as before (default). Smaller = the clip list (and so the clipboard panel) gets shorter. It never gets taller than the letters keyboard and never lower than one card row. Works in Cards + List view, Classic + New panel style, with "Clipboard follows keyboard height" ON or OFF. Also in profiles.
+- Code: NEW typing/ClipListH.java (pure rule) + tools/ClipListHTest.java (16 checks); ClipboardFeature.kt (fitList: after the old grow step the final list height is scaled, // v0.17.38 (M5)); SettingsGroups.kt (stepper); typing/ProfileCodec.java (+clip_list_pct 50..100, 71 keys); typing/SettingsIndex.java (help); typing/ChangedPlan.java (Look of clips); ProfileTest / SettingsIndexTest (80) / ChangedPlanTest updated. No new permission, no storage change.
+- Assumption: the freed space is NOT kept empty - the panel simply gets shorter (the keyboard window follows, like any shorter panel).
+- BROKE: nothing known. At 100 the code path is skipped (old behaviour exactly).
+- TESTED here: full Java suite 118/118 green (bash tools/run_tests.sh), bracket balance of the 2 changed Kotlin files OK.
+- NOT tested: Kotlin NOT compiled here; NOT phone-tested (all 4 combinations: Cards / List x Classic / New, search open, clip_fit ON / OFF).
+- Rollback: set the slider to 100, or remove the marked try-block in fitList.
+
 v0.17.37 - MODIFY (M4): After a paste the clipboard STAYS open (leave only with ABC)
 - WHY: every tap on a clip pasted it and threw the keyboard back to letters, so pasting 2-3 clips one after another meant re-opening the clipboard each time.
 - What you get: tap a clip (Cards or List, Classic or New panel style) = it is pasted and the clipboard stays open at the same scroll position; a short "Pasted" toast confirms it. Select mode: Paste / Paste in 1 line paste, leave select mode and stay too. The list is NOT redrawn after a single tap, so the order does not jump (the "used" counter is still counted, order updates the next time the panel opens). New setting Clipboard & tools > "Stay in clipboard after paste" (default ON = your request; OFF = the old way, back to letters). Also in profiles.
