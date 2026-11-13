@@ -155,12 +155,19 @@ class SuggestController(
     fun punctFix(s: String) {
         try {
             val p = pickSpace
+            val k = kbSpace   // v0.17.34 (M1)
             pickSpace = false
-            if (!p || s.length != 1 || ",.!?;:)\u0964".indexOf(s[0]) < 0) return
+            kbSpace = false
+            if ((!p && !k) || s.length != 1 || ",.!?;:)\u0964".indexOf(s[0]) < 0) return
             if (!prefs.bool("sp_punct", true) || blocked()) return
-            if (textBefore().endsWith(" ")) onApply("", 1, false)   // deletes the one space before the cursor
+            if (com.mgb.keyboard.typing.PunctSpace.shouldRemove(textBefore(), s[0], k, p)) onApply("", 1, false)   // deletes the one space before the cursor
         } catch (_: Throwable) { }
     }
+
+    private var kbSpace = false   // v0.17.34 (M1): the last thing typed was a space from the space key
+
+    /** v0.17.34 (M1): MgbIme calls this right AFTER a space typed with the space key (set AFTER typeText: typing text clears it). Plain assignment, no work. */
+    fun noteSpace() { kbSpace = true }
 
     /** v0.10.3 (G3.2): called when space is pressed (after the Avro word is committed). Pref ac_on (default OFF). English plain words only. True = the word was replaced by its correction + a space (the space key then does nothing more). */
     fun autoCorrectOnSpace(): Boolean {

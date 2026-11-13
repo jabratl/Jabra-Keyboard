@@ -177,9 +177,9 @@ class MgbIme : InputMethodService() {
 
     /** v0.1.1: space key = normal space, or double-space period / tab (settings ds_period / ds_tab, default OFF). Not in password / email / URL / number fields. */
     private fun spaceKey() {
-        if (try { sg.autoCorrectOnSpace() } catch (_: Throwable) { false }) return   // v0.10.3 (G3.2): typo fixed on space (pref ac_on, default OFF)
+        if (try { sg.autoCorrectOnSpace() } catch (_: Throwable) { false }) { try { sg.noteSpace() } catch (_: Throwable) { }; return }   // v0.10.3 (G3.2): typo fixed on space (pref ac_on, default OFF); v0.17.34 (M1): its trailing space counts too
         val done = try { !latinOnly && !pwdField && spaceHelper.handle(currentInputConnection, android.os.SystemClock.uptimeMillis(), bangla) } catch (_: Throwable) { false }
-        if (!done) typeText(" ")
+        if (!done) { typeText(" "); try { sg.noteSpace() } catch (_: Throwable) { } }   // v0.17.34 (M1): "word " + , . ! ? removes the space
     }
 
     private var pendingKind = com.mgb.keyboard.typing.AutoCapGate.E_JUMP   // v0.6.1: what WE just typed; consumed by the next onUpdateSelection (default JUMP = ask)

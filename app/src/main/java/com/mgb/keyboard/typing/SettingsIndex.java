@@ -143,7 +143,7 @@ public final class SettingsIndex {
             case "letter_bold": return "Bold letters on the keys.";   // v0.10.25
             case "oh_w_p": return "Width of the keyboard in one-hand mode (portrait). Needs One-hand Left or Right.";   // v0.10.25
             case "pop_ref": return "Bigger rounded key bubble in your theme colour (needs Key popup ON). OFF = old look.";   // v0.9.6
-            case "sp_punct": return "After tapping a suggestion, , . ! ? removes its extra space (hello, not hello ,).";   // v0.10.6
+            case "sp_punct": return "After a word + space, typing , . ! ? removes that space (hello, not hello ,).";   // v0.10.6; v0.17.34 (M1): also after the space key
             case "ac_on": return "Fixes 1-letter English typos on space. Backspace right after undoes it. OFF = never.";   // v0.10.3
             case "learn_on": return "Learns words you type (kept on this phone only) and suggests them. OFF = nothing stored.";   // v0.10.2
             case "ap_on": return "Uses the profile you set for an app (Profiles > App) when its field opens. OFF = never.";   // v0.10.19

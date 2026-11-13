@@ -932,3 +932,13 @@ Z125 (v0.17.32 UI8 + v0.17.33 UI9: Clipboard button size + card size)
  [ ] 5. Card size 100% and button size 100% = the Clipboard looks exactly like v0.17.31.
  [ ] 6. Font scale 130% (phone settings): both settings still look fine at 70% and 140%.
  [ ] 7. Settings > Profiles: save / load a profile: both sizes come back (clip_btn_pct, clip_card_pct). Long-press a size row = reset to 100%.
+
+Z126 (v0.17.34 M1: Space before , . ! ? in normal typing)
+ [ ] 1. Settings > Smart typing: "Space before , . ! ?" ON. English: type "hello", tap SPACE, tap "," : you get "hello," (no space before the comma). Same with "." "!" "?".
+ [ ] 2. Bangla (Avro and Probhat): type a word, SPACE, then the danda or ",": the space before it is gone.
+ [ ] 3. Type ":" or ")" after a space ("hello :)"): the space stays (only , . ! ? and the danda remove it).
+ [ ] 4. Double space (period setting ON): "hello" SPACE SPACE gives "hello. " as before; then "," does not eat anything.
+ [ ] 5. Two spaces, a newline, or "..." before the mark: nothing is removed. Password / email / URL field: nothing is removed.
+ [ ] 6. Tap a suggestion (word + space) then ",": the space is removed as in v0.10.6.
+ [ ] 7. Switch the setting OFF: "hello" SPACE "," keeps "hello ,".
+
