@@ -1013,17 +1013,21 @@ class MgbIme : InputMethodService() {
         try { PanelGuard.ok(this, name) } catch (_: Throwable) { }   // v0.5.3
         try { JabraOneHand.apply(this, prefs, v) } catch (_: Throwable) { }   // v0.1.0
         try { if (!inPanel && c.height > 0) lettersH = c.height } catch (_: Throwable) { }   // v0.3.3: remember the letters-keyboard height
+        val freshPanel = !inPanel || name != shownPanel   // v0.18: true only when a panel REALLY opens (not when the same panel is rebuilt after a tap)
+        shownPanel = name
         inPanel = true
         val shown0 = try { capTall(name, v, c) } catch (_: Throwable) { v }   // v0.3.3: tall panel = scrolls, window never grows
         val shown = try { fitWide(shown0, c) } catch (_: Throwable) { shown0 }   // v0.10.21 (D4): window wider than 700dp = centred 600dp column
         c.removeAllViews()
         c.addView(shown)
+        if (freshPanel) { try { AppMotion.fadeIn(shown, 110, false) } catch (_: Throwable) { } }   // v0.18: soft 0.1 s fade when a panel opens (no motion when the phone's animations are off)
     }
 
     // v0.3.3 FIX: a tall panel (More settings has ~13 rows) made the keyboard window taller than the screen part the app
     // leaves free -> the app / browser text bar jumped up and the bottom rows were cut off. Now such a panel is capped to
     // the letters-keyboard height and scrolls inside. Panels that already fit are NOT wrapped (no change).
     private var inPanel = false
+    private var shownPanel = ""   // v0.18: name of the panel on screen (for the open fade)
     private var lettersH = 0
     /** v0.10.21 (D4): tablet / fold / split screen wider than 700dp: panel content in a centred 600dp column (letters keyboard untouched). Phones: returns v itself. */
     private fun fitWide(v: View, c: FrameLayout): View {

@@ -1,3 +1,11 @@
+v0.17.27 - NEW (UI3): soft panel-open fade + soft edge on the scrolling toolbar (look / smoothness only)
+- WHY: (1) a panel (clipboard, vault, emoji, ...) replaced the letters instantly, which looks like a jump. (2) The toolbar strip scrolls sideways but nothing showed that more keys are hidden.
+- What you get: (1) a 0.1 s fade-in when a panel really opens. It does NOT play when the same panel is only rebuilt (a tap inside the vault / clipboard), when going back to the letters, or when the phone's animations are off (Animator duration scale 0). (2) The right (and, once scrolled, the left) end of the toolbar strip fades out softly where more keys wait; the grey overscroll glow is gone.
+- Code: MgbIme.kt (showPanel: freshPanel / shownPanel + AppMotion.fadeIn), Toolbar.kt (fading edge on the HorizontalScrollView). No Java, no pref, no layout change.
+- BROKE: nothing known.
+- NOT tested: Kotlin NOT compiled here; NOT phone-tested. Check first: no flicker when a panel opens on a slow phone; the faded last key is still easy to tap.
+- Rollback: push the v0.17.26 MgbIme.kt and Toolbar.kt back.
+
 v0.17.26 - NEW (UI2): neater, easier-to-browse Vault panel (look only, no data change)
 - WHY: vault entries were flat rectangles with the same look for every kind; the selected chip was only a tick in the text.
 - What you get: (1) every entry is a rounded card with a kind badge on a tinted circle (clipboard = Snippet, memo = Note, book = Glossary term, page = Template), a pill for the use count, a stronger border + tick when selected. (2) Folder chips and kind chips use the soft-blue "selected" chip look (bold), same width for the 4 kind chips. (3) The search text is shown in a rounded box. (4) The empty vault message is centred with an icon. Works in the New panel style AND in the classic list.

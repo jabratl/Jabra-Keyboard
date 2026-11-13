@@ -88,6 +88,7 @@ object Toolbar {
         }
         val hs = HorizontalScrollView(ctx)
         hs.isHorizontalScrollBarEnabled = false
+        try { hs.isHorizontalFadingEdgeEnabled = true; hs.setFadingEdgeLength(dp(16)); hs.overScrollMode = View.OVER_SCROLL_NEVER } catch (_: Throwable) { }   // v0.18: soft edge = "more keys this way"; no grey end glow
         hs.addView(strip)
         hs.layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
         bar.addView(hs)
