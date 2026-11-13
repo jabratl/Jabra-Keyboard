@@ -691,6 +691,7 @@ object SettingsGroups {
             level(g, "Clip auto-delete (unpinned)", "clip_expire", 0, com.mgb.keyboard.clip.ClipMeta.EXPIRE_NAMES)   // v0.4.3
             toggle(g, "Clipboard follows keyboard height", "clip_fit", true)   // v0.15.1 (N1): OFF = old fixed clipboard size
             level(g, "Panel style", "panel_ui", 0, com.mgb.keyboard.typing.PanelLayout.STYLE_NAMES)   // v0.16.9 (X9): 0 Classic = today's clipboard (default in the first build), 1 New
+            level(g, "Hold to select a clip", "clip_hold", com.mgb.keyboard.typing.HoldSelect.LEVEL_DEFAULT, com.mgb.keyboard.typing.HoldSelect.LEVEL_NAMES)   // v0.16.16 (E2): hold the first clip = select mode; System = old long-press
             toggle(g, "Clip code guard (2 min)", "clip_sens", false)   // v0.10.10 (W4): copied one-time codes leave the history after 2 minutes (default OFF)
         }
 

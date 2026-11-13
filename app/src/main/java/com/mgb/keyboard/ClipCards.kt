@@ -24,7 +24,8 @@ class SelectMode(
     val onToggle: (ClipList.Item) -> Unit = { },
     val onLong: (ClipList.Item) -> Unit = { },
     val onPaste: (ClipList.Item) -> Unit = { },   // v0.4.3: paste counter
-    val info: (ClipList.Item) -> String = { "" }    // v0.4.3: small grey line under the text ("123 chars"), "" = none
+    val info: (ClipList.Item) -> String = { "" },   // v0.4.3: small grey line under the text ("123 chars"), "" = none
+    val holdMs: Int = 0   // v0.16.16 (E2): hold time (ms) to start select mode; 0 = old system long-click
 )
 
 object ClipCards {
@@ -119,7 +120,7 @@ object ClipCards {
         t.minLines = 2
         t.setPadding(dp(ctx, 8), dp(ctx, 6), dp(ctx, 8), dp(ctx, 2))
         t.isClickable = true
-        t.setOnClickListener {
+        val act: () -> Unit = {   // v0.16.16 (E2): the tap action, shared by the click listener and the hold listener
             try { host.feedback(t) } catch (_: Throwable) { }
             if (sm.on) {   // v0.2.5.3: select mode = tap toggles, NO paste
                 try { sm.onToggle(item) } catch (_: Throwable) { }
@@ -130,7 +131,9 @@ object ClipCards {
                 host.showLetters()
             } catch (_: Throwable) { }
         }
-        t.setOnLongClickListener {   // v0.2.5.3: long-press = select mode with this clip selected
+        t.setOnClickListener { act() }
+        val held = ClipHold.attach(t, sm.holdMs, sm.on, { try { sm.onLong(item) } catch (_: Throwable) { } }, { act() }, { try { host.feedback(t) } catch (_: Throwable) { } })   // v0.16.16 (E2): hold = select mode
+        if (!held) t.setOnLongClickListener {   // v0.2.5.3: long-press = select mode with this clip selected (old way, used when clip_hold = System)
             if (sm.on) false else { try { sm.onLong(item) } catch (_: Throwable) { }; true }
         }
         t.layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f)
@@ -173,6 +176,9 @@ object ClipCards {
             ck.layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, dp(ctx, 30))
             ck.gravity = Gravity.CENTER_VERTICAL
             bar.addView(ck)
+            val tickAct: () -> Unit = { try { host.feedback(bar) } catch (_: Throwable) { }; try { sm.onToggle(item) } catch (_: Throwable) { } }   // v0.16.16 (E2): the tick box (and the whole bottom bar) toggles; before it was a plain TextView with no click
+            ck.setOnClickListener { tickAct() }
+            bar.setOnClickListener { tickAct() }
             val fill2 = View(ctx)
             fill2.layoutParams = LinearLayout.LayoutParams(0, 1, 1f)
             bar.addView(fill2)

@@ -706,3 +706,14 @@ Z98) v0.16.15 Clipboard: long copies + pinned look (E3), HoldSelect logic only (
  [ ] List view: pinned clips are marked by the star only, selected rows are blue as before.
  [ ] Clipboard with 8+ clips of 20000 characters: the oldest normal clips disappear, pinned ones stay, the panel is not slow.
  [ ] Cards view, select mode: tapping the tick box still does nothing (known, fixed in E2). Tapping the text works.
+
+Z99) v0.16.16 Hold to select a clip + tick box (E2)  [test Cards view, List view AND New style (Panel style = New)]
+ [ ] App > Data & About shows 0.16.16. App > Clipboard & tools > "Hold to select a clip" = 1.5 s.
+ [ ] Cards view: press and HOLD the first clip about 1.5 s without moving: a small tick (haptic), the clip turns blue with a tick, bar shows "1 selected". Releasing the finger does not paste.
+ [ ] Then tap 3 other clips ONCE each: each ticks at once (no hold). Tap one again: it unticks. Tap the tick box itself and the empty part of the card's bottom bar: it toggles.
+ [ ] Pin / Delete / All / Done (and More tray in New style) work on the selection as before.
+ [ ] Short tap on a clip outside select mode: pastes and returns to letters (as before). Press 1 s and let go: it pastes (hold not reached).
+ [ ] Press on a clip and scroll the list: no select, no paste; scrolling works smoothly.
+ [ ] List view: same hold + one-tap toggles. Search + hold works. Rotate: select mode is kept.
+ [ ] Set "Hold to select a clip" = System: the OLD long-press selects (about 0.5 s). Set 0.8 s / 2 s: the time changes.
+ [ ] Password field: clipboard hidden as before.

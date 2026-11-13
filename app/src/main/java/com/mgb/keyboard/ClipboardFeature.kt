@@ -332,7 +332,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
                 { it2 -> store.togglePin(it2); refresh() },
                 { it2 -> keepUndo(listOf(it2)); store.remove(it2); refresh() },
                 SelectMode(selOn, { x -> sel.isSelected(x) }, { x -> sel.toggle(x); confirmDel = false; refresh() }, { x -> sel.enterWith(x); confirmDel = false; refresh() },
-                    { x -> store.noteUse(x) }, { x -> infoLine(x) }), ClipOrder.recentFirst(ordMode), ordSwap)   // v0.4.3; v0.15.2: order + header tap
+                    { x -> store.noteUse(x) }, { x -> infoLine(x) }, clipHoldMs()), ClipOrder.recentFirst(ordMode), ordSwap)   // v0.4.3; v0.15.2: order + header tap
         } else null
         if (cards != null) {
             col.addView(cards)
@@ -516,7 +516,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
                 { it2 -> store.togglePin(it2); refresh() },
                 { it2 -> keepUndo(listOf(it2)); store.remove(it2); refresh() },
                 SelectMode(selOn, { x -> sel.isSelected(x) }, { x -> sel.toggle(x); confirmDel = false; refresh() }, { x -> sel.enterWith(x); confirmDel = false; refresh() },
-                    { x -> store.noteUse(x) }, { x -> infoLine(x) }), ClipOrder.recentFirst(ordMode), ordSwap)
+                    { x -> store.noteUse(x) }, { x -> infoLine(x) }, clipHoldMs()), ClipOrder.recentFirst(ordMode), ordSwap)
         } else null
         if (cards != null) {
             col.addView(cards)
@@ -902,6 +902,9 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
         } catch (_: Throwable) { r }
     }
 
+    /** v0.16.16 (E2): hold time (ms) from pref clip_hold (level, default 1.5 s); 0 = old system long-click. Broken value = default. */
+    private fun clipHoldMs(): Int = try { com.mgb.keyboard.typing.HoldSelect.msForLevel(JabraPrefs(ctx).int("clip_hold", com.mgb.keyboard.typing.HoldSelect.LEVEL_DEFAULT)) } catch (_: Throwable) { 0 }
+
     private fun itemRowBase(item: ClipList.Item): View {
         val lv = try { JabraPrefs(ctx).int("clip_lines", 0).coerceIn(0, 2) } catch (_: Throwable) { 0 }   // v0.2.5.1: 0/1/2 = 2/4/6 lines
         val rowH = 44 + 22 * lv
@@ -910,7 +913,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
         val selOn = sel.isOn
         val picked = selOn && sel.isSelected(item)
         val prefix = if (selOn) (if (picked) "☑ " else "☐ ") + (if (item.pinned) "★ " else "") else (if (item.pinned && !JabraPrefs(ctx).bool("icons_on", true)) "★ " else "")   // v0.2.5.3: check box + pinned tag in select mode
-        val t = btn(prefix + item.text.replace("\n", " ⏎ "), 1f, rowH) {
+        val act: () -> Unit = {   // v0.16.16 (E2): shared by the click and the hold listener
             if (sel.isOn) {   // v0.2.5.3: tap toggles, NO paste
                 sel.toggle(item); confirmDel = false; refresh()
             } else {
@@ -920,8 +923,10 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
                 host.showLetters()
             }
         }
+        val t = btn(prefix + item.text.replace("\n", " ⏎ "), 1f, rowH) { act() }
         if (picked) t.setBackgroundColor(try { JabraTokens.rowPicked(pf) } catch (_: Throwable) { Color.parseColor("#CFE0F5") })
-        t.setOnLongClickListener {   // v0.2.5.3: long-press = select mode with this clip selected
+        val held = ClipHold.attach(t, clipHoldMs(), selOn, { sel.enterWith(item); confirmDel = false; refresh() }, { act() }, { try { host.feedback(t) } catch (_: Throwable) { } })   // v0.16.16 (E2): hold = select mode
+        if (!held) t.setOnLongClickListener {   // v0.2.5.3: long-press = select mode with this clip selected (old way, used when clip_hold = System)
             if (sel.isOn) false else { sel.enterWith(item); confirmDel = false; refresh(); true }
         }
         t.textSize = 13f

@@ -107,6 +107,19 @@ public class HoldSelectTest {
         s4.down(0, 0, 0, false);
         ok(s4.tick(600) == Result.START_SELECT, "minimum hold 600 works");
 
+        // v0.16.16 (E2): clip_hold levels
+        ok(HoldSelect.msForLevel(0) == 0, "level 0 = old long-click (0 ms)");
+        ok(HoldSelect.msForLevel(1) == 800 && HoldSelect.msForLevel(2) == 1200, "levels 1 and 2");
+        ok(HoldSelect.msForLevel(3) == 1500 && HoldSelect.msForLevel(HoldSelect.LEVEL_DEFAULT) == 1500, "level 3 = default = 1500");
+        ok(HoldSelect.msForLevel(4) == 2000, "level 4 = 2000");
+        ok(HoldSelect.msForLevel(-1) == 1500 && HoldSelect.msForLevel(5) == 1500 && HoldSelect.msForLevel(Integer.MIN_VALUE) == 1500 && HoldSelect.msForLevel(Integer.MAX_VALUE) == 1500, "out of range = default 1500");
+        boolean lv = HoldSelect.LEVEL_NAMES.length == 5;
+        for (int i = 1; i < 5; i++) lv = lv && HoldSelect.isValid(HoldSelect.msForLevel(i));
+        ok(lv && !HoldSelect.isValid(HoldSelect.msForLevel(0)), "levels 1-4 are valid hold times, level 0 is not (= old long-click)");
+        HoldSelect s5 = new HoldSelect(HoldSelect.msForLevel(2), 24f);
+        s5.down(0, 0, 0, false);
+        ok(s5.tick(1199) == Result.NONE && s5.tick(1200) == Result.START_SELECT, "level 2 starts at 1200 ms");
+
         System.out.println((total - fail) + "/" + total + " passed");
         if (fail > 0) System.exit(1);
     }

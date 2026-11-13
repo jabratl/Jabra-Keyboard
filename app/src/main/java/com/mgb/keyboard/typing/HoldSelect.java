@@ -20,6 +20,17 @@ public final class HoldSelect {
     public static final int MAX_MS = 2500;
     public static final float DEFAULT_SLOP = 24f;
 
+    /** v0.16.16 (E2): pref clip_hold = a LEVEL (index), like lp_delay: 0 = old system long-press, 1 = 0.8 s, 2 = 1.2 s, 3 = 1.5 s (default), 4 = 2 s. */
+    public static final String[] LEVEL_NAMES = { "System", "0.8 s", "1.2 s", "1.5 s", "2 s" };
+    public static final int LEVEL_DEFAULT = 3;
+    private static final int[] LEVEL_MS = { 0, 800, 1200, 1500, 2000 };
+
+    /** Hold time in ms for a clip_hold level. 0 = use the old long-click (level 0). Anything out of range = the default level (1.5 s). */
+    public static int msForLevel(int level) {
+        if (level < 0 || level >= LEVEL_MS.length) return LEVEL_MS[LEVEL_DEFAULT];
+        return LEVEL_MS[level];
+    }
+
     /** 0 / negative (unset or broken) = DEFAULT_MS; otherwise limited to MIN_MS..MAX_MS. */
     public static int sanitize(int ms) {
         if (ms <= 0) return DEFAULT_MS;
