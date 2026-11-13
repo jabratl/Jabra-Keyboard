@@ -1,4 +1,5 @@
 import com.mgb.keyboard.typing.CustomTheme;
+import com.mgb.keyboard.typing.CustomThemeForm;
 
 /** v0.4.8 CustomTheme tests. javac -encoding UTF-8 -d out app/src/main/java/com/mgb/keyboard/typing/*.java tools/CustomThemeTest.java && java -cp out CustomThemeTest */
 public class CustomThemeTest {
@@ -50,6 +51,19 @@ public class CustomThemeTest {
         t("unknown preset = defaults", CustomTheme.preset(99).toJson().equals(CustomTheme.defaults().toJson()));
         boolean allOpaque = true; for (int i = 0; i < 4; i++) { CustomTheme q = CustomTheme.preset(i); allOpaque &= (q.bg >>> 24) == 0xFF && (q.key >>> 24) == 0xFF && (q.text >>> 24) == 0xFF && (q.func >>> 24) == 0xFF; }
         t("presets opaque", allOpaque);
+
+        // v0.17.45 (P2) key outline
+        t("border default 0", CustomTheme.defaults().border == 0 && !CustomTheme.defaults().toJson().contains("border"));
+        CustomTheme bt = CustomTheme.defaults(); bt.border = 4;
+        CustomTheme bp = CustomTheme.parse(bt.toJson());
+        t("border round trip", bp != null && bp.border == 4 && bp.toJson().equals(bt.toJson()));
+        t("border clamp high", CustomTheme.parse("{\"ver\":1,\"border\":99}").border == 6);
+        t("border clamp low", CustomTheme.parse("{\"ver\":1,\"border\":-3}") == null || CustomTheme.parse("{\"ver\":1,\"border\":-3}").border == 0);
+        t("old json no border = 0", CustomTheme.parse("{\"ver\":1,\"round\":50}").border == 0);
+        t("borderDp", Math.abs(bt.borderDp() - 2.0f) < 0.001f);
+        t("border colour 50% of text", (bt.borderColor() >>> 24) == 0x80 && (bt.borderColor() & 0xFFFFFF) == (bt.text & 0xFFFFFF));
+        String[] bf = CustomThemeForm.fields(CustomTheme.defaults());
+        t("form build border", CustomThemeForm.build(bf, 45, 100, 3).border == 3 && CustomThemeForm.build(bf, 45, 100).border == 0 && CustomThemeForm.build(bf, 45, 100, 50).border == 6);
 
         System.out.println("CustomThemeTest: " + ok + " ok, " + bad + " failed");
         if (bad > 0) System.exit(1);

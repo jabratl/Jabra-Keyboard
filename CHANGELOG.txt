@@ -1,3 +1,12 @@
+v0.17.45 - MODIFY (P2): Key outline in the custom theme studio (design upgrade)
+- WHY: the studio could only change colours, roundness and opacity, so flat themes all looked alike. A thin key outline is the most asked-for "designer" detail (Ridmik-style framed keys, high-contrast / reading themes).
+- What you get: App > Theme studio has a new stepper "Key outline" (off, 1-6 = 0.5 dp to 3 dp). The line is the text colour at 50%, drawn around every letter / function key with Look = Jabra, live in the mini preview. Saved with the theme (and with "Save as"). Off = exactly the old look.
+- Code: typing/CustomTheme.java (border field, borderDp(), borderColor(), json "border" written ONLY when > 0 so old json and old tests are unchanged), typing/CustomThemeForm.java (build(..., border) overload; old build = border 0), JabraLook.kt (setStroke on up/down key drawable, not on the pill space key), AppThemeStudio.kt (stepper + preview + load/reset/save pass border), ThemeStudio.kt (presets keep your outline), tools/CustomThemeTest.java (+8 checks). // v0.17.45 marks every hook. No new pref (inside ct_json), no permission.
+- BROKE: nothing known. Older app versions ignore "border" in a theme backup (shown without outline).
+- TESTED here: full Java suite 120/120 green, bracket balance of the 3 Kotlin files OK.
+- NOT tested: Kotlin NOT compiled; NOT phone-tested (outline look on dark + light bg, 360 dp, stepper row, keys with Look != Jabra show no outline = expected, the keyboard-side ThemeStudio preview does not draw the outline yet).
+- Rollback: set Key outline to off, or restore the 6 files from v0.17.44.
+
 v0.17.44 - MODIFY (P1): Ridmik-style key bubble (stem) + 2-row long-press grid
 - WHY: compared with the Ridmik video: Ridmik's bubble is bold with a neck that joins the key, and a long-press with many options opens a 2-row grid you slide over. Jabra had a floating outlined pill and only a 1-row bar.
 - What you get: (1) key bubble: bold letter + a small tapered neck joining the bubble to its key (same colours as before, still follows theme). (2) long-press options bar: 6 or more options = 2 rows (option 1 is in the bottom row right above the key, the rest in the top row); slide up/down/left/right, lift = type. 1-5 options = the same single bar as before. Lift without moving = first option, as before.

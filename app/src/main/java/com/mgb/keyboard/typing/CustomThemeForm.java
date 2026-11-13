@@ -33,7 +33,10 @@ public final class CustomThemeForm {
     }
 
     /** The theme for these fields, or null when any field is invalid. round / alpha are clamped to the allowed range. */
-    public static CustomTheme build(String[] f, int round, int alpha) {
+    public static CustomTheme build(String[] f, int round, int alpha) { return build(f, round, alpha, 0); }
+
+    /** v0.17.45 (P2): same + key outline steps (clamped 0..6). */
+    public static CustomTheme build(String[] f, int round, int alpha, int border) {
         if (!allOk(f)) return null;
         CustomTheme c = new CustomTheme();
         c.bg = CustomTheme.hex(f[0]);
@@ -45,6 +48,7 @@ public final class CustomThemeForm {
         c.func = CustomTheme.hex(f[4]);
         c.round = CustomTheme.clamp(round, CustomTheme.ROUND_MIN, CustomTheme.ROUND_MAX);
         c.alpha = CustomTheme.clamp(alpha, CustomTheme.ALPHA_MIN, CustomTheme.ALPHA_MAX);
+        c.border = CustomTheme.clamp(border, CustomTheme.BORDER_MIN, CustomTheme.BORDER_MAX);
         return c;
     }
 

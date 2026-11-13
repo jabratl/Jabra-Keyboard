@@ -56,6 +56,10 @@ object JabraLook {
             val down = GradientDrawable()
             down.setColor(LookColors.darken(base, 0.18f))
             down.cornerRadius = radius
+            if (ct != null && ct.border > 0 && kind != PILL) {   // v0.17.45 (P2): key outline (custom theme only)
+                val bw = Math.max(1, Math.round(ct.borderDp() * d))
+                up.setStroke(bw, ct.borderColor()); down.setStroke(bw, ct.borderColor())
+            }
             val sl = StateListDrawable()
             sl.addState(intArrayOf(android.R.attr.state_pressed), down)
             sl.addState(intArrayOf(), up)

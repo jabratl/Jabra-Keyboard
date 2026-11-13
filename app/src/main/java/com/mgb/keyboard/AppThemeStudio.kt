@@ -66,6 +66,11 @@ object AppThemeStudio {
                     r.set(l, pad, l + kw, pad + kh)
                     p.color = th.withKeyAlpha(if (i == 3) th.func else th.key)
                     cv.drawRoundRect(r, rad, rad, p)
+                    if (th.border > 0) {   // v0.17.45 (P2): outline preview
+                        p.style = Paint.Style.STROKE; p.strokeWidth = Math.max(1f, th.borderDp() * d); p.color = th.borderColor()
+                        cv.drawRoundRect(r, rad, rad, p)
+                        p.style = Paint.Style.FILL
+                    }
                     p.color = th.text
                     p.textAlign = Paint.Align.CENTER
                     p.textSize = 16f * d
@@ -84,6 +89,7 @@ object AppThemeStudio {
         var fields = CustomThemeForm.fields(JabraThemes.custom(prefs))
         var round = JabraThemes.custom(prefs)?.round ?: CustomTheme.defaults().round
         var alpha = JabraThemes.custom(prefs)?.alpha ?: CustomTheme.defaults().alpha
+        var border = JabraThemes.custom(prefs)?.border ?: 0   // v0.17.45 (P2)
         var dirty = false
         var muting = false
         var armed = false
@@ -97,10 +103,11 @@ object AppThemeStudio {
         warn.setPadding(0, dp(AppTokens.S1), 0, dp(AppTokens.S1))
         lateinit var stepRound: AppRows.Built
         lateinit var stepAlpha: AppRows.Built
+        lateinit var stepBorder: AppRows.Built   // v0.17.45 (P2)
 
         fun update() {
             val ok = CustomThemeForm.check(fields)
-            val th = CustomThemeForm.build(fields, round, alpha)
+            val th = CustomThemeForm.build(fields, round, alpha, border)
             mini.t = th
             mini.invalidate()
             for (i in 0 until 5) {
@@ -122,10 +129,11 @@ object AppThemeStudio {
             fields = CustomThemeForm.fields(c)
             round = c?.round ?: CustomTheme.defaults().round
             alpha = c?.alpha ?: CustomTheme.defaults().alpha
+            border = c?.border ?: 0   // v0.17.45 (P2)
             for (i in 0 until 5) edits[i].setText(fields[i])
             muting = false
             dirty = mark
-            try { stepRound.refresh(); stepAlpha.refresh() } catch (_: Throwable) { }
+            try { stepRound.refresh(); stepAlpha.refresh(); stepBorder.refresh() } catch (_: Throwable) { }
             update()
         }
 
@@ -181,12 +189,16 @@ object AppThemeStudio {
         stepAlpha = AppRows.stepperRow(ctx, "Key opacity", "How solid the keys are, in percent.", { alpha.toString() + "%" }, { }, { dir ->
             alpha = SizePct.step(alpha, dir, CustomTheme.ALPHA_MIN, CustomTheme.ALPHA_MAX, 5); dirty = true; update()
         }, { })
+        stepBorder = AppRows.stepperRow(ctx, "Key outline", "0 = none. A thin line around every key (text colour, half see-through). Jabra look keys.", { if (border == 0) "off" else border.toString() }, { }, { dir ->   // v0.17.45 (P2)
+            border = SizePct.step(border, dir, CustomTheme.BORDER_MIN, CustomTheme.BORDER_MAX, 1); dirty = true; update()
+        }, { })
         box.addView(stepRound.view)
         box.addView(stepAlpha.view)
+        box.addView(stepBorder.view)
         box.addView(warn)
 
         fun save(use: Boolean) {
-            val th = CustomThemeForm.build(fields, round, alpha)
+            val th = CustomThemeForm.build(fields, round, alpha, border)
             if (th == null) { Toast.makeText(ctx, "Fix the red colours first. Nothing was saved.", Toast.LENGTH_SHORT).show(); return }
             val old = JabraThemes.index(prefs)
             prefs.setStr("ct_json", th.toJson())
@@ -341,7 +353,7 @@ object AppThemeStudio {
         }
 
         box.addView(action("Save as (name above)") {
-            val th = CustomThemeForm.build(fields, round, alpha)
+            val th = CustomThemeForm.build(fields, round, alpha, border)
             if (th == null) { toast("Fix the red colours first. Nothing was saved."); return@action }
             val b0 = ThemeStore.book(prefs)
             val json = th.toJson()

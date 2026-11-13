@@ -188,8 +188,9 @@ class ThemeStudio(private val ctx: Context, private val host: JabraHost) {
             pr.addView(btn(CustomTheme.PRESET_NAMES[i], 1f, 30) {
                 val keepRound = draft.round
                 val keepAlpha = draft.alpha
+                val keepBorder = draft.border   // v0.17.45 (P2)
                 draft = CustomTheme.preset(i)
-                draft.round = keepRound; draft.alpha = keepAlpha
+                draft.round = keepRound; draft.alpha = keepAlpha; draft.border = keepBorder
                 hexBuf = currentHex(); confirmReset = false
                 refresh()
             })

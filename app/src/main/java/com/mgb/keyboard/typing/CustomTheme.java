@@ -14,6 +14,7 @@ public final class CustomTheme {
 
     public static final int VER = 1;
     public static final int ROUND_MIN = 0, ROUND_MAX = 100, ALPHA_MIN = 40, ALPHA_MAX = 100;
+    public static final int BORDER_MIN = 0, BORDER_MAX = 6;   // v0.17.45 (P2): key outline, 0 = none, each step = 0.5 dp
 
     public int bg = 0xFFD6E6F5;
     public boolean hasBg2 = false;
@@ -23,6 +24,7 @@ public final class CustomTheme {
     public int func = 0xFFB5CFE8;
     public int round = 45;    // 45 -> 9 dp, the same corner as the Jabra look
     public int alpha = 100;   // key fill opacity in percent
+    public int border = 0;    // v0.17.45 (P2): key outline steps 0..6 (0 = none = old look); colour = text colour at 50%
 
     public static CustomTheme defaults() { return new CustomTheme(); }
 
@@ -59,6 +61,12 @@ public final class CustomTheme {
     /** Corner radius in dp for the Jabra look keys (round 0..100 -> 0..20 dp). */
     public float radiusDp() { return clamp(round, ROUND_MIN, ROUND_MAX) * 0.2f; }
 
+    /** v0.17.45 (P2): outline width in dp (0 = none). */
+    public float borderDp() { return clamp(border, BORDER_MIN, BORDER_MAX) * 0.5f; }
+
+    /** v0.17.45 (P2): outline colour = the text colour at 50% opacity. */
+    public int borderColor() { return (text & 0xFFFFFF) | 0x80000000; }
+
     /** ARGB with this theme's key opacity applied to [argb]. */
     public int withKeyAlpha(int argb) {
         int a = Math.round(clamp(alpha, ALPHA_MIN, ALPHA_MAX) * 255f / 100f);
@@ -68,7 +76,7 @@ public final class CustomTheme {
     public String toJson() {
         return "{\"ver\":" + VER + ",\"bg\":\"" + toHex(bg) + "\",\"bg2\":\"" + (hasBg2 ? toHex(bg2) : "") + "\",\"key\":\"" + toHex(key)
             + "\",\"text\":\"" + toHex(text) + "\",\"func\":\"" + toHex(func) + "\",\"round\":" + clamp(round, ROUND_MIN, ROUND_MAX)
-            + ",\"alpha\":" + clamp(alpha, ALPHA_MIN, ALPHA_MAX) + "}";
+            + ",\"alpha\":" + clamp(alpha, ALPHA_MIN, ALPHA_MAX) + (clamp(border, BORDER_MIN, BORDER_MAX) > 0 ? ",\"border\":" + clamp(border, BORDER_MIN, BORDER_MAX) : "") + "}";   // v0.17.45: border only when set (old json unchanged)
     }
 
     private static final Pattern FIELD = Pattern.compile("\"(\\w+)\"\\s*:\\s*(\"([^\"]*)\"|-?\\d+)");
@@ -94,6 +102,7 @@ public final class CustomTheme {
                 else if ("func".equals(k)) { Integer v = hex(str); if (v != null) c.func = v; }
                 else if ("round".equals(k) && num != null) c.round = clamp(Integer.parseInt(num), ROUND_MIN, ROUND_MAX);
                 else if ("alpha".equals(k) && num != null) c.alpha = clamp(Integer.parseInt(num), ALPHA_MIN, ALPHA_MAX);
+                else if ("border".equals(k) && num != null) c.border = clamp(Integer.parseInt(num), BORDER_MIN, BORDER_MAX);   // v0.17.45 (P2)
             }
             return ver ? c : null;
         } catch (Throwable t) {
