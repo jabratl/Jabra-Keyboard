@@ -46,7 +46,8 @@ public final class ProfileCodec {
         "clip_hold:i",   // v0.16.16 (E2)
         "key_qm:b", "danda_key:b",   // v0.17.1 (K1); v0.17.18 (L1)
         "sp_wpct:i", "sp_hpct:i", "sp_anim:b",   // v0.17.2 (K2)
-        "kb_custom:i"   // v0.17.5 (K5a.1)
+        "kb_custom:i",   // v0.17.5 (K5a.1)
+        "clip_btn_pct:i"   // v0.17.32 (UI8)
     };
     public static final String[] KEYS = new String[SPEC.length];
     private static final char[] TYPE = new char[SPEC.length];
@@ -89,6 +90,7 @@ public final class ProfileCodec {
             if ((key.equals("tb_hpct") || key.equals("tb_ipct") || key.equals("nr_hpct")) && (n < 70 || n > 150)) return INVALID;   // v0.16.6 / v0.16.7
             if (key.equals("nr_mode") && (n < 0 || n > 2)) return INVALID;   // v0.16.7
             if (key.equals("sp_wpct") && (n < 60 || n > 200)) return INVALID;   // v0.17.2 (K2)
+            if (key.equals("clip_btn_pct") && (n < 70 || n > 140)) return INVALID;   // v0.17.32 (UI8)
             if (key.equals("sp_hpct") && (n < 80 || n > 160)) return INVALID;   // v0.17.2 (K2)
             if (key.equals("panel_ui") && (n < 0 || n > 1)) return INVALID;   // v0.16.9
             if (key.equals("kb_custom") && (n < 0 || n > 1)) return INVALID;   // v0.17.5 (K5a.1)

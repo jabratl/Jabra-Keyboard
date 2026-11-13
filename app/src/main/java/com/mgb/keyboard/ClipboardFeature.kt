@@ -165,10 +165,17 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
     private fun hush(): Int = try { JabraTokens.cardNote(pf) } catch (_: Throwable) { Color.GRAY }
 
     /** v0.8.7: themed button (UiKit.btn follows theme colour + look); old plain button = automatic fallback. */
-    private fun btn(label: String, weight: Float, hDp: Int, onClick: (Button) -> Unit): Button {
-        try { return UiKit.btn(ctx, pf, label, weight, hDp, 0f, { v -> try { host.feedback(v) } catch (_: Throwable) { } }, onClick) } catch (_: Throwable) { }
+    private fun btn(label: String, weight: Float, hDp0: Int, onClick: (Button) -> Unit): Button {
+        val hDp = sz(hDp0)   // v0.17.32 (UI8): pref clip_btn_pct (100 = unchanged)
+        try { return fontFit(UiKit.btn(ctx, pf, label, weight, hDp, 0f, { v -> try { host.feedback(v) } catch (_: Throwable) { } }, onClick)) } catch (_: Throwable) { }
         return btnOld(label, weight, hDp, onClick)
     }
+
+    /** v0.17.32 (UI8): Clipboard button size % (pref clip_btn_pct, 70..140, 100 = old). Any problem = 100. */
+    private fun bpct(): Int = try { com.mgb.keyboard.typing.ClipBtn.sanitize(JabraPrefs(ctx).int("clip_btn_pct", com.mgb.keyboard.typing.ClipBtn.DEF)) } catch (_: Throwable) { 100 }
+    private fun sz(dp: Int): Int = try { com.mgb.keyboard.typing.ClipBtn.heightDp(dp, bpct()) } catch (_: Throwable) { dp }
+    private fun fs(sp: Float): Float = try { com.mgb.keyboard.typing.ClipBtn.textSize(sp, bpct()) } catch (_: Throwable) { sp }
+    private fun <T : TextView> fontFit(v: T): T { try { if (bpct() != 100) v.setTextSize(android.util.TypedValue.COMPLEX_UNIT_PX, com.mgb.keyboard.typing.ClipBtn.textSize(v.textSize, bpct())) } catch (_: Throwable) { }; return v }
 
     private fun btnOld(label: String, weight: Float, hDp: Int, onClick: (Button) -> Unit): Button {
         val b = Button(ctx)
@@ -245,7 +252,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
             if (confirmClear) { keepUndo(store.recentView("")); store.clearUnpinned(); confirmClear = false } else confirmClear = true
             refresh()
         }
-        if (confirmClear) clearBtn.textSize = 12f   // v0.2.5.1: the button is a bit narrower now
+        if (confirmClear) clearBtn.textSize = fs(12f)   // v0.2.5.1: the button is a bit narrower now
         top.addView(ClipBar.danger(pf, clearBtn))   // v0.17.30 (UI6): warm red label
         root.addView(top)
 
@@ -265,7 +272,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
         head.addView(m)
         if (undoBuf.isNotEmpty()) {   // v0.3.7
             val undoBtn = btn("↶ Undo", 0f, 30) { doUndo() }
-            undoBtn.textSize = 12f
+            undoBtn.textSize = fs(12f)
             undoBtn.setPadding(dp(10), 0, dp(10), 0)
             head.addView(ClipBar.pill(pf, undoBtn))   // v0.17.30 (UI6)
         }
@@ -275,20 +282,20 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
             confirmClear = false
             refreshTop()   // v0.16.1
         }
-        sortBtn.textSize = 12f
+        sortBtn.textSize = fs(12f)
         sortBtn.setPadding(dp(10), 0, dp(10), 0)
         val viewBtn = btn(if (cardsOn) "View: Cards" else "View: List", 0f, 30) {
             try { JabraPrefs(ctx).setInt("clip_view", if (cardsOn) 0 else 1) } catch (_: Throwable) { }
             confirmClear = false
             refreshTop()   // v0.16.1
         }
-        viewBtn.textSize = 12f
+        viewBtn.textSize = fs(12f)
         viewBtn.setPadding(dp(10), 0, dp(10), 0)
         if (!selOn) {   // v0.2.5.3: in select mode the action row below replaces View / Manage
             head.addView(ClipBar.pill(pf, sortBtn))   // v0.4.3; v0.17.30 (UI6): capsule
             head.addView(ClipBar.pill(pf, viewBtn))
             val manageBtn = btn("Manage", 0f, 30) { sel.enter(); confirmClear = false; confirmDel = false; refresh() }
-            manageBtn.textSize = 12f
+            manageBtn.textSize = fs(12f)
             manageBtn.setPadding(dp(10), 0, dp(10), 0)
             head.addView(ClipBar.pill(pf, manageBtn))   // v0.17.30 (UI6)
         }
@@ -389,7 +396,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
     private var moreOpen = false     // v0.16.9: the "More" tray of the bottom bar (All / Unpin / Merge / Edit / Paste in 1 line / To Vault)
 
     private fun makeNew(restoreY: Int): View {
-        val t40 = PanelLayout.MIN_TOUCH
+        val t40 = PanelLayout.MIN_TOUCH   // btn() scales it (v0.17.32 UI8)
         val root = LinearLayout(ctx)
         root.orientation = LinearLayout.VERTICAL
         paintBg(root)
@@ -425,7 +432,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
         if (!(selOn && moreOpen)) {
             val chips = row()
             for (c in 0 until ClipFilter.COUNT) {
-                val ch = UiKit.chip(ctx, pf, ClipFilter.label(c), c == fChip, t40, { v -> try { host.feedback(v) } catch (_: Throwable) { } }) {
+                val ch = UiKit.chip(ctx, pf, ClipFilter.label(c), c == fChip, sz(t40), { v -> try { host.feedback(v) } catch (_: Throwable) { } }) {
                     if (c != fChip) {
                         fChip = c
                         if (sel.isOn) sel.clear()   // a hidden selection could be pinned / deleted by mistake
@@ -435,8 +442,9 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
                     }
                 }
                 ch.setPadding(dp(2), 0, dp(2), 0)
+                fontFit(ch)   // v0.17.32 (UI8)
                 ch.maxLines = 1
-                ch.layoutParams = LinearLayout.LayoutParams(0, dp(t40), 1f).also { it.setMargins(dp(2), dp(2), dp(2), dp(2)) }
+                ch.layoutParams = LinearLayout.LayoutParams(0, dp(sz(t40)), 1f).also { it.setMargins(dp(2), dp(2), dp(2), dp(2)) }
                 chips.addView(ch)
             }
             root.addView(chips)
@@ -461,7 +469,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
             head.addView(m)
             fun small(label: String, onClick: (Button) -> Unit): Button {
                 val b = btn(label, 0f, 34, onClick)
-                b.textSize = 12f
+                b.textSize = fs(12f)
                 b.setPadding(dp(10), 0, dp(10), 0)
                 return ClipBar.pill(pf, b)   // v0.17.30 (UI6): capsule like the space bar
             }
@@ -575,7 +583,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
 
     /** v0.16.9 (X9): bottom bar of the NEW panel in select mode: "N selected" + Pin | Delete | Paste | More; the More tray holds All / Unpin / Merge / Edit / Paste in 1 line / To Vault (every classic action stays reachable). */
     private fun selectBarNew(visible: List<ClipList.Item>): View {
-        val t40 = PanelLayout.MIN_TOUCH
+        val t40 = PanelLayout.MIN_TOUCH   // btn() scales it (v0.17.32 UI8)
         val all = LinearLayout(ctx)
         all.orientation = LinearLayout.VERTICAL
         if (moreOpen) {
@@ -601,14 +609,14 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
         if (!confirmDel) {
             val c = TextView(ctx)
             c.text = ClipFilter.selectedText(n)
-            c.textSize = 12f
+            c.textSize = fs(12f)
             c.setTextColor(ink())
             c.setTypeface(c.typeface, android.graphics.Typeface.BOLD)
             c.setPadding(dp(8), 0, dp(4), 0)
             c.maxLines = 1
             c.ellipsize = TextUtils.TruncateAt.END
             c.gravity = Gravity.CENTER_VERTICAL
-            c.layoutParams = LinearLayout.LayoutParams(0, dp(t40), 1.4f)
+            c.layoutParams = LinearLayout.LayoutParams(0, dp(sz(t40)), 1.4f)
             main.addView(c, 0)
         }
         all.addView(main)
@@ -813,7 +821,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
             } else confirmDel = true
             refresh()
         }
-        if (confirmDel) del.textSize = 12f
+        if (confirmDel) del.textSize = fs(12f)
         r.addView(del)
         // v0.3.6: Paste = type ALL selected clips in the order you tapped them, joined by a blank line, then back to letters
         r.addView(btn("Paste", 1.2f, 34) {
@@ -867,7 +875,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
                 confirmDel = false
                 refresh()
             }
-            vb.textSize = 12f
+            vb.textSize = fs(12f)
             r2.addView(vb)
         }
         val colAll = LinearLayout(ctx)
