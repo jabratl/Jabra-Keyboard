@@ -1,3 +1,17 @@
+v0.17.29 - NEW (UI5): small look upgrades of the Clipboard panel (look only)
+- What you get: (1) the Pinned section header has a gold star and the gold pin colour (cards view and list view). (2) The search text is shown in a rounded themed box. (3) The empty message is centred with a clipboard icon. (4) A card shows a soft tint while you press it (the hold-to-select time is unchanged). Works in the classic panel AND the New panel style.
+- Code: ClipboardFeature.kt (search box x2, empty state x2, sectionHeader), ClipCards.kt (header, pressed tint on the card text). No Java, no pref, no clip data change.
+- BROKE: nothing known.
+- NOT tested: Kotlin NOT compiled here; NOT phone-tested. Check: cards in a dark keyboard theme, the pressed tint at the card's top corners.
+- Rollback: push the v0.17.28 ClipboardFeature.kt and ClipCards.kt back.
+
+v0.17.28 - NEW (UI4): small look upgrades of the app settings screen (look only)
+- What you get: (1) section titles on every page (and "Actions") are in the accent colour, no extra divider line (each section already has its card border). (2) ON / OFF switches use the app accent colour (on = accent, off = grey) instead of the system colour. (3) The page rows on Home show a soft accent tint while pressed, so a tap feels answered.
+- Code: AppRows.kt (sectionHeader, switchRow), AppHome.kt (tileBg). No Java, no pref, no layout change.
+- BROKE: nothing known.
+- NOT tested: Kotlin NOT compiled here; NOT phone-tested. Check: switch colours in light and dark app theme.
+- Rollback: push the v0.17.27 AppRows.kt and AppHome.kt back.
+
 v0.17.27 - NEW (UI3): soft panel-open fade + soft edge on the scrolling toolbar (look / smoothness only)
 - WHY: (1) a panel (clipboard, vault, emoji, ...) replaced the letters instantly, which looks like a jump. (2) The toolbar strip scrolls sideways but nothing showed that more keys are hidden.
 - What you get: (1) a 0.1 s fade-in when a panel really opens. It does NOT play when the same panel is only rebuilt (a tap inside the vault / clipboard), when going back to the letters, or when the phone's animations are off (Animator duration scale 0). (2) The right (and, once scrolled, the left) end of the toolbar strip fades out softly where more keys wait; the grey overscroll glow is gone.

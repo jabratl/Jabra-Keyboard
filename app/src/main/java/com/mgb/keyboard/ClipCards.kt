@@ -61,11 +61,12 @@ object ClipCards {
 
     private fun header(ctx: Context, label: String, onTap: (() -> Unit)? = null, arrow: Boolean = false): View {   // v0.15.2: onTap = swap Pinned / Recent order; arrow only on the first header
         val h = TextView(ctx)
-        h.text = if (arrow) label + "  \u21C5" else label
+        val base = if (label == "Pinned") "\u2605 " + label else label   // v0.18: gold star on the Pinned header
+        h.text = if (arrow) base + "  \u21C5" else base
         if (onTap != null) { h.minimumHeight = dp(ctx, 30); h.gravity = android.view.Gravity.CENTER_VERTICAL; h.setOnClickListener { try { onTap() } catch (_: Throwable) { } } }
         h.textSize = 12f
         h.setTypeface(h.typeface, Typeface.BOLD)
-        h.setTextColor(try { JabraTokens.dimText(JabraPrefs(ctx)) } catch (_: Throwable) { Color.DKGRAY })   // v0.8.7
+        h.setTextColor(try { if (label == "Pinned") ClipLook.pinColor(JabraTokens.isDark(JabraPrefs(ctx))) else JabraTokens.dimText(JabraPrefs(ctx)) } catch (_: Throwable) { Color.DKGRAY })   // v0.8.7; v0.18: Pinned = gold
         h.setPadding(dp(ctx, 8), dp(ctx, 4), dp(ctx, 8), dp(ctx, 2))
         return h
     }
@@ -120,6 +121,16 @@ object ClipCards {
         t.minLines = 2
         t.setPadding(dp(ctx, 8), dp(ctx, 6), dp(ctx, 8), dp(ctx, 2))
         t.isClickable = true
+        try {   // v0.18: soft tint while the card is pressed (top corners rounded like the card)
+            val pr = GradientDrawable()
+            pr.setColor(JabraTokens.withAlpha(try { JabraTokens.cardText(pf!!) } catch (_: Throwable) { Color.BLACK }, 0x1F))
+            val rr = dp(ctx, JabraTokens.R_CARD).toFloat()
+            pr.cornerRadii = floatArrayOf(rr, rr, rr, rr, 0f, 0f, 0f, 0f)
+            val sl = android.graphics.drawable.StateListDrawable()
+            sl.addState(intArrayOf(android.R.attr.state_pressed), pr)
+            sl.addState(intArrayOf(), android.graphics.drawable.ColorDrawable(Color.TRANSPARENT))
+            t.foreground = sl
+        } catch (_: Throwable) { }
         val act: () -> Unit = {   // v0.16.16 (E2): the tap action, shared by the click listener and the hold listener
             try { host.feedback(t) } catch (_: Throwable) { }
             if (sm.on) {   // v0.2.5.3: select mode = tap toggles, NO paste

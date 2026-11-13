@@ -299,8 +299,10 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
             val q = TextView(ctx)
             q.text = (if (JabraPrefs(ctx).bool("icons_on", true)) "" else "🔍 ") + query + "▏"   // v0.0.7: icon is on the button now
             q.textSize = 15f
-            q.setTextColor(ink())
-            q.setPadding(dp(8), dp(2), dp(8), dp(2))
+            q.setTextColor(try { JabraTokens.cardText(pf) } catch (_: Throwable) { ink() })
+            try { q.background = UiKit.cardBackground(ctx, pf, false, false) } catch (_: Throwable) { }   // v0.18: rounded search box
+            q.setPadding(dp(12), dp(6), dp(12), dp(6))
+            try { q.layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).also { it.setMargins(dp(4), dp(2), dp(4), dp(2)) } } catch (_: Throwable) { }
             root.addView(q)
         }
 
@@ -315,8 +317,10 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
         if (items.isEmpty()) {
             val t = TextView(ctx)
             t.text = if (searching) "No match" else "Nothing copied yet. Copy some text and it will show here."
-            t.setPadding(dp(8), dp(12), dp(8), dp(12))
+            t.setPadding(dp(16), dp(12), dp(16), dp(12))
             t.setTextColor(dim())
+            t.gravity = Gravity.CENTER   // v0.18
+            if (!searching) t.text = "\uD83D\uDCCB\n" + t.text
             col.addView(t)
         }
         // v0.2.5.1: "Pinned" / "Recent" header lines (only when both groups have items and not searching)
@@ -485,8 +489,10 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
             val q = TextView(ctx)
             q.text = (if (pf.bool("icons_on", true)) "" else "🔍 ") + query + "▏"
             q.textSize = 15f
-            q.setTextColor(ink())
-            q.setPadding(dp(8), dp(2), dp(8), dp(2))
+            q.setTextColor(try { JabraTokens.cardText(pf) } catch (_: Throwable) { ink() })
+            try { q.background = UiKit.cardBackground(ctx, pf, false, false) } catch (_: Throwable) { }   // v0.18: rounded search box
+            q.setPadding(dp(12), dp(6), dp(12), dp(6))
+            try { q.layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).also { it.setMargins(dp(4), dp(2), dp(4), dp(2)) } } catch (_: Throwable) { }
             root.addView(q)
         }
 
@@ -503,8 +509,10 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
         if (visible.isEmpty()) {
             val t = TextView(ctx)
             t.text = ClipFilter.emptyText(fChip, searching)
-            t.setPadding(dp(8), dp(12), dp(8), dp(12))
+            t.setPadding(dp(16), dp(12), dp(16), dp(12))
             t.setTextColor(dim())
+            t.gravity = Gravity.CENTER   // v0.18
+            if (!searching) t.text = "\uD83D\uDCCB\n" + t.text
             col.addView(t)
         }
         val showHeaders = ClipOrder.showHeaders(searching, pinnedItems.size, recentItems.size)
@@ -869,11 +877,12 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
 
     private fun sectionHeader(label: String, arrow: Boolean = false, onTap: (() -> Unit)? = null): View {   // v0.15.2: onTap = swap Pinned / Recent order
         val h = TextView(ctx)
-        h.text = if (arrow) label + "  \u21C5" else label
+        val base = if (label == "Pinned") "\u2605 " + label else label   // v0.18: gold star on the Pinned header
+        h.text = if (arrow) base + "  \u21C5" else base
         if (onTap != null) { h.minimumHeight = dp(30); h.gravity = Gravity.CENTER_VERTICAL; h.setOnClickListener { try { onTap() } catch (_: Throwable) { } } }
         h.textSize = 12f
         h.setTypeface(h.typeface, android.graphics.Typeface.BOLD)
-        h.setTextColor(dim())
+        h.setTextColor(if (label == "Pinned") (try { ClipLook.pinColor(JabraTokens.isDark(pf)) } catch (_: Throwable) { dim() }) else dim())
         h.setPadding(dp(8), dp(4), dp(8), dp(2))
         return h
     }
