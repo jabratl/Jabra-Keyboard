@@ -17,12 +17,10 @@ import android.view.ViewGroup
 import android.view.WindowManager
 import android.widget.Button
 import android.widget.EditText
-import android.widget.HorizontalScrollView
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
 import com.mgb.keyboard.layout.KeyDef
-import com.mgb.keyboard.layout.LayoutCheck
 import com.mgb.keyboard.layout.LayoutDef
 import com.mgb.keyboard.layout.LayoutHistory
 import com.mgb.keyboard.layout.LayoutOps
@@ -61,11 +59,6 @@ class LayoutEditorPage(private val act: Activity, private val prefs: JabraPrefs,
     private var emptyBtn: Button? = null
     private var rowTv: TextView? = null
     private var heightTv: TextView? = null
-    private var lastEt: EditText? = null              // v0.17.10: the field the picker writes into
-    private var warnTitle: TextView? = null
-    private var warnBox: LinearLayout? = null
-    private var chipTitle: TextView? = null
-    private var chipBox: LinearLayout? = null
     private var after = ""                           // message for the note after a structure change (or the reason of a refusal)
 
     private fun dp(v: Int) = (v * act.resources.displayMetrics.density).toInt()
@@ -163,32 +156,9 @@ class LayoutEditorPage(private val act: Activity, private val prefs: JabraPrefs,
         v.onSelect = { id -> selectKey(id) }
         col.addView(v, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
 
-        hint = txt("Tap a key to select it. Orange outline = warning. Changes are saved at once. Reopen the keyboard to see them.", 12f, dim)
+        hint = txt("Tap a key to select it. Changes are saved at once. Reopen the keyboard to see them.", 12f, dim)
         hint?.setPadding(0, dp(AppTokens.S1), 0, dp(AppTokens.S2))
         col.addView(hint)
-
-        // v0.17.10 (K7) warnings (never block saving) + missing-letter chips
-        val wc = LinearLayout(act)
-        wc.orientation = LinearLayout.VERTICAL
-        wc.setPadding(dp(AppTokens.S3), dp(AppTokens.S2), dp(AppTokens.S3), dp(AppTokens.S2))
-        try { wc.background = AppUi.cardBg(act, 12) } catch (_: Throwable) { }
-        val wt = txt("Warnings: none", 14f, ink, true)
-        warnTitle = wt
-        wc.addView(wt)
-        val wb = LinearLayout(act)
-        wb.orientation = LinearLayout.VERTICAL
-        warnBox = wb
-        wc.addView(wb)
-        val ct = txt("", 12f, dim)
-        chipTitle = ct
-        wc.addView(ct)
-        val cs = HorizontalScrollView(act)
-        val cb = LinearLayout(act)
-        cb.orientation = LinearLayout.HORIZONTAL
-        chipBox = cb
-        cs.addView(cb)
-        wc.addView(cs)
-        col.addView(wc, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
 
         // v0.17.9 (K6b) structure card: undo / redo, move, merge, split, empty / fill, add, delete, row tools
         val st = LinearLayout(act)
@@ -259,11 +229,6 @@ class LayoutEditorPage(private val act: Activity, private val prefs: JabraPrefs,
         addField(card, "Shift output (empty = capital letter)", LayoutEditPlan.limit(LayoutEditPlan.F_SHIFT), { k -> k.out[1] }, { m, id, t -> LayoutOps.setOut(m, id, 1, t) })
         addField(card, "Long-press text", LayoutEditPlan.limit(LayoutEditPlan.F_LP), { k -> k.lp }, { m, id, t -> LayoutOps.setLp(m, id, t) })
 
-        for (i in 0..3) {
-            addField(card, LayoutEditPlan.SWIPE_NAMES[i] + " (text or @action)", LayoutEditPlan.limit(LayoutEditPlan.F_SWIPE), { k -> k.sw[i] }, { m, id, t -> LayoutOps.setSwipe(m, id, i, t) })
-        }
-        card.addView(btn("Pick from list (symbols, Bangla, taka, actions)") { pick() })
-
         val wr = LinearLayout(act)
         wr.orientation = LinearLayout.HORIZONTAL
         wr.gravity = Gravity.CENTER_VERTICAL
@@ -272,11 +237,11 @@ class LayoutEditorPage(private val act: Activity, private val prefs: JabraPrefs,
         mi.contentDescription = "Narrower"
         minus = mi
         wr.addView(mi)
-        val wv = txt("1", 16f, ink, true)
-        wv.gravity = Gravity.CENTER
-        wv.minWidth = dp(56)
-        weightTv = wv
-        wr.addView(wv)
+        val wt = txt("1", 16f, ink, true)
+        wt.gravity = Gravity.CENTER
+        wt.minWidth = dp(56)
+        weightTv = wt
+        wr.addView(wt)
         val pl = btn("+") { stepWidth(1) }
         pl.contentDescription = "Wider"
         plus = pl
@@ -313,7 +278,6 @@ class LayoutEditorPage(private val act: Activity, private val prefs: JabraPrefs,
         et.inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS
         et.filters = arrayOf<InputFilter>(InputFilter.LengthFilter(maxLen * 2))
         et.contentDescription = caption
-        et.setOnFocusChangeListener { _, f -> if (f) lastEt = et }
         box.addView(et, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
         val f = Field(box, et, read, op)
         et.addTextChangedListener(object : TextWatcher {
@@ -354,7 +318,6 @@ class LayoutEditorPage(private val act: Activity, private val prefs: JabraPrefs,
             model = nm
             view?.model = nm
             hist?.commit(nm, label)
-            refreshWarnings()
             updateTitleAndWidth()
             note?.setTextColor(AppUi.dim(act)); note?.text = "Saved"
             return true
@@ -422,97 +385,6 @@ class LayoutEditorPage(private val act: Activity, private val prefs: JabraPrefs,
             .setNegativeButton("Cancel", null).show()
     }
 
-    /** v0.17.10: the picker. Writes the chosen text into the field that was focused last (@actions only into swipe / long-press fields). */
-    private fun pick() {
-        flushPending()
-        val et = lastEt
-        val fi = fields.indexOfFirst { it.et === et }
-        if (et == null || fi < 0 || et.visibility != android.view.View.VISIBLE || LayoutEditPlan.findKey(model, LayoutEditPlan.tabId(tab), selected) == null) {
-            note?.setTextColor(AppUi.warn(act)); note?.text = "Tap a text field first, then Pick from list."
-            return
-        }
-        val titles = LayoutEditPlan.pickTitles()
-        AlertDialog.Builder(act).setTitle("Pick").setItems(titles) { _, g ->
-            if (g == 7 && fi < 3) {   // fields 0-2 = label / tap / shift: an @action there would be plain text
-                note?.setTextColor(AppUi.warn(act)); note?.text = "Actions work only in a swipe or long-press field."
-                return@setItems
-            }
-            val items = LayoutEditPlan.pickItems(g)
-            val names = Array(items.size) { LayoutEditPlan.pickName(items[it]) }
-            AlertDialog.Builder(act).setTitle(titles[g]).setItems(names) { _, i ->
-                et.setText(items[i]); et.setSelection(et.text.length)
-            }.setNegativeButton("Cancel", null).show()
-        }.setNegativeButton("Cancel", null).show()
-    }
-
-    /** v0.17.10: warning list of this tab (tap = select the key, Fix = safe auto-fix as ONE undo step) + chips of letters no key types. */
-    private fun refreshWarnings() {
-        val m = model ?: return
-        val layer = LayoutEditPlan.tabId(tab)
-        val all = try {
-            val dm = act.resources.displayMetrics
-            val langs = 1 + (if (prefs.bool("lang_avro_on", true)) 1 else 0) + (if (prefs.bool("lang_probhat_on", true)) 1 else 0)
-            LayoutCheck.check(m, LayoutCheck.Env(dm.widthPixels / dm.density, langs))
-        } catch (_: Throwable) { emptyList<LayoutCheck.Warn>() }
-        val ids = HashSet<String>()
-        for (l in arrayOf(layer, "nr", "bot")) ids.addAll(LayoutEditPlan.warnKeyIds(all, l, LayoutCheck.LOW))
-        view?.warnIds = ids
-        val mine = ArrayList<LayoutCheck.Warn>()
-        for (l in arrayOf(layer, "nr", "bot")) mine.addAll(LayoutEditPlan.warnsOf(all, l))
-        warnTitle?.text = if (mine.isEmpty()) "Warnings: none" else "Warnings (" + mine.size + ") - they never block saving"
-        val box = warnBox ?: return
-        box.removeAllViews()
-        for (w in mine.take(LayoutEditPlan.MAX_WARN_SHOWN)) {
-            val r = LinearLayout(act)
-            r.orientation = LinearLayout.HORIZONTAL
-            r.gravity = Gravity.CENTER_VERTICAL
-            val t = txt(LayoutEditPlan.warnLine(w), 12f, if (w.severity >= LayoutCheck.HIGH) AppUi.warn(act) else AppUi.text(act))
-            t.setPadding(0, dp(AppTokens.S1), 0, dp(AppTokens.S1))
-            t.setOnClickListener {
-                val id = if (w.keyIds.isEmpty()) "" else w.keyIds[0]
-                if (id.isNotEmpty() && LayoutEditPlan.findKey(model, layer, id) != null) { selected = id; view?.selectedId = id; fillInspector() }
-            }
-            r.addView(t, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
-            if (w.fixable) r.addView(mini("Fix") { fixWarning(w) }, LinearLayout.LayoutParams(dp(64), ViewGroup.LayoutParams.WRAP_CONTENT))
-            box.addView(r)
-        }
-        if (mine.size > LayoutEditPlan.MAX_WARN_SHOWN) box.addView(txt("... and " + (mine.size - LayoutEditPlan.MAX_WARN_SHOWN) + " more", 12f, AppUi.dim(act)))
-        val chips = LayoutEditPlan.coverageItems(all, layer)
-        chipTitle?.text = if (chips.isEmpty()) "" else "Letters no key types (tap one = put it into the first empty spot):"
-        val cb = chipBox ?: return
-        cb.removeAllViews()
-        for (c in chips) cb.addView(mini(LayoutEditPlan.pickName(c)) { fillChip(c) }, LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT))
-    }
-
-    private fun fixWarning(w: LayoutCheck.Warn) {
-        flushPending()
-        val m = model ?: return
-        val layer = LayoutEditPlan.tabId(tab)
-        val nm = try { LayoutCheck.autoFix(m, w) } catch (_: Throwable) { m }
-        if (nm === m) { note?.setTextColor(AppUi.warn(act)); note?.text = "No safe automatic fix for this one."; return }
-        val loc = LayoutEditPlan.locate(m, layer, selected)
-        if (commit(nm, true, "fix " + w.code)) {
-            selected = LayoutEditPlan.keepOrNear(nm, layer, selected, loc)
-            view?.selectedId = selected
-            after = "Fixed (one Undo step)."
-            fillInspector()
-        }
-    }
-
-    private fun fillChip(item: String) {
-        flushPending()
-        val m = model ?: return
-        val layer = LayoutEditPlan.tabId(tab)
-        val id = LayoutEditPlan.firstSpacerId(m, layer)
-        if (id.isEmpty()) { note?.setTextColor(AppUi.warn(act)); note?.text = "No empty spot: select a key and tap Make empty first."; return }
-        if (commit(LayoutOps.fill(m, id, item), true, "put " + item)) {
-            selected = id
-            view?.selectedId = id
-            after = "Put it into the empty spot."
-            fillInspector()
-        }
-    }
-
     private fun undoRedo(redo: Boolean) {
         flushPending()
         val h = hist ?: return
@@ -531,7 +403,6 @@ class LayoutEditorPage(private val act: Activity, private val prefs: JabraPrefs,
         view?.model = m
         selected = LayoutEditPlan.keepOrNear(m, layer, selected, loc)
         view?.selectedId = selected
-        refreshWarnings()
         after = (if (redo) "Redone" else "Undone") + (if (label.isEmpty()) "" else ": $label")
         fillInspector()
     }
@@ -557,7 +428,6 @@ class LayoutEditorPage(private val act: Activity, private val prefs: JabraPrefs,
         val first = LayoutEditPlan.firstCharId(model, id)
         selected = first
         view?.selectedId = first
-        refreshWarnings()
         fillInspector()
     }
 
@@ -590,7 +460,7 @@ class LayoutEditorPage(private val act: Activity, private val prefs: JabraPrefs,
         val mask = if (k == null) 0 else LayoutEditPlan.fields(k.kind)
         loading = true
         try {
-            val charMask = intArrayOf(LayoutEditPlan.F_LABEL, LayoutEditPlan.F_OUT, LayoutEditPlan.F_SHIFT, LayoutEditPlan.F_LP, LayoutEditPlan.F_SWIPE, LayoutEditPlan.F_SWIPE, LayoutEditPlan.F_SWIPE, LayoutEditPlan.F_SWIPE)
+            val charMask = intArrayOf(LayoutEditPlan.F_LABEL, LayoutEditPlan.F_OUT, LayoutEditPlan.F_SHIFT, LayoutEditPlan.F_LP)
             for (i in fields.indices) {
                 val f = fields[i]
                 val show = k != null && LayoutEditPlan.has(mask, charMask[i])
