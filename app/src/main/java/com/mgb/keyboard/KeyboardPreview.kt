@@ -96,8 +96,30 @@ object KeyboardPreview {
             return v
         }
 
+        // v0.17.8 (K6a): with the custom keyboard ON the number row, letter rows and bottom row are drawn from the saved layout (layer of the preview language); any problem = null = the classic rows below
+        val customRows: List<LinearLayout>? = try {
+            if (p.int("kb_custom", 0) != 1) null else LayoutStore.load(ctx, p)?.let { mdl ->
+                val layerId = if (probhat) "pb" else "en"
+                val rowsOut = mutableListOf<LinearLayout>()
+                for (rd in mdl.effectiveRows(layerId)) {
+                    val cr = row()
+                    val rh = keyH * rd.heightPct / 100f
+                    for (k in rd.keys) {
+                        if (k.kind == com.mgb.keyboard.layout.KeyDef.SPACER) { cr.addView(spacer(k.weight)); continue }
+                        val isAct = k.kind == com.mgb.keyboard.layout.KeyDef.ACTION
+                        val kind = if (isAct) (if (k.action == "space") 2 else 1) else 0
+                        val b = key(com.mgb.keyboard.typing.LayoutEditPlan.shownLabel(k, false), k.weight, kind, rh, if (isAct) 12f else letterSp)
+                        if (isAct) { try { JabraIcons.putThemed(ctx, b, when (k.action) { "shift" -> "shift"; "backspace" -> "back"; "enter" -> "enter"; "globe" -> "globe"; "voice" -> "mic"; "emoji" -> "emoji"; "tab" -> "tab"; "clip" -> "clip"; else -> "" }) } catch (_: Throwable) { } }
+                        cr.addView(b)
+                    }
+                    rowsOut.add(cr)
+                }
+                if (rowsOut.isEmpty()) null else rowsOut
+            }
+        } catch (_: Throwable) { null }
+
         // number row
-        if (p.bool("numrow", true)) {
+        if (customRows == null && p.bool("numrow", true)) {
             val nr = row()
             val large = p.bool("numrow_large", false)
             val h0 = if (large) keyH + 12f * SCALE else keyH
@@ -117,7 +139,7 @@ object KeyboardPreview {
         val r1 = row()
         "qwertyuiop".forEach { letter(r1, it) }
         extras(r1, ProbhatLayout.EXTRA_ROW1)
-        root.addView(r1)
+        if (customRows == null) root.addView(r1)
 
         val r2 = row()
         val rowGapOn = p.bool("row_gap", true)
@@ -128,7 +150,7 @@ object KeyboardPreview {
         if (pbGap) { for (pair in ProbhatLayout.EXTRA_ROW2) r2.addView(key(ProbhatLayout.extraLabel(pair[0]), 0.5f, 0, keyH, letterSp)) }
         else extras(r2, ProbhatLayout.EXTRA_ROW2)
         if (side > 0f && !pbGap) r2.addView(spacer(side))
-        root.addView(r2)
+        if (customRows == null) root.addView(r2)
 
         val r3 = row()
         val sh = key("\u21E7", 1.5f, 1)
@@ -148,7 +170,7 @@ object KeyboardPreview {
                 (bk.layoutParams as LinearLayout.LayoutParams).let { it.weight = fw; it.leftMargin += px(fg.toFloat()) }
             }
         } catch (_: Throwable) { }
-        root.addView(r3)
+        if (customRows == null) root.addView(r3)
 
         val r4 = row()
         val bst = BottomPlan.style(p.int("bot_style", 0))   // v0.10.27
@@ -167,7 +189,8 @@ object KeyboardPreview {
         val en = key("\u23CE", BottomPlan.enterWeight(bst), 1, hB)
         try { JabraIcons.putThemed(ctx, en, "enter") } catch (_: Throwable) { }
         r4.addView(en)
-        root.addView(r4)
+        if (customRows == null) root.addView(r4)
+        customRows?.forEach { root.addView(it) }   // v0.17.8 (K6a)
 
         // one-hand: same width rule as the real keyboard (needs a FrameLayout parent)
         val wrap = FrameLayout(ctx)

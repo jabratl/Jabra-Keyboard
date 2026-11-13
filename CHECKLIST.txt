@@ -776,3 +776,13 @@ Z101) v0.17.2 Space bar size + smoother language swipe (K2)  [portrait + landsca
  [ ] Switch OFF (default) = keyboard exactly as before. Switch ON: English / Bangla typing, shift, backspace hold, long-press hints, space bar, bottom row all still like v0.17.6 (swipe code must not disturb taps).
  [ ] Swipes cannot be set yet (no editor): this step only proves nothing broke. Swipe check comes with K6 / K7.
  [ ] ACTION keys (Tab, Undo, Redo, Clipboard, Comma, Period) can be added only by the editor (K8): check later.
+
+=== Z107 (v0.17.8, K6a: layout editor page 1, EXPERIMENTAL) ===
+ [ ] Push the zip. Actions: "Java tests: 102/102 green" (101 + LayoutEditPlanTest) then the APK. If RED: paste the Kotlin errors (Kotlin of v0.17.5 - v0.17.8 was never compiled in chat).
+ [ ] App > Layout & size > "Edit layout (keys, letters, width)": the editor opens full screen. Close returns to the page. Custom keyboard OFF = a note + button to turn it ON.
+ [ ] Tabs English / Bangla / Bangla: each shows number row, 3 letter rows, bottom row. Shift toggle changes the letters to capitals.
+ [ ] Tap a key: blue outline, inspector shows its label / tap / shift / long-press / width. Tap a function key (shift, backspace, space): only width. Tap an empty spot (Probhat home row gap): width only.
+ [ ] Change the tap output of "q" to "x", wait: "Saved". Reopen the keyboard (custom ON): the q key types x. Change it back.
+ [ ] Width [+] on a key: the key gets wider in the editor, the keyboard follows after reopening. Rows keep filling the whole width.
+ [ ] Try to remove a needed key? (not possible yet in K6a). Rotate the phone while the editor is open: it closes, nothing is lost. Layout & size page: "Rebuild layout from current settings" resets your edits (expected).
+ [ ] App Live preview (custom ON) shows the edited layout.

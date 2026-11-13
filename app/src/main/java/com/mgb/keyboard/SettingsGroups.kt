@@ -607,6 +607,7 @@ object SettingsGroups {
                 st.setPadding(dp(8), 0, dp(8), dp(4))
                 g.addView(st)
                 g.addView(btn("Restore last good layout") { v -> (v as Button).text = if (LayoutStore.restoreLastGood(ctx)) "Last good layout restored" else "No saved layout yet" })
+                g.addView(btn("Edit layout (keys, letters, width)") { _ -> try { (ctx as? android.app.Activity)?.let { LayoutEditorPage(it, prefs) { try { link?.changed?.invoke() } catch (_: Throwable) { } }.show() } } catch (_: Throwable) { } })   // v0.17.8 (K6a)
                 g.addView(btn("Rebuild layout from current settings") { v -> (v as Button).text = if (LayoutStore.rebuildFromSettings(ctx, prefs)) "Layout rebuilt: reopen the keyboard" else "Could not rebuild the layout" })   // v0.17.6 (K5a.2)
             } catch (_: Throwable) { }
             stepper(g, "Key corner radius", "key_radius", com.mgb.keyboard.typing.EdgePlan.R_MIN, com.mgb.keyboard.typing.EdgePlan.R_MAX, 1, " dp",

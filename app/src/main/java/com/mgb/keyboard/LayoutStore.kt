@@ -74,6 +74,18 @@ object LayoutStore {
         return try { LayoutCodec.encode(LayoutDefaults.build(o)) } catch (_: Throwable) { null }
     }
 
+    /** v0.17.8 (K6a): the editor saves [m]. "" = saved (layout_v1 + good_v1, edited = true, built_v = 2: a user's layout is never rebuilt away); else the reason, nothing written (S4). */
+    fun save(ctx: Context, m: LayoutDef): String {
+        try {
+            val bad = LayoutGuard.gateModel(m)
+            if (bad != null) return bad
+            val text = LayoutCodec.encode(m) ?: return "layout too big"
+            sp(ctx).edit().putString(K_LAYOUT, text).putString(K_GOOD, text).putInt(K_BUILT, LayoutRoute.BUILT_VERSION).putBoolean(K_EDITED, true).apply()
+            cacheText = null; cacheModel = null; lastProblem = ""
+            return ""
+        } catch (_: Throwable) { return "could not save" }
+    }
+
     /** v0.17.6: "Rebuild layout from current settings" (app page): the layout becomes today's classic keyboard again, built from the settings now. True = done. */
     fun rebuildFromSettings(ctx: Context, prefs: JabraPrefs): Boolean {
         try {
