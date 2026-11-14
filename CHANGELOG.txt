@@ -1,3 +1,11 @@
+v0.17.70 - MODIFY (S3): Clipboard export gets a TAR pack option; classic Probhat path gets the ঞ / ৎ swipe
+- Export screen (2+ clips): One file | ZIP (file per clip) | TAR (file per clip). Rename (file / ZIP / TAR name, before export) was added in R3 and works for all three; 1 clip = rename its single file. Buttons say "Share TAR .txt" etc.
+- Classic (non-custom) Bangla fixed path, Ridmik look: swipe up (or hold) on ৃ types ঞ, on ্ types ৎ. Normal tap unchanged.
+- Code: clip/ClipName.java (toTar, tarEntry, MIME_TAR), ClipboardFeature.kt (expTar, pack chips, labels, doExport), MgbIme.kt (pbExtraSwipe), tools/ClipTarTest.java NEW (checks ustar header, checksum, system tar lists the files).
+- TESTED: bash tools/run_tests.sh = 137/137 green; bracket balance MgbIme.kt + ClipboardFeature.kt. NOT tested: Kotlin NOT compiled; phone.
+- NEXT: Ridmik shift-mode hints, Enter key icon (search), number row default (ask), then S1 leftovers.
+- Rollback: restore ClipName.java, ClipboardFeature.kt, MgbIme.kt from v0.17.69; delete ClipTarTest.java.
+
 v0.17.69 - FIX (S2): Bangla fixed (Probhat) keyboard back to the exact Ridmik grid (custom keyboard path), no EN key by default
 - WHY: after the update the Bangla keyboard drifted from Ridmik (screens 04:33 vs 05:57): home row had a 10th key (ri-kar), row 3 had ্ ঁ instead of ৃ ্, shift showed a "Z W" key, sign keys had dotted circles, no shift-letter hints, and an EN / language key sat in the bottom row.
 - ROOT CAUSE: the custom keyboard (LayoutDefaults, now the default path) built the pb layer from the OLD Probhat extras (EXTRA_ROW2 = ৃ/ঞ, EXTRA_ROW3 = ্/ZWNJ and ঁ/ৎ) with dotted labels and no hints; the Ridmik look of v0.17.61 only existed in the classic path (MgbIme).

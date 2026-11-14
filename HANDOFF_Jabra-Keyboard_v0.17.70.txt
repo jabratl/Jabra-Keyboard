@@ -1,0 +1,25 @@
+HANDOFF Jabra-Keyboard v0.17.70 (S3, MODIFY)   [paste this at the start of the next chat]
+
+DONE LIST + CURRENT VERSION
+- R3-R7 (0.17.63-67): export rename+ZIP, Home polish, jump bar, export folder, Clipboard dropdown menus.
+- S1 (0.17.68): own drawn icons. S2 (0.17.69): Bangla fixed = exact Ridmik grid (custom path).
+- S3 (0.17.70): Clipboard export TAR option (rename already in R3, now covers ZIP/TAR too); classic path swipe/hold for ঞ ৎ.
+- CURRENT: 0.17.70. Apply S1, S2, then this S3 zip.
+
+WHAT CHANGED
+- clip/ClipName.java: toTar(), tarEntry(), MIME_TAR (ustar, same names as zip; >100 byte name = short safe name).
+- ClipboardFeature.kt: expTar(), pack chips One file | ZIP | TAR (prefs clip_exp_zip / clip_exp_tar, never both), labels via pk3, doExport uses toTar.
+- MgbIme.kt: pbExtraSwipe(): classic Probhat Ridmik look, swipe up / hold on ৃ = ঞ, on ্ = ৎ.
+- tools/ClipTarTest.java NEW. app/build.gradle.kts 0.17.70. CHANGELOG.txt.
+
+CHECKS DONE
+bash tools/run_tests.sh = 137/137 green; bracket balance MgbIme.kt + ClipboardFeature.kt.
+
+NOT TESTED (needs real use)
+Kotlin NOT compiled (S1+S2+S3): if GitHub build fails send the log -> FIX first. Phone: export screen with 2+ clips: chips, Rename -> TAR name, Share/Save TAR, open .tar on PC (Bangla names); single clip rename; classic path swipe up on ৃ / ্ (and tap still types ৃ / ্).
+
+KNOWN LIMITS
+- TAR chip only with 2+ clips (like ZIP). Do NOT change the Ridmik grid without a NEW Ridmik reference.
+
+NEXT STEP + GOAL
+S4 (MODIFY): Ridmik shift-mode hints, Enter key icon (search), number row default (ask user). Then S1 leftovers: Toolbar.kt / MgbIme.kt clip fallback, ToolbarQuick, AppToolbarEditor, ThemeStudio signs.

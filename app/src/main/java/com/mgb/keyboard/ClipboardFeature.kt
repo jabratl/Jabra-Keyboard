@@ -862,12 +862,13 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
         val list = expEntries(o.skipCode, IntArray(1))
         if (list.isEmpty()) { expMsg = "Nothing to export"; refresh(); return }
         val zip = expZip(list.size)   // v0.17.63 (R3): ZIP = one file per clip
-        val bytes = if (zip) ClipName.toZip(list, docx, o) else if (docx) ClipExport.toDocx(list, o) else ClipExport.toTxtBytes(list, o)
+        val tar = expTar(list.size)   // v0.17.70 (S3): TAR = one file per clip
+        val bytes = if (zip) ClipName.toZip(list, docx, o) else if (tar) ClipName.toTar(list, docx, o) else if (docx) ClipExport.toDocx(list, o) else ClipExport.toTxtBytes(list, o)
         if (bytes == null) { expMsg = "Could not build the file"; refresh(); return }
-        val ext = if (zip) "zip" else if (docx) "docx" else "txt"
+        val ext = if (zip) "zip" else if (tar) "tar" else if (docx) "docx" else "txt"
         val auto = ClipName.autoBase(list, o.now, o.tz)
         val name = ClipName.withExt(if (expName.isNotEmpty()) expName else auto, ext, auto)
-        val mime = if (zip) ClipName.MIME_ZIP else if (docx) ClipExport.MIME_DOCX else ClipExport.MIME_TXT
+        val mime = if (zip) ClipName.MIME_ZIP else if (tar) ClipName.MIME_TAR else if (docx) ClipExport.MIME_DOCX else ClipExport.MIME_TXT
         expMsg = if (save) ClipExporter.saveToDownloads(ctx, name, mime, bytes) else ClipExporter.share(ctx, name, mime, bytes)
         refresh()
     }
@@ -921,11 +922,14 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
         val skipped = IntArray(1)
         val es = expEntries(optS, skipped)
         val zipOn = expZip(es.size)   // v0.17.63 (R3)
+        val tarOn = expTar(es.size)   // v0.17.70 (S3)
+        val pk3 = if (zipOn) "ZIP" else if (tarOn) "TAR" else ""
         if (es.size > 1) {   // v0.17.63 (R3): one file with all clips, or a ZIP with one file per clip
             val pk = row()
-            val packZip = pr.bool("clip_exp_zip", false)
-            pk.addView(UiKit.chip(ctx, pf, "One file", !packZip, sz(t40), { v -> fb(v) }) { pr.setBool("clip_exp_zip", false); expMsg = ""; refresh() })
-            pk.addView(UiKit.chip(ctx, pf, "ZIP (file per clip)", packZip, sz(t40), { v -> fb(v) }) { pr.setBool("clip_exp_zip", true); expMsg = ""; refresh() })
+            val packZip = pr.bool("clip_exp_zip", false); val packTar = pr.bool("clip_exp_tar", false) && !packZip
+            pk.addView(UiKit.chip(ctx, pf, "One file", !packZip && !packTar, sz(t40), { v -> fb(v) }) { pr.setBool("clip_exp_zip", false); pr.setBool("clip_exp_tar", false); expMsg = ""; refresh() })
+            pk.addView(UiKit.chip(ctx, pf, "ZIP (file per clip)", packZip, sz(t40), { v -> fb(v) }) { pr.setBool("clip_exp_zip", true); pr.setBool("clip_exp_tar", false); expMsg = ""; refresh() })
+            pk.addView(UiKit.chip(ctx, pf, "TAR", packTar, sz(t40), { v -> fb(v) }) { pr.setBool("clip_exp_zip", false); pr.setBool("clip_exp_tar", true); expMsg = ""; refresh() })
             outer.addView(pk)
         }
         val withFmt = if (optF) es.count { it.html != null && it.html.isNotEmpty() } else 0
@@ -938,7 +942,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
         if (nl()) cardInfo(info)   // v0.17.58 (C4): same card look as the clips
         outer.addView(info)
         val hint = TextView(ctx)
-        hint.text = if (zipOn) "ZIP has one file per clip, named from its first words (01_..., 02_...).  TXT = plain text, DOCX = Word file." else "TXT = plain text.  DOCX = Word file; keeps bold / italic / lists when the clip has format."
+        hint.text = if (zipOn || tarOn) "$pk3 has one file per clip, named from its first words (01_..., 02_...).  TXT = plain text, DOCX = Word file." else "TXT = plain text.  DOCX = Word file; keeps bold / italic / lists when the clip has format."
         hint.textSize = fs(11f)
         hint.setTextColor(hush())
         hint.setPadding(dp(8), 0, dp(8), dp(4))
@@ -948,7 +952,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
         val auto = try { ClipName.autoBase(es, System.currentTimeMillis(), java.util.TimeZone.getDefault()) } catch (_: Throwable) { "Jabra-Clips" }
         val nameRow = row()
         val nameTv = TextView(ctx)
-        nameTv.text = (if (zipOn) "ZIP name: " else "File name: ") + (if (expName.isNotEmpty()) expName else auto) + (if (zipOn) ".zip" else ".txt / .docx")
+        nameTv.text = (if (pk3.isNotEmpty()) "$pk3 name: " else "File name: ") + (if (expName.isNotEmpty()) expName else auto) + (if (zipOn) ".zip" else if (tarOn) ".tar" else ".txt / .docx")
         nameTv.textSize = fs(12f)
         nameTv.setTextColor(ink())
         nameTv.gravity = Gravity.CENTER_VERTICAL
@@ -971,14 +975,14 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
         } catch (_: Throwable) { }
 
         val share = row()
-        share.addView(btn(if (zipOn) "Share ZIP .txt" else "Share .txt", 1f, t40) { doExport(false, false) })
-        val shDocx = btn(if (zipOn) "Share ZIP .docx" else "Share .docx", 1f, t40) { doExport(true, false) }
+        share.addView(btn(if (pk3.isNotEmpty()) "Share $pk3 .txt" else "Share .txt", 1f, t40) { doExport(false, false) })
+        val shDocx = btn(if (pk3.isNotEmpty()) "Share $pk3 .docx" else "Share .docx", 1f, t40) { doExport(true, false) }
         share.addView(if (nl()) ClipBar.on(ctx, pf, shDocx) else shDocx)   // v0.17.58 (C4): primary button
         outer.addView(share)
         if (ClipExporter.canSave(ctx)) {   // v0.17.66 (R6)
             val save = row()
-            save.addView(btn(if (zipOn) "Save ZIP .txt" else "Save .txt", 1f, t40) { doExport(false, true) })
-            save.addView(btn(if (zipOn) "Save ZIP .docx" else "Save .docx", 1f, t40) { doExport(true, true) })
+            save.addView(btn(if (pk3.isNotEmpty()) "Save $pk3 .txt" else "Save .txt", 1f, t40) { doExport(false, true) })
+            save.addView(btn(if (pk3.isNotEmpty()) "Save $pk3 .docx" else "Save .docx", 1f, t40) { doExport(true, true) })
             outer.addView(save)
         }
         val sv = ScrollView(ctx)
@@ -988,6 +992,9 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
 
     /** v0.17.63 (R3): ZIP is used only when chosen AND there is more than one clip to export. */
     private fun expZip(n: Int): Boolean = n > 1 && try { JabraPrefs(ctx).bool("clip_exp_zip", false) } catch (_: Throwable) { false }
+
+    /** v0.17.70 (S3): TAR is used only when chosen (and ZIP is not) AND there is more than one clip. */
+    private fun expTar(n: Int): Boolean = n > 1 && !expZip(n) && try { JabraPrefs(ctx).bool("clip_exp_tar", false) } catch (_: Throwable) { false }
 
     /** v0.17.63 (R3): rename screen for the export file / zip name: Cancel | Use field text | OK, text box with caret, mini keys. Name is cleaned by ClipName.clean() on OK. */
     private fun makeRename(): View {

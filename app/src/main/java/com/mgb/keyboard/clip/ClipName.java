@@ -30,6 +30,7 @@ public final class ClipName {
     public static final int MAX_BASE = 80;
     public static final int TITLE_CHARS = 28;
     public static final String MIME_ZIP = "application/zip";
+    public static final String MIME_TAR = "application/x-tar";   // v0.17.70 (S3)
     private static final Charset UTF8 = Charset.forName("UTF-8");
     private static final String[] EXTS = { ".docx", ".txt", ".zip" };
     private static final String[] RESERVED = { "CON", "PRN", "AUX", "NUL", "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8", "COM9",
@@ -185,6 +186,68 @@ public final class ClipName {
                 z.closeEntry();
             }
             z.close();
+            return bo.toByteArray();
+        } catch (Throwable t) {
+            return null;
+        }
+    }
+
+    // ---------------------------------------------------------------- v0.17.70 (S3): TAR (ustar), same names as the zip
+    private static void tarPut(byte[] h, int off, String s, int len) {
+        byte[] b = s.getBytes(UTF8);
+        System.arraycopy(b, 0, h, off, Math.min(b.length, len));
+    }
+
+    private static String octal(long v, int digits) {
+        String s = Long.toOctalString(v);
+        while (s.length() < digits) s = "0" + s;
+        return s;
+    }
+
+    /** One ustar entry (header + data padded to 512). Name longer than 100 bytes = short safe name. */
+    static byte[] tarEntry(String name, byte[] data, long whenMs) {
+        if (name.getBytes(UTF8).length > 100) {
+            int dot = name.lastIndexOf('.');
+            String ext = dot >= 0 ? name.substring(dot) : "";
+            name = (name.length() >= 2 ? name.substring(0, 2) : "00") + "_clip" + ext;
+        }
+        byte[] h = new byte[512];
+        tarPut(h, 0, name, 100);
+        tarPut(h, 100, "0000644\0", 8);
+        tarPut(h, 108, "0000000\0", 8);
+        tarPut(h, 116, "0000000\0", 8);
+        tarPut(h, 124, octal(data.length, 11) + "\0", 12);
+        tarPut(h, 136, octal(whenMs > 0 ? whenMs / 1000L : 0L, 11) + "\0", 12);
+        for (int i = 148; i < 156; i++) h[i] = ' ';   // checksum counted as spaces
+        h[156] = '0';
+        tarPut(h, 257, "ustar\0", 6);
+        tarPut(h, 263, "00", 2);
+        long sum = 0;
+        for (int i = 0; i < 512; i++) sum += h[i] & 0xFF;
+        tarPut(h, 148, octal(sum, 6) + "\0", 7);
+        h[155] = ' ';
+        int pad = (512 - (data.length % 512)) % 512;
+        byte[] out = new byte[512 + data.length + pad];
+        System.arraycopy(h, 0, out, 0, 512);
+        System.arraycopy(data, 0, out, 512, data.length);
+        return out;
+    }
+
+    /** TAR with one .txt or .docx file per clip (same names as toZip). null = failed. */
+    public static byte[] toTar(List<Entry> es, boolean docx, Options o) {
+        try {
+            if (es == null || es.isEmpty()) return null;
+            if (o == null) o = new Options();
+            List<String> names = zipNames(es, docx ? "docx" : "txt");
+            ByteArrayOutputStream bo = new ByteArrayOutputStream();
+            for (int i = 0; i < es.size(); i++) {
+                List<Entry> one = new ArrayList<Entry>(1);
+                one.add(es.get(i));
+                byte[] b = docx ? ClipExport.toDocx(one, o) : ClipExport.toTxtBytes(one, o);
+                if (b == null) return null;
+                bo.write(tarEntry(names.get(i), b, o.now));
+            }
+            bo.write(new byte[1024]);   // end of archive
             return bo.toByteArray();
         } catch (Throwable t) {
             return null;

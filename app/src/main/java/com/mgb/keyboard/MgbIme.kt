@@ -827,8 +827,34 @@ class MgbIme : InputMethodService() {
         val pb = probhatOn()
         b.text = pbExtraLabel(if (pb && shift) pair[1] else pair[0])
         b.visibility = if (pb) View.VISIBLE else View.GONE
+        try { pbExtraSwipe(b, pair) } catch (_: Throwable) { }   // v0.17.70 (S3): classic path ঞ / ৎ (swipe up or hold)
         pbExtraKeys.add(Pair(b, pair))
         r.addView(b)
+    }
+
+    /** v0.17.70 (S3): swipe up (or hold) on ৃ types ঞ, on ্ types ৎ in the classic Probhat path (the custom path already has it). Normal tap unchanged. */
+    private fun pbExtraSwipe(b: Button, pair: Array<String>) {
+        var up: String? = null
+        for (sw in ProbhatLayout.EXTRA_SWIPE_UP) if (sw[0] == pair[0]) up = sw[1]
+        val ch = up ?: return
+        if (!ridmikOn()) return
+        val need = dp(22).toFloat()
+        var downY = 0f
+        b.setOnTouchListener { v, ev ->
+            when (ev.actionMasked) {
+                android.view.MotionEvent.ACTION_DOWN -> { downY = ev.y; false }
+                android.view.MotionEvent.ACTION_UP -> {
+                    if (downY - ev.y > need && probhatOn()) {
+                        v.isPressed = false
+                        try { feedback(v) } catch (_: Throwable) { }
+                        commitWord(); typeText(ch)
+                        true
+                    } else false
+                }
+                else -> false
+            }
+        }
+        b.setOnLongClickListener { if (probhatOn()) { try { feedback(it) } catch (_: Throwable) { }; commitWord(); typeText(ch); true } else false }
     }
 
     private fun onPbExtra(pair: Array<String>) {
