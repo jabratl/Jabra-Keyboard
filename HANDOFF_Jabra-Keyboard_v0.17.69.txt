@@ -1,0 +1,35 @@
+HANDOFF Jabra-Keyboard v0.17.69 (S2, FIX)   [paste this at the start of the next chat]
+
+DONE LIST + CURRENT VERSION
+- R3-R7 (0.17.63-67): export rename+ZIP, Home polish, jump bar, export folder, Clipboard dropdown menus.
+- S1 (0.17.68): own drawn icons (Glyphs.kt + 12 JabraIcons) instead of emoji / text signs in Clipboard, Vault, Text tools, Profiles. User content never touched (Glyphs.KEEP).
+- S2 (0.17.69): Bangla fixed (Probhat) keyboard = exact Ridmik grid in the CUSTOM keyboard path; no EN key by default.
+- CURRENT: 0.17.69. Apply S1 zip first, then S2 zip (S2 only adds on top).
+
+ROOT CAUSE (S2)
+Custom keyboard (layout/LayoutDefaults.java) is now the default path and built pb from the old Probhat extras (EXTRA_ROW2 = ৃ/ঞ, EXTRA_ROW3 = ্/ZWNJ + ঁ/ৎ) with dotted labels and no hints. The Ridmik look of v0.17.61 existed only in the classic path (MgbIme). The "Z W" key = ZWNJ label wrapped in a narrow key.
+
+WHAT CHANGED (file: 1 line)
+- probhat/ProbhatLayout.java: EXTRA_ROW2 empty, EXTRA_ROW3 = ৃ ্/ঁ, EXTRA_SWIPE_UP (ৃ->ঞ, ্->ৎ), EXTRAS without ZWNJ.
+- layout/LayoutDefaults.java: Options.pbRidmik: bare labels, shift letter as hint (hold types it), 9-key home row with half-key spacers, hidden swipe-up for ঞ ৎ.
+- layout/LayoutRoute.java: BUILT_VERSION 4 (unedited default layouts rebuilt once).
+- LayoutStore.kt: pbRidmik from pref bn_design (0 = Ridmik).
+- typing/BottomPlan.java: Probhat home row gap on both sides.
+- typing/RidmikDefaults.java NEW: once, only unset prefs: key_lang OFF, space_lang ON, key_emoji ON, bot_style 1 (pref rd_v).
+- MgbIme.kt: applies RidmikDefaults in onCreate; guard for empty EXTRA_ROW2.
+- tools/RidmikGridTest.java NEW (locks all 3 rows normal + shift, no ZWNJ, no dotted circle, hints, swipes, no b_lang, defaults); BottomPlanTest, ExtrasTest, LayoutCheckTest, LayoutDefaultsTest updated to the new grid.
+- app/build.gradle.kts 0.17.69, CHANGELOG.txt.
+
+CHECKS DONE
+bash tools/run_tests.sh = 136/136 green; bracket balance MgbIme.kt + LayoutStore.kt; S1: 10 files balanced, icon shapes rendered.
+
+NOT TESTED (needs real use)
+Kotlin NOT compiled (S1 + S2): if GitHub build fails send the log -> FIX first. Phone: Bangla fixed 3 rows normal + shift = Ridmik screenshots, hints top right, no EN key, emoji key, space swipe switches language, swipe up on ৃ / ্ = ঞ / ৎ, S1 icon size/colour (clip_btn_pct 70/140, dark + light, 360/1280 dp), icons_on OFF = old text.
+
+KNOWN LIMITS
+- A layout EDITED in the layout editor is not rebuilt: app > Rebuild layout from current settings.
+- Classic (non-custom) path: ঞ / ৎ not typeable. Number row = user setting (Ridmik ref had it OFF). Enter key still shows the return icon (Ridmik: search).
+- Do NOT change the Ridmik grid without a NEW Ridmik reference (RidmikGridTest will fail).
+
+NEXT STEP + GOAL
+S3 (MODIFY): classic path swipe for ঞ ৎ, Ridmik shift-mode hints, Enter key icon, number row default (ask user). Then S1 leftovers: Toolbar.kt / MgbIme.kt clip fallback, ToolbarQuick, AppToolbarEditor, ThemeStudio signs.

@@ -9,7 +9,7 @@ public final class LayoutRoute {
     private LayoutRoute() { }
 
     /** Stamp of the layout built by this version (v0.17.5 saved layouts have no stamp = 0). */
-    public static final int BUILT_VERSION = 3;   // v0.17.54 (M2): 3 = unedited default layouts are rebuilt once (Avro hints on the av layer)
+    public static final int BUILT_VERSION = 4;   // v0.17.69 (S2): 4 = unedited default layouts are rebuilt once (Ridmik grid on the pb layer). v0.17.54 (M2): 3 = Avro hints on the av layer
 
     /** Layer of the current language. latinOnly (password / email / URL / number fields) forces English; Bangla = phonetic "av" or fixed "pb". */
     public static String layerFor(boolean bangla, boolean latinOnly, boolean probhat) {

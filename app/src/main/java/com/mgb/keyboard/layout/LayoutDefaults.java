@@ -37,6 +37,7 @@ public final class LayoutDefaults {
         public boolean pbHomeGap = false;      // pb_home_gap
         public int botStyle = 0;               // bot_style 0 old / 1 Ridmik-like
         public boolean qmShown = false;        // key_qm
+        public boolean pbRidmik = true;        // v0.17.69 (S2) bn_design 0: Bangla fixed (pb) in the Ridmik grid: bare sign keys, shift letters as hints, 9-key home row centered
         public boolean keyLang = true;         // EN key visible (key_lang, or space_lang OFF)
         public boolean keyGlobe = false, keyVoice = false, keyEmoji = false;
         public int spWpct = 100, spHpct = 100; // sp_wpct, sp_hpct
@@ -144,22 +145,23 @@ public final class LayoutDefaults {
 
         RowDef r1 = row(100);
         addLetters(r1, id, "qwertyuiop", o, en);
-        if (pb) addExtras(r1, id, ProbhatLayout.EXTRA_ROW1, 1, 1f);
+        if (pb) addExtras(r1, id, ProbhatLayout.EXTRA_ROW1, 1, 1f, o);
         l.rows.add(r1);
 
         RowDef r2 = row(100);
         boolean pbGap = BottomPlan.pbGap(pb, o.pbHomeGap, o.rowGap);
-        float side = pbGap ? 0.5f : (pb ? 0f : RowGap.side(o.rowGap, RowGap.homeKeys(false)));
+        boolean pbR = pb && o.pbRidmik;   // v0.17.69 (S2): Ridmik home row = 9 keys with half a key free on both sides
+        float side = pbR ? (o.rowGap ? 0.5f : 0f) : (pbGap ? 0.5f : (pb ? 0f : RowGap.side(o.rowGap, RowGap.homeKeys(false))));
         if (side > 0f) r2.keys.add(KeyDef.spacer(id + "_gl", side));
         addLetters(r2, id, "asdfghjkl", o, en);
-        if (pb) addExtras(r2, id, ProbhatLayout.EXTRA_ROW2, 2, BottomPlan.pbKeyWeight(true, o.pbHomeGap, o.rowGap));
-        if (!pb && side > 0f) r2.keys.add(KeyDef.spacer(id + "_gr", side));
+        if (pb) addExtras(r2, id, ProbhatLayout.EXTRA_ROW2, 2, BottomPlan.pbKeyWeight(true, o.pbHomeGap, o.rowGap), o);
+        if ((!pb || pbR) && side > 0f) r2.keys.add(KeyDef.spacer(id + "_gr", side));
         l.rows.add(r2);
 
         RowDef r3 = row(100);
         r3.keys.add(act(id + "_shift", "shift", 1.5f, "⇧", "shift"));
         addLetters(r3, id, "zxcvbnm", o, en);
-        if (pb) addExtras(r3, id, ProbhatLayout.EXTRA_ROW3, 3, 1f);
+        if (pb) addExtras(r3, id, ProbhatLayout.EXTRA_ROW3, 3, 1f, o);
         KeyDef bs = act(id + "_bksp", "backspace", 1.5f, "⌫", "back");
         bs.repeat = true;
         r3.keys.add(bs);
@@ -177,9 +179,11 @@ public final class LayoutDefaults {
                 String n = ProbhatLayout.map(c), s = ProbhatLayout.map(Character.toUpperCase(c));
                 k.out[0] = n == null ? String.valueOf(c) : n;
                 k.out[1] = s == null ? k.out[0] : s;
-                String ln = ProbhatLayout.label(c), ls = ProbhatLayout.label(Character.toUpperCase(c));
+                boolean rd = o.pbRidmik;   // v0.17.69 (S2): Ridmik look = bare signs (no dotted circle) + shift letter as the hint (hold types it)
+                String ln = rd ? ProbhatLayout.labelBare(c) : ProbhatLayout.label(c), ls = rd ? ProbhatLayout.labelBare(Character.toUpperCase(c)) : ProbhatLayout.label(Character.toUpperCase(c));
                 if (!ln.equals(k.out[0])) k.label[0] = ln;
                 if (!ls.equals(k.out[1])) k.label[1] = ls;
+                if (rd && o.hints && !k.out[1].equals(k.out[0])) k.lp = k.out[1];
             } else if (english && o.hints) {
                 String h = LongPressHints.hintFor(c, o.numRow, o.hintCustom);
                 if (h != null) k.lp = h;
@@ -192,13 +196,17 @@ public final class LayoutDefaults {
         }
     }
 
-    private static void addExtras(RowDef r, String layer, String[][] pairs, int rowNo, float w) {
+    private static void addExtras(RowDef r, String layer, String[][] pairs, int rowNo, float w, Options o) {
         for (int i = 0; i < pairs.length; i++) {
             KeyDef k = KeyDef.ch(layer + "_x" + rowNo + "_" + (i + 1), pairs[i][0], w);
             k.out[1] = pairs[i][1];
-            String ln = ProbhatLayout.extraLabel(pairs[i][0]), ls = ProbhatLayout.extraLabel(pairs[i][1]);
+            boolean rd = o.pbRidmik;   // v0.17.69 (S2)
+            String ln = rd ? ProbhatLayout.extraLabelBare(pairs[i][0]) : ProbhatLayout.extraLabel(pairs[i][0]);
+            String ls = rd ? ProbhatLayout.extraLabelBare(pairs[i][1]) : ProbhatLayout.extraLabel(pairs[i][1]);
             if (!ln.equals(k.out[0])) k.label[0] = ln;
             if (!ls.equals(k.out[1])) k.label[1] = ls;
+            if (rd && rowNo == 1 && o.hints && !k.out[1].equals(k.out[0])) k.lp = k.out[1];   // Ridmik: e-kar / o-kar show ৈ ৌ; the row 3 keys show no hint
+            if (rd) for (String[] sw : ProbhatLayout.EXTRA_SWIPE_UP) if (sw[0].equals(pairs[i][0]) && rowNo == 3) k.sw[0] = sw[1];   // hidden swipe-up: ঞ on ৃ, ৎ on ্
             r.keys.add(k);
         }
     }

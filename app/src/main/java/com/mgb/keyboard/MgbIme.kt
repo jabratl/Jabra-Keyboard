@@ -253,6 +253,13 @@ class MgbIme : InputMethodService() {
 
     override fun onCreate() {
         super.onCreate()
+        try {   // v0.17.69 (S2): Ridmik-like defaults, once, only for settings the user never stored (EN key off, emoji key on, Ridmik bottom row)
+            val sp0 = getSharedPreferences("jabra", MODE_PRIVATE)
+            val todo = com.mgb.keyboard.typing.RidmikDefaults.toWrite(sp0.getInt(com.mgb.keyboard.typing.RidmikDefaults.PREF_VERSION, 0), sp0.all.keys)
+            val ed = sp0.edit()
+            for (d in todo) { val v = d[1]; if (v is Boolean) ed.putBoolean(d[0] as String, v) else if (v is Int) ed.putInt(d[0] as String, v) }
+            ed.putInt(com.mgb.keyboard.typing.RidmikDefaults.PREF_VERSION, com.mgb.keyboard.typing.RidmikDefaults.VERSION).apply()
+        } catch (_: Throwable) { }
         try { bangla = getSharedPreferences("jabra", MODE_PRIVATE).getBoolean("bangla", false) } catch (_: Throwable) { }
         try { probhat = prefs.str("bn_layout", "avro") == "probhat" } catch (_: Throwable) { probhat = false }
         try { EmojiStore.preload(this) } catch (_: Throwable) { }   // v0.8.1: load the emoji file once, in the background
@@ -843,7 +850,7 @@ class MgbIme : InputMethodService() {
             }
             val kw = com.mgb.keyboard.typing.BottomPlan.pbKeyWeight(pb, gapOn, rg)
             pbExtraKeys.forEach { (b, pair) ->
-                if (pair === ProbhatLayout.EXTRA_ROW2[0]) { val lp = b.layoutParams as LinearLayout.LayoutParams; if (lp.weight != kw) { lp.weight = kw; b.layoutParams = lp } }
+                if (ProbhatLayout.EXTRA_ROW2.isNotEmpty() && pair === ProbhatLayout.EXTRA_ROW2[0]) { val lp = b.layoutParams as LinearLayout.LayoutParams; if (lp.weight != kw) { lp.weight = kw; b.layoutParams = lp } }
             }
         } catch (_: Throwable) { }
         pbExtraKeys.forEach { (b, pair) ->

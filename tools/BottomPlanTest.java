@@ -26,10 +26,10 @@ public class BottomPlanTest {
         eq("pb key weight off", BottomPlan.pbKeyWeight(true, false, true), 1f);
         eq("left english", BottomPlan.leftGapShown(false, false, true), true);
         eq("left english rowgap off", BottomPlan.leftGapShown(false, false, false), false);
-        eq("left probhat off", BottomPlan.leftGapShown(true, false, true), false);
+        eq("left probhat (v0.17.69: both sides like English)", BottomPlan.leftGapShown(true, false, true), true);
         eq("left probhat on", BottomPlan.leftGapShown(true, true, true), true);
         eq("right english", BottomPlan.rightGapShown(false, true), true);
-        eq("right probhat", BottomPlan.rightGapShown(true, true), false);
+        eq("right probhat (v0.17.69: no extra key there any more)", BottomPlan.rightGapShown(true, true), true);
         // v0.17.1 (K1): "?" key hidden
         eq("spaceMax shown", BottomPlan.spaceMax(true), 4.5f);
         eq("spaceMax hidden", BottomPlan.spaceMax(false), 5.5f);

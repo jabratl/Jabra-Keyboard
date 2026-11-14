@@ -71,6 +71,7 @@ object LayoutStore {
         try { o.keyDp = prefs.keyHeightDp(JabraPrefs.isLand(ctx)) } catch (_: Throwable) { }
         try { o.hints = prefs.bool("hint_on", true); o.hintCustom = prefs.str("hint_custom", "") } catch (_: Throwable) { }
         try { o.avroHints = prefs.bool("bn_hints", true) } catch (_: Throwable) { }   // v0.17.54 (M2)
+        try { o.pbRidmik = com.mgb.keyboard.typing.BnDesign.ridmik(prefs.int("bn_design", 0)) } catch (_: Throwable) { }   // v0.17.69 (S2)
         try { o.accents = prefs.bool("lp_accents", false); o.punct = prefs.bool("lp_punct", false) } catch (_: Throwable) { }   // v0.17.46 (P3)
         try { o.nrMode = com.mgb.keyboard.typing.NumRowPlan.sanitizeMode(prefs.int("nr_mode", 0)); o.nrChars = prefs.str("nr_chars", "") } catch (_: Throwable) { }
         try { o.nrHpct = prefs.int("nr_hpct", 100); o.numRowLarge = prefs.bool("numrow_large", false) } catch (_: Throwable) { }

@@ -84,7 +84,7 @@ public class LayoutDefaultsTest {
         }
         eq("pb: every key = ProbhatLayout.map (normal + shift)", mapOk, true);
         eq("pb: row 1 = 10 letters + EXTRA_ROW1 (2)", pb.get(1).keys.size(), 10 + ProbhatLayout.EXTRA_ROW1.length);
-        eq("pb: row 2 = 9 letters + EXTRA_ROW2 (1), no gap spacer", pb.get(2).keys.size(), 9 + ProbhatLayout.EXTRA_ROW2.length);
+        eq("pb: row 2 = 9 letters + 2 half-key spacers (Ridmik home row)", pb.get(2).keys.size(), 9 + ProbhatLayout.EXTRA_ROW2.length + 2);
         eq("pb: row 3 = shift + 7 + EXTRA_ROW3 (2) + backspace", pb.get(3).keys.size(), 2 + 7 + ProbhatLayout.EXTRA_ROW3.length);
         boolean extraOk = true;
         String[][][] ex = {ProbhatLayout.EXTRA_ROW1, ProbhatLayout.EXTRA_ROW2, ProbhatLayout.EXTRA_ROW3};
@@ -93,12 +93,11 @@ public class LayoutDefaultsTest {
             if (k == null || !k.out[0].equals(ex[r][i][0]) || !k.out[1].equals(ex[r][i][1])) extraOk = false;
         }
         eq("pb: extra keys = ProbhatLayout.EXTRA_ROW1-3", extraOk, true);
-        eq("pb: ZWNJ key shows ZWNJ", key(m, "pb", "pb_x3_1").label[1], "ZWNJ");
-        eq("pb: combining sign gets a dotted circle", key(m, "pb", "pb_x1_1").label[0], ProbhatLayout.extraLabel("ে"));
-        eq("pb: letter label = ProbhatLayout.label when different", key(m, "pb", "pb_w").label[0], ProbhatLayout.label('w'));
+        eq("pb: combining sign shows bare (no dotted circle, Ridmik)", key(m, "pb", "pb_x1_1").label[0], ProbhatLayout.extraLabelBare("ে"));
+        eq("pb: letter label = ProbhatLayout.labelBare when different", key(m, "pb", "pb_w").label[0], ProbhatLayout.labelBare('w'));
         eq("pb: plain letter has no label override", key(m, "pb", "pb_q").label[0], "");
         eq("pb: row 1 total 12", sum(pb.get(1)), 12f);
-        eq("pb: no hints", key(m, "pb", "pb_q").lp, "");
+        eq("pb: Ridmik hint = shift letter", key(m, "pb", "pb_q").lp, "ধ");
 
         // Probhat home gap
         LayoutDefaults.Options o = new LayoutDefaults.Options();
@@ -106,7 +105,6 @@ public class LayoutDefaultsTest {
         LayoutDef g = LayoutDefaults.build(o);
         RowDef pr2 = g.effectiveRows("pb").get(2);
         eq("pb gap: left spacer 0.5", pr2.keys.get(0).kind == KeyDef.SPACER && pr2.keys.get(0).weight == 0.5f, true);
-        eq("pb gap: extra key weight 0.5", key(g, "pb", "pb_x2_1").weight, BottomPlan.pbKeyWeight(true, true, true));
         eq("pb gap: row total 10", sum(pr2), 10f);
         o.rowGap = false;
         LayoutDef g2 = LayoutDefaults.build(o);
@@ -224,7 +222,7 @@ public class LayoutDefaultsTest {
         eq("all ids <= 16 chars", LayoutOps.valid(m), null);
         eq("round trip through the codec", m.equals(LayoutCodec.decode(LayoutCodec.encode(m))), true);
         eq("English layer has 10 + 10 + 11 + 9 + 6 = 46 keys incl. gaps (shared rows resolved)", countKeys(m, "en"), 46);
-        eq("total own keys", m.totalKeys(), 208);
+        eq("total own keys", m.totalKeys(), 209);   // v0.17.69 (S2): +1 = pb home row 9 keys + 2 half-key spacers
 
         // reset helpers can use the defaults
         LayoutDef edited = LayoutOps.setOut(m, "en_q", 0, "z");

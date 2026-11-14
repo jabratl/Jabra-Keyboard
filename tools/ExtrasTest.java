@@ -40,8 +40,8 @@ public class ExtrasTest {
         // a few spot checks
         ok("ক".equals(ProbhatLayout.map('k')), "k=ক");
         ok("া".equals(ProbhatLayout.map('a')), "a=া");
-        ok("্".equals(ProbhatLayout.EXTRA_ROW3[0][0]), "extra row3 key1 = ্");
-        ok(ProbhatLayout.EXTRA_ROW1.length == 2 && ProbhatLayout.EXTRA_ROW2.length == 1 && ProbhatLayout.EXTRA_ROW3.length == 2, "extra key counts 2/1/2");
+        ok("ৃ".equals(ProbhatLayout.EXTRA_ROW3[0][0]) && "্".equals(ProbhatLayout.EXTRA_ROW3[1][0]), "extra row3 = ৃ ্ (Ridmik)");
+        ok(ProbhatLayout.EXTRA_ROW1.length == 2 && ProbhatLayout.EXTRA_ROW2.length == 0 && ProbhatLayout.EXTRA_ROW3.length == 2, "extra key counts 2/0/2");
         // unknown key -> null (app falls back to normal typing), label never crashes
         ok(ProbhatLayout.map('1') == null, "digit must be null");
         ok(ProbhatLayout.label('1').equals("1"), "label of unknown key");

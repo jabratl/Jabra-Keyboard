@@ -143,14 +143,6 @@ public class LayoutCheckTest {
         for (int i = 0; i < 6; i++) spread = LayoutOps.delete(spread, "en_" + "zxcvbn".charAt(i));
         eq("rowspread: 10 keys next to a 3-key row", firstIn(LayoutCheck.check(spread), LayoutCheck.W_ROWSPREAD, "en") != null, true);
         eq("rowspread: defaults (bottom row not counted) = none", first(LayoutCheck.check(d), LayoutCheck.W_ROWSPREAD), null);
-        LayoutDefaults.Options o = new LayoutDefaults.Options();
-        o.pbHomeGap = true;
-        LayoutDef gap = LayoutDefaults.build(o);
-        Warn tw = first(LayoutCheck.check(gap), LayoutCheck.W_TOUCH);
-        eq("touch: half-width Probhat extra key is under 24 dp at 360 dp", tw != null && tw.keyIds.contains("pb_x2_1"), true);
-        eq("touch: severity INFO", tw.severity, LayoutCheck.INFO);
-        eq("touch: fine on a 600 dp screen", first(LayoutCheck.check(gap, new LayoutCheck.Env(600f, 1)), LayoutCheck.W_TOUCH), null);
-        eq("touch: bad screen width = skipped", first(LayoutCheck.check(gap, new LayoutCheck.Env(0f, 1)), LayoutCheck.W_TOUCH), null);
 
         // coverage
         LayoutDef noQ = LayoutOps.makeSpacer(d, "en_q");

@@ -41,7 +41,7 @@ public final class BottomPlan {
     public static boolean pbGap(boolean pb, boolean gapOn, boolean rowGapOn) { return pb && gapOn && rowGapOn; }
     public static float pbKeyWeight(boolean pb, boolean gapOn, boolean rowGapOn) { return pbGap(pb, gapOn, rowGapOn) ? 0.5f : 1f; }
     /** Left free space visible: English / Avro always (old rule), Probhat only with pbGap. */
-    public static boolean leftGapShown(boolean pb, boolean gapOn, boolean rowGapOn) { return rowGapOn && (!pb || pbGap(pb, gapOn, rowGapOn)); }
+    public static boolean leftGapShown(boolean pb, boolean gapOn, boolean rowGapOn) { return rowGapOn; }   // v0.17.69 (S2): Ridmik home row has no extra key any more: Probhat gets the half-key gap on BOTH sides like English / Avro
     /** Right free space visible: English / Avro only (in Probhat the extra key sits there). */
-    public static boolean rightGapShown(boolean pb, boolean rowGapOn) { return rowGapOn && !pb; }
+    public static boolean rightGapShown(boolean pb, boolean rowGapOn) { return rowGapOn; }   // v0.17.69 (S2)
 }

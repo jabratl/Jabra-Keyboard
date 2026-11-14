@@ -48,12 +48,20 @@ public final class ProbhatLayout {
 
     /** Extra keys that sit INSIDE the 3 letter rows in Probhat mode (GONE in English / Avro). {normal, shift}. */
     public static final String[][] EXTRA_ROW1 = { {"ে", "ৈ"}, {"ো", "ৌ"} };
-    public static final String[][] EXTRA_ROW2 = { {"ৃ", "ঞ"} };
-    public static final String[][] EXTRA_ROW3 = { {"্", "\u200c"}, {"ঁ", "ৎ"} };
+    /** v0.17.69 (S2): Ridmik grid = home row has NO extra key (9 letters only). The ri-kar moved to row 3. */
+    public static final String[][] EXTRA_ROW2 = { };
+    /** v0.17.69 (S2): Ridmik row 3 = z..m + [ৃ] [্ / ঁ]. Shift of the ri-kar key shows the same sign (as in Ridmik). */
+    public static final String[][] EXTRA_ROW3 = { {"ৃ", "ৃ"}, {"্", "ঁ"} };
 
-    /** Every output of the extra keys (normal + shift), for tests. */
+    /**
+     * v0.17.69 (S2): letters that Ridmik shows on NO key face. They stay typeable by a hidden swipe-up on the extra key:
+     * {key's normal output, swipe-up text}. ZWNJ is not on a key any more (the "Z W" key was not Ridmik).
+     */
+    public static final String[][] EXTRA_SWIPE_UP = { {"ৃ", "ঞ"}, {"্", "ৎ"} };
+
+    /** Every output of the extra keys (faces + hidden swipe texts), for tests / coverage. */
     public static final String[] EXTRAS = {
-        "ে", "ৈ", "ো", "ৌ", "ৃ", "ঞ", "্", "\u200c", "ঁ", "ৎ"
+        "ে", "ৈ", "ো", "ৌ", "ৃ", "্", "ঁ", "ঞ", "ৎ"
     };
 
     private static final HashMap<Character, String> M = new HashMap<Character, String>();
