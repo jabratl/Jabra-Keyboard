@@ -82,6 +82,31 @@ public final class BackupPlan {
         } catch (Throwable t) { return true; }
     }
 
+    /** v0.18.10: true for an opaque provider id (Google Drive style "eolpYOxA9nYXpl...": no ':' or '/', 20+ letters / digits / _ -). Such an id is NOT a folder name. */
+    public static boolean looksOpaque(String treeDocId) {
+        try {
+            if (treeDocId == null) return false;
+            String s = treeDocId.trim();
+            if (s.length() < 20 || s.indexOf(':') >= 0 || s.indexOf('/') >= 0) return false;
+            for (int i = 0; i < s.length(); i++) {
+                char c = s.charAt(i);
+                if (!((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '_' || c == '-')) return false;
+            }
+            return true;
+        } catch (Throwable t) { return false; }
+    }
+
+    /** v0.18.10: the text to show for a folder: the real display name when the id is opaque (nameOrNull from the provider), else the readable path; never a raw id. */
+    public static String friendly(String treeDocId, String nameOrNull) {
+        try {
+            if (looksOpaque(treeDocId)) {
+                String n = nameOrNull == null ? "" : nameOrNull.trim();
+                return n.isEmpty() ? "chosen folder" : (n.length() > 48 ? "..." + n.substring(n.length() - 45) : n);
+            }
+            return label(treeDocId);
+        } catch (Throwable t) { return "chosen folder"; }
+    }
+
     /** Short readable folder name from a tree document id such as "primary:Download/Jabra" -> "Download/Jabra". */
     public static String label(String treeDocId) {
         try {

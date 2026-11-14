@@ -195,7 +195,7 @@ object BackupStore {
     fun extLabel(ctx: Context): String {
         try {
             val u = extUri(ctx) ?: return "not set"
-            return BackupPlan.label(DocumentsContract.getTreeDocumentId(u))
+            return ClipFolder.nameOf(ctx, u)   // v0.18.10: was BackupPlan.label(id) = raw id for Drive-like folders
         } catch (_: Throwable) { return "set" }
     }
 

@@ -1,3 +1,12 @@
+v0.18.10 - FIX: "Save to:" shows the folder NAME, never a raw id (part 4 of 5)
+- SEEN/WHY: Export screen showed "Save to: ...eolpYOxA9nYXplYybo56bzK6eshaXnI_xkT8zeArfv_1b". That is the tree document id of a Google-Drive-like folder: such providers give an opaque id, not a path. The old label() only handled ids like "primary:Download/Jabra".
+- ROOT CAUSE: BackupPlan.label(id) just cuts the text after ":" (or takes the whole id when there is no ":") and shortens it.
+- What you get: Export "Save to:" and the "Saved in ..." message show the real folder name asked from the provider (DocumentsContract display name). If the provider gives no name: "chosen folder". Normal folders ("Download/Jabra") look exactly as before. The same fix is used for the backup folder text (Data & Backup, BackupStore.extLabel) which had the same bug.
+- Code: typing/BackupPlan.java (+ looksOpaque(), friendly(); label() untouched), tools/BackupPlanTest.java (+6 checks), ClipFolder.kt (label() uses new nameOf(ctx, uri), one provider query only for opaque ids), BackupStore.kt (extLabel uses ClipFolder.nameOf), app/build.gradle.kts 0.18.10. No pref, key or data changed; no new permission (the query uses the folder permission the app already holds).
+- BROKE: nothing known.
+- TESTED here: bash tools/run_tests.sh = 147/147 green (BackupPlanTest has the real id from your screenshot as a case). NOT tested: Kotlin NOT compiled; phone: Export with a Drive-like folder shows the folder name (or "chosen folder"), a normal "Download/..." folder unchanged, no folder chosen = "Downloads", Data & Backup folder line.
+- Rollback: restore BackupPlan.java, BackupPlanTest.java, ClipFolder.kt, BackupStore.kt, app/build.gradle.kts from v0.18.9.
+
 v0.18.9 - FIX: Export screen - the chosen chip of every row shows a tick (part 3 of 5)
 - SEEN/WHY: Details / Format / Skip codes showed "✓" when ON, but the chosen "Selected / All / Pinned" and "One file / ZIP / TAR" chips only changed colour. The rule of the plan (state is never colour alone) was broken here.
 - What you get: the chosen scope chip and the chosen pack chip now start with the same "✓" (drawn tick) as the 3 option chips. Only the chosen chip has it; tap behaviour is unchanged.

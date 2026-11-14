@@ -81,6 +81,14 @@ public class BackupPlanTest {
         t("label root", BackupPlan.label("primary:").equals("(whole storage)"));
         t("label no colon", BackupPlan.label("Backups").equals("Backups"));
         t("label long cut", BackupPlan.label("primary:" + "x".repeat(80)).length() == 48);
+        // v0.18.10: opaque provider ids never shown raw
+        String gd = "eolpYOxA9nYXplYybo56bzK6eshaXnI_xkT8zeArfv_1b";
+        t("opaque drive id", BackupPlan.looksOpaque(gd));
+        t("opaque path no", !BackupPlan.looksOpaque("primary:Download/Jabra") && !BackupPlan.looksOpaque("Backups") && !BackupPlan.looksOpaque(null) && !BackupPlan.looksOpaque("a/b/cccccccccccccccccccccc"));
+        t("friendly name", BackupPlan.friendly(gd, "Jabra clips").equals("Jabra clips"));
+        t("friendly no name", BackupPlan.friendly(gd, null).equals("chosen folder") && BackupPlan.friendly(gd, "  ").equals("chosen folder"));
+        t("friendly path kept", BackupPlan.friendly("primary:Download/Jabra", "x").equals("Download/Jabra"));
+        t("friendly long name", BackupPlan.friendly(gd, "n".repeat(80)).length() == 48);
         t("label bangla", BackupPlan.label("primary:Download/ব্যাকআপ").equals("Download/ব্যাকআপ"));
 
         // ---- health text ----

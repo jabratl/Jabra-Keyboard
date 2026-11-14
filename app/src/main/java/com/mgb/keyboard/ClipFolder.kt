@@ -30,7 +30,20 @@ object ClipFolder {
     /** "Download/Jabra" style label, or "Downloads" when no folder is chosen. */
     fun label(ctx: Context): String = try {
         val u = uri(ctx)
-        if (u == null) "Downloads" else BackupPlan.label(DocumentsContract.getTreeDocumentId(u))
+        if (u == null) "Downloads" else nameOf(ctx, u)
+    } catch (_: Throwable) { "chosen folder" }
+
+    /** v0.18.10: readable name of a chosen folder (tree uri). A Drive-style opaque id is replaced by the folder's display name asked from the provider; never the raw id. Also used by BackupStore.extLabel. */
+    fun nameOf(ctx: Context, tree: Uri): String = try {
+        val id = DocumentsContract.getTreeDocumentId(tree)
+        var dn: String? = null
+        if (BackupPlan.looksOpaque(id)) {
+            try {
+                val d = DocumentsContract.buildDocumentUriUsingTree(tree, id)
+                ctx.contentResolver.query(d, arrayOf(DocumentsContract.Document.COLUMN_DISPLAY_NAME), null, null, null)?.use { c -> if (c.moveToFirst()) dn = c.getString(0) }
+            } catch (_: Throwable) { }
+        }
+        BackupPlan.friendly(id, dn)
     } catch (_: Throwable) { "chosen folder" }
 
     /** Caller already called takePersistableUriPermission. Old permission is NOT released (it may be the backup folder too). */
