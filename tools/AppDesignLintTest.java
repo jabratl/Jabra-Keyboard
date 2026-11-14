@@ -17,8 +17,7 @@ public class AppDesignLintTest {
     static final String[][] BASELINE = {
         {"AppPages.kt", "4", "0"},
         {"AppSearch.kt", "7", "0"},
-        {"AppThemeGrid.kt", "3", "0"},
-        {"AppThemeStudio.kt", "13", "1"},
+        {"AppThemeStudio.kt", "12", "1"},
         {"AppToolbarEditor.kt", "4", "0"},
         {"AppWizard.kt", "1", "0"}
     };

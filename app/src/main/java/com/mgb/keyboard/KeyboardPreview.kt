@@ -223,6 +223,7 @@ object KeyboardPreview {
 /** v0.10.25: one theme tile (background, 3 mini keys, name). Drawn in code, same colours as the real theme. */
 internal class ThemeTile(c: Context, private val p: JabraPrefs, val idx: Int, var chosen: Boolean) : View(c) {   // v0.15.6 (N6): internal (reused by AppThemeGrid)
     var ring: Int = 0xFF2271B1.toInt()   // v0.15.6: frame colour of the chosen tile (default = as before)
+    var rows: Int = 1   // v0.17.85 (U9): 1 = old tile (one key row); 2 = mini keyboard (two rows incl. a space bar) + check mark on the chosen one
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
     private val rect = RectF()
 
@@ -241,6 +242,27 @@ internal class ThemeTile(c: Context, private val p: JabraPrefs, val idx: Int, va
             // mini keys: 2 normal + 1 function key
             val keyCol = t.key ?: 0xFFFFFFFF.toInt()
             val fnCol = try { JabraThemes.funcFillAt(p, idx) } catch (_: Throwable) { keyCol }
+            if (rows >= 2) {   // v0.17.85 (U9): mini keyboard = row 1: 4 keys (last = function key), row 2: space bar + function key
+                val gap = 4f * d
+                val kh2 = 13f * d
+                val top2 = 7f * d
+                val kw4 = (w - 4f * d - gap * 5f) / 4f
+                for (i in 0 until 4) {
+                    val l = 2f * d + gap + i * (kw4 + gap)
+                    rect.set(l, top2, l + kw4, top2 + kh2)
+                    paint.color = if (i == 3) fnCol else keyCol
+                    cv.drawRoundRect(rect, 3f * d, 3f * d, paint)
+                }
+                val r2 = top2 + kh2 + gap
+                val l0 = 2f * d + gap
+                val spaceR = l0 + kw4 * 3f + gap * 2f
+                rect.set(l0, r2, spaceR, r2 + kh2)
+                paint.color = keyCol
+                cv.drawRoundRect(rect, 6f * d, 6f * d, paint)
+                rect.set(spaceR + gap, r2, w - 2f * d - gap, r2 + kh2)
+                paint.color = fnCol
+                cv.drawRoundRect(rect, 3f * d, 3f * d, paint)
+            } else {
             val kw = (w - 4f * d - 5f * d * 4f) / 3f
             val kh = 14f * d
             val top = 7f * d
@@ -249,6 +271,7 @@ internal class ThemeTile(c: Context, private val p: JabraPrefs, val idx: Int, va
                 rect.set(l, top, l + kw, top + kh)
                 paint.color = if (i == 2) fnCol else keyCol
                 cv.drawRoundRect(rect, 4f * d, 4f * d, paint)
+            }
             }
             // name in the theme text colour
             paint.color = t.text ?: 0xFF222222.toInt()
@@ -263,6 +286,18 @@ internal class ThemeTile(c: Context, private val p: JabraPrefs, val idx: Int, va
                 rect.set(1.5f * d, 1.5f * d, w - 1.5f * d, h - 1.5f * d)
                 cv.drawRoundRect(rect, 8f * d, 8f * d, paint)
                 paint.style = Paint.Style.FILL
+                if (rows >= 2) {   // v0.17.85 (U9): check mark badge (shape, not only colour, shows the chosen theme)
+                    val cx = w - 11f * d
+                    val cy = h - 11f * d
+                    paint.color = ring
+                    cv.drawCircle(cx, cy, 7f * d, paint)
+                    paint.color = 0xFFFFFFFF.toInt()
+                    paint.style = Paint.Style.STROKE
+                    paint.strokeWidth = 1.8f * d
+                    cv.drawLine(cx - 3f * d, cy, cx - 1f * d, cy + 2.5f * d, paint)
+                    cv.drawLine(cx - 1f * d, cy + 2.5f * d, cx + 3.2f * d, cy - 2.5f * d, paint)
+                    paint.style = Paint.Style.FILL
+                }
             }
         } catch (_: Throwable) { }
     }

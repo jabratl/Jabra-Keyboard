@@ -1,0 +1,25 @@
+HANDOFF Jabra-Keyboard v0.17.85 (U9, MODIFY)   [plan: HANDOFF_Jabra-Keyboard_v0.17.75_UI-Plan.txt - send it with the next step]
+
+DONE + CURRENT VERSION
+- R3-R7, S1-S8 (0.17.75) | [x] U1 (0.17.76) | U2 (.77) | U3 (.78) | U4 (.79) | U5a (.80) | U5b (.81) | U6 (.82) | U7 (.83) + U8 (.84) | [x] U9 (0.17.85). CURRENT: 0.17.85. Apply zips in order (U7+U8 zip first, then this one).
+
+WHAT CHANGED (file: 1 line)
+- typing/ThemeCardPlan.java (NEW): cols(availDp) 2/3/4, availDp, describe, currentLine, warnText.
+- KeyboardPreview.kt: ThemeTile.rows (2 = mini keyboard + check badge; default 1 = old tile, preview strip unchanged).
+- AppThemeGrid.kt: mini tiles 76 dp, columns by free width, "Current theme: Name (n of 20)", tokens instead of hard-coded sizes.
+- AppThemeStudio.kt: warning card (surface2 + warn frame, 14 sp, live region), text from ThemeCardPlan.warnText.
+- tools/ThemeCardPlanTest.java (NEW, 142 checks), tools/AppDesignLintTest.java (baseline AppThemeGrid removed, AppThemeStudio 12), app/build.gradle.kts 0.17.85, CHANGELOG.txt.
+
+CHECKS DONE
+bash tools/run_tests.sh = 143/143 green; Kotlin compile of ALL sources: 0 errors in changed files (only Updater.kt GITHUB_REPO = my stub, unrelated).
+
+NOT TESTED
+Phone / render at 360 + 1280 dp, dark + light: see CHANGELOG v0.17.85 list. Not rendered here (no screen). Red GitHub build log = FIX first.
+
+KNOWN LIMITS
+- PreviewCard is in KeyboardPreview.kt (no PreviewCard.kt); pinning logic (PagePlan.pinPreview) unchanged.
+- AppThemeStudio.kt still has 12 hard-coded text sizes + 1 colour (U11 sweep).
+
+NEXT STEP + GOAL
+U10 (MODIFY, S 25%): ACCESSIBILITY + RESPONSIVE. 48 dp targets, contentDescription on every icon button, font scale 1.3, TalkBack order, landscape + tablet two-pane, contrast report. Files: AppRows.kt, AppHome.kt, AppPages.kt, AppSearch.kt (patches only). Depends U2-U9.
+Kickoff: Jabra-Keyboard step U10. Mode: MODIFY. Previous version: v0.17.85. Attached: this HANDOFF + the UI-Plan HANDOFF + AppRows.kt, AppHome.kt, AppPages.kt, AppSearch.kt. Context: Done U1-U9. Next: U11.

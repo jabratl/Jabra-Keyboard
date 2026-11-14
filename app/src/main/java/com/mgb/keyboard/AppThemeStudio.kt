@@ -100,9 +100,17 @@ object AppThemeStudio {
 
         val mini = Mini(ctx)
         val warn = TextView(ctx)
-        warn.textSize = 12f
-        warn.setTextColor(AppUi.warn(ctx))
-        warn.setPadding(0, dp(AppTokens.S1), 0, dp(AppTokens.S1))
+        warn.textSize = AppTokens.T_BODY.toFloat()   // v0.17.85 (U9): readable size + a card with a warning frame (was small plain text)
+        warn.setTextColor(AppUi.text(ctx))
+        warn.setPadding(dp(AppTokens.S3), dp(AppTokens.S2), dp(AppTokens.S3), dp(AppTokens.S2))
+        try {
+            val wb = GradientDrawable()
+            wb.setColor(AppUi.surface2(ctx))
+            wb.cornerRadius = dp(AppTokens.R_CARD).toFloat()
+            wb.setStroke(dp(AppTokens.STROKE), AppUi.warn(ctx))
+            warn.background = wb
+        } catch (_: Throwable) { }
+        try { warn.accessibilityLiveRegion = View.ACCESSIBILITY_LIVE_REGION_POLITE } catch (_: Throwable) { }
         lateinit var stepRound: AppRows.Built
         lateinit var stepAlpha: AppRows.Built
         lateinit var stepBorder: AppRows.Built   // v0.17.45 (P2)
@@ -123,7 +131,7 @@ object AppThemeStudio {
                 swatches[i].background = g
             }
             val w = CustomThemeForm.warnings(th)
-            warn.text = if (th == null) "Some colours are not valid (use 6 digits like #1B3A57). Nothing is saved until they are fixed." else if (w.isEmpty()) "" else "⚠ " + w.joinToString("\n⚠ ")
+            warn.text = com.mgb.keyboard.typing.ThemeCardPlan.warnText(th == null, w)   // v0.17.85 (U9): same texts, one tested place
             warn.visibility = if (warn.text.isEmpty()) View.GONE else View.VISIBLE
         }
 
