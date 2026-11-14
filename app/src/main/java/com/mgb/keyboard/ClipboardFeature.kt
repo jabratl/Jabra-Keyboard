@@ -541,7 +541,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
         root.addView(top)
 
         // ---- filter chips (hidden while the More tray is open: the space goes to the list)
-        if (!(selOn && moreOpen)) {
+        if (!(selOn && moreOpen) && !(ovOpen && nlOn)) {   // v0.18.8: also hide the chips while the \u22EF menu is open (the space goes to the list)
             val chips = row()
             for (c in 0 until ClipFilter.COUNT) {
                 val ch = UiKit.chip(ctx, pf, ClipFilter.label(c), c == fChip, sz(t40), { v -> try { host.feedback(v) } catch (_: Throwable) { } }) {
@@ -610,35 +610,36 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
             if (nlOn && !selOn && ovOpen && !confirmClear) {   // v0.17.58 (C3): overflow tray = every rare action in one place
                 // v0.17.66 -> v0.17.67 (R7): the "..." tray is now a dropdown menu card: Sort + View show ALL choices (the chosen one is ticked), actions below
                 val menu = menuCard()
+                val ovCols = maxOf(5, com.mgb.keyboard.clip.ClipTrash.QUICK.size)   // v0.18.8: EVERY row of this menu uses the same 5 columns, so the pills line up (Undo has 5, the others 4 / 2)
                 val sortNames = arrayOf("Newest", "Oldest", "A-Z", "Used")
-                menu.addView(menuRow("Sort", 4, *Array<View>(4) { i ->
-                    menuPill((if (i == sortLv) "\u2713 " else "") + sortNames[i], i == sortLv) {
+                menu.addView(menuRow("Sort", ovCols, *Array<View>(4) { i ->
+                    ovPill((if (i == sortLv) "\u2713 " else "") + sortNames[i], i == sortLv) {
                         try { JabraPrefs(ctx).setInt("clip_sort", i) } catch (_: Throwable) { }
                         refreshTop()
                     }
                 }))
-                menu.addView(menuRow("View", 4,
-                    menuPill((if (!cardsOn) "\u2713 " else "") + "List", !cardsOn) { try { JabraPrefs(ctx).setInt("clip_view", 0) } catch (_: Throwable) { }; refreshTop() },
-                    menuPill((if (cardsOn) "\u2713 " else "") + "Cards", cardsOn) { try { JabraPrefs(ctx).setInt("clip_view", 1) } catch (_: Throwable) { }; refreshTop() }))
+                menu.addView(menuRow("View", ovCols,
+                    ovPill((if (!cardsOn) "\u2713 " else "") + "List", !cardsOn) { try { JabraPrefs(ctx).setInt("clip_view", 0) } catch (_: Throwable) { }; refreshTop() },
+                    ovPill((if (cardsOn) "\u2713 " else "") + "Cards", cardsOn) { try { JabraPrefs(ctx).setInt("clip_view", 1) } catch (_: Throwable) { }; refreshTop() }))
                 // v0.18.4: Undo = how many deleted clips are kept (Off / 10 / 30 / 50 / 100); Do = Manage | Deleted n | Export all | Clear
                 val undoLim = try { trash.limit() } catch (_: Throwable) { com.mgb.keyboard.clip.ClipTrash.DEFAULT_LIMIT }
-                menu.addView(menuRow("Undo", com.mgb.keyboard.clip.ClipTrash.QUICK.size, *Array<View>(com.mgb.keyboard.clip.ClipTrash.QUICK.size) { i ->
+                menu.addView(menuRow("Undo", ovCols, *Array<View>(com.mgb.keyboard.clip.ClipTrash.QUICK.size) { i ->
                     val qv = com.mgb.keyboard.clip.ClipTrash.QUICK[i]
-                    menuPill((if (qv == undoLim) "\u2713 " else "") + (if (qv == 0) "Off" else qv.toString()), qv == undoLim) {
+                    ovPill((if (qv == undoLim) "\u2713 " else "") + (if (qv == 0) "Off" else qv.toString()), qv == undoLim) {
                         try { JabraPrefs(ctx).setInt("clip_undo_n", qv) } catch (_: Throwable) { }
                         try { trash.count() } catch (_: Throwable) { }
                         refresh()
                     }
                 }))
                 val doItems = ArrayList<View>()
-                doItems.add(menuPill("Manage") { ovOpen = false; sel.enter(); confirmClear = false; confirmDel = false; refresh() })
+                doItems.add(ovPill("Manage") { ovOpen = false; sel.enter(); confirmClear = false; confirmDel = false; refresh() })
                 if (undoLim > 0) {
                     val delN = try { trash.count() } catch (_: Throwable) { 0 }
-                    doItems.add(menuPill(if (delN > 0) "Deleted " + delN else "Deleted") { ovOpen = false; trashOpen = true; trashSure = false; trashMsg = ""; confirmClear = false; refreshTop() })
+                    doItems.add(ovPill(if (delN > 0) "Deleted " + delN else "Deleted") { ovOpen = false; trashOpen = true; trashSure = false; trashMsg = ""; confirmClear = false; refreshTop() })
                 }
-                doItems.add(menuPill("Export all") { ovOpen = false; expSel = emptyList(); expScope = 1; expMsg = ""; expName = ""; renaming = false; exporting = true; moreOpen = false; confirmDel = false; refresh() })
-                doItems.add(ClipBar.danger(pf, menuPill("Clear") { ovOpen = false; confirmClear = true; refresh() }))
-                menu.addView(menuRow("Do", 4, *doItems.toTypedArray()))
+                doItems.add(ovPill("Export all") { ovOpen = false; expSel = emptyList(); expScope = 1; expMsg = ""; expName = ""; renaming = false; exporting = true; moreOpen = false; confirmDel = false; refresh() })
+                doItems.add(ClipBar.danger(pf, ovPill("Clear") { ovOpen = false; confirmClear = true; refresh() }))
+                menu.addView(menuRow("Do", ovCols, *doItems.toTypedArray()))
                 root.addView(menu)
             }
         }
@@ -772,6 +773,13 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
         for (v in items) r.addView(v)
         for (i in items.size until cols) { val f = View(ctx); f.layoutParams = LinearLayout.LayoutParams(0, dp(sz(34)), 1f); r.addView(f) }
         return r
+    }
+
+    /** v0.18.8: pill for the \u22EF menu (5 equal columns): slightly smaller text so "Deleted 10" / "\u2713 Newest" fit on a 360 dp phone. */
+    private fun ovPill(label: String, selected: Boolean = false, onClick: () -> Unit): Button {
+        val b = menuPill(label, selected, onClick)
+        try { b.textSize = fs(11f) } catch (_: Throwable) { }
+        return b
     }
 
     private fun menuPill(label: String, selected: Boolean = false, onClick: () -> Unit): Button {
