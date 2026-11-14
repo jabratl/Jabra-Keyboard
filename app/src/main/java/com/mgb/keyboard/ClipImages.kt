@@ -34,6 +34,16 @@ object ClipImages {
         (dir(ctx).listFiles() ?: emptyArray()).filter { it.isFile && ClipImgPlan.mimeOfName(it.name) != null }.sortedByDescending { it.lastModified() }
     } catch (_: Throwable) { emptyList() }
 
+    /** v0.18.3: pictures follow "Clip auto-delete" (same time as the text clips; Never = no change). Called when the panel is drawn. */
+    fun expire(ctx: Context, prefs: JabraPrefs) {
+        try {
+            val ttl = com.mgb.keyboard.clip.ClipMeta.ttlMs(prefs.int("clip_expire", 0))
+            if (ttl <= 0L) return
+            val now = System.currentTimeMillis()
+            for (f in list(ctx)) if (ClipImgPlan.expired(f.lastModified(), now, ttl)) f.delete()
+        } catch (_: Throwable) { }
+    }
+
     fun clear(ctx: Context) { try { for (f in list(ctx)) f.delete() } catch (_: Throwable) { } }
 
     /** Reads the image items of a clip into the cache. true = at least one image is stored (or was already there). */
@@ -117,6 +127,7 @@ object ClipImages {
     /** The panel view with the image strip on top (no images / pref OFF = the view itself). */
     fun wrap(ctx: Context, v: View, prefs: JabraPrefs): View = try {
         if (!on(prefs)) v else {
+            expire(ctx, prefs)   // v0.18.3
             val s = strip(ctx, prefs)
             if (s == null) v else {
                 val box = LinearLayout(ctx)

@@ -63,6 +63,9 @@ public final class ClipImgPlan {
         return out;
     }
 
+    /** v0.18.3: true = this picture is older than the clipboard auto-delete time (ttl <= 0 = never). */
+    public static boolean expired(long modified, long now, long ttl) { return ttl > 0 && modified > 0 && now - modified > ttl; }
+
     /** A copied text that is only the address of an image we just stored (content:// or file://) must not become a text clip. */
     public static boolean isImageUriText(String t) {
         if (t == null) return false;

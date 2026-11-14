@@ -1,3 +1,11 @@
+v0.18.3 - MODIFY: Copied pictures follow "Clip auto-delete"
+- WHY: texts leave the history after the Clip auto-delete time (1 hour / 1 day / 7 days) but copied pictures stayed until 8 newer ones came. A screenshot with private content should not stay longer than your text clips.
+- What changed for the user: pictures older than the chosen Clip auto-delete time are removed when the clipboard panel opens. Never = as before (max 8 kept). Nothing else changed.
+- Code: typing/ClipImgPlan.java (expired rule), ClipImages.kt (expire + 1 call in wrap), tools/ClipImgPlanTest.java (+1 check), app/build.gradle.kts 0.18.3.
+- BROKE: nothing known. Time is the file time (copying the same picture again renews it).
+- TESTED here: bash tools/run_tests.sh green. NOT tested: Kotlin compile (GitHub build log), phone: set auto-delete 1 hour, old picture disappears after it.
+- Rollback: restore the 4 files from v0.18.2.
+
 v0.18.2 - FIX/MODIFY: Hold C / V / X = Copy / Cut also in password fields
 - SEEN/WHY: you need copy and cut in password fields (v0.18.1 blocked them there).
 - What changed for the user: hold c = copy, x = cut, v = paste now work in every field, password fields too. Setting hold_edit is still default OFF. Copied password text is still NOT saved to the clipboard history (history skips password fields as before).

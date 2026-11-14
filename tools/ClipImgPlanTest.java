@@ -20,6 +20,7 @@ public class ClipImgPlanTest {
         t("overflow keeps newest", ClipImgPlan.overflow(l, 2).equals(Arrays.asList("7_c.png", "6_d.png")) && ClipImgPlan.overflow(l, 4).isEmpty() && ClipImgPlan.overflow(l, 0).size() == 4);
         t("overflow null / negative", ClipImgPlan.overflow(null, 3).isEmpty() && ClipImgPlan.overflow(l, -1).size() == 4);
         t("uri text", ClipImgPlan.isImageUriText("content://media/external/1") && ClipImgPlan.isImageUriText(" file:///x/y.png ") && !ClipImgPlan.isImageUriText("hello content://x") && !ClipImgPlan.isImageUriText(null) && !ClipImgPlan.isImageUriText("https://a.b"));
+        t("expired", ClipImgPlan.expired(1000, 5000, 3000) && !ClipImgPlan.expired(1000, 3500, 3000) && !ClipImgPlan.expired(1000, 999999, 0) && !ClipImgPlan.expired(0, 999999, 3000));
         t("limits", ClipImgPlan.MAX_IMAGES == 8);
         System.out.println("ClipImgPlanTest: " + ok + " PASS / " + bad + " FAIL");
         if (bad > 0) System.exit(1);

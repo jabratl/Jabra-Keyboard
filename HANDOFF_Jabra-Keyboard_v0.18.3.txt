@@ -1,0 +1,17 @@
+HANDOFF Jabra-Keyboard v0.18.3 (pictures follow Clip auto-delete, MODIFY)   [plan: HANDOFF_Jabra-Keyboard_v0.17.75_UI-Plan.txt]
+
+DONE + CURRENT VERSION
+- U1-U11 (0.18.0) | clipboard images + hold C/V/X (0.18.1) | password copy / cut (0.18.2) | [x] pictures auto-delete (0.18.3). CURRENT: 0.18.3. Apply zips in order.
+
+WHAT CHANGED (file: 1 line)
+- typing/ClipImgPlan.java: expired(modified, now, ttl). ClipImages.kt: expire() + call when the panel is drawn. tools/ClipImgPlanTest.java +1 check. build.gradle.kts 0.18.3, CHANGELOG.txt.
+
+CHECKS DONE
+bash tools/run_tests.sh green.
+
+NOT TESTED
+Kotlin compile of 0.18.1-0.18.3 (GitHub build log decides, red = FIX first). Phone: see CHANGELOG v0.18.1 / .3 lists.
+
+KNOWN LIMITS / NEXT
+- Key hint letters for c / v / x ("copy / paste / cut") not drawn. lp_accents may take hold of c before hold_edit (test).
+- Next step: phone test + build log (FIX).
