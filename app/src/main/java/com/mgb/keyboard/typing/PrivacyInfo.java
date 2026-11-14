@@ -55,7 +55,7 @@ public final class PrivacyInfo {
     /** The fixed lines about permissions and what is never recorded. Same wording everywhere. */
     public static String[] permissionLines() {
         return new String[] {
-            "Internet: used only when you tap \"Check for updates\" or \"Update emoji list\". Nothing is sent in the background.",
+            "Internet: used only when you tap \"Check for updates\" or \"Update emoji list\", or while the GIF panel is open (then only the word you search, a random anonymous id and the GIF you tap go to KLIPY). Nothing is sent in the background.",
             "Install packages: used only to open the installer after you tap \"Download & install\".",
             "Vibrate: key feedback.",
             "Not used: microphone, contacts, location, storage, accounts.",

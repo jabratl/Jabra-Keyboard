@@ -1,0 +1,27 @@
+HANDOFF Jabra-Keyboard v0.18.5 (GIF panel with KLIPY free key, NEW)   [plan: HANDOFF_Jabra-Keyboard_v0.17.75_UI-Plan.txt]
+
+DONE + CURRENT VERSION
+- UI plan U1-U11 (0.18.0) | U12 clipboard images (0.18.1) | 0.18.2 password fields | 0.18.3 pictures auto-delete | 0.18.4 Undo list | [x] 0.18.5 GIF panel. CURRENT: 0.18.5. Apply 0.18.4 first.
+
+WHAT CHANGED (file: 1 line)
+- gif/GifPlan.java NEW: pure rules (cleanKey 16..128 chars, cleanQuery, searchUrl trending / search, isHttps, fileName, overflow, errorText). tools/GifPlanTest.java NEW (40 checks).
+- GifPanel.kt NEW: route "gif". Setup screen (Get free key / Paste key), trending + search (tiny letters keyboard), 2-row sideways grid with thumbnails, tap = download size md (then sm, hd, xs if too big, max 6 MB) into cache folder gif/ and send through ClipImages.pasteHook (= MgbIme.pasteImage: commitContent, else clipboard + paste).
+- EmojiGridPanel.kt: last tab "GIF" -> host.showPanel("gif"). MgbIme.kt: gifPanel + route. file_paths.xml: gif/. PrivacyInfo.java: Internet line. build.gradle.kts 0.18.5. CHANGELOG entry.
+
+KLIPY FACTS USED (from public docs / example code, not yet run by us)
+- GET https://api.klipy.com/api/v1/{KEY}/gifs/search?q=..&customer_id=..&page=1&per_page=24 and .../gifs/trending (customer_id is required).
+- Answer: {"result":true,"data":{"data":[{"slug","title","file":{"xs"|"sm"|"md"|"hd":{"gif":{"url"}}}}],"has_next":..}}.
+- Free key: partner.klipy.com. Tenor API is closed since 30 June 2026.
+
+CHECKS DONE
+bash tools/run_tests.sh = 147/147 green. Bracket balance of the 3 edited Kotlin files = 0.
+
+NOT TESTED
+Kotlin compile (GitHub build log decides; red = FIX first, probably small: imports / types in GifPanel.kt). Phone: paste key, trending loads, search word, tap GIF in WhatsApp / Telegram / Messenger, an app that refuses images (note appears), bad key text, no internet text, password field.
+If the real answer differs from the format above: only parse() in GifPanel.kt changes.
+
+KNOWN LIMITS / NEXT
+- Thumbnails are still pictures (first frame), not animated. GIFs are sent animated.
+- No GIPHY, no stickers / clips tab, no "recent GIFs", no more than 24 results per search (page 2 not built).
+- The pasted key also appears once in the clipboard history (it was copied); delete that clip if you want.
+- Phone test + build log = next step. Ideas: Recent GIFs, Klipy stickers tab, "My Packs" text emoji / kaomoji import.

@@ -2,5 +2,6 @@
 <paths>
     <cache-path name="updates" path="updates/" />
     <cache-path name="clipimg" path="clip_img/" />   <!-- v0.18.1: copied clipboard images -->
+    <cache-path name="gif" path="gif/" />   <!-- v0.18.5: GIFs sent from the GIF panel -->
     <cache-path name="exports" path="exports/" />   <!-- v0.17.57 (C2): clip export files -->
 </paths>

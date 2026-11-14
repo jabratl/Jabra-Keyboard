@@ -256,6 +256,9 @@ class EmojiGridPanel(private val ctx: Context, private val host: JabraHost, priv
                 if (cat == kaoTab) kt.backgroundTintList = ColorStateList.valueOf(Color.parseColor("#9CC3E6"))
                 tabs.addView(kt)
             }
+            val gb = btn("GIF", dp(44), 0f, dp(36)) { toneBase = null; host.showPanel("gif") }   // v0.18.5: last tab = GIF panel (KLIPY)
+            gb.textSize = 13f
+            tabs.addView(gb)
         }
         fillTabs()
         fillTop()
