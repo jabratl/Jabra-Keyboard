@@ -15,6 +15,7 @@ import android.widget.TextView
 import com.mgb.keyboard.typing.AppTokens
 import com.mgb.keyboard.typing.HomePlan
 import com.mgb.keyboard.typing.PagePlan
+import com.mgb.keyboard.typing.SectionPlan
 
 /**
  * v0.11.0 (M1 of the "App UI" plan): SettingsGroups.build(ctx, link, sink) hands its group bodies to this sink instead of building the accordion.
@@ -51,6 +52,9 @@ class AppPages(private val act: SettingsActivity, private val sink: PageSink, pr
     private val cols = HashMap<String, LinearLayout>()
     private val scrolls = HashMap<String, ScrollView>()
     private var lastPage: String = ""
+    private val forcedAdv = HashSet<View>()               // v0.17.80 (U5a): advanced rows opened on purpose (search hit / favourite) stay visible this session
+    private val advButtons = HashMap<String, Button>()    // page id -> "Show advanced" button
+    private val jumpBars = HashMap<String, View>()        // page id -> jump bar (chips follow the section visibility)
 
     /** The column of an opened page (the Activity puts the preview card there on short two-pane screens). null = page not built yet. */
     fun inlineHost(id: String): LinearLayout? = cols[id]
@@ -68,7 +72,7 @@ class AppPages(private val act: SettingsActivity, private val sink: PageSink, pr
             frame.addView(v, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
             current = id
             if (moved) AppMotion.fadeIn(v)
-            if (id != PagePlan.HOME) { lastPage = id; attachTop(id) }
+            if (id != PagePlan.HOME) { lastPage = id; attachTop(id); applyAdvanced(id) }   // v0.17.80 (U5a): changed state may have moved since the last visit
             try { onShown(id) } catch (_: Throwable) { }
         } catch (_: Throwable) {
             try {   // v0.13.0 (M3): could not open this page: a card with [Back] and [Use the old app screen] (was: silently Home)
@@ -98,6 +102,7 @@ class AppPages(private val act: SettingsActivity, private val sink: PageSink, pr
         try {
             val t = target ?: return
             val pid = PagePlan.sanitize(id)
+            if (t.visibility != View.VISIBLE) { forcedAdv.add(t); applyAdvanced(pid) }   // v0.17.80 (U5a): a search hit / favourite always shows itself
             val sv = scrolls[pid] ?: return
             val col = cols[pid] ?: return
             var done = false
@@ -238,14 +243,73 @@ class AppPages(private val act: SettingsActivity, private val sink: PageSink, pr
             col.addView(errorCard(id))
         }
         cols[id] = col
+        try {   // v0.17.80 (U5a): Typing + Look: "Show advanced settings" button at the top of the page (pref app_adv, default OFF)
+            if (SectionPlan.hasAdvanced(id)) {
+                val ab = Button(act)
+                ab.isAllCaps = false
+                ab.minHeight = dp(AppTokens.TOUCH); ab.minimumHeight = dp(AppTokens.TOUCH)
+                try { AppRows.styleAction(act, ab) } catch (_: Throwable) { }
+                ab.setOnClickListener {
+                    try {
+                        val p = JabraPrefs(act)
+                        p.setBool(SectionPlan.PREF, !p.bool(SectionPlan.PREF, false))
+                        forcedAdv.clear()
+                        applyAdvanced(id)
+                    } catch (_: Throwable) { }
+                }
+                col.addView(ab, 0)
+                advButtons[id] = ab
+            }
+        } catch (_: Throwable) { }
 
         val sv = ScrollView(act)
         sv.isFillViewport = true
         sv.addView(col)
         scrolls[id] = sv   // v0.13.0 (M3): for reveal()
-        try { jumpBar(col, sv)?.let { outer.addView(it) } } catch (_: Throwable) { }   // v0.17.65 (R5): fixed "jump to section" bar under the title
+        try { jumpBar(col, sv)?.let { outer.addView(it); jumpBars[id] = it } } catch (_: Throwable) { }   // v0.17.65 (R5): fixed "jump to section" bar under the title
+        applyAdvanced(id)   // v0.17.80 (U5a): after the jump bar exists, so its chips can follow the sections
         outer.addView(sv, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f))
         return outer
+    }
+
+    /**
+     * v0.17.80 (U5a): hides the advanced rows of a page (SectionPlan) unless app_adv is ON, the row is changed, or it was opened from search / favourites.
+     * Then a section whose rows are all hidden hides its header + card, and the jump bar chips + the button text follow. Never throws; a problem = rows stay as they are.
+     */
+    private fun applyAdvanced(id: String) {
+        try {
+            if (!SectionPlan.hasAdvanced(id)) return
+            val col = cols[id] ?: return
+            val on = JabraPrefs(act).bool(SectionPlan.PREF, false)
+            var hidden = 0
+            for (r in sink.rows) {
+                if (PagePlan.pageOfGroup(r.group) != id || !SectionPlan.isAdvanced(r.key)) continue
+                val ch = try { r.changed() } catch (_: Throwable) { false }
+                val show = SectionPlan.visible(on, true, ch, forcedAdv.contains(r.view))
+                r.view.visibility = if (show) View.VISIBLE else View.GONE
+                if (!show) hidden++
+            }
+            val heads = ArrayList<Pair<String, View>>()
+            findHeads(col, heads)
+            for ((_, hd) in heads) {
+                val parent = hd.parent as? ViewGroup ?: continue
+                val bx = parent.getChildAt(parent.indexOfChild(hd) + 1) as? ViewGroup ?: continue
+                var any = false
+                for (i in 0 until bx.childCount) { val c = bx.getChildAt(i); if (c.tag != "secreset" && c.visibility == View.VISIBLE) any = true }
+                if (!any && bx.childCount == 0) continue   // not a row box (nothing to decide)
+                hd.visibility = if (any) View.VISIBLE else View.GONE
+                bx.visibility = if (any) View.VISIBLE else View.GONE
+                for (i in 0 until bx.childCount) { val c = bx.getChildAt(i); if (c.tag == "secreset") c.visibility = if (any) View.VISIBLE else View.GONE }
+            }
+            jumpBars[id]?.let { fixChips(it) }
+            advButtons[id]?.let { b -> b.text = SectionPlan.buttonText(on, hidden); b.contentDescription = b.text }
+        } catch (_: Throwable) { }
+    }
+
+    private fun fixChips(v: View) {   // a chip carries its section header in tag
+        val t = v.tag
+        if (t is View) v.visibility = if (t.visibility == View.VISIBLE) View.VISIBLE else View.GONE
+        if (v is ViewGroup) for (i in 0 until v.childCount) fixChips(v.getChildAt(i))
     }
 
     private fun findHeads(v: View, out: MutableList<Pair<String, View>>) {
@@ -284,6 +348,7 @@ class AppPages(private val act: SettingsActivity, private val sink: PageSink, pr
                 b.background = g
             } catch (_: Throwable) { }
             b.contentDescription = "Jump to " + name
+            b.tag = hd   // v0.17.80 (U5a): applyAdvanced hides the chip when its section is hidden
             b.setOnClickListener {
                 try {
                     var y = 0

@@ -1,0 +1,20 @@
+HANDOFF Jabra-Keyboard v0.17.80 (U5a, MODIFY)   [plan: HANDOFF_Jabra-Keyboard_v0.17.75_UI-Plan.txt]
+
+DONE + CURRENT VERSION
+- R3-R7, S1-S8 (0.17.75) | [x] U1 (0.17.76) | [x] U2 (0.17.77) | [x] U3 (0.17.78) | [x] U4 (0.17.79) | [x] U5a Basic/Advanced Typing + Look (0.17.80). CURRENT: 0.17.80. Apply zips in order (U1+U2, U3, U4, then this one).
+
+WHAT CHANGED (file: 1 line)
+- typing/SectionPlan.java NEW: level table (BASIC_KEYS / ADV_KEYS for Languages & layouts, Typing, Look), hasAdvanced(page) = typing + look, visible(advOn, adv, changed, forced), buttonText; pref app_adv (default OFF). Section name forwarded to ChangedPlan.sectionOf.
+- AppPages.kt: "Show advanced settings" button at page top, applyAdvanced(id) (hides advanced rows, empty sections, jump chips), reveal() shows a hidden target, show() re-applies.
+- tools/SectionPlanTest.java NEW: rules + every row key of the 3 groups (parsed from SettingsGroups.kt) has an entry.
+- app/build.gradle.kts 0.17.80, CHANGELOG.txt.
+
+CHECKS DONE
+bash tools/run_tests.sh = 142/142 green; bracket balance AppPages.kt.
+
+NOT TESTED (needs real use)
+Kotlin NOT compiled (S1-S8, U1-U5a): a red GitHub build log = FIX first. Phone: see CHANGELOG v0.17.80 list.
+
+NEXT STEP
+U5b (MODIFY, M): same for Layout & Size, Keys & Gestures, Clipboard & Tools, Tools & Panels, Data & About: finish the SectionPlan tables + hasAdvanced pages, collapsible section headers with remembered state (pref sec_open). Depends: U5a. Files: typing/SectionPlan.java, tools/SectionPlanTest.java, AppPages.kt (+ SettingsGroups.kt only if a section name changes). Extend the test regex scan to the other groups.
+Kickoff: Jabra-Keyboard step U5b. Mode: MODIFY. Previous version: v0.17.80. Attached: this HANDOFF + the UI-Plan HANDOFF + AppPages.kt, typing/SectionPlan.java, tools/SectionPlanTest.java. Goal: sections + basic/advanced on the other 5 pages, collapsible headers. Context: Done U1-U5a. Next: U6.
