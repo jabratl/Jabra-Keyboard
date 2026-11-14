@@ -1473,22 +1473,20 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
         t.maxLines = 2 + 2 * lv
         t.ellipsize = TextUtils.TruncateAt.END
         t.setPadding(dp(4), dp(6), dp(4), dp(2))
-        t.isClickable = true
-        try {   // soft tint while pressed (same as the cards)
+        // v0.18.6: the WHOLE row is the tap target (text, meta line, check box, empty space); the text view itself is no longer clickable
+        try {   // soft tint while pressed (same as the cards), now on the whole row
             val pr = android.graphics.drawable.GradientDrawable()
             pr.setColor(JabraTokens.withAlpha(try { JabraTokens.cardText(pf) } catch (_: Throwable) { Color.BLACK }, 0x1F))
             pr.cornerRadius = dp(JabraTokens.R_CARD).toFloat()
             val sl = android.graphics.drawable.StateListDrawable()
             sl.addState(intArrayOf(android.R.attr.state_pressed), pr)
             sl.addState(intArrayOf(), android.graphics.drawable.ColorDrawable(Color.TRANSPARENT))
-            t.foreground = sl
+            box.foreground = sl
         } catch (_: Throwable) { }
         val act: () -> Unit = {
             if (sel.isOn) { sel.toggle(item); confirmDel = false; refresh() } else pasteItem(item, false)   // same as the classic row
         }
-        t.setOnClickListener { try { host.feedback(t) } catch (_: Throwable) { }; act() }
-        val held = ClipHold.attach(t, clipHoldMs(), selOn, { sel.enterWith(item); confirmDel = false; refresh() }, { act() }, { try { host.feedback(t) } catch (_: Throwable) { } })
-        if (!held) t.setOnLongClickListener { if (sel.isOn) false else { sel.enterWith(item); confirmDel = false; refresh(); true } }
+        ClipHold.wire(box, clipHoldMs(), selOn, { sel.enterWith(item); confirmDel = false; refresh() }, { act() }, { try { host.feedback(box) } catch (_: Throwable) { } })   // v0.18.6: whole row (was: text only)
         mid.addView(t)
         try {   // meta line: kind tag | Aa (stored format) | 123 \u00B7 2x \u00B7 5m
             val tg = ClipLook.tag(ctx, pf, item.text)
@@ -1549,6 +1547,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
         if (!held) t.setOnLongClickListener {   // v0.2.5.3: long-press = select mode with this clip selected (old way, used when clip_hold = System)
             if (sel.isOn) false else { sel.enterWith(item); confirmDel = false; refresh(); true }
         }
+        ClipHold.wire(r, clipHoldMs(), selOn, { sel.enterWith(item); confirmDel = false; refresh() }, { act() }, { try { host.feedback(r) } catch (_: Throwable) { } })   // v0.18.6: tag / count / gaps of the classic row tap like the text (the text button keeps its own handling)
         t.textSize = 13f
         t.gravity = Gravity.START or Gravity.CENTER_VERTICAL
         t.maxLines = 2 + 2 * lv

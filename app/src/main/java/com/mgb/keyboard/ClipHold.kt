@@ -16,6 +16,18 @@ import com.mgb.keyboard.typing.HoldSelect
  * The old click listener stays on the view (TalkBack / keyboard clicks still work); a touch is fully handled here.
  */
 object ClipHold {
+    /**
+     * v0.18.6: make a WHOLE card / row the tap target (not only its text). Tap = [onTap] (paste, or toggle in select mode),
+     * hold = [onStart] (select mode) exactly like attach(); also keeps a plain click + system long-click as the fallback.
+     * Children that have their own click (pin, x, More, Aa) still get their touches first; plain text / meta lines / empty space fall through to [v].
+     */
+    fun wire(v: View, ms: Int, selectOn: Boolean, onStart: () -> Unit, onTap: () -> Unit, feedback: () -> Unit) {
+        v.isClickable = true
+        v.setOnClickListener { try { feedback() } catch (_: Throwable) { }; try { onTap() } catch (_: Throwable) { } }
+        val held = attach(v, ms, selectOn, onStart, onTap, feedback)
+        if (!held) v.setOnLongClickListener { if (selectOn) false else { try { onStart() } catch (_: Throwable) { }; true } }
+    }
+
     fun attach(v: View, ms: Int, selectOn: Boolean, onStart: () -> Unit, onTap: () -> Unit, feedback: () -> Unit): Boolean {
         if (!HoldSelect.isValid(ms)) return false
         return try {

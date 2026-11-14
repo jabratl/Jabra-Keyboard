@@ -128,16 +128,15 @@ object ClipCards {
         t.ellipsize = TextUtils.TruncateAt.END
         t.minLines = 2
         t.setPadding(dp(ctx, 8), dp(ctx, 6), dp(ctx, 8), dp(ctx, 2))
-        t.isClickable = true
-        try {   // v0.18: soft tint while the card is pressed (top corners rounded like the card)
+        // v0.18.6: the WHOLE card is the tap target (text, meta line, empty space); the text view itself is no longer clickable
+        try {   // v0.18: soft tint while the card is pressed (v0.18.6: on the whole card, all corners rounded)
             val pr = GradientDrawable()
             pr.setColor(JabraTokens.withAlpha(try { JabraTokens.cardText(pf!!) } catch (_: Throwable) { Color.BLACK }, 0x1F))
-            val rr = dp(ctx, JabraTokens.R_CARD).toFloat()
-            pr.cornerRadii = floatArrayOf(rr, rr, rr, rr, 0f, 0f, 0f, 0f)
+            pr.cornerRadius = dp(ctx, JabraTokens.R_CARD).toFloat()
             val sl = android.graphics.drawable.StateListDrawable()
             sl.addState(intArrayOf(android.R.attr.state_pressed), pr)
             sl.addState(intArrayOf(), android.graphics.drawable.ColorDrawable(Color.TRANSPARENT))
-            t.foreground = sl
+            box.foreground = sl
         } catch (_: Throwable) { }
         val act: () -> Unit = {   // v0.16.16 (E2): the tap action, shared by the click listener and the hold listener
             try { host.feedback(t) } catch (_: Throwable) { }
@@ -154,11 +153,7 @@ object ClipCards {
                 }
             } catch (_: Throwable) { }
         }
-        t.setOnClickListener { act() }
-        val held = ClipHold.attach(t, sm.holdMs, sm.on, { try { sm.onLong(item) } catch (_: Throwable) { } }, { act() }, { try { host.feedback(t) } catch (_: Throwable) { } })   // v0.16.16 (E2): hold = select mode
-        if (!held) t.setOnLongClickListener {   // v0.2.5.3: long-press = select mode with this clip selected (old way, used when clip_hold = System)
-            if (sm.on) false else { try { sm.onLong(item) } catch (_: Throwable) { }; true }
-        }
+        ClipHold.wire(box, sm.holdMs, sm.on, { try { sm.onLong(item) } catch (_: Throwable) { } }, { act() }, { try { host.feedback(box) } catch (_: Throwable) { } })   // v0.18.6: whole card (was: text only); hold = select mode, long-click fallback inside wire()
         t.layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f)
         box.addView(t)
         try {   // v0.17.60 (C5): long clip = small "More" under the text; tap opens the whole card in place (12 lines), "Less" closes it. New look only.
