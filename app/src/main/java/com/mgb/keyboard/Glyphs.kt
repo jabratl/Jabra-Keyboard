@@ -18,9 +18,9 @@ object Glyphs {
     private val LEAD = linkedMapOf(
         "🔍" to "search", "✕" to "close", "✓" to "tick", "↶" to "undo", "↕" to "sort",
         "★" to "pinned", "☆" to "pin", "☑" to "checkon", "☐" to "checkoff", "●" to "dot",
-        "⇧" to "shift", "✎" to "edit"
+        "⇧" to "shift", "✎" to "edit", "⚠" to "warn"
     )
-    private val SOLO = mapOf("◀" to "prev", "▶" to "next", "⌫" to "back", "␣" to "space", "⏎" to "enter", "⋯" to "more", "▴" to "up")
+    private val SOLO = mapOf("◀" to "prev", "▶" to "next", "⌫" to "back", "␣" to "space", "⏎" to "enter", "⋯" to "more", "▴" to "up", "▲" to "up", "▼" to "caret")
     /** Put this (a zero-width space) first in a label that is user content, so no sign in it is ever replaced. */
     val KEEP: String = 0x200B.toChar().toString()
     private const val TAIL = "▾"   // small down triangle = "opens a list"

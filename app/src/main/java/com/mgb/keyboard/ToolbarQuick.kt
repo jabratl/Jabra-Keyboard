@@ -98,6 +98,7 @@ object ToolbarEdit {
         val d = b.resources.displayMetrics.density
         val t = TextView(b.context)
         t.text = "✎  Edit shortcut"
+        Glyphs.dress(t)   // v0.17.72 (S5)
         t.textSize = 15f
         t.gravity = Gravity.CENTER
         t.setPadding((14 * d).toInt(), (10 * d).toInt(), (14 * d).toInt(), (10 * d).toInt())
@@ -321,6 +322,7 @@ class ToolbarQuickPanel(private val ctx: Context, private val host: JabraHost) {
 
         val nm = TextView(ctx)
         nm.text = (if (on) "✓ " else "+ ") + Toolbar.title(id)
+        Glyphs.dress(nm)   // v0.17.72 (S5): tick drawn; "+ " stays text
         nm.textSize = 9f
         nm.gravity = Gravity.CENTER
         nm.maxLines = 2

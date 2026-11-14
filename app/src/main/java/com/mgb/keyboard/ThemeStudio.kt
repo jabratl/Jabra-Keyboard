@@ -132,7 +132,7 @@ class ThemeStudio(private val ctx: Context, private val host: JabraHost) {
 
         // which colour is edited
         val fr = row()
-        for (i in 0..4) fr.addView(btn((if (field == i) "✓ " else "") + fieldNames[i], 1f, 32) { field = i; hexBuf = currentHex(); confirmReset = false; refresh() })
+        for (i in 0..4) fr.addView(Glyphs.dress(btn((if (field == i) "✓ " else "") + fieldNames[i], 1f, 32) { field = i; hexBuf = currentHex(); confirmReset = false; refresh() }))   // v0.17.72 (S5)
         root.addView(fr)
 
         // hex line
@@ -223,6 +223,7 @@ class ThemeStudio(private val ctx: Context, private val host: JabraHost) {
                 w.text = "\u26A0 Low contrast: letters hard to read (" + String.format(java.util.Locale.US, "%.1f", com.mgb.keyboard.typing.LookColors.contrast(draft.text, draft.key)) + ":1, want 4.5:1)"
                 w.textSize = 11f
                 w.setTextColor(Color.parseColor("#BF360C"))
+                Glyphs.dress(w)   // v0.17.72 (S5): drawn warning triangle
                 w.setPadding(dp(6), dp(1), dp(6), dp(1))
                 root.addView(w)
             }

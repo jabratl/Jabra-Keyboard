@@ -1521,7 +1521,8 @@ class MgbIme : InputMethodService() {
                 if (tb != null) root.addView(tb) else {   // v0.2.1: custom toolbar, else the old bar below
                 val eb = row()
                 try { if (prefs.bool("mode_key", true)) eb.addView(modeKey(barH())) } catch (_: Throwable) { }   // v0.1.2: first key of the edit bar
-                val items0 = arrayOf("📋" to "clip", "All" to "all", "Cut" to "cut", "Copy" to "copy", "Paste" to "paste", "Plain" to "plain")
+                val items0 = arrayOf("Clip" to "clip",   // v0.17.72 (S5): icons OFF = word, not emoji
+                     "All" to "all", "Cut" to "cut", "Copy" to "copy", "Paste" to "paste", "Plain" to "plain")
                 val items = if (prefs.bool("fmt_on", true)) items0 + ("Aa" to "fmt") else items0   // v0.0.8: formatter button (setting "fmt_on")
                 for ((label, kind) in items) {
                     val k = key(label, 1f) { if (kind == "clip") openClipboard() else if (kind == "fmt") openFormatter() else editAction(kind) }

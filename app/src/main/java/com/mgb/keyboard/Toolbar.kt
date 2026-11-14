@@ -25,7 +25,7 @@ object Toolbar {
     private const val KEY_H = 36   // dp, same height as the old edit bar
 
     fun label(id: String): String = when (id) {
-        "clip" -> "📋"; "all" -> "All"; "cut" -> "Cut"; "copy" -> "Copy"; "paste" -> "Paste"; "plain" -> "Plain"
+        "clip" -> "Clip"; "all" -> "All"; "cut" -> "Cut"; "copy" -> "Copy"; "paste" -> "Paste"; "plain" -> "Plain"
         "fmt" -> "Aa"; "mode" -> "PH"
         "emoji" -> "\u263A"; "numpad" -> "123"; "sym" -> "#+="; "gear" -> "\u2699"; "voice" -> "\uD83C\uDFA4"
         "globe" -> "\uD83C\uDF10"; "theme" -> "Th"; "onehand" -> "1H"; "size" -> "Sz"; "pad" -> "Pad"; "undo" -> "\u21B6"; "redo" -> "\u21B7"; "vault" -> "Vlt"; "tt" -> "Tt"; "profiles" -> "Pf"; "keymap" -> "Km"

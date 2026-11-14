@@ -39,6 +39,7 @@ object AppToolbarEditor {
             b.textSize = 13f
             b.isEnabled = enabled
             b.alpha = if (enabled) 1f else 0.4f
+            try { Glyphs.dress(b); b.contentDescription = desc } catch (_: Throwable) { }   // v0.17.72 (S5): drawn arrows, spoken name stays "Move X up"
             b.setOnClickListener { try { click() } catch (_: Throwable) { } }
             return b
         }

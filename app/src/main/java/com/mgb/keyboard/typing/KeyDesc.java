@@ -88,6 +88,7 @@ public final class KeyDesc {
             case "prev": return "Previous";
             case "next": return "Next";
             case "caret": return "Open list";
+            case "warn": return "Warning";
             case "edit": return "Edit";
             case "more": return "More options";
             case "up": return "Close menu";

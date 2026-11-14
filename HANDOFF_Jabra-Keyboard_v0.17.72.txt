@@ -1,0 +1,29 @@
+HANDOFF Jabra-Keyboard v0.17.72 (S5, MODIFY)   [paste this at the start of the next chat]
+
+DONE LIST + CURRENT VERSION
+- R3-R7 (0.17.63-67) export rename+ZIP, Home, jump bar, export folder, Clipboard menus. S1 (0.17.68) own icons. S2 (0.17.69) Ridmik grid. S3 (0.17.70) TAR export + classic swipe. S4 (0.17.71) Enter = search icon.
+- S5 (0.17.72): S1 leftovers done (Toolbar / MgbIme clip fallback, ToolbarQuick, AppToolbarEditor arrows, ThemeStudio tick + warning).
+- CURRENT: 0.17.72. Apply S1, S2, S3, S4, then S5 (S5 touches MgbIme.kt on top of S4).
+
+WHAT CHANGED (file: 1 line)
+- MgbIme.kt: old edit bar clip label "Clip" (no emoji).
+- Toolbar.kt: clip label "Clip".
+- JabraIcons.kt: new "warn" icon (triangle + !), in NAMES.
+- Glyphs.kt: warn sign, up / down triangles map to up / caret.
+- typing/KeyDesc.java: spoken name "Warning".
+- ToolbarQuick.kt: Glyphs.dress on "Edit shortcut" and tile names.
+- AppToolbarEditor.kt: Glyphs.dress on move arrows, desc kept.
+- ThemeStudio.kt: Glyphs.dress on field chips and low-contrast line.
+- app/build.gradle.kts 0.17.72. CHANGELOG.txt.
+
+CHECKS DONE
+bash tools/run_tests.sh = 137/137 green; bracket balance of the 7 Kotlin / Java files.
+
+NOT TESTED (needs real use)
+Kotlin NOT compiled (S1-S5): if GitHub build fails send the log -> FIX first. Phone: warn icon shape, arrows icon size + colour in the toolbar order editor, tick in Theme Studio chips + shortcut tiles, dark + light, 360 / 1280 dp, icons_on OFF = old text.
+
+KNOWN LIMITS
+- AppThemeStudio.kt (line ~126) warning text not changed. Ridmik shift-mode hints still need a NEW Ridmik shift screenshot. Number row default = user setting (ask user ON / OFF).
+
+NEXT STEP + GOAL
+S6 (FIX or MODIFY): phone test of S1-S5 and FIX from the build log; then AppThemeStudio sign, Ridmik shift hints (needs screenshot), number row default (needs answer).

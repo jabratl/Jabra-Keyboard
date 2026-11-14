@@ -1,3 +1,13 @@
+v0.17.72 - MODIFY (S5): last emoji / text signs replaced by the drawn icons (S1 leftovers)
+- Clip key of the edit bar (MgbIme.kt old bar, Toolbar.kt): label is now the word "Clip" (was the clipboard emoji); icon is drawn as before, Icons OFF = the word.
+- ToolbarQuick: "Edit shortcut" pencil and the "check" on the shortcut tiles are drawn icons ("+ " stays text).
+- AppToolbarEditor: move up / down arrows are drawn icons; spoken names ("Move X up") unchanged.
+- ThemeStudio: field chips tick and the low-contrast warning triangle are drawn icons.
+- Code: JabraIcons.kt (+ "warn" icon), Glyphs.kt (warn sign, up / down triangles), typing/KeyDesc.java ("Warning"), MgbIme.kt, Toolbar.kt, ToolbarQuick.kt, AppToolbarEditor.kt, ThemeStudio.kt. app/build.gradle.kts 0.17.72.
+- TESTED: bash tools/run_tests.sh = 137/137 green; bracket balance of the 7 files. NOT tested: Kotlin NOT compiled; icon shape of "warn" not rendered; phone: dark + light, 360 / 1280 dp, icons_on OFF = old text, arrows still move items.
+- NOT touched: AppThemeStudio.kt line 126 warning text (own screen).
+- Rollback: restore the 7 files from v0.17.71.
+
 v0.17.71 - MODIFY (S4): Enter key shows a search icon when the field asks for Search (Ridmik)
 - Custom and classic keyboard: the Enter key draws the search icon while the app field has the Search action (and setting "enter_action" is ON); every other field = the old return icon. Action itself is unchanged (doEnter). Updates on every new field (onStartInputView).
 - NOT done on purpose: Ridmik shift-mode hints (no Ridmik shift screenshot = the grid lock RidmikGridTest forbids guessing), number row default (stays the user's own setting; Ridmik ref had it OFF, no silent change).
