@@ -36,6 +36,10 @@ interface HintHost {
     fun avroHints(): Boolean = false
     /** v0.17.61 (R1): true = Bangla fixed (Probhat) in the Ridmik look shows + types its shift letter as the hint (default false = no hints). */
     fun probhatHints(): Boolean = false
+    /** v0.18.1: hold C / V / X = copy / paste / cut. true = the action was done (default false = old long-press). */
+    fun holdEdit(kind: String): Boolean = false
+    /** v0.18.1: true = password field (hold-edit never copies / cuts there). */
+    fun holdEditBlocked(): Boolean = false
 }
 
 object HintKeys {
@@ -53,6 +57,15 @@ object HintKeys {
         val r = Runnable {
             try {
                 val c = letterOf(b) ?: return@Runnable
+                try {   // v0.18.1: hold C / V / X = copy / paste / cut (pref hold_edit, default OFF; your own Long-press override for the letter wins)
+                    val ek = com.mgb.keyboard.typing.HoldEditPlan.actionFor(c, prefs.bool(com.mgb.keyboard.typing.HoldEditPlan.PREF, false), prefs.str("hint_custom", ""), host.holdEditBlocked())
+                    if (ek != null && host.holdEdit(ek)) {
+                        fired = true
+                        try { if (KeyCfg.popupOn(prefs)) KeyPopup.showText(b, com.mgb.keyboard.typing.HoldEditPlan.label(ek), prefs) } catch (_: Throwable) { }
+                        if (KeyCfg.hintBuzz(b)) host.hintFeedback(b)
+                        return@Runnable
+                    }
+                } catch (_: Throwable) { }
                 val isNum = HintStyle.isDigit(c)   // v0.8.6: number-row key (Bangla digit hint); language does not matter
                 if ((!isNum && !host.hintTypingActive()) || !prefs.bool("hint_on", true) || !HintStyle.typingOn(prefs.int("hint_mode", HintStyle.MODE_SMART), true)) return@Runnable   // v0.17.82 (U6): Off = no long-press typing
                 val hint = (if (isNum) HintStyle.digitHintFor(c, prefs.bool("hint_digits", false), prefs.bool("numrow_bn", false), host.banglaNumbers()) else hintOf(c, prefs.bool("numrow", true), prefs.str("hint_custom", ""), host)) ?: return@Runnable   // v0.5.2 (custom override first); v0.9.4: digitHintFor (numrow_bn)

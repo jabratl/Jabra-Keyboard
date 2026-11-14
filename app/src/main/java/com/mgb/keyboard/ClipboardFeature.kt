@@ -51,6 +51,7 @@ class ClipStore(private val prefs: JabraPrefs, private val fmt: ClipFmtStore? = 
             m.prune(l.view(""))
             prefs.setStr("clip_meta_v1", m.serialize())
             if (ctx != null) ClipFmtStore.pruneNow(ctx, l.view("").map { it.text })   // v0.17.39 (M6)
+            if (ctx != null) { try { ClipImages.clear(ctx) } catch (_: Throwable) { } }   // v0.18.1: copied images go with the history
             live?.reload()
             before - l.size()
         } catch (_: Throwable) { 0 }
@@ -286,7 +287,9 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
     }
 
     /** Returns null on any problem -> keyboard shows normal letters. */
-    fun build(): View? = try { make() } catch (_: Throwable) { null }
+    fun build(): View? = try { withImages(make()) } catch (_: Throwable) { null }
+    /** v0.18.1: copied images / screenshots on top of the panel (not on the edit / export screens; pref clip_img OFF = nothing added). */
+    private fun withImages(v: View): View = try { if (editing != null || exporting) v else ClipImages.wrap(ctx, v, JabraPrefs(ctx)) } catch (_: Throwable) { v }
 
     private fun make(): View {
         val restoreY = if (fromRefresh) keepY else -1   // v0.16.1 (X1)
@@ -320,7 +323,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
         top.addView(searchBtn)
         top.addView(btn("Add", 1.0f, 40) { addFromField() })   // v0.2.5.1: save the current field text as a clip
         val clearBtn = btn(if (confirmClear) "Sure? (unpinned)" else "Clear", 1.8f, 40) {
-            if (confirmClear) { keepUndo(store.recentView("")); store.clearUnpinned(); confirmClear = false } else confirmClear = true
+            if (confirmClear) { keepUndo(store.recentView("")); store.clearUnpinned(); try { ClipImages.clear(ctx) } catch (_: Throwable) { }; confirmClear = false } else confirmClear = true
             refresh()
         }
         if (confirmClear) clearBtn.textSize = fs(12f)   // v0.2.5.1: the button is a bit narrower now
@@ -567,7 +570,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
             }
             if (confirmClear) {
                 head.addView(small("Cancel") { confirmClear = false; refresh() })
-                head.addView(ClipBar.danger(pf, small("Yes, clear") { keepUndo(store.recentView("")); store.clearUnpinned(); confirmClear = false; refresh() }))   // v0.17.30 (UI6)
+                head.addView(ClipBar.danger(pf, small("Yes, clear") { keepUndo(store.recentView("")); store.clearUnpinned(); try { ClipImages.clear(ctx) } catch (_: Throwable) { }; confirmClear = false; refresh() }))   // v0.17.30 (UI6)
             } else {
                 if (undoBuf.isNotEmpty()) head.addView(small("↶ Undo") { doUndo() })
                 if (!selOn && !nlOn) {   // v0.17.58 (C3): new look moves Sort / View / Clear into the overflow tray

@@ -1,0 +1,29 @@
+HANDOFF Jabra-Keyboard v0.18.1 (U12: clipboard images + hold C/V/X, MODIFY)   [plan: HANDOFF_Jabra-Keyboard_v0.17.75_UI-Plan.txt]
+
+DONE + CURRENT VERSION
+- UI plan U1-U11 (0.18.0, zip applied before this) | [x] U12 = clipboard images + hold C / V / X (0.18.1). CURRENT: 0.18.1. Apply the 0.18.0 zip first, then this one.
+
+WHAT CHANGED (file: 1 line)
+- typing/HoldEditPlan.java (NEW): actionFor(letter, on, custom, password) -> copy / paste / cut; custom override wins; no copy / cut in password.
+- typing/ClipImgPlan.java (NEW): mime / ext, limits (8 images, 6 MB), file names, overflow, content:// text check.
+- ClipImages.kt (NEW): capture to cache/clip_img, list, clear, thumbnail strip (tap paste, hold delete), wrap(), pasteHook.
+- HintKeys.kt: HintHost.holdEdit / holdEditBlocked (default false) + hook at the start of the hold runnable.
+- MgbIme.kt: host overrides (-> editAction), image branch in captureClip, pasteImage (commitContent -> clipboard paste -> false), hook install in init.
+- ClipboardFeature.kt: build() adds the strip; the 3 clear places also clear images.
+- SettingsGroups.kt: rows hold_edit (Typing, default OFF) + clip_img (Clipboard, default ON); SectionPlan / HelpPlan / SettingsIndex: the 2 keys; res/xml/file_paths.xml: clip_img cache path.
+- tools/HoldEditPlanTest.java + tools/ClipImgPlanTest.java (NEW), app/build.gradle.kts 0.18.1, CHANGELOG.txt.
+
+CHECKS DONE
+bash tools/run_tests.sh = 145/145 green; bracket balance of changed .kt files.
+
+NOT TESTED
+Kotlin compile (no internet in that chat) -> a red GitHub build log = FIX first (tools/KOTLIN_CHECK.txt recipe). Phone: see CHANGELOG v0.18.1 list (screenshot thumbnail, paste in image-accepting apps, refusal note, delete, clear history, hold c / v / x, password field, panel height).
+
+KNOWN LIMITS / NEXT
+- Hold c / v / x does not show a "copy / paste / cut" small hint letter on the keys (hint drawing untouched). Possible next step.
+- Images are not auto-deleted by "Clip auto-delete" (only max 8 + Clear history). Possible next step.
+- If "Symbols / accents on hold" (lp_accents) is ON, it may take the hold of c before hold_edit; test and fix if so.
+
+NEXT STEP + GOAL
+S9 / U0 (FIX): phone test (CHECKLIST_SMOKE 40-48 + the new list in CHANGELOG v0.18.1) + GitHub build log. One bug = one fix version (0.18.2...).
+Kickoff: Jabra-Keyboard step U0. Mode: FIX. Previous version: v0.18.1. Attached: this HANDOFF + build log / screenshots. Context: Done: U1-U12. Next: fixes from the phone test.

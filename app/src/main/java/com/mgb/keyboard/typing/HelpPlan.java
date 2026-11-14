@@ -92,6 +92,8 @@ public final class HelpPlan {
             case "pc_chips": return "Shows shortcut chips (Ctrl+C, Ctrl+V ...) in the 4th PC row.";
             case "pc_chips_list": return "Up to 5 shortcuts with commas, e.g. Ctrl+A,Alt+F4. Empty = default.";
             case "key_press_anim": return "The key shrinks a little while pressed and springs back.";
+            case "hold_edit": return "Hold c = copy, v = paste, x = cut. Your own Long-press override for that letter wins.";
+            case "clip_img": return "Copied pictures and screenshots show on top of the clipboard. Tap = paste, hold = delete.";
             case "lp_punct": return "Hold , or . and slide over more symbols. Lift without moving = old long-press.";
             case "space_lang": return "Swipe left / right on space to switch language. Cursor drag on space turns off.";
             case "fb_down": return "Vibration / sound the moment your finger touches a letter or number key.";

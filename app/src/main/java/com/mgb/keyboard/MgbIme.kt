@@ -229,6 +229,8 @@ class MgbIme : InputMethodService() {
         override fun banglaNumbers(): Boolean = bangla && !latinOnly   // v0.9.4 (R4)
         override fun avroHints(): Boolean = avroHintsOn()   // v0.17.54 (M2)
         override fun probhatHints(): Boolean = pbHintsOn()   // v0.17.61 (R1)
+        override fun holdEdit(kind: String): Boolean = try { if (pcState.isPc() && pcState.meta() != 0) false else { editAction(kind); true } } catch (_: Throwable) { false }   // v0.18.1
+        override fun holdEditBlocked(): Boolean = pwdField   // v0.18.1
         override fun typeHint(s: String) { commitWord(); typeText(s) }
         override fun hintFeedback(v: View) { feedback(v) }
     }
@@ -304,10 +306,39 @@ class MgbIme : InputMethodService() {
             var t: String? = null   // v0.16.15 (E3): first item that has text (was: item 0 only)
             var html: String? = null   // v0.17.39 (M6): the html of that same item (null = plain)
             for (i in 0 until d.itemCount) { val s = try { d.getItemAt(i).coerceToText(this)?.toString() } catch (_: Throwable) { null }; if (!s.isNullOrBlank()) { t = s; html = try { d.getItemAt(i).htmlText } catch (_: Throwable) { null }; break } }
+            try { if (ClipImages.on(prefs) && ClipImages.capture(this, d) && (t == null || com.mgb.keyboard.typing.ClipImgPlan.isImageUriText(t))) return } catch (_: Throwable) { }   // v0.18.1: a copied image / screenshot is kept as a picture; its content:// address is not a text clip
             if (t == null) return
             clipStore.addCaptured(t, html)   // v0.16.15 (E3): texts longer than 2000 characters were dropped before (now up to 20000)
         } catch (_: Throwable) { }
     }
+
+    /** v0.18.1: paste a stored clipboard image. Stage 1: the editor takes the picture directly (commitContent); stage 2: put it on the system clipboard and paste; stage 3: false (the panel shows a short note). */
+    private fun pasteImage(f: java.io.File, mime: String): Boolean {
+        try {
+            if (pwdField) return false
+            commitWord()
+            val ic = currentInputConnection ?: return false
+            val ei = currentInputEditorInfo ?: return false
+            val uri = androidx.core.content.FileProvider.getUriForFile(this, packageName + ".fileprovider", f)
+            try {
+                val types = androidx.core.view.inputmethod.EditorInfoCompat.getContentMimeTypes(ei)
+                if (types.any { android.content.ClipDescription.compareMimeTypes(mime, it) }) {
+                    val info = androidx.core.view.inputmethod.InputContentInfoCompat(uri, android.content.ClipDescription("Jabra", arrayOf(mime)), null)
+                    val fl = if (android.os.Build.VERSION.SDK_INT >= 25) androidx.core.view.inputmethod.InputConnectionCompat.INPUT_CONTENT_GRANT_READ_URI_PERMISSION else 0
+                    if (androidx.core.view.inputmethod.InputConnectionCompat.commitContent(ic, ei, info, fl, null)) return true
+                }
+            } catch (_: Throwable) { }
+            try {
+                val cm = getSystemService(CLIPBOARD_SERVICE) as ClipboardManager
+                selfClipAt = System.currentTimeMillis()
+                cm.setPrimaryClip(ClipData.newUri(contentResolver, "Jabra", uri))
+                selfClipAt = System.currentTimeMillis()
+                if (ic.performContextMenuAction(android.R.id.paste)) return true
+            } catch (_: Throwable) { }
+        } catch (_: Throwable) { }
+        return false
+    }
+    init { try { ClipImages.pasteHook = { f, m -> pasteImage(f, m) } } catch (_: Throwable) { } }   // v0.18.1
 
     private fun clipText(): String? = try {
         val d = (getSystemService(CLIPBOARD_SERVICE) as ClipboardManager).primaryClip

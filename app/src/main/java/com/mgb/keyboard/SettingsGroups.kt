@@ -564,6 +564,7 @@ object SettingsGroups {
             toggle(g, "Long-press characters", "hint_on", true)
             toggle(g, "Accent letters on hold (é ñ ü ...)", "lp_accents", false)   // v0.17.46 (P3)
             toggle(g, "Symbols on hold of , and .", "lp_punct", false)   // v0.17.46 (P3)
+            toggle(g, "Hold C / V / X = Copy / Paste / Cut", "hold_edit", false)   // v0.18.1: OFF = old long-press hints; your own Long-press override wins
             toggle(g, "Key press animation", "key_press_anim", false)   // v0.17.48 (P5)
             textRow(g, "Long-press override", "hint_custom", "a=@,e=3 (letter=text, comma between)",   // v0.15.4 (N4): same cleaning as the keyboard Typing panel
                 { com.mgb.keyboard.typing.LongPressHints.normalizeCustom(it.replace('\n', ',')) }, "No a=@ pairs found")
@@ -739,6 +740,7 @@ object SettingsGroups {
             level(g, "Clip order", "clip_order", 0, com.mgb.keyboard.typing.ClipOrder.NAMES)   // v0.15.2 (N2): which group is shown first, List + Cards
             toggle(g, "Clip character count", "clip_count", true)   // v0.4.3
             level(g, "Clip auto-delete (unpinned)", "clip_expire", 0, com.mgb.keyboard.clip.ClipMeta.EXPIRE_NAMES)   // v0.4.3
+            toggle(g, "Show copied images (screenshots)", "clip_img", true)   // v0.18.1: thumbnails on top of the clipboard; tap = paste, hold = delete; OFF = none stored
             toggle(g, "Stay in clipboard after paste", "clip_stay", true)   // v0.17.37 (M4): OFF = old way, back to letters
             toggle(g, "Paste keeps format (card tap)", "clip_fmt_tap", true)   // v0.17.40 (M7): the Aa tag on a card does the other way
             toggle(g, "Clipboard new look", "clip_new_look", true)   // v0.17.58 (C3): OFF = exactly the old clipboard panel (panel_ui decides)

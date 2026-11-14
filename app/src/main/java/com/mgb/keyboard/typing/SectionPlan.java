@@ -27,14 +27,14 @@ public final class SectionPlan {
         // Keys & gestures
         "haptic", "sound", "key_popup", "learn_on", "ac_on", "sg_on", "key_globe", "key_voice", "key_emoji", "lp_delay",
         // Clipboard & tools
-        "clip_on", "clip_view", "clip_sort", "clip_count", "clip_expire", "clip_new_look", "clip_sens",
+        "clip_on", "clip_view", "clip_sort", "clip_count", "clip_expire", "clip_new_look", "clip_sens", "clip_img",
         // Tools & Panels
         "edit_bar", "tb_vault", "tb_custom", "fmt_on"
     };
     private static final String[] ADV_KEYS = {
         "bn_map", "lang_fav", "lang_order", "sp_preview", "sp_tick", "sp_anim", "sp_step", "tools_keep", "bn_hints", "bn_numpage",
         "pc_remember", "pc_real_mods", "pc_layer", "pc_frow", "pc_chips", "pc_chips_list",
-        "bs_word", "ds_tab", "lp_accents", "lp_punct", "key_press_anim", "hint_custom", "xrow_chars",
+        "bs_word", "ds_tab", "lp_accents", "lp_punct", "hold_edit", "key_press_anim", "hint_custom", "xrow_chars",
         "numrow_bn", "nr_hpct", "nr_mode", "nr_chars", "hint_hide", "hint_digits", "hint_size_lv", "hint_alpha_lv", "tb_tip",
         // v0.17.81 (U5b) Layout & size
         "row_gap", "kb_custom", "row_vgap", "fn_gap", "sp_wpct", "sp_hpct", "key_dots", "pb_home_gap", "oh_w_p", "oh_w_l",

@@ -1,0 +1,32 @@
+package com.mgb.keyboard.typing;
+
+/**
+ * v0.18.1: pure rules for "hold C = copy, hold V = paste, hold X = cut" (pref hold_edit, default OFF = nothing changes).
+ * Smart: your own "Long-press override" for that letter wins; Copy / Cut never run in a password field. No Android classes.
+ */
+public final class HoldEditPlan {
+    private HoldEditPlan() { }
+
+    public static final String PREF = "hold_edit";
+
+    /** "copy" / "paste" / "cut" for the letter, or null = the key keeps its normal long-press. */
+    public static String actionFor(char c, boolean on, String custom, boolean passwordField) {
+        if (!on) return null;
+        char k = Character.toLowerCase(c);
+        String a;
+        if (k == 'c') a = "copy";
+        else if (k == 'v') a = "paste";
+        else if (k == 'x') a = "cut";
+        else return null;
+        try { if (LongPressHints.customFor(k, custom == null ? "" : custom) != null) return null; } catch (Throwable e) { }
+        if (passwordField && !"paste".equals(a)) return null;
+        return a;
+    }
+
+    public static String label(String action) {
+        if ("copy".equals(action)) return "Copy";
+        if ("paste".equals(action)) return "Paste";
+        if ("cut".equals(action)) return "Cut";
+        return "";
+    }
+}
