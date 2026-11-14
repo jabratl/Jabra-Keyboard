@@ -1,0 +1,20 @@
+HANDOFF Jabra-Keyboard v0.17.81 (U5b, MODIFY)   [plan: HANDOFF_Jabra-Keyboard_v0.17.75_UI-Plan.txt]
+
+DONE + CURRENT VERSION
+- R3-R7, S1-S8 (0.17.75) | [x] U1 (0.17.76) | [x] U2 (0.17.77) | [x] U3 (0.17.78) | [x] U4 (0.17.79) | [x] U5a (0.17.80) | [x] U5b (0.17.81). CURRENT: 0.17.81. Apply zips in order (U1+U2, U3, U4, U5a, then this one).
+
+WHAT CHANGED (file: 1 line)
+- typing/SectionPlan.java: tables now cover all 6 row groups (ADV_PAGES = typing, look, layout, keys, clip, tools); collapse rules secId / isOpen / setOpen / headerText; pref sec_open = CLOSED sections only (default open).
+- AppPages.kt: applyAdvanced also folds / unfolds sections on every page (styleHead = arrow + tap + TalkBack state), openSectionOf (search / favourite opens a closed section), reveal uses it.
+- tools/SectionPlanTest.java: scans ALL groups of SettingsGroups.kt (every row key has an entry; every table key exists) + collapse tests.
+- app/build.gradle.kts 0.17.81, CHANGELOG.txt.
+
+CHECKS DONE
+bash tools/run_tests.sh = 142/142 green; bracket balance AppPages.kt.
+
+NOT TESTED (needs real use)
+Kotlin NOT compiled (S1-S8, U1-U5b): a red GitHub build log = FIX first. Phone: see CHANGELOG v0.17.81 list.
+
+NEXT STEP
+U6 (MODIFY, M 40%): KEY HINTS SMART. Goal: long-press hints readable on every theme, shown only where useful, ONE settings section "Hints" with a live preview. Files modify: typing/HintStyle.java, typing/LongPressHints.java, HintKeys.kt (HintDrawable only), CustomRows.kt (showHint 1 spot), SettingsGroups.kt (move rows into one section, keys unchanged), KeyboardPreview.kt (live hint sample). Read-only: JabraThemes.kt. New pref hint_mode Smart/Always/Off default Smart = today's behaviour (map hint_on / hint_hide, never delete them). See the UI-Plan HANDOFF section U6 for the rules.
+Kickoff: Jabra-Keyboard step U6. Mode: MODIFY. Previous version: v0.17.81. Attached: this HANDOFF + the UI-Plan HANDOFF + the files above. Goal: smart key hints. Context: Done U1-U5b. Next: U7.

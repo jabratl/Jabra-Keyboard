@@ -54,6 +54,7 @@ class AppPages(private val act: SettingsActivity, private val sink: PageSink, pr
     private var lastPage: String = ""
     private val forcedAdv = HashSet<View>()               // v0.17.80 (U5a): advanced rows opened on purpose (search hit / favourite) stay visible this session
     private val advButtons = HashMap<String, Button>()    // page id -> "Show advanced" button
+    private val HEAD_KEY = 0x4A5B0001   // v0.17.81 (U5b): setTag key "click listener already set" (tag ids must be > 0x00FFFFFF)
     private val jumpBars = HashMap<String, View>()        // page id -> jump bar (chips follow the section visibility)
 
     /** The column of an opened page (the Activity puts the preview card there on short two-pane screens). null = page not built yet. */
@@ -102,7 +103,7 @@ class AppPages(private val act: SettingsActivity, private val sink: PageSink, pr
         try {
             val t = target ?: return
             val pid = PagePlan.sanitize(id)
-            if (t.visibility != View.VISIBLE) { forcedAdv.add(t); applyAdvanced(pid) }   // v0.17.80 (U5a): a search hit / favourite always shows itself
+            if (!t.isShown) { openSectionOf(pid, t); if (t.visibility != View.VISIBLE) forcedAdv.add(t); applyAdvanced(pid) }   // v0.17.81 (U5b): also opens a closed section   // v0.17.80 (U5a): a search hit / favourite always shows itself
             val sv = scrolls[pid] ?: return
             val col = cols[pid] ?: return
             var done = false
@@ -278,31 +279,81 @@ class AppPages(private val act: SettingsActivity, private val sink: PageSink, pr
      */
     private fun applyAdvanced(id: String) {
         try {
-            if (!SectionPlan.hasAdvanced(id)) return
             val col = cols[id] ?: return
-            val on = JabraPrefs(act).bool(SectionPlan.PREF, false)
+            val prefs = JabraPrefs(act)
+            val on = prefs.bool(SectionPlan.PREF, false)
             var hidden = 0
-            for (r in sink.rows) {
-                if (PagePlan.pageOfGroup(r.group) != id || !SectionPlan.isAdvanced(r.key)) continue
-                val ch = try { r.changed() } catch (_: Throwable) { false }
-                val show = SectionPlan.visible(on, true, ch, forcedAdv.contains(r.view))
-                r.view.visibility = if (show) View.VISIBLE else View.GONE
-                if (!show) hidden++
+            if (SectionPlan.hasAdvanced(id)) {
+                for (r in sink.rows) {
+                    if (PagePlan.pageOfGroup(r.group) != id || !SectionPlan.isAdvanced(r.key)) continue
+                    val ch = try { r.changed() } catch (_: Throwable) { false }
+                    val show = SectionPlan.visible(on, true, ch, forcedAdv.contains(r.view))
+                    r.view.visibility = if (show) View.VISIBLE else View.GONE
+                    if (!show) hidden++
+                }
             }
+            val closed = prefs.str(SectionPlan.PREF_CLOSED, "")
             val heads = ArrayList<Pair<String, View>>()
             findHeads(col, heads)
-            for ((_, hd) in heads) {
+            for ((name, hd) in heads) {
                 val parent = hd.parent as? ViewGroup ?: continue
                 val bx = parent.getChildAt(parent.indexOfChild(hd) + 1) as? ViewGroup ?: continue
                 var any = false
                 for (i in 0 until bx.childCount) { val c = bx.getChildAt(i); if (c.tag != "secreset" && c.visibility == View.VISIBLE) any = true }
                 if (!any && bx.childCount == 0) continue   // not a row box (nothing to decide)
+                val open = SectionPlan.isOpen(closed, SectionPlan.secId(id, name))   // v0.17.81 (U5b): collapsed = card hidden, header stays
                 hd.visibility = if (any) View.VISIBLE else View.GONE
-                bx.visibility = if (any) View.VISIBLE else View.GONE
+                bx.visibility = if (any && open) View.VISIBLE else View.GONE
                 for (i in 0 until bx.childCount) { val c = bx.getChildAt(i); if (c.tag == "secreset") c.visibility = if (any) View.VISIBLE else View.GONE }
+                try { styleHead(id, name, hd, open) } catch (_: Throwable) { }
             }
             jumpBars[id]?.let { fixChips(it) }
             advButtons[id]?.let { b -> b.text = SectionPlan.buttonText(on, hidden); b.contentDescription = b.text }
+        } catch (_: Throwable) { }
+    }
+
+    /** v0.17.81 (U5b): section header = tap target with an arrow; the state is saved in pref sec_open (closed sections only). */
+    private fun styleHead(page: String, name: String, hd: View, open: Boolean) {
+        val tv = (hd as? ViewGroup)?.getChildAt(0) as? TextView
+        tv?.text = SectionPlan.headerText(name, open)
+        hd.minimumHeight = dp(AppTokens.TOUCH)
+        hd.contentDescription = name + ", " + (if (open) "expanded" else "collapsed")
+        if (hd.tag != null && hd.getTag(HEAD_KEY) == null) {
+            hd.setTag(HEAD_KEY, true)
+            hd.isClickable = true
+            hd.isFocusable = true
+            try { AppA11y.asButton(hd) } catch (_: Throwable) { }
+            hd.setOnClickListener {
+                try {
+                    val p = JabraPrefs(act)
+                    val sid = SectionPlan.secId(page, name)
+                    p.setStr(SectionPlan.PREF_CLOSED, SectionPlan.setOpen(p.str(SectionPlan.PREF_CLOSED, ""), sid, !SectionPlan.isOpen(p.str(SectionPlan.PREF_CLOSED, ""), sid)))
+                    applyAdvanced(page)
+                } catch (_: Throwable) { }
+            }
+        }
+    }
+
+    /** v0.17.81 (U5b): a search hit / favourite inside a closed section opens that section first. */
+    private fun openSectionOf(page: String, t: View) {
+        try {
+            val col = cols[page] ?: return
+            var v: View? = t
+            while (v != null && v !== col) {
+                val par = v.parent as? ViewGroup ?: return
+                val i = par.indexOfChild(v)
+                if (i > 0) {
+                    val h = par.getChildAt(i - 1)
+                    val tg = h.tag
+                    if (tg is String && tg.startsWith("sechead:")) {
+                        val p = JabraPrefs(act)
+                        val sid = SectionPlan.secId(page, tg.substring(8))
+                        if (!SectionPlan.isOpen(p.str(SectionPlan.PREF_CLOSED, ""), sid)) p.setStr(SectionPlan.PREF_CLOSED, SectionPlan.setOpen(p.str(SectionPlan.PREF_CLOSED, ""), sid, true))
+                        return
+                    }
+                }
+                v = par
+            }
         } catch (_: Throwable) { }
     }
 
