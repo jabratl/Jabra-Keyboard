@@ -74,13 +74,14 @@ object LayoutStore {
         prefs.int("bn_design", 0), prefs.bool("lp_accents", false), prefs.bool("lp_punct", false), prefs.int("nr_mode", 0), prefs.str("nr_chars", ""),
         prefs.int("nr_hpct", 100), prefs.bool("numrow_large", false), prefs.bool("pb_home_gap", false), prefs.int("bot_style", 0), prefs.bool("key_qm", false),
         prefs.bool("key_lang", true), prefs.bool("space_lang", false), prefs.bool("key_globe", false), prefs.bool("key_voice", false), prefs.bool("key_emoji", false),
-        prefs.int("sp_wpct", 100), prefs.int("sp_hpct", 100))
+        prefs.int("sp_wpct", 100), prefs.int("sp_hpct", 100), prefs.bool("numrow_bn", false))
 
     /** v0.17.6: today's keyboard (all the settings that shape it) as layout text. null = could not be built. */
     private fun buildDefaultText(ctx: Context, prefs: JabraPrefs): String? {
         val o = LayoutDefaults.Options()
         try { o.rowGap = prefs.bool("row_gap", true) } catch (_: Throwable) { }
         try { o.numRow = prefs.bool("numrow", true) } catch (_: Throwable) { }
+        try { o.numBn = prefs.bool("numrow_bn", false) } catch (_: Throwable) { }   // v0.17.74 (S7)
         try { o.keyDp = prefs.keyHeightDp(JabraPrefs.isLand(ctx)) } catch (_: Throwable) { }
         try { o.hints = prefs.bool("hint_on", true); o.hintCustom = prefs.str("hint_custom", "") } catch (_: Throwable) { }
         try { o.avroHints = prefs.bool("bn_hints", true) } catch (_: Throwable) { }   // v0.17.54 (M2)

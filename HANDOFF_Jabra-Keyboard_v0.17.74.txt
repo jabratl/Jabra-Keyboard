@@ -1,0 +1,26 @@
+HANDOFF Jabra-Keyboard v0.17.74 (S7, MODIFY)   [paste this at the start of the next chat]
+
+DONE LIST + CURRENT VERSION
+- R3-R7 (0.17.63-67), S1 (0.17.68) icons, S2 (0.17.69) Ridmik grid, S3 (0.17.70) TAR export + classic swipe, S4 (0.17.71) Enter = search icon, S5 (0.17.72) last signs -> icons, S6 (0.17.73) FIX number row toggle (settings signature rebuild).
+- S7 (0.17.74): Bangla fixed, Number row OFF: swipe up on row 1 = digit.
+- CURRENT: 0.17.74. Apply S1..S6 zips, then this one (S7 is on top of S6: LayoutStore.kt).
+
+WHAT CHANGED (file: 1 line)
+- layout/LayoutDefaults.java: Options.numBn; pb row 1 keys get hidden swipe-up digit when pbRidmik and numRow OFF.
+- LayoutStore.kt: o.numBn from pref numrow_bn; numrow_bn added to the settings signature.
+- tools/RidmikGridTest.java: 7 checks for the digit swipe (off / on / Bangla digits / row 2).
+- app/build.gradle.kts 0.17.74. CHANGELOG.txt.
+
+CHECKS DONE
+bash tools/run_tests.sh = 138/138 green.
+
+NOT TESTED (needs real use)
+Kotlin NOT compiled (S1-S7): if GitHub build fails send the log -> FIX first. Phone: Number row OFF -> Bangla fixed row 1 swipe up = digit, hold = shift letter, tap = letter; numrow_bn ON = Bangla digits; Number row ON = no change; first start rebuilds the layout once.
+
+KNOWN LIMITS
+- Only the Ridmik look (bn_design 0) and only the custom keyboard path. Classic path / "original design" have no digit swipe. English + Avro already type digits on hold when Number row is OFF.
+- A layout EDITED in the layout editor is not rebuilt: app > Rebuild layout from current settings.
+- Do NOT change the Ridmik grid without a NEW Ridmik reference (RidmikGridTest).
+
+NEXT STEP + GOAL
+S8: phone test of S1-S7 and FIX from the build log (send log / screenshots). Open: Ridmik shift-mode hints (needs a Ridmik shift screenshot), AppThemeStudio.kt warning sign, mixed skin tone emoji (optional, big).

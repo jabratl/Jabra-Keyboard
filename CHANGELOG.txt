@@ -1,3 +1,12 @@
+v0.17.74 - MODIFY (S7): Bangla fixed (Ridmik look) with Number row OFF: swipe up on row 1 types the digit
+- Number row OFF: swipe up on the 10 keys of row 1 types 1 2 3 4 5 6 7 8 9 0 (Bangla digits when setting "Bangla digits on the number row" numrow_bn is ON). Hold = the shift letter (hint top right) exactly as before, tap unchanged, grid and hints unchanged (Ridmik look kept). The swipe is hidden (no extra label).
+- Number row ON: nothing changes (no digit swipe).
+- A changed numrow_bn also rebuilds the unedited default layout (S6 signature).
+- Layout EDITED in the editor: not rebuilt, use app > Rebuild layout from current settings.
+- Code: layout/LayoutDefaults.java (Options.numBn, row-1 swipe in the pb branch), LayoutStore.kt (numBn from numrow_bn + in the signature), tools/RidmikGridTest.java (7 new checks incl. Bangla digits, row 2 / number row ON = no swipe). app/build.gradle.kts 0.17.74.
+- TESTED: bash tools/run_tests.sh = 138/138 green. NOT tested: Kotlin NOT compiled (LayoutStore.kt); phone: Number row OFF -> swipe up on q..p types digits in Bangla fixed, hold still types shift letter, tap types the letter, numrow_bn ON = Bangla digits, Number row ON = no swipe; swipe distance feels OK.
+- Rollback: restore LayoutDefaults.java, LayoutStore.kt, RidmikGridTest.java from v0.17.73.
+
 v0.17.73 - FIX (S6): Number row toggle (and other layout settings) did nothing on the custom keyboard
 - SEEN: Number row switched OFF / ON in settings, but the row stayed gone (or stayed).
 - ROOT CAUSE: the custom keyboard is a stored layout built ONCE from the settings (LayoutDefaults: number row layer only when numrow was ON at build time). A later toggle never rebuilt it (only the app button "Rebuild layout from current settings" did). The S2 rebuild (BUILT_VERSION 4) baked whatever numrow was at that moment.

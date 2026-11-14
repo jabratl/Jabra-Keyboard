@@ -37,6 +37,7 @@ public final class LayoutDefaults {
         public boolean pbHomeGap = false;      // pb_home_gap
         public int botStyle = 0;               // bot_style 0 old / 1 Ridmik-like
         public boolean qmShown = false;        // key_qm
+        public boolean numBn = false;          // numrow_bn (v0.17.74 S7): digits typed by the Bangla fixed row-1 swipe-up (number row OFF) are Bangla digits
         public boolean pbRidmik = true;        // v0.17.69 (S2) bn_design 0: Bangla fixed (pb) in the Ridmik grid: bare sign keys, shift letters as hints, 9-key home row centered
         public boolean keyLang = true;         // EN key visible (key_lang, or space_lang OFF)
         public boolean keyGlobe = false, keyVoice = false, keyEmoji = false;
@@ -184,6 +185,8 @@ public final class LayoutDefaults {
                 if (!ln.equals(k.out[0])) k.label[0] = ln;
                 if (!ls.equals(k.out[1])) k.label[1] = ls;
                 if (rd && o.hints && !k.out[1].equals(k.out[0])) k.lp = k.out[1];
+                if (rd && !o.numRow && "qwertyuiop".equals(letters))   // v0.17.74 (S7): number row OFF = hidden swipe-up on row 1 types the digit (hold stays the shift letter)
+                    k.sw[0] = com.mgb.keyboard.typing.HintStyle.digitLabel("1234567890".charAt(i), o.numBn, true);
             } else if (english && o.hints) {
                 String h = LongPressHints.hintFor(c, o.numRow, o.hintCustom);
                 if (h != null) k.lp = h;

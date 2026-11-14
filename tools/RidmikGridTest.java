@@ -67,6 +67,17 @@ public class RidmikGridTest {
         for (KeyDef k : m.effectiveRows("pb").get(3).keys) if ("b_lang".equals(k.id)) hasLang = true;
         eq("bottom row has no b_lang", hasLang, false);
 
+        // v0.17.74 (S7): number row OFF = hidden swipe-up digit on row 1 (hold stays the shift letter); number row ON = no digit swipe
+        List<KeyDef> r1k = chars(rows.get(0));
+        eq("S7 swipe-up digit on q (number row off)", r1k.get(0).sw[0], "1");
+        eq("S7 swipe-up digit on p (number row off)", r1k.get(9).sw[0], "0");
+        eq("S7 hold is still the shift letter", r1k.get(0).lp, "ধ");
+        eq("S7 no swipe on row 2 keys", chars(rows.get(1)).get(0).sw[0], "");
+        LayoutDefaults.Options bn = new LayoutDefaults.Options(); bn.numRow = false; bn.keyLang = false; bn.numBn = true;
+        eq("S7 Bangla digit when numrow_bn", chars(LayoutDefaults.build(bn).effectiveRows("pb").get(0)).get(0).sw[0], "১");
+        eq("S7 Bangla zero", chars(LayoutDefaults.build(bn).effectiveRows("pb").get(0)).get(9).sw[0], "০");
+        LayoutDefaults.Options on = new LayoutDefaults.Options(); on.numRow = true; on.keyLang = false;
+        eq("S7 number row ON: no digit swipe", chars(LayoutDefaults.build(on).effectiveRows("pb").get(1)).get(0).sw[0], "");
         // original design switch keeps the old dotted look
         LayoutDefaults.Options old = new LayoutDefaults.Options(); old.numRow = false; old.pbRidmik = false;
         eq("original design: dotted circle back", LayoutDefaults.build(old).effectiveRows("pb").get(0).keys.get(1).label[0].contains("◌"), true);
