@@ -161,4 +161,78 @@ public final class HomePlan {
         if (st == ST_BACKUP) return backupNote == null ? "" : backupNote;
         return "";
     }
+
+    // ---- v0.17.83 (U7): search + navigation polish ----
+    /** What the Back button does: BACK_HOME = a page is open (one pane) -> Home; BACK_CLEAR_SEARCH = clear the search first; BACK_SYSTEM = leave as before. */
+    public static final int BACK_SYSTEM = 0, BACK_CLEAR_SEARCH = 1, BACK_HOME = 2;
+    /** Words offered when a search finds nothing (each one must find rows; HomePlanTest checks them against SettingsIndex). */
+    public static final String[] SUGGEST = {"vibrate", "theme", "height", "gap", "hint", "clipboard"};
+
+    /** The search area is in use = a text is typed or the Changed filter is on. */
+    public static boolean searchActive(String query, boolean changedOnly) {
+        return changedOnly || (query != null && !query.trim().isEmpty());
+    }
+
+    /**
+     * Back order: a page open on one pane = Home first (the search stays as it was); then (Home, or two panes) an active search is cleared; then the system.
+     * [onPage] = one pane and a page (not Home) is shown.
+     */
+    public static int backStep(boolean searchActive, boolean onPage) {
+        if (onPage) return BACK_HOME;
+        return searchActive ? BACK_CLEAR_SEARCH : BACK_SYSTEM;
+    }
+
+    private static List<Group> groupAll(List<SettingsIndex.Entry> list) {
+        List<Group> out = new ArrayList<>();
+        int left = MAX_RESULTS;
+        for (String page : PagePlan.ORDER) {
+            if (left <= 0) break;
+            Group g = new Group(page);
+            for (SettingsIndex.Entry e : list) {
+                if (left <= 0) break;
+                if (!page.equals(pageOf(e))) continue;
+                g.items.add(e);
+                left--;
+            }
+            if (!g.items.isEmpty()) out.add(g);
+        }
+        return out;
+    }
+
+    /**
+     * Search with the optional "Changed" filter. changedOnly OFF = searchByPage. ON = only rows whose key is in [changedKeys];
+     * an empty query then lists all of them (page order), a text narrows them (same word rule as the normal search).
+     */
+    public static List<Group> searchFiltered(List<SettingsIndex.Entry> all, String query, Collection<String> changedKeys, boolean changedOnly) {
+        if (!changedOnly) return searchByPage(all, query);
+        List<SettingsIndex.Entry> kept = new ArrayList<>();
+        if (all != null && changedKeys != null) for (SettingsIndex.Entry e : all) if (e != null && changedKeys.contains(e.key)) kept.add(e);
+        if (query == null || query.trim().isEmpty()) return groupAll(kept);
+        return searchByPage(kept, query);
+    }
+
+    /** Label of the filter chip: "Changed (N)". */
+    public static String chipLabel(int n) { return "Changed (" + Math.max(0, n) + ")"; }
+
+    /** Line above the results (filter aware). n > 0 = "N settings" (+ " changed" when the filter is on). */
+    public static String resultLine(int n, String query, boolean changedOnly) {
+        if (n > 0) return changedOnly ? (n == 1 ? "1 changed setting" : n + " changed settings") : resultLine(n, query);
+        return emptyTitle(query, changedOnly);
+    }
+
+    /** Empty state, line 1. */
+    public static String emptyTitle(String query, boolean changedOnly) {
+        String q = query == null ? "" : query.trim();
+        if (changedOnly && q.isEmpty()) return "Nothing changed from default yet.";
+        if (changedOnly) return "No changed setting matches \u201C" + q + "\u201D.";
+        return "No setting found for \u201C" + q + "\u201D.";
+    }
+
+    /** Empty state, line 2 (before the suggestion chips). */
+    public static String emptyHelp(String query, boolean changedOnly) {
+        boolean noText = query == null || query.trim().isEmpty();
+        if (changedOnly && noText) return "Settings you change will be listed here.";
+        if (changedOnly) return "Turn off \u201CChanged\u201D to search all settings, or try:";
+        return "Try one of these words:";
+    }
 }

@@ -20,6 +20,7 @@ class SettingsActivity : Activity() {
     var refreshData: (() -> Unit)? = null   // v0.4.1 Data & Backup page hooks
     var dataMsg: ((String) -> Unit)? = null
     private val pvLink = PreviewLink()   // v0.10.25: live preview card <-> settings groups
+    private var searchView: AppSearchView? = null   // v0.17.83 (U7): Back clears an active search before the screen closes
     private var appPages: AppPages? = null   // v0.11.0 (M1): new app screen (pref app_ui = 1); null = old accordion screen
     private var homeRefresh: (() -> Unit)? = null
     private var pvCardView: View? = null
@@ -43,7 +44,7 @@ class SettingsActivity : Activity() {
                 val nv = buildNewUi(savedInstanceState)
                 if (nv != null) { setContentView(nv); return }
             } catch (_: Throwable) { }
-            appPages = null; homeRefresh = null; pvCardView = null; wizardRefresh = null
+            appPages = null; homeRefresh = null; pvCardView = null; wizardRefresh = null; searchView = null
             try { pvLink.changed = null; pvLink.refreshRows = null } catch (_: Throwable) { }
         }
         val col = LinearLayout(this)
@@ -216,6 +217,7 @@ class SettingsActivity : Activity() {
         val pvMode = com.mgb.keyboard.typing.HomePlan.previewMode(two, hDp)
         val setup = setupSlot()
         val search = try { AppSearch.build(this, sink) { id, v -> appPages?.reveal(id, v) } } catch (_: Throwable) { null }   // no search = Home without it
+        searchView = search   // v0.17.83 (U7)
         val home = AppHome.build(this, setup, pvLink, search, { sink.rows.map { r -> Pair(r.group, try { r.changed() } catch (_: Throwable) { false }) } }) { id -> appPages?.show(id) }   // v0.17.79 (U4): rows -> tile badges
         homeRefresh = home.refresh
         val pages = AppPages(this, sink, home.view, { buildAbout() }, two, { switchToOldScreen() }) { id ->
@@ -293,6 +295,12 @@ class SettingsActivity : Activity() {
 
     @Deprecated("Deprecated in Java")
     override fun onBackPressed() {   // v0.11.0 (M1): Back on a page = Home; on Home (or the old screen) = as before
+        try {   // v0.17.83 (U7): order = page -> Home, then an active search is cleared, then the system (HomePlan.backStep)
+            val sv = searchView
+            val step = com.mgb.keyboard.typing.HomePlan.backStep(try { sv?.searchOn?.invoke() == true } catch (_: Throwable) { false }, appPages?.onPage() == true)
+            if (step == com.mgb.keyboard.typing.HomePlan.BACK_HOME) { if (appPages?.back() == true) return }
+            else if (step == com.mgb.keyboard.typing.HomePlan.BACK_CLEAR_SEARCH) { if (sv?.clearSearch?.invoke() == true) return }
+        } catch (_: Throwable) { }
         try { if (appPages?.back() == true) return } catch (_: Throwable) { }
         @Suppress("DEPRECATION")
         super.onBackPressed()

@@ -87,6 +87,9 @@ class AppPages(private val act: SettingsActivity, private val sink: PageSink, pr
         }
     }
 
+    /** v0.17.83 (U7): one pane and a page (not Home) is shown = Back goes to Home first. */
+    fun onPage(): Boolean = !twoPane && current != PagePlan.HOME
+
     /** true = Back was used here (a page was closed). false = already on Home (or two panes: no Home page), the system handles Back. */
     fun back(): Boolean {
         if (twoPane || current == PagePlan.HOME) return false

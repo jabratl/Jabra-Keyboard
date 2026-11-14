@@ -1,0 +1,29 @@
+HANDOFF Jabra-Keyboard v0.17.84 (U7 + U8 in ONE zip, MODIFY)   [plan: HANDOFF_Jabra-Keyboard_v0.17.75_UI-Plan.txt - send it with the next step]
+
+DONE + CURRENT VERSION
+- R3-R7, S1-S8 (0.17.75) | [x] U1 (0.17.76) | [x] U2 (0.17.77) | [x] U3 (0.17.78) | [x] U4 (0.17.79) | [x] U5a (0.17.80) | [x] U5b (0.17.81) | [x] U6 (0.17.82) | [x] U7 (0.17.83) | [x] U8 (0.17.84). CURRENT: 0.17.84.
+- Apply zips in order (... U6 = 0.17.82, then this one: it contains U7 + U8 together; CHANGELOG has both entries).
+
+WHAT CHANGED (file: 1 line)
+- typing/HomePlan.java: U7 rules = searchActive, backStep (BACK_HOME / BACK_CLEAR_SEARCH / BACK_SYSTEM), searchFiltered (Changed filter), chipLabel, resultLine(3 args), emptyTitle, emptyHelp, SUGGEST words.
+- AppSearch.kt: "Changed (N)" chip (after the results view in the search box = stays in the sticky line), filtered results, empty state with word chips, AppSearchView.clearSearch + searchOn (optional ctor params).
+- AppPages.kt: onPage() (one pane + page shown).
+- SettingsActivity.kt: searchView field; onBackPressed order page -> Home, clear search, system.
+- typing/WizardPlan.java: U8 steps ENABLE, CHOOSE, LANGUAGE, THEME, TEST, DONE (5 steps), 5-arg step(), text/button(step, tried), failText, secondary, layoutIndex/layoutValue, nextTheme. Old 3-arg step() kept.
+- AppWizard.kt: Language chips (bn_layout), Theme chip (theme), fail line, Skip / Choose again, "Try again" state. New prefs wiz_lang, wiz_theme (bool, false).
+- tools/HomePlanTest.java (523 checks), tools/WizardPlanTest.java (70 checks), app/build.gradle.kts 0.17.84, CHANGELOG.txt.
+
+CHECKS DONE
+bash tools/run_tests.sh = 142/142 green; Kotlin compile of ALL sources (tools/KOTLIN_CHECK.txt recipe): 0 errors in the changed Kotlin files (only error in the tree: Updater.kt GITHUB_REPO = my BuildConfig stub, unrelated); AppDesignLintTest baseline unchanged (no new hard-coded text sizes / colours).
+
+NOT TESTED (needs real use)
+Phone: see CHANGELOG v0.17.83 + v0.17.84 lists. Main ones: Changed chip + count + empty state at 360 / 1280 dp dark + light; Back order (page -> Home -> clear search -> exit, two-pane too); fresh-install wizard 5 steps, Skip, Try again, Choose again; progress line wrap at 360 dp. Render at 360 / 1280 dp, dark + light was NOT done here (no screen). A red GitHub build log = FIX first.
+
+KNOWN LIMITS
+- Recent search WORDS were not added (recent = the existing recently-changed chips). Suggestion words are fixed (HomePlan.SUGGEST).
+- Theme step = tap-to-cycle chip (picture grid = U9).
+- SettingsActivity.buildSetupCard (plain setup card when the wizard is not wanted) NOT changed.
+
+NEXT STEP + GOAL
+U9 (MODIFY, plan section 5): LOOK PAGE + THEME STUDIO. Goal: choose a theme visually (cards with a mini keyboard), warnings readable, preview pinned. Files: AppThemeStudio.kt, PreviewCard.kt, AppPages.kt (pinPreview). Depends U2.
+Kickoff: Jabra-Keyboard step U9. Mode: MODIFY. Previous version: v0.17.84. Attached: this HANDOFF + the UI-Plan HANDOFF + AppThemeStudio.kt, PreviewCard.kt, AppPages.kt. Context: Done U1-U8. Next: U10.

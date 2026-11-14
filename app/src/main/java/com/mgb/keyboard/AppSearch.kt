@@ -22,7 +22,7 @@ import com.mgb.keyboard.typing.SettingsIndex
 
 /** v0.13.0 (M3): [view] = search box + results (goes under the header of Home), [lists] = recently changed + changed from default (goes at the end of Home),
  *  [bindRest] = the other Home views that are hidden while a search text is typed, [refresh] = rebuild the lists (Home shown again / a setting changed). */
-class AppSearchView(val view: View, val lists: View, val favs: View, val bindRest: (List<View>) -> Unit, val refresh: () -> Unit)   // v0.15.0 (M5): favs = pinned settings (Home puts it right under the search box)
+class AppSearchView(val view: View, val lists: View, val favs: View, val bindRest: (List<View>) -> Unit, val refresh: () -> Unit, val clearSearch: () -> Boolean = { false }, val searchOn: () -> Boolean = { false })   // v0.17.83 (U7): clearSearch = Back clears the typed text / the Changed filter first (true = something was cleared)   // v0.15.0 (M5): favs = pinned settings (Home puts it right under the search box)
 
 /**
  * v0.13.0 (M3 of the "App UI" plan): ONE search for all settings on Home, grouped by page. Tap a result = open its page, scroll to the row, flash it.
@@ -57,6 +57,13 @@ object AppSearch {
         results.visibility = View.GONE
         box.addView(results)
 
+        // ---- v0.17.83 (U7): "Changed (N)" filter chip. It sits AFTER the results in the box, so AppHome (moves child 1 = results) leaves it in the sticky search line ----
+        var changedOnly = false
+        val chipRow = LinearLayout(act)
+        chipRow.orientation = LinearLayout.HORIZONTAL
+        chipRow.setPadding(0, dp(AppTokens.S1), 0, 0)
+        box.addView(chipRow)
+
         val lists = LinearLayout(act)
         lists.orientation = LinearLayout.VERTICAL
 
@@ -66,6 +73,29 @@ object AppSearch {
 
         var rest: List<View> = emptyList()
         var changedOpen = false
+
+        fun changedKeys(): Set<String> {   // v0.17.83 (U7)
+            val out = HashSet<String>()
+            for (r in sink.rows) { try { if (r.changed()) out.add(r.key) } catch (_: Throwable) { } }
+            return out
+        }
+        fun isActive(): Boolean = HomePlan.searchActive(field.text?.toString() ?: "", changedOnly)
+
+        var onChip: () -> Unit = { }
+        fun drawChip() {   // v0.17.83 (U7): one toggle pill, selected = filter ON
+            safe {
+                chipRow.removeAllViews()
+                val n = changedKeys().size
+                val chip = AppUi.pill(act, HomePlan.chipLabel(n), changedOnly)
+                chip.minHeight = dp(AppTokens.TOUCH)
+                chip.isClickable = true
+                chip.isFocusable = true
+                chip.contentDescription = HomePlan.chipLabel(n) + (if (changedOnly) ", on" else ", off")
+                AppA11y.asButton(chip)
+                chip.setOnClickListener { safe { changedOnly = !changedOnly; drawChip(); onChip() } }
+                chipRow.addView(chip, LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT))
+            }
+        }
 
         fun hideKeyboard() {
             safe { (act.getSystemService(android.content.Context.INPUT_METHOD_SERVICE) as InputMethodManager).hideSoftInputFromWindow(field.windowToken, 0) }
@@ -162,19 +192,48 @@ object AppSearch {
 
         fun renderResults(q: String) {
             results.removeAllViews()
-            if (q.trim().isEmpty()) { setActive(false); return }
+            if (!HomePlan.searchActive(q, changedOnly)) { setActive(false); return }   // v0.17.83 (U7): the Changed filter alone also opens the results
             setActive(true)
             val entries = ArrayList<SettingsIndex.Entry>()
             for (r in sink.rows) entries.add(SettingsIndex.Entry(r.key, r.title, r.help, r.group))
-            val groups = HomePlan.searchByPage(entries, q)
+            val groups = HomePlan.searchFiltered(entries, q, if (changedOnly) changedKeys() else null, changedOnly)
             val n = HomePlan.count(groups)
             val info = TextView(act)
-            info.text = HomePlan.resultLine(n, q)
+            info.text = HomePlan.resultLine(n, q, changedOnly)
             info.textSize = 12f
             safe { info.setTextColor(AppUi.dim(act)) }
             info.setPadding(0, dp(AppTokens.S2), 0, 0)
             info.importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_YES
             results.addView(info)
+            if (n == 0) {   // v0.17.83 (U7): empty state = what to do next + tap-to-search words
+                val help = TextView(act)
+                help.text = HomePlan.emptyHelp(q, changedOnly)
+                help.textSize = AppTokens.T_CAPTION.toFloat()
+                safe { help.setTextColor(AppUi.dim(act)) }
+                help.setPadding(0, dp(AppTokens.S1), 0, dp(AppTokens.S1))
+                results.addView(help)
+                if (!(changedOnly && q.trim().isEmpty())) {
+                    val sc = HorizontalScrollView(act)
+                    sc.isHorizontalScrollBarEnabled = false
+                    val row = LinearLayout(act)
+                    row.orientation = LinearLayout.HORIZONTAL
+                    for (w in HomePlan.SUGGEST) {
+                        val c = AppUi.pill(act, w, false)
+                        c.minHeight = dp(AppTokens.TOUCH)
+                        c.isClickable = true
+                        c.isFocusable = true
+                        c.contentDescription = "Search " + w
+                        AppA11y.asButton(c)
+                        c.setOnClickListener { safe { field.setText(w); field.setSelection(w.length) } }
+                        val lp = LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+                        lp.rightMargin = dp(AppTokens.S2)
+                        row.addView(c, lp)
+                    }
+                    sc.addView(row)
+                    results.addView(sc)
+                }
+                return
+            }
             for (g in groups) {
                 results.addView(label(PagePlan.title(g.page), true))
                 for (e in g.items) {
@@ -183,6 +242,9 @@ object AppSearch {
                 }
             }
         }
+
+        onChip = { safe { renderResults(field.text?.toString() ?: "") } }
+        drawChip()
 
         field.addTextChangedListener(object : TextWatcher {
             override fun afterTextChanged(s: Editable?) { safe { renderResults(s?.toString() ?: "") } }
@@ -263,13 +325,31 @@ object AppSearch {
         refreshLists()
         onFav = {
             safe { refreshLists() }
-            safe { if (field.text.toString().trim().isNotEmpty()) renderResults(field.text.toString()) }   // stars in open results follow
+            safe { if (isActive()) renderResults(field.text.toString()) }   // stars in open results follow
         }
 
-        return AppSearchView(box, lists, favs, { l -> rest = l; safe { setActive(field.text.toString().trim().isNotEmpty()) } }) {
-            safe { refreshLists() }
-            safe { if (field.text.toString().trim().isNotEmpty()) renderResults(field.text.toString()) }   // values / dots in open results follow
+        // v0.17.83 (U7): Back on Home with a search in use = clear it (text + Changed filter), close the keyboard, show Home again
+        val clear: () -> Boolean = {
+            var did = false
+            safe {
+                if (isActive()) {
+                    did = true
+                    changedOnly = false
+                    field.setText("")   // the TextWatcher re-renders (= closes the results)
+                    renderResults("")
+                    drawChip()
+                    hideKeyboard()
+                    field.clearFocus()
+                }
+            }
+            did
         }
+
+        return AppSearchView(box, lists, favs, { l -> rest = l; safe { setActive(isActive()) } }, {
+            safe { refreshLists() }
+            safe { drawChip() }   // the count follows a changed setting
+            safe { if (isActive()) renderResults(field.text.toString()) }   // values / dots in open results follow
+        }, clear, { isActive() })
     }
 }
 
