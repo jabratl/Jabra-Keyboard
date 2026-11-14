@@ -47,9 +47,9 @@ object AppThemeStudio {
                 r.set(0f, 0f, w, h)
                 val th = t
                 if (th == null) {
-                    p.shader = null; p.style = Paint.Style.STROKE; p.strokeWidth = 2f * d; p.color = 0xFFD84315.toInt()
+                    p.shader = null; p.style = Paint.Style.STROKE; p.strokeWidth = 2f * d; p.color = AppUi.warn(context)   // v0.18.0 (U11): palette warn, not a literal
                     cv.drawRoundRect(r, 8f * d, 8f * d, p)
-                    p.style = Paint.Style.FILL; p.textSize = 12f * d; p.textAlign = Paint.Align.CENTER
+                    p.style = Paint.Style.FILL; p.textSize = AppTokens.T_CAPTION.toFloat() * d; p.textAlign = Paint.Align.CENTER
                     cv.drawText("Fix the red colours to see the preview", w / 2f, h / 2f, p)
                     return
                 }
@@ -74,7 +74,7 @@ object AppThemeStudio {
                     }
                     p.color = th.text
                     p.textAlign = Paint.Align.CENTER
-                    p.textSize = 16f * d
+                    p.textSize = AppTokens.T_TITLE.toFloat() * d
                     cv.drawText(arrayOf("A", "b", "1", "⬆")[i], l + kw / 2f, pad + kh / 2f + 6f * d, p)
                 }
             } catch (_: Throwable) { }
@@ -151,7 +151,7 @@ object AppThemeStudio {
 
         val note = TextView(ctx)
         note.text = "Your own theme (theme slot 21 in the picker). Edit, then Save. Round and opacity show with Look = Jabra."
-        note.textSize = 12f
+        note.textSize = AppTokens.T_CAPTION.toFloat()
         note.setTextColor(AppUi.dim(ctx))
         note.setPadding(0, dp(AppTokens.S2), 0, dp(AppTokens.S1))
         box.addView(note)
@@ -164,7 +164,7 @@ object AppThemeStudio {
             line.minimumHeight = dp(AppTokens.TOUCH)
             val lab = TextView(ctx)
             lab.text = CustomThemeForm.NAMES[i]
-            lab.textSize = 15f
+            lab.textSize = AppTokens.T_ROW.toFloat()
             lab.setTextColor(AppUi.text(ctx))
             line.addView(lab, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
             val sw = View(ctx)
@@ -175,7 +175,7 @@ object AppThemeStudio {
             val et = EditText(ctx)
             et.setSingleLine(true)
             et.typeface = Typeface.MONOSPACE
-            et.textSize = 15f
+            et.textSize = AppTokens.T_ROW.toFloat()
             et.hint = if (i == 1) "none" else "#RRGGBB"
             et.inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS or InputType.TYPE_TEXT_FLAG_CAP_CHARACTERS
             et.filters = arrayOf(InputFilter.LengthFilter(9))
@@ -237,13 +237,13 @@ object AppThemeStudio {
         pr.orientation = LinearLayout.HORIZONTAL
         val head = TextView(ctx)
         head.text = "Fill from a colour set (not saved until you press Save)"
-        head.textSize = 12f
+        head.textSize = AppTokens.T_CAPTION.toFloat()
         head.setTextColor(AppUi.dim(ctx))
         head.setPadding(0, dp(AppTokens.S2), 0, dp(AppTokens.S1))
         box.addView(head)
         for (i in CustomTheme.PRESET_NAMES.indices) {
             val b = action(CustomTheme.PRESET_NAMES[i]) { setAll(CustomTheme.preset(i), true) }
-            b.textSize = 12f
+            b.textSize = AppTokens.T_CAPTION.toFloat()
             val lp = LinearLayout.LayoutParams(0, dp(AppTokens.TOUCH), 1f)
             lp.setMargins(dp(AppTokens.S1), 0, dp(AppTokens.S1), 0)
             b.layoutParams = lp
@@ -275,14 +275,14 @@ object AppThemeStudio {
         // v0.17.24 (L4): saved (named) themes. The ONE active custom theme (ct_json, slot 21) works exactly as before; this list is extra.
         val svHead = TextView(ctx)
         svHead.text = "Saved themes (up to " + ThemeBook.MAX_THEMES + "). Type a name, then Save as. Use = switch the keyboard to it."
-        svHead.textSize = 12f
+        svHead.textSize = AppTokens.T_CAPTION.toFloat()
         svHead.setTextColor(AppUi.dim(ctx))
         svHead.setPadding(0, dp(AppTokens.S3), 0, dp(AppTokens.S1))
         box.addView(svHead)
         val nameEt = EditText(ctx)
         nameEt.setSingleLine(true)
         nameEt.hint = "Theme name"
-        nameEt.textSize = 15f
+        nameEt.textSize = AppTokens.T_ROW.toFloat()
         nameEt.filters = arrayOf(InputFilter.LengthFilter(ThemeBook.MAX_NAME_CHARS))
         nameEt.minHeight = dp(AppTokens.TOUCH)
         box.addView(nameEt)
@@ -298,7 +298,7 @@ object AppThemeStudio {
                 if (bk.size() == 0) {
                     val e = TextView(ctx)
                     e.text = "No saved themes yet."
-                    e.textSize = 13f
+                    e.textSize = AppTokens.T_LABEL.toFloat()
                     e.setTextColor(AppUi.dim(ctx))
                     e.setPadding(0, dp(AppTokens.S1), 0, dp(AppTokens.S1))
                     svList.addView(e)
@@ -308,7 +308,7 @@ object AppThemeStudio {
                 for (nm in bk.names()) {
                     val t = TextView(ctx)
                     t.text = nm + (if (bk.sameAs(nm, cur)) "   (in use)" else "")
-                    t.textSize = 15f
+                    t.textSize = AppTokens.T_ROW.toFloat()
                     t.setTextColor(AppUi.text(ctx))
                     t.setPadding(0, dp(AppTokens.S2), 0, dp(AppTokens.S1))
                     svList.addView(t)
@@ -316,7 +316,7 @@ object AppThemeStudio {
                     br.orientation = LinearLayout.HORIZONTAL
                     fun small(label: String, click: (Button) -> Unit): Button {
                         val b = action(label, click)
-                        b.textSize = 12f
+                        b.textSize = AppTokens.T_CAPTION.toFloat()
                         val lp = LinearLayout.LayoutParams(0, dp(AppTokens.TOUCH), 1f)
                         lp.setMargins(dp(AppTokens.S1), 0, dp(AppTokens.S1), 0)
                         b.layoutParams = lp

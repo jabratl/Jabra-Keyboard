@@ -1,0 +1,26 @@
+HANDOFF Jabra-Keyboard v0.18.0 (U10 + U11 in one zip, MODIFY)   [plan: HANDOFF_Jabra-Keyboard_v0.17.75_UI-Plan.txt]
+
+DONE + CURRENT VERSION
+- R3-R7, S1-S8 (0.17.75) | U1 (.76) | U2 (.77) | U3 (.78) | U4 (.79) | U5a (.80) | U5b (.81) | U6 (.82) | U7 (.83) + U8 (.84) | U9 (.85) | [x] U10 (0.17.86) + [x] U11 (0.18.0). CURRENT: 0.18.0. UI plan U1-U11 = finished in code.
+
+WHAT CHANGED (file: 1 line)
+- AppPages.kt: jump-to-section chips 48 dp (was 36), height grows with font scale, 4 hard-coded sizes -> AppTokens.
+- AppSearch.kt (7 sizes), AppToolbarEditor.kt (4), AppWizard.kt (1), AppThemeStudio.kt (12 sizes + 1 colour -> AppUi.warn): AppTokens / AppUi only, same values.
+- tools/AppDesignLintTest.java: BASELINE table EMPTY + new lint "literal min height < 48 dp fails".
+- CHECKLIST_SMOKE.txt: section I (steps 40-48) for the new UI.
+- app/build.gradle.kts 0.18.0, CHANGELOG.txt (2 entries: 0.18.0 U11, 0.17.86 U10).
+
+CHECKS DONE
+bash tools/run_tests.sh = 143/143 green; grep: no hard-coded textSize / 0xFF colour left in App*.kt; bracket balance of the 5 changed .kt files.
+
+NOT TESTED
+Kotlin compile (no internet in that chat, kotlinc not downloadable) -> a red GitHub build log = FIX step first (tools/KOTLIN_CHECK.txt recipe). Phone: TalkBack order, font scale 1.3 at 360 dp, landscape + tablet two-pane, jump chips look, custom-theme red frame colour (now palette warn), dark + light at 360 / 1280 dp.
+
+KNOWN LIMITS / NEXT
+- Two-pane rule (HomePlan.twoPane, width >= 600 dp) does not look at font scale; if big font cramps the left pane on a small tablet, add a rule in HomePlan + 1 line in SettingsActivity.kt (line ~216).
+- Old settings screen (SettingsGroups own screen) stays as fallback; retiring it = user's decision.
+- AppRows.kt, AppHome.kt, SettingsActivity.kt not touched.
+
+NEXT STEP + GOAL
+S9 / U0 (FIX): phone test with CHECKLIST_SMOKE.txt steps 40-48 (+ older steps) and the GitHub build log. Send the log / screenshots; one bug = one fix version (0.18.1...).
+Kickoff: Jabra-Keyboard step U0. Mode: FIX. Previous version: v0.18.0. Attached: this HANDOFF + build log / screenshots. Context: Done: UI plan U1-U11. Next: fixes from the phone test.

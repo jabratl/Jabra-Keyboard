@@ -1,4 +1,4 @@
-JABRA KEYBOARD - 10-MINUTE SMOKE TEST (v0.17.15, plan N: N1 - N8 + plan X: X1 - X13 + plan K: K1 - K9b, K11a)
+JABRA KEYBOARD - 10-MINUTE SMOKE TEST (v0.18.0; new settings app U1 - U11 = steps 40 - 48; v0.17.15, plan N: N1 - N8 + plan X: X1 - X13 + plan K: K1 - K9b, K11a)
 =========================================================================
 Use this FIRST after installing a new build. It touches every new thing of plan N and plan X once.
 If all lines are OK, the long lists in CHECKLIST.txt (Z77 - Z96) are only needed when something looks wrong.
@@ -60,3 +60,14 @@ H. PLAN K = KEYBOARD LAYOUT EDITOR (K1 - K9b)                          [Z100 - Z
  [ ] 37. (M1) English, Bangla, Bangla fixed: tap ?123 = the same top row (toolbar or suggestion row) stays above the number page; page key / ABC still work; "<<" / left icon keeps the number page. Switch "Tools row on number page" OFF = old page without the row. Number / phone field = pad as before.
  [ ] 38. (M2) Bangla (phonetic): letter keys show small 1-0 / @ # & * - ! ? ( ) / " ' : / like Ridmik (q..p digits only with number row OFF). Hold j = types ? ; hold with a half-typed word: the word is kept, then the sign. English = old hints, Bangla fixed = none. Setting "Avro hints on Bangla keys" OFF = no hints in Bangla.
  [ ] 39. (M3) Bangla (phonetic) ?123: Bengali digits row (hold = 1..0), @ # TAKA % & * - + ( ) row, "=\<" ! " ' : ; / ? row, ABC , space . Enter row, tools row on top. Hold TAKA = $, * = star, ( = <. "=\<" = next symbol page and back = this page again; ABC then ?123 returns here. English / Bangla fixed: old page. "Avro number page (Bangla)" OFF = old page.
+
+I. NEW SETTINGS APP (U1 - U11, v0.18.0)                                [phone test of the whole new UI]
+ [ ] 40. (U4) Home: header, one status card, search, 3 Quick looks, 7 tiles with summary + changed badge, favourites. Phone (360 dp) = one column; tablet / landscape (600 dp+) = Home left, page right.
+ [ ] 41. (U2, U5) Open Typing: rows are calm (title + value on the right), sections have headers, "Show advanced" shows the rare rows. Search for an advanced row: it shows itself.
+ [ ] 42. (U3) Rows with help show an info icon; tap = help opens. Data & About > "Tips": Smart / Always / Off change this.
+ [ ] 43. (U6) Hints section: hint size / opacity / mode + live sample; hints are readable on a light and a dark theme.
+ [ ] 44. (U7) Search: Changed (N) chip, empty state with word chips, Back order (page -> Home -> clear search -> exit).
+ [ ] 45. (U8) First run (or clear app data): Enable -> Choose -> Language -> Theme -> Test; Skip changes nothing; Try again text shows if you did not enable it.
+ [ ] 46. (U9) Look page: mini keyboard theme tiles, check badge on the chosen one, "Current theme: Name (n of 20)", 3 columns on phone, 4 on tablet.
+ [ ] 47. (U10) Long page (Typing): jump chips are easy to tap (48 dp). Font size = Largest: nothing is cut off. TalkBack: tiles, rows, chips are read with title + value.
+ [ ] 48. (U11) Dark and Light (App theme chip on Home): all pages look the same size / colour style. Custom theme with a wrong colour: red frame + warning card.

@@ -46,7 +46,7 @@ object AppWizard {
             card.layoutParams = lp
 
             val head = TextView(act)
-            head.textSize = 16f
+            head.textSize = AppTokens.T_TITLE.toFloat()
             head.setTypeface(null, android.graphics.Typeface.BOLD)
             head.setTextColor(AppUi.text(act))
             try { head.isAccessibilityHeading = true } catch (_: Throwable) { }

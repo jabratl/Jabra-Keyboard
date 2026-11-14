@@ -1,3 +1,21 @@
+v0.18.0 - MODIFY (U11): Consistency sweep + release of the new settings app
+- WHY: U1 started a drift guard (AppDesignLintTest) with a list of files still allowed to have hard-coded text sizes / colours. U11 empties that list so the new app uses ONE set of sizes and colours.
+- What you get: no visible change on purpose (same sizes: 12 / 13 / 14 / 15 / 16 / 20 sp now come from AppTokens T_CAPTION / T_LABEL / T_BODY / T_ROW / T_TITLE / T_HEAD). The red "fix colours" frame in the custom-theme preview now uses the app warning colour (it was a fixed orange D84315). Version = 0.18.0 (first release of the new UI).
+- Code: AppPages.kt (4 sizes), AppSearch.kt (7), AppThemeStudio.kt (12 sizes + 1 colour), AppToolbarEditor.kt (4), AppWizard.kt (1) = tokens only, values unchanged; tools/AppDesignLintTest.java (BASELINE table now EMPTY); CHECKLIST_SMOKE.txt (new section for the new UI, steps 40-48); app/build.gradle.kts 0.18.0.
+- DEVIATIONS: old screen (SettingsGroups own screen) kept as fallback, retiring it is the user's decision (as planned). Light mode custom-theme red frame is now BF360C (palette warn) instead of D84315, dark mode FF8A65.
+- BROKE: nothing known. Only the preview frame colour above differs a little.
+- TESTED here: bash tools/run_tests.sh = 143/143 green (AppDesignLintTest with an empty table); no hard-coded textSize / 0xFF colour left in App*.kt (grep); bracket balance of the 5 changed .kt files. NOT tested: Kotlin compile (no internet in this chat: kotlinc could not be downloaded; GitHub build log decides) and phone: all screens look the same as 0.17.85 at 360 / 1280 dp, dark + light.
+- Rollback: restore the 5 .kt files + AppDesignLintTest.java from v0.17.86 and set the version back.
+
+v0.17.86 - MODIFY (U10): Accessibility + responsive checks (48 dp targets)
+- WHY: audit of AppRows / AppHome / AppPages / AppSearch (grep): icon buttons already have a contentDescription, rows are 56 dp, chips 48 dp. One gap: the "jump to section" chips on long pages were 36 dp tall (fixed) = hard to tap and clipped by big font scale.
+- What you get: jump chips are 48 dp high and grow with the font size (fully round, same look). Nothing else changed on screen. A new guard in AppDesignLintTest fails the build tests if any App*.kt gets a literal minimum height under 48 dp.
+- Code: AppPages.kt (jump chips: minHeight TOUCH, WRAP_CONTENT height, radius R_PILL), tools/AppDesignLintTest.java (touch-target lint).
+- DEVIATIONS: two-pane on tablet / landscape was NOT changed (HomePlan.twoPane = width >= 600 dp already works for tablet + landscape; a font-scale rule would need SettingsActivity.kt, outside this step). Contrast: AppPaletteTest already checks text / dim / ok / accent / warn >= 4.4-4.5 on bg + card + surface2 in light and dark (all pass); no palette change needed. AppRows / AppHome / AppSearch needed no patch.
+- BROKE: nothing known. The jump row is 12 dp taller.
+- TESTED here: run_tests.sh green (see v0.18.0). NOT tested: phone with TalkBack (focus order Home -> pages), font scale 1.3 at 360 dp, landscape + tablet two-pane, jump chips look and tap.
+- Rollback: restore AppPages.kt + AppDesignLintTest.java from v0.17.85.
+
 v0.17.85 - MODIFY (U9): Look page theme cards (mini keyboard) + readable custom-theme warnings
 - WHY: theme tiles showed one row of 3 dots-like keys (hard to judge a theme), the grid always had 3 fixed columns, the chosen tile was marked by colour only, and the custom-theme warnings were small plain text.
 - What you get: (1) Theme tiles are now mini keyboards: row 1 = 4 keys (last = function key colour), row 2 = space bar + function key, theme name below; 76 dp high (was 64). (2) The chosen theme has the accent frame AND a check-mark badge (not colour only). (3) Line above the grid: "Current theme: Name (3 of 20)". (4) Columns follow the free width: 2 under 240 dp, 3 under 480 dp, 4 from 480 dp (right pane on tablets / landscape gets 4). (5) Custom theme editor: warnings are in a card with a warning-colour frame, normal text colour, 14 sp, announced politely by TalkBack; same texts as before. (6) Preview card stays pinned on Look (PagePlan.pinPreview unchanged: Home / Look / Layout) and still follows a tile tap at once.

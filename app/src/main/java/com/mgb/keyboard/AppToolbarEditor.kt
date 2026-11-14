@@ -36,7 +36,7 @@ object AppToolbarEditor {
             b.layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, dp(AppTokens.TOUCH))
             b.minWidth = dp(minW); b.minimumWidth = dp(minW)
             b.setPadding(dp(AppTokens.S2), 0, dp(AppTokens.S2), 0)
-            b.textSize = 13f
+            b.textSize = AppTokens.T_LABEL.toFloat()
             b.isEnabled = enabled
             b.alpha = if (enabled) 1f else 0.4f
             try { Glyphs.dress(b); b.contentDescription = desc } catch (_: Throwable) { }   // v0.17.72 (S5): drawn arrows, spoken name stays "Move X up"
@@ -63,13 +63,13 @@ object AppToolbarEditor {
                 ic.isClickable = false; ic.isFocusable = false
                 var drawn = false
                 try { drawn = JabraIcons.apply(ic, Toolbar.icon(id), true, AppUi.text(ctx)) } catch (_: Throwable) { }
-                if (!drawn) { ic.text = Toolbar.label(id); ic.textSize = 12f; ic.setTextColor(AppUi.text(ctx)) }
+                if (!drawn) { ic.text = Toolbar.label(id); ic.textSize = AppTokens.T_CAPTION.toFloat(); ic.setTextColor(AppUi.text(ctx)) }
                 ic.importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
                 ic.alpha = if (off) 0.45f else 1f
                 line.addView(ic, LinearLayout.LayoutParams(dp(28), dp(28)))
                 val nm = TextView(ctx)
                 nm.text = Toolbar.title(id) + (if (off) " (hidden)" else "")
-                nm.textSize = 14f
+                nm.textSize = AppTokens.T_BODY.toFloat()
                 nm.maxLines = 2
                 nm.setTextColor(if (off) AppUi.dim(ctx) else AppUi.text(ctx))
                 nm.setPadding(dp(AppTokens.S2), 0, dp(AppTokens.S1), 0)
@@ -95,7 +95,7 @@ object AppToolbarEditor {
 
         val note = TextView(ctx)
         note.text = "Order of the keyboard toolbar (first = leftmost). Same list as in the keyboard: gear > More settings > Edit toolbar. The keyboard uses it when it opens next time."
-        note.textSize = 12f
+        note.textSize = AppTokens.T_CAPTION.toFloat()
         note.setTextColor(AppUi.dim(ctx))
         note.setPadding(0, dp(AppTokens.S2), 0, dp(AppTokens.S1))
         box.addView(note)

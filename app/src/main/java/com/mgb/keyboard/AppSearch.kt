@@ -129,7 +129,7 @@ object AppSearch {
             line.isFocusable = true
             val tt = TextView(act)
             tt.text = r.title
-            tt.textSize = 15f
+            tt.textSize = AppTokens.T_ROW.toFloat()
             safe { tt.setTextColor(AppUi.text(act)) }
             val left = LinearLayout(act)
             left.orientation = LinearLayout.VERTICAL
@@ -137,7 +137,7 @@ object AppSearch {
             if (showPage) {
                 val pg = TextView(act)
                 pg.text = PagePlan.title(PagePlan.pageOfGroup(r.group))
-                pg.textSize = 12f
+                pg.textSize = AppTokens.T_CAPTION.toFloat()
                 safe { pg.setTextColor(AppUi.dim(act)) }
                 left.addView(pg)
             }
@@ -145,7 +145,7 @@ object AppSearch {
             val v = try { r.value() } catch (_: Throwable) { "" }
             val vt = TextView(act)
             vt.text = v
-            vt.textSize = 13f
+            vt.textSize = AppTokens.T_LABEL.toFloat()
             vt.setPadding(dp(AppTokens.S2), 0, 0, 0)
             val ch = try { r.changed() } catch (_: Throwable) { false }
             safe { vt.setTextColor(if (ch) AppUi.accent(act) else AppUi.dim(act)) }
@@ -157,7 +157,7 @@ object AppSearch {
                 star.isAllCaps = false
                 star.background = null
                 star.text = if (pinned) "\u2605" else "\u2606"
-                star.textSize = 20f
+                star.textSize = AppTokens.T_HEAD.toFloat()
                 star.minWidth = dp(AppTokens.TOUCH); star.minimumWidth = dp(AppTokens.TOUCH)
                 star.minHeight = dp(AppTokens.TOUCH); star.minimumHeight = dp(AppTokens.TOUCH)
                 safe { star.setTextColor(if (pinned) AppUi.accent(act) else AppUi.dim(act)) }
@@ -200,7 +200,7 @@ object AppSearch {
             val n = HomePlan.count(groups)
             val info = TextView(act)
             info.text = HomePlan.resultLine(n, q, changedOnly)
-            info.textSize = 12f
+            info.textSize = AppTokens.T_CAPTION.toFloat()
             safe { info.setTextColor(AppUi.dim(act)) }
             info.setPadding(0, dp(AppTokens.S2), 0, 0)
             info.importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_YES
@@ -262,7 +262,7 @@ object AppSearch {
             if (list.isEmpty()) {
                 val hint = TextView(act)
                 hint.text = PersonalPlan.favHint()
-                hint.textSize = 12f
+                hint.textSize = AppTokens.T_CAPTION.toFloat()
                 safe { hint.setTextColor(AppUi.dim(act)) }
                 hint.setPadding(0, dp(AppTokens.S2), 0, 0)
                 favs.addView(hint)
@@ -289,7 +289,7 @@ object AppSearch {
                     val b = Button(act)
                     b.isAllCaps = false
                     b.text = r.title
-                    b.textSize = 12f
+                    b.textSize = AppTokens.T_CAPTION.toFloat()
                     b.minHeight = dp(AppTokens.TOUCH); b.minimumHeight = dp(AppTokens.TOUCH); b.minWidth = 0; b.minimumWidth = 0
                     b.contentDescription = "Open " + r.title
                     b.setOnClickListener { go(r) }

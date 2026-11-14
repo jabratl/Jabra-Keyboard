@@ -154,7 +154,7 @@ class AppPages(private val act: SettingsActivity, private val sink: PageSink, pr
         card.layoutParams = lp
         val t = TextView(act)
         t.text = "Could not open this page"
-        t.textSize = 16f
+        t.textSize = AppTokens.T_TITLE.toFloat()
         t.setTypeface(null, Typeface.BOLD)
         try { t.setTextColor(AppUi.warn(act)) } catch (_: Throwable) { }
         try { t.isAccessibilityHeading = true } catch (_: Throwable) { }
@@ -214,7 +214,7 @@ class AppPages(private val act: SettingsActivity, private val sink: PageSink, pr
         if (!twoPane) bar.addView(backBtn, LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, dp(AppTokens.TOUCH)))   // v0.13.0 (M3): no Back button in two panes (Home is always visible)
         val title = TextView(act)
         title.text = PagePlan.title(id)
-        title.textSize = 20f
+        title.textSize = AppTokens.T_HEAD.toFloat()
         title.setTypeface(null, Typeface.BOLD)
         try { title.setTextColor(AppUi.text(act)) } catch (_: Throwable) { }
         title.setPadding(if (twoPane) dp(AppTokens.S4) else dp(AppTokens.S2), 0, 0, 0)
@@ -388,16 +388,16 @@ class AppPages(private val act: SettingsActivity, private val sink: PageSink, pr
             val b = Button(act)
             b.text = name
             b.isAllCaps = false
-            b.textSize = 13f
+            b.textSize = AppTokens.T_LABEL.toFloat()
             b.minWidth = 0; b.minimumWidth = 0
-            b.minHeight = dp(36); b.minimumHeight = dp(36)
+            b.minHeight = dp(AppTokens.TOUCH); b.minimumHeight = dp(AppTokens.TOUCH)   // v0.17.86 (U10): 48 dp target (was 36)
             b.setPadding(dp(AppTokens.S3), 0, dp(AppTokens.S3), 0)
             b.stateListAnimator = null
             try { b.setTextColor(AppUi.text(act)) } catch (_: Throwable) { }
             try {
                 val g = GradientDrawable()
                 g.setColor(com.mgb.keyboard.typing.AppPalette.card(dark))
-                g.cornerRadius = dp(18).toFloat()
+                g.cornerRadius = dp(AppTokens.R_PILL).toFloat()
                 g.setStroke(dp(1), (AppUi.dim(act) and 0x00FFFFFF) or 0x40000000)
                 b.background = g
             } catch (_: Throwable) { }
@@ -411,7 +411,7 @@ class AppPages(private val act: SettingsActivity, private val sink: PageSink, pr
                     sv.smoothScrollTo(0, Math.max(0, y - dp(AppTokens.S2)))
                 } catch (_: Throwable) { }
             }
-            val lp = LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, dp(36))
+            val lp = LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT)   // v0.17.86 (U10): grows with font scale
             lp.setMargins(0, 0, dp(AppTokens.S2), 0)
             row.addView(b, lp)
         }
@@ -422,7 +422,7 @@ class AppPages(private val act: SettingsActivity, private val sink: PageSink, pr
     private fun sectionHeader(text: String): View {
         val t = TextView(act)
         t.text = text
-        t.textSize = 16f
+        t.textSize = AppTokens.T_TITLE.toFloat()
         t.setTypeface(null, Typeface.BOLD)
         try { t.setTextColor(AppUi.accent(act)) } catch (_: Throwable) { }
         t.setPadding(0, dp(AppTokens.S4) + dp(AppTokens.S2), 0, dp(AppTokens.S1))
