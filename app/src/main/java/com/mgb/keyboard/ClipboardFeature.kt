@@ -52,6 +52,7 @@ class ClipStore(private val prefs: JabraPrefs, private val fmt: ClipFmtStore? = 
             prefs.setStr("clip_meta_v1", m.serialize())
             if (ctx != null) ClipFmtStore.pruneNow(ctx, l.view("").map { it.text })   // v0.17.39 (M6)
             if (ctx != null) { try { ClipImages.clear(ctx) } catch (_: Throwable) { } }   // v0.18.1: copied images go with the history
+            try { ClipTrashStore.clearNow(prefs) } catch (_: Throwable) { }   // v0.18.4: the Recently deleted clips go with the history
             live?.reload()
             before - l.size()
         } catch (_: Throwable) { 0 }
@@ -155,6 +156,14 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
     private var renPos = 0
     private var renCaps = false
     private var confirmSave = false
+    // v0.18.4: Recently deleted (the Undo list, up to 30 clips by default) + tidy look (pref clip_tidy). Delete these lines + the hooks marked "v0.18.4" = back to v0.18.3.
+    private val trash: ClipTrashStore by lazy { ClipTrashStore(pf, store) }
+    private var trashOpen = false
+    private var trashSure = false
+    private var trashMsg = ""
+    private var undoSteps = 0   // how many delete actions of THIS visit can still be undone (Undo shows only while > 0; older deletes: menu > Deleted)
+    private fun tidy(): Boolean = try { ClipLook.tidy(pf) } catch (_: Throwable) { false }
+    private fun undoAvail(): Boolean = try { undoBuf.isNotEmpty() || (undoSteps > 0 && trash.on() && trash.count() > 0) } catch (_: Throwable) { undoBuf.isNotEmpty() }
     /** v0.4.4: set by MgbIme: saves the given clip texts into the Text Vault and returns a short message. null = no "To Vault" button. */
     var toVault: ((List<String>) -> String)? = null
     /** v0.15.1 (N1): height in px of the letters keyboard, set by MgbIme before build(). 0 = unknown = old fixed sizes. Used only when pref clip_fit is ON (default). */
@@ -163,23 +172,30 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
     /** Call when the panel is opened from outside (fresh start). */
     // v0.3.7: Undo for deleted clips (x, Delete, Clear). Kept until you leave the clipboard or delete something else.
     private var undoBuf: List<Pair<String, Boolean>> = emptyList()
-    private fun keepUndo(items: List<ClipList.Item>) { if (items.isNotEmpty()) undoBuf = items.map { Pair(it.text, it.pinned) } }
+    private fun keepUndo(items: List<ClipList.Item>) { if (items.isNotEmpty()) { undoBuf = items.map { Pair(it.text, it.pinned) }; try { if (trash.on()) { trash.keep(items); undoSteps++ } } catch (_: Throwable) { } } }   // v0.18.4: also remembered in the Recently deleted list; each delete = one more Undo step
     private fun doUndo() {
         var n = 0
-        for ((t, p) in undoBuf.reversed()) {
-            try {
-                store.add(t)
-                if (p) { val x = store.view("").firstOrNull { c -> c.text == t }; if (x != null && !x.pinned) store.togglePin(x) }
-                n++
-            } catch (_: Throwable) { }
+        if (undoBuf.isNotEmpty()) {
+            val fromTrash = try { trash.restoreTexts(undoBuf.map { it.first }) } catch (_: Throwable) { emptySet<String>() }   // v0.18.4: back with pinned flag AND format
+            for ((t, p) in undoBuf.reversed()) {
+                if (fromTrash.contains(t)) { n++; continue }
+                try {
+                    store.addCaptured(t)   // v0.18.4: was add(t), which refused clips longer than 2000 characters
+                    if (p) { val x = store.view("").firstOrNull { c -> c.text == t }; if (x != null && !x.pinned) store.togglePin(x) }
+                    n++
+                } catch (_: Throwable) { }
+            }
+            undoBuf = emptyList()
+        } else {
+            n = try { trash.undoLast() } catch (_: Throwable) { 0 }   // v0.18.4: Undo again / after leaving the clipboard = the delete before
         }
-        undoBuf = emptyList()
+        if (undoSteps > 0) undoSteps--   // v0.18.4
         msg = "Restored " + n
         confirmClear = false; confirmDel = false
         refresh()
     }
 
-    fun reset() { editing = null; confirmSave = false; undoBuf = emptyList(); searching = false; query = ""; confirmClear = false; msg = ""; sel.leave(); confirmDel = false; keepY = -1; fromRefresh = false; fChip = 0; moreOpen = false; ovOpen = false; exporting = false; expMsg = ""; renaming = false; expName = "" }   // v0.17.63 (R3): rename closed + name cleared; v0.16.1 (X1); v0.17.57 (C2): export screen closed; v0.16.9 (X9): chip + More tray start fresh
+    fun reset() { editing = null; confirmSave = false; undoBuf = emptyList(); searching = false; query = ""; confirmClear = false; msg = ""; sel.leave(); confirmDel = false; keepY = -1; fromRefresh = false; fChip = 0; moreOpen = false; ovOpen = false; exporting = false; expMsg = ""; renaming = false; expName = ""; trashOpen = false; trashSure = false; trashMsg = ""; undoSteps = 0 }   // v0.18.4: Recently deleted closed, Undo steps start fresh; v0.17.63 (R3): rename closed + name cleared; v0.16.1 (X1); v0.17.57 (C2): export screen closed; v0.16.9 (X9): chip + More tray start fresh
 
     private fun dp(v: Int): Int = (v * ctx.resources.displayMetrics.density).toInt()
 
@@ -289,7 +305,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
     /** Returns null on any problem -> keyboard shows normal letters. */
     fun build(): View? = try { withImages(make()) } catch (_: Throwable) { null }
     /** v0.18.1: copied images / screenshots on top of the panel (not on the edit / export screens; pref clip_img OFF = nothing added). */
-    private fun withImages(v: View): View = try { if (editing != null || exporting) v else ClipImages.wrap(ctx, v, JabraPrefs(ctx)) } catch (_: Throwable) { v }
+    private fun withImages(v: View): View = try { if (editing != null || exporting || trashOpen) v else ClipImages.wrap(ctx, v, JabraPrefs(ctx)) } catch (_: Throwable) { v }
 
     private fun make(): View {
         val restoreY = if (fromRefresh) keepY else -1   // v0.16.1 (X1)
@@ -297,6 +313,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
         if (restoreY < 0 && editing == null) keepY = -1   // fresh open = start at the top
         if (exporting && renaming) { try { return fitEdit(makeRename()) } catch (_: Throwable) { renaming = false } }   // v0.17.63 (R3)
         if (exporting) { try { return fitEdit(makeExport()) } catch (_: Throwable) { exporting = false } }   // v0.17.57 (C2)
+        if (trashOpen) { try { return makeTrash() } catch (_: Throwable) { trashOpen = false } }   // v0.18.4: Recently deleted screen
         if (editing != null) { try { return fitEdit(makeEdit()) } catch (_: Throwable) { editing = null } }   // v0.15.1: fitEdit   // v0.4.3.1
         // v0.16.9 (X9): pref panel_ui = 1 -> the NEW panel (makeNew below). Default 0 / any problem = the classic code that follows, untouched.
         val newUi = try { PanelLayout.isNewStyle(JabraPrefs(ctx).int("panel_ui", 0)) } catch (_: Throwable) { false }
@@ -344,7 +361,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
         m.setPadding(dp(8), 0, dp(4), 0)
         m.layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
         head.addView(m)
-        if (undoBuf.isNotEmpty()) {   // v0.3.7
+        if (undoAvail()) {   // v0.3.7; v0.18.4: also when only the Recently deleted list has something
             val undoBtn = btn("↶ Undo", 0f, 30) { doUndo() }
             undoBtn.textSize = fs(12f)
             undoBtn.setPadding(dp(10), 0, dp(10), 0)
@@ -553,6 +570,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
             msg = ""
             val head = row()
             head.gravity = Gravity.CENTER_VERTICAL
+            if (tidy()) head.minimumHeight = dp(sz(34) + 4)   // v0.18.4: the line keeps its height with or without Undo, so the list never jumps
             val m = TextView(ctx)
             m.text = if (confirmClear) "Delete all unpinned clips?" else if (shownMsg.isEmpty() && nlOn && !selOn) ClipCopy.countLine(store.pinnedView("").size + store.recentView("").size, store.pinnedCount()) else shownMsg   // v0.17.58 (C3): quiet count line
             m.textSize = 12f
@@ -572,7 +590,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
                 head.addView(small("Cancel") { confirmClear = false; refresh() })
                 head.addView(ClipBar.danger(pf, small("Yes, clear") { keepUndo(store.recentView("")); store.clearUnpinned(); try { ClipImages.clear(ctx) } catch (_: Throwable) { }; confirmClear = false; refresh() }))   // v0.17.30 (UI6)
             } else {
-                if (undoBuf.isNotEmpty()) head.addView(small("↶ Undo") { doUndo() })
+                if (undoAvail()) head.addView(small("↶ Undo") { doUndo() })   // v0.18.4
                 if (!selOn && !nlOn) {   // v0.17.58 (C3): new look moves Sort / View / Clear into the overflow tray
                     head.addView(small("\u2195 " + arrayOf("Newest", "Oldest", "A-Z", "Used")[sortLv]) {
                         try { JabraPrefs(ctx).setInt("clip_sort", (sortLv + 1) % 4) } catch (_: Throwable) { }
@@ -601,10 +619,25 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
                 menu.addView(menuRow("View", 4,
                     menuPill((if (!cardsOn) "\u2713 " else "") + "List", !cardsOn) { try { JabraPrefs(ctx).setInt("clip_view", 0) } catch (_: Throwable) { }; refreshTop() },
                     menuPill((if (cardsOn) "\u2713 " else "") + "Cards", cardsOn) { try { JabraPrefs(ctx).setInt("clip_view", 1) } catch (_: Throwable) { }; refreshTop() }))
-                menu.addView(menuRow("Do", 4,
-                    menuPill("Manage") { ovOpen = false; sel.enter(); confirmClear = false; confirmDel = false; refresh() },
-                    menuPill("Export all") { ovOpen = false; expSel = emptyList(); expScope = 1; expMsg = ""; expName = ""; renaming = false; exporting = true; moreOpen = false; confirmDel = false; refresh() },
-                    ClipBar.danger(pf, menuPill("Clear") { ovOpen = false; confirmClear = true; refresh() })))
+                // v0.18.4: Undo = how many deleted clips are kept (Off / 10 / 30 / 50 / 100); Do = Manage | Deleted n | Export all | Clear
+                val undoLim = try { trash.limit() } catch (_: Throwable) { com.mgb.keyboard.clip.ClipTrash.DEFAULT_LIMIT }
+                menu.addView(menuRow("Undo", com.mgb.keyboard.clip.ClipTrash.QUICK.size, *Array<View>(com.mgb.keyboard.clip.ClipTrash.QUICK.size) { i ->
+                    val qv = com.mgb.keyboard.clip.ClipTrash.QUICK[i]
+                    menuPill((if (qv == undoLim) "\u2713 " else "") + (if (qv == 0) "Off" else qv.toString()), qv == undoLim) {
+                        try { JabraPrefs(ctx).setInt("clip_undo_n", qv) } catch (_: Throwable) { }
+                        try { trash.count() } catch (_: Throwable) { }
+                        refresh()
+                    }
+                }))
+                val doItems = ArrayList<View>()
+                doItems.add(menuPill("Manage") { ovOpen = false; sel.enter(); confirmClear = false; confirmDel = false; refresh() })
+                if (undoLim > 0) {
+                    val delN = try { trash.count() } catch (_: Throwable) { 0 }
+                    doItems.add(menuPill(if (delN > 0) "Deleted " + delN else "Deleted") { ovOpen = false; trashOpen = true; trashSure = false; trashMsg = ""; confirmClear = false; refreshTop() })
+                }
+                doItems.add(menuPill("Export all") { ovOpen = false; expSel = emptyList(); expScope = 1; expMsg = ""; expName = ""; renaming = false; exporting = true; moreOpen = false; confirmDel = false; refresh() })
+                doItems.add(ClipBar.danger(pf, menuPill("Clear") { ovOpen = false; confirmClear = true; refresh() }))
+                menu.addView(menuRow("Do", 4, *doItems.toTypedArray()))
                 root.addView(menu)
             }
         }
@@ -695,6 +728,22 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
         }
         fitList(root, sv)   // N1: the panel keeps the letters keyboard height
         return root
+    }
+
+    // ---- v0.18.4: Recently deleted screen (see ClipTrashUi.kt). Every action rebuilds the panel from the top; nothing here changes what the other screens do. ----
+    private fun makeTrash(): View {
+        val listPx = if (fitPx > 0) (fitPx - dp(8) - dp(PanelLayout.MIN_TOUCH * 2) - dp(sz(PanelLayout.MIN_TOUCH)) - dp(30)).coerceIn(dp(120), dp(440)) else dp(176)
+        val shown = trashMsg
+        trashMsg = ""
+        val items = trash.list()
+        if (items.isEmpty()) trashSure = false
+        return ClipTrashUi.build(ctx, host, pf, items, trash.limit(), shown, trashSure, listPx, ClipTrashUi.Acts(
+            { trashOpen = false; trashSure = false; refreshTop() },
+            { e -> val n = trash.restore(listOf(e)); trashMsg = if (n > 0) "Restored 1 \u00B7 it is on top of Recent" else "Could not restore"; trashSure = false; refreshTop() },
+            { val n = trash.restoreAll(); trashMsg = "Restored " + n; trashSure = false; refreshTop() },
+            { if (trashSure) { trash.emptyAll(); trashMsg = "Emptied"; trashSure = false } else trashSure = true; refreshTop() },
+            { trashSure = false; refreshTop() }
+        ))
     }
 
     // ---- v0.17.67 (R7): dropdown menu pieces (a card, labelled rows with equal columns, pill buttons; the chosen choice is ticked + blue) ----
@@ -1365,6 +1414,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
 
     /** v0.10.24 (C1): list row + a thin divider line under it. Any problem = the plain row as before. */
     private fun itemRow(item: ClipList.Item): View {
+        if (tidy()) { try { return itemRowTidy(item) } catch (_: Throwable) { } }   // v0.18.4: tidy card row; any problem = the row below
         val r = itemRowBase(item)
         return try {
             val w = LinearLayout(ctx)
@@ -1376,6 +1426,103 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
             w.addView(ln)
             w
         } catch (_: Throwable) { r }
+    }
+
+    /**
+     * v0.18.4: TIDY list row = one rounded card (same look as the Cards view): [pin] [clip text + small meta line] [x].
+     * Pin sits on the LEFT and x on the RIGHT with the whole text between them, so one tap can never hit the wrong one.
+     * Select mode: check box instead of pin / x. Tap = paste, hold = select (same listeners as the classic row).
+     */
+    private fun itemRowTidy(item: ClipList.Item): View {
+        val lv = try { JabraPrefs(ctx).int("clip_lines", 0).coerceIn(0, 2) } catch (_: Throwable) { 0 }
+        val selOn = sel.isOn
+        val picked = selOn && sel.isSelected(item)
+        val iconsOn = try { JabraPrefs(ctx).bool("icons_on", true) } catch (_: Throwable) { true }
+        val box = LinearLayout(ctx)
+        box.orientation = LinearLayout.HORIZONTAL
+        box.gravity = Gravity.CENTER_VERTICAL
+        box.background = try { UiKit.cardBackground(ctx, pf, picked, item.pinned) } catch (_: Throwable) { null }
+        if (item.pinned && !picked) { try { box.background = ClipCards.pinnedBg(ctx, pf) } catch (_: Throwable) { } }
+        val blp = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
+        blp.setMargins(dp(3), dp(3), dp(3), dp(3))
+        box.layoutParams = blp
+        box.minimumHeight = dp(sz(52 + 14 * lv))
+
+        // left: pin (or the check box in select mode)
+        if (selOn) {
+            val ck = TextView(ctx)
+            ck.text = if (picked) "\u2611" else "\u2610"
+            ck.textSize = 18f
+            ck.setTextColor(try { if (picked) JabraTokens.cardStroke(pf, true, false) else JabraTokens.onCardDim(pf) } catch (_: Throwable) { if (picked) Color.parseColor("#2F6FD0") else Color.DKGRAY })
+            Glyphs.dress(ck)
+            ck.gravity = Gravity.CENTER
+            ck.layoutParams = LinearLayout.LayoutParams(dp(40), dp(36))
+            box.addView(ck)
+        } else {
+            box.addView(ClipCards.small(ctx, host, if (item.pinned) "\u2605" else "\u2606", if (item.pinned) "pinned" else "pin", iconsOn) { store.togglePin(item); refresh() })
+        }
+
+        // middle: clip text + meta line
+        val mid = LinearLayout(ctx)
+        mid.orientation = LinearLayout.VERTICAL
+        mid.layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+        val t = TextView(ctx)
+        t.text = item.text.replace("\n", " \u23CE ")
+        t.textSize = fs(13f)
+        t.setTextColor(try { JabraTokens.cardText(pf) } catch (_: Throwable) { Color.BLACK })
+        t.maxLines = 2 + 2 * lv
+        t.ellipsize = TextUtils.TruncateAt.END
+        t.setPadding(dp(4), dp(6), dp(4), dp(2))
+        t.isClickable = true
+        try {   // soft tint while pressed (same as the cards)
+            val pr = android.graphics.drawable.GradientDrawable()
+            pr.setColor(JabraTokens.withAlpha(try { JabraTokens.cardText(pf) } catch (_: Throwable) { Color.BLACK }, 0x1F))
+            pr.cornerRadius = dp(JabraTokens.R_CARD).toFloat()
+            val sl = android.graphics.drawable.StateListDrawable()
+            sl.addState(intArrayOf(android.R.attr.state_pressed), pr)
+            sl.addState(intArrayOf(), android.graphics.drawable.ColorDrawable(Color.TRANSPARENT))
+            t.foreground = sl
+        } catch (_: Throwable) { }
+        val act: () -> Unit = {
+            if (sel.isOn) { sel.toggle(item); confirmDel = false; refresh() } else pasteItem(item, false)   // same as the classic row
+        }
+        t.setOnClickListener { try { host.feedback(t) } catch (_: Throwable) { }; act() }
+        val held = ClipHold.attach(t, clipHoldMs(), selOn, { sel.enterWith(item); confirmDel = false; refresh() }, { act() }, { try { host.feedback(t) } catch (_: Throwable) { } })
+        if (!held) t.setOnLongClickListener { if (sel.isOn) false else { sel.enterWith(item); confirmDel = false; refresh(); true } }
+        mid.addView(t)
+        try {   // meta line: kind tag | Aa (stored format) | 123 \u00B7 2x \u00B7 5m
+            val tg = ClipLook.tag(ctx, pf, item.text)
+            val ft = if (!selOn && store.hasFmt(item.text)) ClipLook.fmtTag(ctx, pf) else null
+            val inf = infoLine(item)
+            if (tg != null || ft != null || inf.isNotEmpty()) {
+                val line = LinearLayout(ctx)
+                line.orientation = LinearLayout.HORIZONTAL
+                line.gravity = Gravity.CENTER_VERTICAL
+                line.setPadding(dp(4), 0, dp(4), dp(4))
+                if (tg != null) { tg.setPadding(dp(5), dp(1), dp(5), dp(1)); line.addView(tg) }
+                if (ft != null) {
+                    ft.setOnClickListener { try { host.feedback(ft) } catch (_: Throwable) { }; pasteItem(item, true) }
+                    val flp = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT)
+                    flp.setMargins(dp(4), 0, dp(2), 0)
+                    ft.layoutParams = flp
+                    line.addView(ft)
+                }
+                if (inf.isNotEmpty()) {
+                    val ct = TextView(ctx)
+                    ct.text = inf
+                    ct.textSize = 10f
+                    ct.setTextColor(hush())
+                    ct.setPadding(dp(4), 0, dp(4), 0)
+                    line.addView(ct)
+                }
+                mid.addView(line)
+            }
+        } catch (_: Throwable) { }
+        box.addView(mid)
+
+        // right: x (not in select mode)
+        if (!selOn) box.addView(ClipCards.small(ctx, host, "\u2715", "close", iconsOn) { keepUndo(listOf(item)); store.remove(item); msg = ClipCopy.deleted(1); refresh() })
+        return box
     }
 
     /** v0.16.16 (E2): hold time (ms) from pref clip_hold (level, default 1.5 s); 0 = old system long-click. Broken value = default. */

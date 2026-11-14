@@ -12,6 +12,7 @@ Needs internet to github.com only (allowed in the chat sandbox). Java: the sandb
    stubs/androidx/core/content/FileProvider.java   package androidx.core.content; public class FileProvider { public static android.net.Uri getUriForFile(android.content.Context c, String a, java.io.File f){return null;} }
    stubs/androidx/core/graphics/ColorUtils.java    package androidx.core.graphics; public class ColorUtils { public static int compositeColors(int a,int b){return a;} }
    (if a new file uses another R.* / androidx class, add one more stub line)
+   (v0.18.4: code of 0.18.1 also needs: stubs/androidx/annotation/RequiresApi.java = public @interface RequiresApi { int value() default 1; } and stubs/androidx/core/view/inputmethod/{EditorInfoCompat,InputContentInfoCompat,InputConnectionCompat}.java with only the methods MgbIme.kt calls. Result 2026-11-14: v0.18.4 = 0 errors.)
 3) Compile ALL Kotlin + Java sources together (about 1-2 minutes):
    kotlinc -jvm-target 17 -cp android.jar -d out app/src/main/java stubs 2>&1 | grep "error:"
    No "error:" line = OK (warnings about deprecated calls are normal).

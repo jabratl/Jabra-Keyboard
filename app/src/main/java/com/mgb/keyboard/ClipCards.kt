@@ -254,7 +254,7 @@ object ClipCards {
             }
         } else {
             bar.addView(small(ctx, host, if (item.pinned) "★" else "☆", if (item.pinned) "pinned" else "pin", iconsOn) { onPin(item) })
-            if (item.pinned) {   // v0.9.10.5: visible "Pinned" tag on every pinned card (before: only in select mode)
+            if (item.pinned && !ClipLook.tidy(pf)) {   // v0.9.10.5: visible "Pinned" tag on every pinned card (before: only in select mode); v0.18.4: tidy = the gold border + filled pin already say it
                 val pt = TextView(ctx)
                 pt.text = "Pinned"
                 pt.textSize = 11f
@@ -272,7 +272,7 @@ object ClipCards {
     }
 
     /** v0.9.10.5: look of a PINNED card: normal card fill + light blue tint, 2dp accent border (before: 1dp grey-blue border only). */
-    private fun pinnedBg(ctx: Context, p: JabraPrefs): GradientDrawable {
+    internal fun pinnedBg(ctx: Context, p: JabraPrefs): GradientDrawable {   // v0.18.4: internal (the tidy list row uses it too)
         val g = GradientDrawable()
         val base = JabraTokens.cardFill(p, false)
         val gold = ClipLook.pinColor(try { JabraTokens.isDark(p) } catch (_: Throwable) { false })   // v0.16.15 (E3): gold, not the blue of "selected"
@@ -291,7 +291,7 @@ object ClipCards {
         return bg
     }
 
-    private fun small(ctx: Context, host: JabraHost, label: String, icon: String, iconsOn: Boolean, onClick: () -> Unit): Button {
+    internal fun small(ctx: Context, host: JabraHost, label: String, icon: String, iconsOn: Boolean, onClick: () -> Unit): Button {   // v0.18.4: internal (the tidy list row uses it too)
         val b = Button(ctx)
         b.text = label
         b.isAllCaps = false

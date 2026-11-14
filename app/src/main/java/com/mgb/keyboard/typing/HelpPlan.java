@@ -93,6 +93,8 @@ public final class HelpPlan {
             case "pc_chips_list": return "Up to 5 shortcuts with commas, e.g. Ctrl+A,Alt+F4. Empty = default.";
             case "key_press_anim": return "The key shrinks a little while pressed and springs back.";
             case "hold_edit": return "Hold c = copy, v = paste, x = cut. Your own Long-press override for that letter wins.";
+            case "clip_undo_n": return "How many deleted clips Undo keeps (Deleted in the \u22EF menu). 0 = off.";   // v0.18.4
+            case "clip_tidy": return "Clipboard rows as cards: pin on the left, x on the right. OFF = old rows.";   // v0.18.4
             case "clip_img": return "Copied pictures and screenshots show on top of the clipboard. Tap = paste, hold = delete.";
             case "lp_punct": return "Hold , or . and slide over more symbols. Lift without moving = old long-press.";
             case "space_lang": return "Swipe left / right on space to switch language. Cursor drag on space turns off.";

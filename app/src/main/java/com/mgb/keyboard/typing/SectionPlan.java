@@ -27,7 +27,7 @@ public final class SectionPlan {
         // Keys & gestures
         "haptic", "sound", "key_popup", "learn_on", "ac_on", "sg_on", "key_globe", "key_voice", "key_emoji", "lp_delay",
         // Clipboard & tools
-        "clip_on", "clip_view", "clip_sort", "clip_count", "clip_expire", "clip_new_look", "clip_sens", "clip_img",
+        "clip_on", "clip_view", "clip_sort", "clip_count", "clip_expire", "clip_new_look", "clip_sens", "clip_img", "clip_undo_n", "clip_tidy",
         // Tools & Panels
         "edit_bar", "tb_vault", "tb_custom", "fmt_on"
     };

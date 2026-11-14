@@ -740,9 +740,12 @@ object SettingsGroups {
             level(g, "Clip order", "clip_order", 0, com.mgb.keyboard.typing.ClipOrder.NAMES)   // v0.15.2 (N2): which group is shown first, List + Cards
             toggle(g, "Clip character count", "clip_count", true)   // v0.4.3
             level(g, "Clip auto-delete (unpinned)", "clip_expire", 0, com.mgb.keyboard.clip.ClipMeta.EXPIRE_NAMES)   // v0.4.3
+            stepper(g, "Undo limit (clips kept, 0 = off)", "clip_undo_n", 0, com.mgb.keyboard.clip.ClipTrash.MAX_LIMIT, 10, "",
+                { com.mgb.keyboard.clip.ClipTrash.sanitize(prefs.int("clip_undo_n", com.mgb.keyboard.clip.ClipTrash.DEFAULT_LIMIT)) }, com.mgb.keyboard.clip.ClipTrash.DEFAULT_LIMIT)   // v0.18.4: Undo / Recently deleted keeps this many clips (default 30)
             toggle(g, "Show copied images (screenshots)", "clip_img", true)   // v0.18.1: thumbnails on top of the clipboard; tap = paste, hold = delete; OFF = none stored
             toggle(g, "Stay in clipboard after paste", "clip_stay", true)   // v0.17.37 (M4): OFF = old way, back to letters
             toggle(g, "Paste keeps format (card tap)", "clip_fmt_tap", true)   // v0.17.40 (M7): the Aa tag on a card does the other way
+            toggle(g, "Tidy clipboard (pin left, x right)", "clip_tidy", true)   // v0.18.4: OFF = rows / cards exactly as v0.18.3 (needs Clipboard new look)
             toggle(g, "Clipboard new look", "clip_new_look", true)   // v0.17.58 (C3): OFF = exactly the old clipboard panel (panel_ui decides)
             toggle(g, "Clipboard follows keyboard height", "clip_fit", true)   // v0.15.1 (N1): OFF = old fixed clipboard size
             level(g, "Panel style", "panel_ui", 0, com.mgb.keyboard.typing.PanelLayout.STYLE_NAMES)   // v0.16.9 (X9): 0 Classic = today's clipboard (default in the first build), 1 New

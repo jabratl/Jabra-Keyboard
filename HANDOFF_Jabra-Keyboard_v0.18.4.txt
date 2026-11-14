@@ -1,0 +1,22 @@
+HANDOFF Jabra-Keyboard v0.18.4 (Clipboard Undo list + tidy clipboard, MODIFY)   [plan: HANDOFF_Jabra-Keyboard_v0.17.75_UI-Plan.txt]
+
+DONE + CURRENT VERSION
+- UI plan U1-U11 (0.18.0) | U12 clipboard images + hold C/V/X (0.18.1) | 0.18.2 password fields | 0.18.3 pictures follow auto-delete | [x] 0.18.4 Undo list + tidy clipboard. CURRENT: 0.18.4. Apply 0.18.3 first.
+
+WHAT CHANGED (file: 1 line)
+- clip/ClipTrash.java: pure "Recently deleted" list (groups, limit 0..100 default 30, 200000 chars budget, expire, serialize). tools/ClipTrashTest.java 32 checks.
+- ClipTrashStore.kt: pref clip_trash_v1 + clip_undo_n; keep() before remove, undoLast(), restore(), restoreAll(), restoreTexts(), emptyAll(), clearNow() (called from ClipStore.clearUnpinnedNow).
+- ClipTrashUi.kt: Recently deleted screen (Back, count, card per clip with one Restore, Restore all, Empty with 2 taps).
+- ClipboardFeature.kt: keepUndo pushes to the list, doUndo = this visit's last delete, then the list; undoSteps (Undo shows only for deletes of this visit); menu rows Undo (Off 10 30 50 100) + Deleted n; makeTrash(); itemRowTidy() (pin left, x right, meta line under text); Undo uses addCaptured (long clips). Status line min height when tidy.
+- ClipCards.kt: small() + pinnedBg() internal; no "Pinned" word when tidy. ClipLook.kt: tidy(). SettingsGroups.kt: rows "Undo limit", "Tidy clipboard". SectionPlan / HelpPlan / SettingsIndex / ChangedPlan: 2 keys. app/build.gradle.kts 0.18.4.
+
+CHECKS DONE
+bash tools/run_tests.sh = 146/146 green. Kotlin compile of all sources (kotlinc 2.0.21 + android-34 stubs, see tools/KOTLIN_CHECK.txt; add stubs androidx.annotation.RequiresApi, androidx.core.view.inputmethod.* for 0.18.1 code) = 0 errors.
+
+NOT TESTED
+Phone: tidy rows / cards look (dark, light, 360 and 1280 dp, clip lines 2/4/6, Cards + List), Recently deleted screen height with clip_fit, Undo several steps, restore keeps pinned + Aa, Privacy "Clear clipboard history now" empties the list, Undo limit Off removes the Deleted button.
+
+KNOWN LIMITS / NEXT
+- Code-like clips are not kept when Clip code guard is ON. Limit counts clips, not delete actions.
+- Ideas not built: per-clip delete forever in the list, search inside Recently deleted, chips Text / Links / Numbers merged into one "Type" menu, swipe to delete (cannot be tested without a phone).
+- Phone test + GitHub build log = next step.

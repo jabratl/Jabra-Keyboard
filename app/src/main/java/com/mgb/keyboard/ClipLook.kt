@@ -18,6 +18,9 @@ object ClipLook {
     /** v0.17.58 (C3): clipboard new look ON (pref clip_new_look, default ON). OFF = every look below is exactly as before. */
     fun newLook(p: JabraPrefs?): Boolean = try { p?.bool("clip_new_look", true) ?: true } catch (_: Throwable) { true }
 
+    /** v0.18.4: tidy clipboard (pref clip_tidy, default ON; needs the new look): list rows become cards with pin LEFT and x RIGHT, no repeated "Pinned" word on cards, the status line keeps its height. OFF = exactly v0.18.3. */
+    fun tidy(p: JabraPrefs?): Boolean = try { newLook(p) && (p?.bool("clip_tidy", true) ?: true) } catch (_: Throwable) { false }
+
     /** v0.17.58 (C3): gold for the WORD "Pinned" (text needs 4.5:1; #B7791F gave only 3.4:1 on the classic grey). New look: darker gold in light themes. OFF = pinColor(). */
     fun pinText(p: JabraPrefs?, dark: Boolean): Int = if (newLook(p) && !dark) 0xFF7A5000.toInt() else pinColor(dark)
 
