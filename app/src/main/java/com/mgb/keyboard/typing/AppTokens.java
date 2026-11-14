@@ -15,6 +15,13 @@ public final class AppTokens {
     public static final int S4 = 16;
     // ---- touch target (dp) ----
     public static final int TOUCH = 48;
+    // ---- v0.17.76 (U1): type scale (sp) - the ONLY sizes the app screens may use. Old literals map: 12 help, 13 label, 14 body, 15 row title, 16 head ----
+    public static final int T_CAPTION = 12, T_LABEL = 13, T_BODY = 14, T_ROW = 15, T_TITLE = 16, T_HEAD = 20, T_DISPLAY = 24;
+    // ---- v0.17.76 (U1): shape (dp) ----
+    public static final int R_BTN = 12, R_CARD = 12, R_PILL = 24, STROKE = 1;
+    // ---- v0.17.76 (U1): row ----
+    public static final int ROW_MIN = 56;          // one settings row is at least this tall
+    public static final int HAIRLINE_ALPHA = 0x40; // divider = dim colour at this alpha (as the old section header)
     // ---- motion (ms / dp) ----
     public static final int PAGE_MS = 180;     // a page appears
     public static final int FADE_MS = 140;     // search results appear

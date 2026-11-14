@@ -1,3 +1,21 @@
+v0.17.77 - MODIFY (U2): settings rows v2 (calm, consistent rows; many options = pick list)
+- WHY: rows looked different from each other (sizes 12-18 hard-coded, segmented buttons squeezed with 5+ or long names, no separation between rows).
+- What you get: every row = title left + control right, at least 56 dp tall, a hairline under each row. Switches use the app accent colour. Choice rows: up to 4 short options (total <= 30 letters, each <= 14) stay one-tap segments; more or longer options become a value chip with a drawn caret that opens a pick list (current option marked) - nothing is squeezed or cut. Unselected segments / chips = surface2 + hairline, selected = accent fill with readable text, in light and dark. TalkBack text unchanged ("<name>, selected"). The reset dot is centred on the row.
+- Same public API: switchRow / choiceRow / chipRow / textRow / stepperRow / decorate / sectionHeader / styleAction / confirmAction keep names, parameters and callbacks. decorate() now returns a wrapper view (row + hairline): it is still the one row view used for search / flash.
+- Code: AppRows.kt (all sizes from AppTokens, RowPlan for the segmented-or-list rule), typing/RowPlan.java NEW, tools/RowPlanTest.java NEW.
+- BROKE: nothing known. A choice row with 5+ options now needs 2 taps (open list, pick) instead of 1 squeezed tap.
+- TESTED: bash tools/run_tests.sh = 140/140 green; bracket balance AppRows.kt / AppUi.kt. NOT tested: Kotlin NOT compiled; phone: render each row type at 360 / 1280 dp, dark + light, font scale 1.3; pick-list dialog; reset by long-press; search flash.
+- Rollback: restore AppRows.kt from v0.17.75, delete RowPlan.java + RowPlanTest.java.
+
+v0.17.76 - MODIFY (U1): design-system foundation for the main app (no screen change by itself)
+- WHY: the app screens used hard-coded sizes / colours; every new screen drifted a little.
+- Tokens: AppTokens T_CAPTION 12 / T_LABEL 13 / T_BODY 14 / T_ROW 15 / T_TITLE 16 / T_HEAD 20 / T_DISPLAY 24 (sp), R_BTN 12 / R_CARD 12 / R_PILL 24 / STROKE 1 (dp), ROW_MIN 56, HAIRLINE_ALPHA. Palette (light + dark): outline, surface2, accentSoft, onAccent. Rule: dim text only on bg / card; on surface2 use the normal text colour.
+- AppUi: outline() surface2() accentSoft() onAccent() dp(), card() (outlined), divider(), sectionHeader() (moved from AppRows, same look), pill() (selected = accent + onAccent).
+- GUARD: tools/AppDesignLintTest.java counts hard-coded textSize / 0xFF colours in App*.kt against a per-file baseline (it can only go DOWN; a new App*.kt file starts at 0). U11 must empty the table.
+- Code: typing/AppTokens.java, typing/AppPalette.java, AppUi.kt, tools/AppPaletteTest.java (+14 contrast checks), tools/AppDesignLintTest.java NEW.
+- TESTED: run_tests.sh green (contrast: text on surface2 / accentSoft >= 4.5, onAccent on accent >= 4.5, accent on card >= 4.5, outline visible). NOT tested: Kotlin NOT compiled.
+- Rollback: restore the 3 main files + AppPaletteTest.java, delete AppDesignLintTest.java.
+
 v0.17.75 - FIX (S8): "Show language key (EN)" OFF did nothing (key always on)
 - SEEN: EN key switched OFF, the key stayed.
 - ROOT CAUSE: by design (v0.8.9) the EN key is hidden only when OFF AND "Space swipe = language" is ON (else no way to switch). With Space swipe OFF the OFF switch was a dead switch, nothing told you.

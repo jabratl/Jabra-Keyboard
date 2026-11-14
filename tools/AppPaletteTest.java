@@ -40,6 +40,17 @@ public class AppPaletteTest {
         t("light bg white", AppPalette.bg(false) == 0xFFFFFFFF);
         t("dark bg near black", AppPalette.bg(true) == 0xFF121316);
         t("opaque colours", (AppPalette.text(true) >>> 24) == 0xFF && (AppPalette.warn(false) >>> 24) == 0xFF);
+        // v0.17.76 (U1): new tokens
+        for (boolean d : new boolean[]{false, true}) {
+            String m = d ? "dark: " : "light: ";
+            t(m + "text on surface2 >= 4.5", AppPalette.contrast(AppPalette.text(d), AppPalette.surface2(d)) >= 4.5);
+            t(m + "text on accentSoft >= 4.5", AppPalette.contrast(AppPalette.text(d), AppPalette.accentSoft(d)) >= 4.5);
+            t(m + "onAccent on accent >= 4.5", AppPalette.contrast(AppPalette.onAccent(d), AppPalette.accent(d)) >= 4.5);
+            t(m + "accent on card >= 4.5", AppPalette.contrast(AppPalette.accent(d), AppPalette.card(d)) >= 4.5);
+            t(m + "outline visible on bg (>= 1.3)", AppPalette.contrast(AppPalette.outline(d), AppPalette.bg(d)) >= 1.3);
+            t(m + "surface2 differs from card", AppPalette.surface2(d) != AppPalette.card(d));
+            t(m + "new colours opaque", (AppPalette.outline(d) >>> 24) == 0xFF && (AppPalette.surface2(d) >>> 24) == 0xFF && (AppPalette.accentSoft(d) >>> 24) == 0xFF && (AppPalette.onAccent(d) >>> 24) == 0xFF);
+        }
         System.out.println("AppPaletteTest: " + ok + " PASS / " + bad + " FAIL");
         if (bad > 0) System.exit(1);
     }

@@ -16,6 +16,7 @@ import android.widget.Switch
 import android.widget.TextView
 import com.mgb.keyboard.typing.AppTokens
 import com.mgb.keyboard.typing.ChangedPlan
+import com.mgb.keyboard.typing.RowPlan
 
 /**
  * v0.12.0 (M2 of the "App UI" plan): widget factories for the new app pages (pref app_ui = 1). Only the LOOK of a row lives here;
@@ -33,28 +34,29 @@ object AppRows {
         if (text.isEmpty()) return null
         val t = TextView(c)
         t.text = text
-        t.textSize = 12f
+        t.textSize = AppTokens.T_CAPTION.toFloat()   // v0.17.76 (U2): tokens
         t.setTextColor(AppUi.dim(c))
-        t.setPadding(0, 0, 0, dp(c, 6))
+        t.setPadding(0, 0, 0, dp(c, AppTokens.S2))
         return t
     }
 
     private fun titleView(c: Context, text: String): TextView {
         val t = TextView(c)
         t.text = text
-        t.textSize = 15f
+        t.textSize = AppTokens.T_ROW.toFloat()
         t.setTextColor(AppUi.text(c))
         return t
     }
 
     private fun chipBg(c: Context, selected: Boolean): GradientDrawable {
         val g = GradientDrawable()
-        g.setColor(if (selected) AppUi.accent(c) else com.mgb.keyboard.typing.AppPalette.card(AppUi.isDark(c)))
-        g.cornerRadius = dp(c, AppTokens.S3).toFloat()
+        g.setColor(if (selected) AppUi.accent(c) else AppUi.surface2(c))   // v0.17.76 (U2): selected = accent, unselected = surface2 + hairline (clear in light and dark)
+        g.cornerRadius = dp(c, AppTokens.R_BTN).toFloat()
+        if (!selected) { try { g.setStroke(dp(c, AppTokens.STROKE).coerceAtLeast(1), AppUi.outline(c)) } catch (_: Throwable) { } }
         return g
     }
 
-    private fun onAccent(c: Context): Int = if (AppUi.isDark(c)) 0xFF121316.toInt() else 0xFFFFFFFF.toInt()
+    private fun onAccent(c: Context): Int = AppUi.onAccent(c)
 
     private fun flat(c: Context, b: Button, selected: Boolean) {
         b.isAllCaps = false
@@ -71,9 +73,15 @@ object AppRows {
         box.orientation = LinearLayout.VERTICAL
         val sw = Switch(c)
         sw.text = title
-        sw.textSize = 15f
+        sw.textSize = AppTokens.T_ROW.toFloat()
         sw.setTextColor(AppUi.text(c))
-        sw.minHeight = dp(c, 56)
+        sw.minHeight = dp(c, AppTokens.ROW_MIN)
+        safe {   // v0.17.76 (U2): accent coloured switch (thumb + track follow the app palette)
+            val on = AppUi.accent(c); val off = AppUi.dim(c)
+            val st = arrayOf(intArrayOf(android.R.attr.state_checked), intArrayOf())
+            sw.thumbTintList = android.content.res.ColorStateList(st, intArrayOf(on, off))
+            sw.trackTintList = android.content.res.ColorStateList(st, intArrayOf((on and 0x00FFFFFF) or 0x66000000, (off and 0x00FFFFFF) or 0x33000000))
+        }
         sw.setPadding(0, dp(c, AppTokens.S1), 0, dp(c, AppTokens.S1))
         var quiet = false
         sw.isChecked = isOn()
@@ -85,6 +93,8 @@ object AppRows {
 
     /** 2-4 short options as a segmented control (one tap = that option). */
     fun choiceRow(c: Context, title: String, help: String, names: () -> Array<String>, cur: () -> Int, onPick: (Int) -> Unit): Built {
+        val big = try { !RowPlan.segmented(names()) } catch (_: Throwable) { false }   // v0.17.76 (U2): many / long options = value chip + pick list
+        if (big) { val r = try { choiceList(c, title, help, names, cur, onPick) } catch (_: Throwable) { null }; if (r != null) return r }
         val box = LinearLayout(c)
         box.orientation = LinearLayout.VERTICAL
         val t = titleView(c, title)
@@ -97,7 +107,7 @@ object AppRows {
         for (i in n0.indices) {
             val b = Button(c)
             b.text = n0[i]
-            b.textSize = 13f
+            b.textSize = AppTokens.T_LABEL.toFloat()
             b.maxLines = 2
             b.setOnClickListener { safe { onPick(i); paint(c, btns, names, cur) } }
             val lp = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
@@ -106,9 +116,50 @@ object AppRows {
             btns.add(b)
         }
         box.addView(seg)
-        help(c, help)?.let { it.setPadding(0, dp(c, AppTokens.S1), 0, dp(c, 6)); box.addView(it) }
+        help(c, help)?.let { it.setPadding(0, dp(c, AppTokens.S1), 0, dp(c, AppTokens.S2)); box.addView(it) }
         paint(c, btns, names, cur)
         return Built(box) { paint(c, btns, names, cur) }
+    }
+
+    /** v0.17.76 (U2): title left, value chip (with a drawn caret) right; tap = a pick list with every option and the current one marked. */
+    private fun choiceList(c: Context, title: String, help: String, names: () -> Array<String>, cur: () -> Int, onPick: (Int) -> Unit): Built {
+        val box = LinearLayout(c)
+        box.orientation = LinearLayout.VERTICAL
+        val line = LinearLayout(c)
+        line.orientation = LinearLayout.HORIZONTAL
+        line.gravity = Gravity.CENTER_VERTICAL
+        line.minimumHeight = dp(c, AppTokens.ROW_MIN)
+        line.addView(titleView(c, title), LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
+        val chip = Button(c)
+        chip.textSize = AppTokens.T_LABEL.toFloat()
+        chip.maxLines = 2
+        flat(c, chip, false)
+        chip.setPadding(dp(c, AppTokens.S3), 0, dp(c, AppTokens.S3), 0)
+        fun show() {
+            safe {
+                val n = names(); val i = RowPlan.clamp(cur(), n.size)
+                val v = if (n.isEmpty()) "" else n[i]
+                Glyphs.relabel(chip, v + " " + "▾")
+                chip.contentDescription = title + ": " + v
+            }
+        }
+        chip.setOnClickListener {
+            safe {
+                val n = names()
+                android.app.AlertDialog.Builder(c)
+                    .setTitle(title)
+                    .setSingleChoiceItems(n, RowPlan.clamp(cur(), n.size)) { d, which -> safe { onPick(which); show() }; d.dismiss() }
+                    .setNegativeButton("Cancel", null)
+                    .show()
+            }
+        }
+        show()
+        val lp = LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, dp(c, AppTokens.TOUCH))
+        lp.leftMargin = dp(c, AppTokens.S2)
+        line.addView(chip, lp)
+        box.addView(line)
+        help(c, help)?.let { box.addView(it) }
+        return Built(box) { show() }
     }
 
     private fun paint(c: Context, btns: List<Button>, names: () -> Array<String>, cur: () -> Int) {
@@ -117,7 +168,7 @@ object AppRows {
             val sel = cur().coerceIn(0, n.size - 1)
             for (i in btns.indices) {
                 flat(c, btns[i], i == sel)
-                btns[i].contentDescription = n[i.coerceIn(0, n.size - 1)] + (if (i == sel) ", selected" else "")
+                btns[i].contentDescription = RowPlan.optionDesc(n[RowPlan.clamp(i, n.size)], i == sel)
             }
         }
     }
@@ -129,11 +180,11 @@ object AppRows {
         val line = LinearLayout(c)
         line.orientation = LinearLayout.HORIZONTAL
         line.gravity = Gravity.CENTER_VERTICAL
-        line.minimumHeight = dp(c, 56)
+        line.minimumHeight = dp(c, AppTokens.ROW_MIN)
         val t = titleView(c, title)
         line.addView(t, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
         val chip = Button(c)
-        chip.textSize = 13f
+        chip.textSize = AppTokens.T_LABEL.toFloat()
         chip.maxLines = 2
         flat(c, chip, false)
         chip.setPadding(dp(c, AppTokens.S3), 0, dp(c, AppTokens.S3), 0)
@@ -195,11 +246,11 @@ object AppRows {
         val line = LinearLayout(c)
         line.orientation = LinearLayout.HORIZONTAL
         line.gravity = Gravity.CENTER_VERTICAL
-        line.minimumHeight = dp(c, 56)
+        line.minimumHeight = dp(c, AppTokens.ROW_MIN)
         line.addView(titleView(c, title), LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
         val val0 = TextView(c)
         val0.gravity = Gravity.CENTER
-        val0.textSize = 14f
+        val0.textSize = AppTokens.T_BODY.toFloat()
         val0.setTypeface(null, Typeface.BOLD)
         val0.setTextColor(AppUi.text(c))
         val0.minWidth = dp(c, 64)
@@ -251,7 +302,7 @@ object AppRows {
         fun mk(label: String, dir: Int, desc: String): Button {
             val b = Button(c)
             b.text = label
-            b.textSize = 18f
+            b.textSize = AppTokens.T_HEAD.toFloat()
             flat(c, b, false)
             b.contentDescription = desc + " " + title
             b.setOnClickListener { safe { begin(); step(dir); show(); end() } }
@@ -285,7 +336,7 @@ object AppRows {
         g.setColor(AppUi.accent(c))
         dot.background = g
         val dlp = LinearLayout.LayoutParams(dp(c, AppTokens.S2), dp(c, AppTokens.S2))
-        dlp.topMargin = dp(c, 24)
+        dlp.topMargin = dp(c, AppTokens.ROW_MIN / 2 - AppTokens.S1)   // v0.17.76 (U2): centred on a 56 dp row (was 24)
         dlp.rightMargin = dp(c, AppTokens.S2)
         outer.addView(dot, dlp)
         outer.addView(content, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
@@ -293,27 +344,15 @@ object AppRows {
         upd()
         outer.setOnLongClickListener { safe { onReset() }; true }
         outer.contentDescription = null
-        return Built(outer) { upd() }
+        val wrap = LinearLayout(c)   // v0.17.76 (U2): a hairline under every row (the wrapper is the row view for search / flash)
+        wrap.orientation = LinearLayout.VERTICAL
+        wrap.addView(outer, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
+        safe { wrap.addView(AppUi.divider(c)) }
+        return Built(wrap) { upd() }
     }
 
-    /** Small caps title + thin divider. */
-    fun sectionHeader(c: Context, title: String): View {
-        val box = LinearLayout(c)
-        box.orientation = LinearLayout.VERTICAL
-        val t = TextView(c)
-        t.text = title.uppercase()
-        t.textSize = 12f
-        t.setTypeface(null, Typeface.BOLD)
-        t.letterSpacing = 0.08f
-        t.setTextColor(AppUi.dim(c))
-        t.setPadding(0, dp(c, AppTokens.S4), 0, dp(c, AppTokens.S1))
-        safe { t.isAccessibilityHeading = true }
-        box.addView(t)
-        val line = View(c)
-        line.setBackgroundColor((AppUi.dim(c) and 0x00FFFFFF) or 0x40000000)
-        box.addView(line, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(c, 1)))
-        return box
-    }
+    /** Small caps title + thin divider (v0.17.76 (U2): the look lives in AppUi.sectionHeader now, same result). */
+    fun sectionHeader(c: Context, title: String): View = AppUi.sectionHeader(c, title)
 
     /** Button style for Reset / Undo / presets: 48 dp, rounded, card colour. */
     fun styleAction(c: Context, b: Button): Button {

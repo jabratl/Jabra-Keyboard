@@ -14,6 +14,10 @@ public final class AppPalette {
     private static final int L_BG = 0xFFFFFFFF, L_CARD = 0xFFF2F2F2, L_TEXT = 0xFF212121, L_DIM = 0xFF6B6B6B,
             L_WARN = 0xFFBF360C, L_OK = 0xFF2E7D32, L_ACCENT = 0xFF1565C0;
     // DARK
+    // v0.17.76 (U1): outline (hairlines / strokes), surface2 (pressed / unselected segment, deeper than card), accentSoft (tinted selection / flash), onAccent (text on an accent fill).
+    // Rule: dim text is only for bg / card (4.5:1); on surface2 use the normal text colour.
+    private static final int L_OUTLINE = 0xFFD6D6D6, L_SURFACE2 = 0xFFE6E6E6, L_ACCENT_SOFT = 0xFFDCE9FA, L_ON_ACCENT = 0xFFFFFFFF;
+    private static final int D_OUTLINE = 0xFF3A3C41, D_SURFACE2 = 0xFF2A2C30, D_ACCENT_SOFT = 0xFF243447, D_ON_ACCENT = 0xFF121316;
     private static final int D_BG = 0xFF121316, D_CARD = 0xFF1E1F22, D_TEXT = 0xFFF2F2F2, D_DIM = 0xFFB8B8B8,
             D_WARN = 0xFFFF8A65, D_OK = 0xFF81C784, D_ACCENT = 0xFF90CAF9;
 
@@ -50,6 +54,10 @@ public final class AppPalette {
     public static int warn(boolean dark) { return dark ? D_WARN : L_WARN; }
     public static int ok(boolean dark) { return dark ? D_OK : L_OK; }
     public static int accent(boolean dark) { return dark ? D_ACCENT : L_ACCENT; }
+    public static int outline(boolean dark) { return dark ? D_OUTLINE : L_OUTLINE; }          // v0.17.76 (U1)
+    public static int surface2(boolean dark) { return dark ? D_SURFACE2 : L_SURFACE2; }
+    public static int accentSoft(boolean dark) { return dark ? D_ACCENT_SOFT : L_ACCENT_SOFT; }
+    public static int onAccent(boolean dark) { return dark ? D_ON_ACCENT : L_ON_ACCENT; }
 
     private static double lin(int c) {
         double v = c / 255.0;

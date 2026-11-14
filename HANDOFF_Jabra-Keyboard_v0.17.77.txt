@@ -1,0 +1,26 @@
+HANDOFF Jabra-Keyboard v0.17.77 (U1 + U2, MODIFY)   [UI redesign plan: see HANDOFF_Jabra-Keyboard_v0.17.75_UI-Plan.txt]
+
+DONE + CURRENT VERSION
+- Earlier: R3-R7, S1-S8 (0.17.75). UI plan U1-U11 written.
+- [x] U1 (0.17.76) design-system foundation.  [x] U2 (0.17.77) row components v2.   CURRENT: 0.17.77. Apply S1-S8 zips first, then this one.
+
+WHAT CHANGED (file: 1 line)
+- typing/AppTokens.java: type scale T_*, shapes R_*, STROKE, ROW_MIN 56, HAIRLINE_ALPHA.
+- typing/AppPalette.java: outline / surface2 / accentSoft / onAccent (light + dark).
+- AppUi.kt: accessors + card() divider() sectionHeader() pill() dp().
+- AppRows.kt: rows v2 (tokens, 56 dp rows, hairline per row via decorate wrapper, accent switch, segmented-or-pick-list choice rows, caret chip); API unchanged. Now 0 hard-coded sizes / colours.
+- typing/RowPlan.java NEW: segmented(names) rule (<= 4 options, total <= 30 chars, each <= 14).
+- tools/RowPlanTest.java NEW, tools/AppPaletteTest.java (+14), tools/AppDesignLintTest.java NEW (drift guard, baseline per App*.kt file, only goes down).
+- app/build.gradle.kts 0.17.77, CHANGELOG.txt (2 entries).
+
+CHECKS DONE
+bash tools/run_tests.sh = 140/140 green; bracket balance AppRows.kt + AppUi.kt.
+
+NOT TESTED (needs real use)
+Kotlin NOT compiled (S1-S8 + U1-U2): a red GitHub build log = FIX first. Phone: every row type (switch / segmented / pick-list chip / chip / stepper / text) at 360 + 1280 dp, dark + light, font scale 1.3; reset dot + long-press reset; pick-list dialog (5+ options); search flash on the new row wrapper; Home / other pages still fine (they call AppRows.sectionHeader / styleAction).
+
+LEAD BASELINE (hard-coded sizes / colours still to remove): AppHome 12/0, AppPages 4/0, AppSearch 7/0, AppThemeGrid 3/0, AppThemeStudio 13/1, AppToolbarEditor 4/0, AppWizard 1/0 (each step lowers its files).
+
+NEXT STEP
+U3 (BUILD, M): SMART HINTS (help text). Goal: help opens on demand (info icon), auto-opens once for new / risky rows, search hits and warnings; app_tips Smart / Always / Off; help_seen pref; help text <= 90 chars (HelpPlan + test). Slot is ready: AppRows.help() is the single place (switchRow / choiceRow / choiceList / chipRow / stepperRow).
+Kickoff: Jabra-Keyboard step U3. Mode: BUILD. Previous version: v0.17.77. Attached: this HANDOFF + the UI-Plan HANDOFF + AppRows.kt + typing/SettingsIndex.java (read) + JabraIcons.kt (add "info"). Goal: smart hints. Context: Done U1-U2. Next: U4.
