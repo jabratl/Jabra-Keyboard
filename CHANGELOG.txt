@@ -1,3 +1,11 @@
+v0.18.11 - FIX: Clipboard Cards - link clips: middle ellipsis + compact card (part 5 of 5)
+- SEEN/WHY: in Cards view every link was cut at the END ("https://jabratl.blogspot.com/2026/11/chapter-..."), so chapter 134 and 135 looked the same. A card also had 3 rows (text, info line, pin / x), so about 1.5 cards fitted on screen.
+- What you get: a link clip (one URL, same rule as the Links chip) is shown on ONE line as "start...end" (Android middle ellipsis), so the last part (chapter number / page name) stays visible. The info line (kind tag "Link", Aa, "75 \u00B7 1x \u00B7 10m") and the pin / x are now ONE line under it (pin left, x right), and the card is lower (70% of the normal minimum height). "More ▾" still opens the whole URL wrapped, "Less" closes it again. Tap = paste, hold = select mode, pin, x, Aa work as before. In select mode a link card keeps the old bottom bar (check box + tag) but the URL is still one line. Normal text clips, List view and tidy rows are NOT changed.
+- Code: ClipCards.kt (card(): linkCard flag, linkShort(), compact row; all marked v0.18.11), app/build.gradle.kts 0.18.11. No pref, key, id or data changed. Any problem inside the compact row = the old 2 lines are built.
+- BROKE: nothing known. Note: a link card is lower than a text card next to it; the two cards of a row still have equal height (the lower one stretches).
+- TESTED here: bash tools/run_tests.sh = 147/147 green; bracket balance of ClipCards.kt OK. NOT tested: Kotlin NOT compiled (likely spots if red: setSingleLine / linkShort lambda); phone: Cards view with several links: start and end visible, chapter numbers different, pin / x / tag on one line at 360 dp, More / Less, tap paste, hold select, pinned link card (gold), Aa tag on a link with stored format, dark + light, clip_card_pct 70 / 140.
+- Rollback: restore ClipCards.kt and app/build.gradle.kts from v0.18.10.
+
 v0.18.10 - FIX: "Save to:" shows the folder NAME, never a raw id (part 4 of 5)
 - SEEN/WHY: Export screen showed "Save to: ...eolpYOxA9nYXplYybo56bzK6eshaXnI_xkT8zeArfv_1b". That is the tree document id of a Google-Drive-like folder: such providers give an opaque id, not a path. The old label() only handled ids like "primary:Download/Jabra".
 - ROOT CAUSE: BackupPlan.label(id) just cuts the text after ":" (or takes the whole id when there is no ":") and shortens it.

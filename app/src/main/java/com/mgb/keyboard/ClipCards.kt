@@ -117,7 +117,8 @@ object ClipCards {
         val lp = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 1f)   // equal width, same height as the other card in the row
         lp.setMargins(dp(ctx, 3), dp(ctx, 3), dp(ctx, 3), dp(ctx, 3))
         box.layoutParams = lp
-        box.minimumHeight = dp(ctx, cardMinDp(ctx))   // v0.17.33 (UI9): scaled by clip_card_pct (100 = 72 as before); v0.10.5: a card can never collapse to zero height (normal cards are taller than this, so no visible change)
+        val linkCard = try { com.mgb.keyboard.typing.ClipFilter.isLink(item.text) } catch (_: Throwable) { false }   // v0.18.11: one-line URL clip = compact card, middle ellipsis
+        box.minimumHeight = if (linkCard) dp(ctx, cardMinDp(ctx) * 7 / 10) else dp(ctx, cardMinDp(ctx))   // v0.18.11: link card is lower; v0.17.33 (UI9): scaled by clip_card_pct (100 = 72 as before); v0.10.5: a card can never collapse to zero height (normal cards are taller than this, so no visible change)
 
         // body = the clip text; tap = paste + back to letters (same 3 lines as the List view)
         val t = TextView(ctx)
@@ -127,6 +128,11 @@ object ClipCards {
         t.maxLines = 2 + 2 * lv
         t.ellipsize = TextUtils.TruncateAt.END
         t.minLines = 2
+        val linkShort: (Boolean) -> Unit = { open ->   // v0.18.11: closed = ONE line, "start...end" (middle ellipsis keeps the chapter number visible); open = wrapped like any text
+            if (open) { t.setSingleLine(false); t.minLines = 1; t.maxLines = 12; t.ellipsize = TextUtils.TruncateAt.END }
+            else { t.setSingleLine(true); t.maxLines = 1; t.minLines = 1; t.ellipsize = TextUtils.TruncateAt.MIDDLE }
+        }
+        if (linkCard) { try { linkShort(false) } catch (_: Throwable) { } }
         t.setPadding(dp(ctx, 8), dp(ctx, 6), dp(ctx, 8), dp(ctx, 2))
         // v0.18.6: the WHOLE card is the tap target (text, meta line, empty space); the text view itself is no longer clickable
         try {   // v0.18: soft tint while the card is pressed (v0.18.6: on the whole card, all corners rounded)
@@ -154,7 +160,7 @@ object ClipCards {
             } catch (_: Throwable) { }
         }
         ClipHold.wire(box, sm.holdMs, sm.on, { try { sm.onLong(item) } catch (_: Throwable) { } }, { act() }, { try { host.feedback(box) } catch (_: Throwable) { } })   // v0.18.6: whole card (was: text only); hold = select mode, long-click fallback inside wire()
-        t.layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f)
+        t.layoutParams = if (linkCard) LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT) else LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f)   // v0.18.11
         box.addView(t)
         try {   // v0.17.60 (C5): long clip = small "More" under the text; tap opens the whole card in place (12 lines), "Less" closes it. New look only.
             if (ClipLook.newLook(pf) && !sm.on && item.text.length > 40) {
@@ -172,7 +178,7 @@ object ClipCards {
                 more.setOnClickListener {
                     try { host.feedback(more) } catch (_: Throwable) { }
                     open = !open
-                    t.maxLines = if (open) 12 else lim
+                    if (linkCard) linkShort(open) else t.maxLines = if (open) 12 else lim   // v0.18.11
                     more.text = if (open) "Less \u25B4" else "More \u25BE"
                 }
                 box.addView(more)
@@ -184,6 +190,34 @@ object ClipCards {
                 }
             }
         } catch (_: Throwable) { }
+        if (linkCard && !sm.on) {   // v0.18.11: link card (not in select mode): tag + info line and pin / x are ONE line (before: 2 lines = 3 rows per card)
+            try {
+                val crow = LinearLayout(ctx)
+                crow.orientation = LinearLayout.HORIZONTAL
+                crow.gravity = Gravity.CENTER_VERTICAL
+                crow.addView(small(ctx, host, if (item.pinned) "★" else "☆", if (item.pinned) "pinned" else "pin", iconsOn) { onPin(item) })
+                val ctg = ClipLook.tag(ctx, pf, item.text)
+                if (ctg != null) crow.addView(ctg)
+                val cft = if (sm.paste != null && sm.hasFmt(item)) ClipLook.fmtTag(ctx, pf) else null
+                if (cft != null) {
+                    cft.setOnClickListener { try { host.feedback(cft) } catch (_: Throwable) { }; try { sm.paste!!(item, true) } catch (_: Throwable) { } }
+                    crow.addView(cft)
+                }
+                val cinf = sm.info(item)
+                val ci = TextView(ctx)
+                ci.text = cinf
+                ci.textSize = 10f
+                ci.maxLines = 1
+                ci.ellipsize = TextUtils.TruncateAt.END
+                ci.setTextColor(try { JabraTokens.cardNote(pf!!) } catch (_: Throwable) { Color.GRAY })
+                ci.setPadding(dp(ctx, 6), 0, dp(ctx, 2), 0)
+                ci.layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+                crow.addView(ci)
+                crow.addView(small(ctx, host, "✕", "close", iconsOn) { onDel(item) })
+                box.addView(crow)
+                return box
+            } catch (_: Throwable) { }   // any problem = the normal 2 lines below
+        }
         try {   // v0.4.3: char count line (v0.10.24 C1: + kind tag on the left + age in the text)
             val inf = sm.info(item)
             val tg = ClipLook.tag(ctx, pf, item.text)
