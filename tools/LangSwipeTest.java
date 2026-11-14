@@ -46,6 +46,12 @@ public class LangSwipeTest {
         eq("name probhat (v0.16.2)", LangSwipe.name(true, true), "\u09AC\u09BE\u0982\u09B2\u09BE");
         eq("name EN ignores probhat", LangSwipe.name(false, true), "English");
         // language key visibility
+        eq("sync key off, swipe off -> swipe on", LangSwipe.syncAfter("key_lang", false, false, false), 1);
+        eq("sync key off, swipe on -> nothing", LangSwipe.syncAfter("key_lang", false, false, true), 0);
+        eq("sync swipe off, key off -> key on", LangSwipe.syncAfter("space_lang", false, false, false), 2);
+        eq("sync swipe off, key on -> nothing", LangSwipe.syncAfter("space_lang", false, true, false), 0);
+        eq("sync turning ON never changes anything", LangSwipe.syncAfter("key_lang", true, true, false), 0);
+        eq("sync other keys", LangSwipe.syncAfter("numrow", false, false, false), 0);
         eq("vis default", LangSwipe.langKeyVisible(true, false), true);
         eq("vis keyOn swipeOn", LangSwipe.langKeyVisible(true, true), true);
         eq("vis keyOff swipeOff (no way to switch)", LangSwipe.langKeyVisible(false, false), true);

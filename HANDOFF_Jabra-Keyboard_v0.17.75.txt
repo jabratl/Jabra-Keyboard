@@ -1,0 +1,27 @@
+HANDOFF Jabra-Keyboard v0.17.75 (S8, FIX)   [paste this at the start of the next chat]
+
+DONE LIST + CURRENT VERSION
+- R3-R7, S1 icons (68), S2 Ridmik grid (69), S3 TAR + classic swipe (70), S4 Enter search icon (71), S5 last signs (72), S6 FIX number row toggle (73), S7 digit swipe on row 1 (74).
+- S8 (0.17.75) FIX: EN key OFF did nothing.
+- CURRENT: 0.17.75. Apply S1..S7 zips, then this one.
+
+ROOT CAUSE
+EN key is hidden only when key_lang OFF AND space_lang ON (v0.8.9 rule, so you can always switch language). With Space swipe OFF the EN switch was a dead switch.
+
+WHAT CHANGED
+- typing/LangSwipe.java: syncAfter() rule.
+- JabraExtras.kt: JabraPrefs.setBool links key_lang / space_lang (EN OFF -> Space swipe ON; Space swipe OFF with EN OFF -> EN ON).
+- tools/LangSwipeTest.java: 6 checks. app/build.gradle.kts 0.17.75. CHANGELOG.txt.
+
+CHECKS DONE
+bash tools/run_tests.sh = 138/138 green; bracket balance JabraExtras.kt.
+
+NOT TESTED (needs real use)
+Kotlin NOT compiled (S1-S8): if GitHub build fails send the log -> FIX first. Phone: EN key OFF -> key gone + Space swipe switches language; Space swipe OFF -> EN key back; if stuck: EN ON then OFF once; other switch row refreshes after reopening settings; custom keyboard rebuilt (needs S6).
+
+KNOWN LIMITS
+- The linked switch row is not live-refreshed on the same screen.
+- A layout EDITED in the layout editor is not rebuilt: app > Rebuild layout from current settings.
+
+NEXT STEP + GOAL
+S9: phone test of S1-S8 + FIX from build log. Open: Ridmik shift hints (screenshot), AppThemeStudio warning sign, mixed skin tone emoji (optional).

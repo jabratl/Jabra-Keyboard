@@ -1,3 +1,13 @@
+v0.17.75 - FIX (S8): "Show language key (EN)" OFF did nothing (key always on)
+- SEEN: EN key switched OFF, the key stayed.
+- ROOT CAUSE: by design (v0.8.9) the EN key is hidden only when OFF AND "Space swipe = language" is ON (else no way to switch). With Space swipe OFF the OFF switch was a dead switch, nothing told you.
+- FIX: settings are linked now. EN key OFF -> Space swipe is turned ON too (so the key really goes). Space swipe OFF while the EN key is OFF -> the EN key comes back (no lock-out). Done once in JabraPrefs.setBool (every settings screen, quick toggles, profiles, backup restore); pure rule LangSwipe.syncAfter().
+- If it is still stuck right now (both stored OFF): switch EN key ON, then OFF once.
+- The other switch row may show the old state until the settings screen is reopened. The custom keyboard rebuilds itself by the S6 settings signature (key_lang + space_lang are in it).
+- Code: typing/LangSwipe.java (syncAfter), JabraExtras.kt (JabraPrefs.setBool), tools/LangSwipeTest.java (+6 checks). app/build.gradle.kts 0.17.75.
+- TESTED: bash tools/run_tests.sh = 138/138 green; bracket balance JabraExtras.kt. NOT tested: Kotlin NOT compiled; phone (needs S6 installed too for the custom keyboard).
+- Rollback: restore JabraExtras.kt, LangSwipe.java, LangSwipeTest.java from v0.17.74.
+
 v0.17.74 - MODIFY (S7): Bangla fixed (Ridmik look) with Number row OFF: swipe up on row 1 types the digit
 - Number row OFF: swipe up on the 10 keys of row 1 types 1 2 3 4 5 6 7 8 9 0 (Bangla digits when setting "Bangla digits on the number row" numrow_bn is ON). Hold = the shift letter (hint top right) exactly as before, tap unchanged, grid and hints unchanged (Ridmik look kept). The swipe is hidden (no extra label).
 - Number row ON: nothing changes (no digit swipe).

@@ -59,6 +59,16 @@ public final class LangSwipe {
         return keyLang || !spaceLang;
     }
 
+    /** v0.17.75 (S8 FIX): what to do after a setting was written so the EN key setting is never a dead switch. 0 = nothing, 1 = also turn Space swipe ON, 2 = also turn the EN key ON.
+     *  key_lang OFF while Space swipe is OFF: the key would stay (no other way to switch) -> Space swipe is turned ON, so the key really goes.
+     *  space_lang OFF while the EN key is OFF: nobody could switch language -> the EN key comes back. keyLang / spaceLang = values AFTER the write. */
+    public static int syncAfter(String key, boolean value, boolean keyLang, boolean spaceLang) {
+        if (value || key == null) return 0;
+        if (key.equals("key_lang") && !spaceLang) return 1;
+        if (key.equals("space_lang") && !keyLang) return 2;
+        return 0;
+    }
+
     // ---- v0.9.8 (V3): swipe feel ----
     public static final String[] STEP_NAMES = { "Small", "Normal", "Large" };
     public static final int STEP_DEFAULT = 1;

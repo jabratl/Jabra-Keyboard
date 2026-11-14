@@ -48,7 +48,15 @@ class JabraPrefs(private val ctx: Context) {
     fun bool(k: String, d: Boolean): Boolean = try { sp().getBoolean(k, d) } catch (_: Throwable) { d }
     fun int(k: String, d: Int): Int = try { sp().getInt(k, d) } catch (_: Throwable) { d }
     fun str(k: String, d: String): String = try { sp().getString(k, d) ?: d } catch (_: Throwable) { d }
-    fun setBool(k: String, v: Boolean) { try { sp().edit().putBoolean(k, v).apply() } catch (_: Throwable) { } }
+    fun setBool(k: String, v: Boolean) {
+        try { sp().edit().putBoolean(k, v).apply() } catch (_: Throwable) { }
+        try {   // v0.17.75 (S8 FIX): EN key OFF needs Space swipe ON (else the key stays); Space swipe OFF needs the EN key ON (else no way to switch)
+            when (com.mgb.keyboard.typing.LangSwipe.syncAfter(k, v, bool("key_lang", true), bool("space_lang", false))) {
+                1 -> setBool("space_lang", true)
+                2 -> setBool("key_lang", true)
+            }
+        } catch (_: Throwable) { }
+    }
     fun setInt(k: String, v: Int) { try { sp().edit().putInt(k, v).apply() } catch (_: Throwable) { } }
     fun setStr(k: String, v: String) { try { sp().edit().putString(k, v).apply() } catch (_: Throwable) { } }
 
