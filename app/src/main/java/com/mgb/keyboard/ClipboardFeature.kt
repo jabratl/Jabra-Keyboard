@@ -969,8 +969,8 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
         val nAll = expOrder().size
         val nPin = store.pinnedView("").size
         val scopes = row()
-        val labels = arrayOf("Selected (" + expSel.size + ")", "All ($nAll)", "Pinned ($nPin)")
-        for (i in 0 until 3) scopes.addView(UiKit.chip(ctx, pf, labels[i], i == expScope, sz(t40), { v -> fb(v) }) { expScope = i; expMsg = ""; refresh() })
+        val labels = arrayOf(/* v0.18.9: the chosen chip of every Export row now shows a tick */ "Selected (" + expSel.size + ")", "All ($nAll)", "Pinned ($nPin)")
+        for (i in 0 until 3) scopes.addView(UiKit.chip(ctx, pf, (if (i == expScope) "\u2713 " else "") + labels[i], i == expScope, sz(t40), { v -> fb(v) }) { expScope = i; expMsg = ""; refresh() })
         outer.addView(scopes)
 
         val optD = pr.bool("clip_exp_details", true); val optF = pr.bool("clip_exp_fmt", true); val optS = pr.bool("clip_exp_skip", true)
@@ -988,9 +988,9 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
         if (es.size > 1) {   // v0.17.63 (R3): one file with all clips, or a ZIP with one file per clip
             val pk = row()
             val packZip = pr.bool("clip_exp_zip", false); val packTar = pr.bool("clip_exp_tar", false) && !packZip
-            pk.addView(UiKit.chip(ctx, pf, "One file", !packZip && !packTar, sz(t40), { v -> fb(v) }) { pr.setBool("clip_exp_zip", false); pr.setBool("clip_exp_tar", false); expMsg = ""; refresh() })
-            pk.addView(UiKit.chip(ctx, pf, "ZIP (file per clip)", packZip, sz(t40), { v -> fb(v) }) { pr.setBool("clip_exp_zip", true); pr.setBool("clip_exp_tar", false); expMsg = ""; refresh() })
-            pk.addView(UiKit.chip(ctx, pf, "TAR", packTar, sz(t40), { v -> fb(v) }) { pr.setBool("clip_exp_zip", false); pr.setBool("clip_exp_tar", true); expMsg = ""; refresh() })
+            pk.addView(UiKit.chip(ctx, pf, (if (!packZip && !packTar) "\u2713 " else "") + "One file", !packZip && !packTar, sz(t40), { v -> fb(v) }) { pr.setBool("clip_exp_zip", false); pr.setBool("clip_exp_tar", false); expMsg = ""; refresh() })
+            pk.addView(UiKit.chip(ctx, pf, (if (packZip) "\u2713 " else "") + "ZIP (file per clip)", packZip, sz(t40), { v -> fb(v) }) { pr.setBool("clip_exp_zip", true); pr.setBool("clip_exp_tar", false); expMsg = ""; refresh() })
+            pk.addView(UiKit.chip(ctx, pf, (if (packTar) "\u2713 " else "") + "TAR", packTar, sz(t40), { v -> fb(v) }) { pr.setBool("clip_exp_zip", false); pr.setBool("clip_exp_tar", true); expMsg = ""; refresh() })
             outer.addView(pk)
         }
         val withFmt = if (optF) es.count { it.html != null && it.html.isNotEmpty() } else 0

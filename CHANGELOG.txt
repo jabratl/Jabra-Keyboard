@@ -1,3 +1,11 @@
+v0.18.9 - FIX: Export screen - the chosen chip of every row shows a tick (part 3 of 5)
+- SEEN/WHY: Details / Format / Skip codes showed "✓" when ON, but the chosen "Selected / All / Pinned" and "One file / ZIP / TAR" chips only changed colour. The rule of the plan (state is never colour alone) was broken here.
+- What you get: the chosen scope chip and the chosen pack chip now start with the same "✓" (drawn tick) as the 3 option chips. Only the chosen chip has it; tap behaviour is unchanged.
+- Code: ClipboardFeature.kt (export screen, 4 chips + 1 comment, marked v0.18.9), app/build.gradle.kts 0.18.9. No pref, key, id or data changed.
+- BROKE: nothing known.
+- TESTED here: bash tools/run_tests.sh = 147/147 green; bracket balance of ClipboardFeature.kt OK. NOT tested: Kotlin NOT compiled; phone: Export screen at 360 dp - the 3 rows still fit on one line each (ZIP chip is the longest), tick moves when you tap another chip, with icons OFF the text tick shows.
+- Rollback: restore ClipboardFeature.kt and app/build.gradle.kts from v0.18.8.
+
 v0.18.8 - FIX: Clipboard ⋯ menu - rows line up, more room for the list (part 2 of 5)
 - SEEN/WHY: the ⋯ menu rows did not line up: Undo had 5 pills (Off 10 30 50 100), Sort 4, View 2, Do 4, each row split its width differently. The open menu plus the filter chips also left only a header and one row of the list.
 - What you get: all 4 rows (Sort, View, Undo, Do) use the same 5 equal columns, so every pill sits exactly under the one above. Pill text is a little smaller (11) so "Deleted 10" and "✓ Newest" fit on a 360 dp phone. While the ⋯ menu is open the filter chips (All / Pinned / Text / Links / Numbers) are hidden, like in select mode, so the list gets that height back. Close the menu (▴) and the chips are back. Nothing was removed: Sort (4), View (List / Cards), Undo (Off 10 30 50 100), Manage, Deleted n, Export all, Clear are all still in the menu.
