@@ -92,6 +92,7 @@ public final class KeyDesc {
             case "edit": return "Edit";
             case "more": return "More options";
             case "up": return "Close menu";
+            case "info": return "Show help";   // v0.17.78 (U3)
             case "all": return "Select all";
             case "cut": return "Cut";
             case "copy": return "Copy";

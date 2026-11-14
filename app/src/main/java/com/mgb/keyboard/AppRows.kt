@@ -30,16 +30,6 @@ object AppRows {
     private fun dp(c: Context, v: Int): Int = (v * c.resources.displayMetrics.density).toInt()
     private fun safe(b: () -> Unit) { try { b() } catch (_: Throwable) { } }
 
-    private fun help(c: Context, text: String): TextView? {
-        if (text.isEmpty()) return null
-        val t = TextView(c)
-        t.text = text
-        t.textSize = AppTokens.T_CAPTION.toFloat()   // v0.17.76 (U2): tokens
-        t.setTextColor(AppUi.dim(c))
-        t.setPadding(0, 0, 0, dp(c, AppTokens.S2))
-        return t
-    }
-
     private fun titleView(c: Context, text: String): TextView {
         val t = TextView(c)
         t.text = text
@@ -86,8 +76,14 @@ object AppRows {
         var quiet = false
         sw.isChecked = isOn()
         sw.setOnCheckedChangeListener { _, v -> if (!quiet) safe { onSet(v) } }
-        box.addView(sw, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
-        help(c, help)?.let { box.addView(it) }
+        val hp = AppHelp.make(c, title, help)   // v0.17.78 (U3): (i) icon + help (smart)
+        val swLine = LinearLayout(c)
+        swLine.orientation = LinearLayout.HORIZONTAL
+        swLine.gravity = Gravity.CENTER_VERTICAL
+        swLine.addView(sw, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
+        hp.info?.let { swLine.addView(it, AppHelp.infoLp(c)) }
+        box.addView(swLine, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
+        hp.text?.let { box.addView(it) }
         return Built(box) { quiet = true; try { sw.isChecked = isOn() } catch (_: Throwable) { }; quiet = false }
     }
 
@@ -99,7 +95,13 @@ object AppRows {
         box.orientation = LinearLayout.VERTICAL
         val t = titleView(c, title)
         t.setPadding(0, dp(c, AppTokens.S2), 0, dp(c, AppTokens.S1))
-        box.addView(t)
+        val hp = AppHelp.make(c, title, help)   // v0.17.78 (U3)
+        val tline = LinearLayout(c)
+        tline.orientation = LinearLayout.HORIZONTAL
+        tline.gravity = Gravity.CENTER_VERTICAL
+        tline.addView(t, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
+        hp.info?.let { tline.addView(it, AppHelp.infoLp(c)) }
+        box.addView(tline)
         val seg = LinearLayout(c)
         seg.orientation = LinearLayout.HORIZONTAL
         val btns = ArrayList<Button>()
@@ -116,7 +118,7 @@ object AppRows {
             btns.add(b)
         }
         box.addView(seg)
-        help(c, help)?.let { it.setPadding(0, dp(c, AppTokens.S1), 0, dp(c, AppTokens.S2)); box.addView(it) }
+        hp.text?.let { it.setPadding(0, dp(c, AppTokens.S1), 0, dp(c, AppTokens.S2)); box.addView(it) }
         paint(c, btns, names, cur)
         return Built(box) { paint(c, btns, names, cur) }
     }
@@ -130,6 +132,8 @@ object AppRows {
         line.gravity = Gravity.CENTER_VERTICAL
         line.minimumHeight = dp(c, AppTokens.ROW_MIN)
         line.addView(titleView(c, title), LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
+        val hp = AppHelp.make(c, title, help)   // v0.17.78 (U3)
+        hp.info?.let { line.addView(it, AppHelp.infoLp(c)) }
         val chip = Button(c)
         chip.textSize = AppTokens.T_LABEL.toFloat()
         chip.maxLines = 2
@@ -158,7 +162,7 @@ object AppRows {
         lp.leftMargin = dp(c, AppTokens.S2)
         line.addView(chip, lp)
         box.addView(line)
-        help(c, help)?.let { box.addView(it) }
+        hp.text?.let { box.addView(it) }
         return Built(box) { show() }
     }
 
@@ -183,6 +187,8 @@ object AppRows {
         line.minimumHeight = dp(c, AppTokens.ROW_MIN)
         val t = titleView(c, title)
         line.addView(t, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
+        val hp = AppHelp.make(c, title, help)   // v0.17.78 (U3)
+        hp.info?.let { line.addView(it, AppHelp.infoLp(c)) }
         val chip = Button(c)
         chip.textSize = AppTokens.T_LABEL.toFloat()
         chip.maxLines = 2
@@ -195,7 +201,7 @@ object AppRows {
         lp.leftMargin = dp(c, AppTokens.S2)
         line.addView(chip, lp)
         box.addView(line)
-        help(c, help)?.let { box.addView(it) }
+        hp.text?.let { box.addView(it) }
         return Built(box) { safe { chip.text = value(); chip.contentDescription = title + ": " + value() } }
     }
 
@@ -248,6 +254,8 @@ object AppRows {
         line.gravity = Gravity.CENTER_VERTICAL
         line.minimumHeight = dp(c, AppTokens.ROW_MIN)
         line.addView(titleView(c, title), LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
+        val hp = AppHelp.make(c, title, help)   // v0.17.78 (U3)
+        hp.info?.let { line.addView(it, AppHelp.infoLp(c)) }
         val val0 = TextView(c)
         val0.gravity = Gravity.CENTER
         val0.textSize = AppTokens.T_BODY.toFloat()
@@ -317,7 +325,7 @@ object AppRows {
         line.addView(val0, LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT))
         line.addView(mk("+", 1, "Increase"), LinearLayout.LayoutParams(dp(c, AppTokens.TOUCH), dp(c, AppTokens.TOUCH)))
         box.addView(line)
-        help(c, help)?.let { box.addView(it) }
+        hp.text?.let { box.addView(it) }
         show()
         return Built(box) { show() }
     }

@@ -1,0 +1,23 @@
+HANDOFF Jabra-Keyboard v0.17.78 (U3, BUILD)   [plan: HANDOFF_Jabra-Keyboard_v0.17.75_UI-Plan.txt]
+
+DONE + CURRENT VERSION
+- R3-R7, S1-S8 (0.17.75) | [x] U1 tokens (0.17.76) | [x] U2 rows v2 (0.17.77) | [x] U3 smart hints (0.17.78). CURRENT: 0.17.78. Apply zips in order (U1+U2 zip, then this one).
+
+WHAT CHANGED (file: 1 line)
+- typing/HelpPlan.java NEW: modes SMART/ALWAYS/OFF (pref app_tips), FLAGGED rows, autoOpen, seen set (pref help_seen, max 300), shortOf + handwritten short forms (<= 90) for 18 long texts.
+- AppHelp.kt NEW: make() (i) icon + help text, bind(key, rowView) (short form + first-view open of flagged rows), openIn(rowView), tags u3_info / u3_help.
+- AppRows.kt: all 5 row types use AppHelp.make (old private help() removed); (i) right after the title.
+- SettingsGroups.kt: AppHelp.bind in addRowNew + row "Help tips" (level, Look group, before Bangla keyboard design).
+- AppPages.kt: reveal() opens the help of the target row.
+- JabraIcons.kt "info" icon; typing/KeyDesc.java "Show help"; typing/SettingsIndex.java app_tips help.
+- tools/HelpPlanTest.java NEW (185 checks incl. every help text). app/build.gradle.kts 0.17.78, CHANGELOG.txt.
+
+CHECKS DONE
+bash tools/run_tests.sh = 141/141 green (AppDesignLintTest still green: AppRows / AppHelp have 0 hard-coded sizes); bracket balance of the 5 changed .kt.
+
+NOT TESTED (needs real use)
+Kotlin NOT compiled (S1-S8, U1-U3): a red GitHub build log = FIX first. Phone: (i) toggle; stepper row at 360 dp; flagged rows open once; search / favourite jump opens help; Help tips Always / Off (after reopening settings); long help short form + tap full; TalkBack reads "Help: <title>".
+
+NEXT STEP
+U4 (MODIFY, M): HOME REDESIGN. Goal: Home = ONE status card (setup steps / backup + health warning with an action), sticky search, Quick looks, 7 tiles with icon + one-line summary + changed-count badge, favourites; two-pane keeps the accent frame. Files: AppHome.kt, typing/HomePlan.java (status priority rule + test), typing/PagePlan.java (summaries). Read-only: SettingsActivity.kt (buildSetupCard, setupSlot), AppWizard.kt. Use AppTokens / AppUi only (AppDesignLintTest: AppHome now 12 hard-coded sizes - lower it to 0 and update the baseline).
+Kickoff: Jabra-Keyboard step U4. Mode: MODIFY. Previous version: v0.17.78. Attached: this HANDOFF + the UI-Plan HANDOFF + AppHome.kt, typing/HomePlan.java, typing/PagePlan.java, tools/AppDesignLintTest.java (+ SettingsActivity.kt, AppWizard.kt read-only). Goal: Home redesign. Context: Done U1-U3. Next: U5a.

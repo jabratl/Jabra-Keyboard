@@ -212,6 +212,7 @@ object SettingsGroups {
                 try { android.widget.Toast.makeText(ctx, "Reset: " + title, android.widget.Toast.LENGTH_SHORT).show() } catch (_: Throwable) { }
             }
             dotUpdaters[key] = { dec.refresh() }
+            try { AppHelp.bind(ctx, key, dec.view) } catch (_: Throwable) { }   // v0.17.78 (U3): smart help (short form, first-view open of flagged rows)
             val secName = ChangedPlan.sectionOf(curGrp?.name, key)
             val target = secBoxes[secName] ?: box
             target.addView(dec.view)
@@ -606,6 +607,7 @@ object SettingsGroups {
             toggle(g, "Bangla digits on number row", "numrow_bn", false)   // v0.9.4 (R4)
             cycle(g, "Hint size", "hint_size_lv", { com.mgb.keyboard.typing.HintStyle.SIZE_NAMES }, { prefs.int("hint_size_lv", 1).coerceIn(0, 3) }, { prefs.setInt("hint_size_lv", it) }, 1)
             cycle(g, "Hint opacity", "hint_alpha_lv", { com.mgb.keyboard.typing.HintStyle.ALPHA_NAMES }, { prefs.int("hint_alpha_lv", 1).coerceIn(0, 3) }, { prefs.setInt("hint_alpha_lv", it) }, 1)
+            level(g, "Help tips", "app_tips", 0, com.mgb.keyboard.typing.HelpPlan.NAMES)   // v0.17.78 (U3): Smart / Always / Off (takes effect when the settings screen is reopened)
             level(g, "Bangla keyboard design", "bn_design", 0, com.mgb.keyboard.typing.BnDesign.NAMES)   // v0.17.61 (R1): last design option; 2nd choice = the keyboard's original design (old Bangla fixed look)
             val note = TextView(ctx)
             note.text = "Key height % and one-hand width %: inside the keyboard (gear > More settings > Size)."

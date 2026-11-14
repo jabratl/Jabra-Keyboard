@@ -110,6 +110,7 @@ class AppPages(private val act: SettingsActivity, private val sink: PageSink, pr
                     while (v != null && v !== col) { y += v.top; v = v.parent as? View }
                     if (v === col) sv.smoothScrollTo(0, HomePlan.revealY(y, dp(72)))
                     flash(t)
+                    try { AppHelp.openIn(t) } catch (_: Throwable) { }   // v0.17.78 (U3): a search hit / favourite jump opens the help of that row
                 } catch (_: Throwable) { }
             }
             sv.viewTreeObserver.addOnGlobalLayoutListener(object : ViewTreeObserver.OnGlobalLayoutListener {
