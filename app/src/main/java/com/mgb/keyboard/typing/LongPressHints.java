@@ -93,4 +93,14 @@ public final class LongPressHints {
     public static boolean labelVisible(boolean active, boolean hide) {
         return active && !hide;
     }
+
+    /**
+     * v0.17.82 (U6): is a hint worth showing on this key? Always = any non-empty hint. Smart / Off = not empty and not the same text as the key's own label
+     * (a hint that repeats the key says nothing).
+     */
+    public static boolean useful(int mode, String hint, String keyLabel) {
+        if (hint == null || hint.isEmpty()) return false;
+        if (HintStyle.clampMode(mode) == HintStyle.MODE_ALWAYS) return true;
+        return keyLabel == null || !hint.equalsIgnoreCase(keyLabel.trim());
+    }
 }

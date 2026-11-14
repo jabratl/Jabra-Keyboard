@@ -342,7 +342,7 @@ class JabraPanels(private val ctx: Context, private val host: JabraHost) {
     private fun bnNumberPage(): View? {
         if (!com.mgb.keyboard.typing.AvroNumPage.active(prefs.bool("bn_numpage", true), host.isBanglaPhonetic(), symPage)) return null
         val root = rootView()
-        val hintOn = prefs.bool("hint_on", true)
+        val hintOn = com.mgb.keyboard.typing.HintStyle.typingOn(HintKeys.modeOf(prefs), prefs.bool("hint_on", true))   // v0.17.82 (U6): hint Off = no hold-typing
         val hintShow = hintOn && !prefs.bool("hint_hide", false)
         val col = try { JabraThemes.iconColor(prefs) } catch (_: Throwable) { Color.parseColor("#222222") }
         val al = try { com.mgb.keyboard.typing.HintStyle.alpha(prefs.int("hint_alpha_lv", com.mgb.keyboard.typing.HintStyle.LV_DEFAULT)) } catch (_: Throwable) { 170 }

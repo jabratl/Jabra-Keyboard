@@ -63,6 +63,62 @@ public class HintStyleTest {
         eq("hint for letter null", HintStyle.digitHintFor('a', true, true, true), null);
         eq("label of Bangla digit stays", HintStyle.digitLabel('\u09E7', true, true), "\u09E7");
         eq("round trip: label then hint recovers Latin", HintStyle.digitHintFor('5', false, true, true) + HintStyle.digitLabel('5', true, true), "5\u09EB");
+        // v0.17.82 (U6): Smart key hints
+        eq("modes", HintStyle.MODE_NAMES.length, 3);
+        eq("mode 0 name", HintStyle.MODE_NAMES[HintStyle.MODE_SMART], "Smart");
+        eq("clampMode bad", HintStyle.clampMode(-1) + HintStyle.clampMode(9), 0);
+        eq("Smart typing = hint_on", HintStyle.typingOn(0, true), true);
+        eq("Smart typing hint_on OFF", HintStyle.typingOn(0, false), false);
+        eq("Always typing = hint_on", HintStyle.typingOn(1, true), true);
+        eq("Off stops typing", HintStyle.typingOn(2, true), false);
+        eq("label default = old rule", HintStyle.labelOn(0, true, false), true);
+        eq("label hide = old rule", HintStyle.labelOn(0, true, true), false);
+        eq("label Off", HintStyle.labelOn(2, true, false), false);
+        eq("tooSmall Smart 29", HintStyle.tooSmall(0, 29f), true);
+        eq("tooSmall Smart default 48", HintStyle.tooSmall(0, 48f), false);
+        eq("tooSmall Smart min key 70% = 33.6", HintStyle.tooSmall(0, 33.6f), false);
+        eq("tooSmall Always", HintStyle.tooSmall(1, 20f), false);
+        eq("tooSmall unknown height", HintStyle.tooSmall(0, 0f), false);
+        eq("contrast black/white", Math.round(HintStyle.contrast(0xFF000000, 0xFFFFFFFF)), 21L);
+        eq("contrast same", Math.round(HintStyle.contrast(0xFF336699, 0xFF336699)), 1L);
+        eq("blend a=255", HintStyle.blend(0xFF112233, 0xFFFFFFFF, 255), 0xFF112233);
+        eq("blend a=0", HintStyle.blend(0xFF112233, 0xFFFFFFFF, 0), 0xFFFFFFFF);
+        // theme that already reads (Classic: #222222 on white, alpha 170) = unchanged
+        int[] ok1 = HintStyle.readable(0xFF222222, 0xFFFFFFFF, 170);
+        eq("Classic colour kept", ok1[0], 0xFF222222); eq("Classic alpha kept", ok1[1], 170);
+        // dark theme text on dark key: light text kept
+        int[] ok2 = HintStyle.readable(0xFFEEEEEE, 0xFF303030, 170);
+        eq("dark theme colour kept", ok2[0], 0xFFEEEEEE); eq("dark theme alpha kept", ok2[1], 170);
+        // light text on a light key = unreadable -> black
+        int[] bad1 = HintStyle.readable(0xFFF0F0F0, 0xFFFFFFFF, 170);
+        eq("light on light -> black", bad1[0], 0xFF000000);
+        eq("light on light result reads", HintStyle.contrast(HintStyle.blend(bad1[0], 0xFFFFFFFF, bad1[1]), 0xFFFFFFFF) >= HintStyle.MIN_CONTRAST, true);
+        // dark text on a dark key -> white
+        int[] bad2 = HintStyle.readable(0xFF202020, 0xFF101010, 170);
+        eq("dark on dark -> white", bad2[0], 0xFFFFFFFF);
+        // faint opacity + mid key: even black is too faint -> alpha raised to 255
+        int[] faint = HintStyle.readable(0xFF808080, 0xFF808080, 110);
+        eq("faint -> alpha 255", faint[1], 255);
+        // alpha bits of the colour are ignored, bad alpha clamps
+        eq("alpha bits ignored", HintStyle.readable(0x00222222, 0xFFFFFFFF, 170)[0], 0xFF222222);
+        eq("alpha clamp", HintStyle.readable(0xFF222222, 0xFFFFFFFF, 999)[1], 255);
+        // every theme colour pair result always reads or is at full opacity
+        int[] fills = { 0xFFFFFFFF, 0xFF000000, 0xFF808080, 0xFFFF0000, 0xFF00AA66, 0xFFFFD54F, 0xFF1E1E1E, 0xFFB3E5FC };
+        int[] cols = { 0xFF222222, 0xFFFFFFFF, 0xFF808080, 0xFFFFD54F, 0xFF1E1E1E };
+        boolean allRead = true;
+        for (int f : fills) for (int c : cols) for (int al : new int[] { 110, 170, 215, 255 }) {
+            int[] r = HintStyle.readable(c, f, al);
+            double k = HintStyle.contrast(HintStyle.blend(r[0], f, r[1]), f);
+            if (k < HintStyle.MIN_CONTRAST && r[1] != 255) allRead = false;
+        }
+        eq("readable always reads or full opacity", allRead, true);
+        // useful(): empty / same as key = not shown; Always shows any non-empty
+        eq("useful normal", com.mgb.keyboard.typing.LongPressHints.useful(0, "@", "a"), true);
+        eq("useful empty", com.mgb.keyboard.typing.LongPressHints.useful(0, "", "a"), false);
+        eq("useful null", com.mgb.keyboard.typing.LongPressHints.useful(0, null, "a"), false);
+        eq("useful same as key", com.mgb.keyboard.typing.LongPressHints.useful(0, "A", "a"), false);
+        eq("useful same, Always", com.mgb.keyboard.typing.LongPressHints.useful(1, "a", "a"), true);
+        eq("useful no label", com.mgb.keyboard.typing.LongPressHints.useful(0, "@", null), true);
         System.out.println("HintStyleTest ok=" + ok + " bad=" + bad);
         if (bad > 0) System.exit(1);
     }

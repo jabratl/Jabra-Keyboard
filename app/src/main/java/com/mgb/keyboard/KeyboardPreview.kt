@@ -34,7 +34,7 @@ class PreviewLink {
  * v0.10.25: a small picture of the keyboard drawn from the SAME prefs and the SAME style helpers as the real keyboard
  * (JabraThemes.paint / style, JabraLook.shape, JabraIcons.putThemed, SizePct, RowGap). Not touchable, nothing is typed.
  * Heights are scaled (SCALE) so the card is not too tall; widths are real. Never throws: on any problem an empty view.
- * Not shown on purpose: toolbar / suggestion row, long-press hint letters, globe / voice / emoji keys.
+ * v0.17.82 (U6): English letters show their small long-press hint (same rules as the keyboard). Not shown on purpose: toolbar / suggestion row, globe / voice / emoji keys.
  */
 object KeyboardPreview {
     const val SCALE = 0.62f
@@ -82,9 +82,27 @@ object KeyboardPreview {
 
         fun row(): LinearLayout { val r = LinearLayout(ctx); r.orientation = LinearLayout.HORIZONTAL; return r }
 
+        // v0.17.82 (U6): small long-press hints on the English letters, same rules + same drawable as the real keyboard (Smart colour fix included). Probhat / Off / hidden = none.
+        val hMode = HintKeys.modeOf(p)
+        val hShow = !probhat && com.mgb.keyboard.typing.HintStyle.labelOn(hMode, p.bool("hint_on", true), p.bool("hint_hide", false))
+        fun hint(b: Button, c: Char) {
+            try {
+                if (!hShow) return
+                val t: String = com.mgb.keyboard.typing.LongPressHints.hintFor(c, p.bool("numrow", true), p.str("hint_custom", "")) ?: return
+                if (!com.mgb.keyboard.typing.LongPressHints.useful(hMode, t, c.toString())) return
+                val col = try { JabraThemes.iconColor(p) } catch (_: Throwable) { 0xFF222222.toInt() }
+                val al = com.mgb.keyboard.typing.HintStyle.alpha(p.int("hint_alpha_lv", com.mgb.keyboard.typing.HintStyle.LV_DEFAULT))
+                val sz = p.int("hint_size_lv", com.mgb.keyboard.typing.HintStyle.LV_DEFAULT)
+                val smart = hMode == com.mgb.keyboard.typing.HintStyle.MODE_SMART
+                b.foreground = HintKeys.HintDrawable(t, col, al, sz, if (smart) HintKeys.fillOf(p) else null, 0f)   // 0f: preview heights are scaled, so no too-small skip here
+            } catch (_: Throwable) { }
+        }
+
         fun letter(r: LinearLayout, c: Char) {
             val t = if (probhat) ProbhatLayout.label(c) else c.toString()
-            r.addView(key(t, 1f, 0, keyH, letterSp))
+            val kb = key(t, 1f, 0, keyH, letterSp)
+            hint(kb, c)
+            r.addView(kb)
         }
         fun extras(r: LinearLayout, list: Array<out Array<out String>>) {
             if (!probhat) return

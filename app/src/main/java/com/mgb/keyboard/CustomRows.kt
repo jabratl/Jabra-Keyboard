@@ -96,7 +96,8 @@ class CustomRows(private val host: CustomHost, private val prefs: JabraPrefs, pr
         b.tag = CustomKeyTag(k, layer)
         host.styleLetter(b)
         charKeys.add(b)
-        val lp = if (k.lp.isNotEmpty()) k.lp else (k.lpList.firstOrNull() ?: "")
+        val lp0 = if (k.lp.isNotEmpty()) k.lp else (k.lpList.firstOrNull() ?: "")
+        val lp = if (HintKeys.modeOf(prefs) == com.mgb.keyboard.typing.HintStyle.MODE_OFF && !lp0.startsWith("@")) "" else lp0   // v0.17.82 (U6): hint Off = no hold-typing from a hint (@actions stay)
         if (lp.isNotEmpty() && !lp.startsWith("@") && !layer.startsWith("bot")) showHint(b, lp)   // v0.17.6: the classic bottom row shows no hint on "."
         attachTouch(b, k, lp)
         return b
@@ -105,10 +106,13 @@ class CustomRows(private val host: CustomHost, private val prefs: JabraPrefs, pr
     private fun showHint(b: Button, text: String) {
         try {
             if (prefs.bool("hint_hide", false)) return
+            val mode = HintKeys.modeOf(prefs)   // v0.17.82 (U6)
+            if (mode == HintStyle.MODE_OFF || !com.mgb.keyboard.typing.LongPressHints.useful(mode, text, b.text?.toString())) return
             val col = try { JabraThemes.iconColor(prefs) } catch (_: Throwable) { Color.parseColor("#222222") }
             val al = try { HintStyle.alpha(prefs.int("hint_alpha_lv", HintStyle.LV_DEFAULT)) } catch (_: Throwable) { 170 }
             val sz = try { prefs.int("hint_size_lv", HintStyle.LV_DEFAULT) } catch (_: Throwable) { HintStyle.LV_DEFAULT }
-            b.foreground = HintKeys.HintDrawable(text, col, al, sz)
+            val smart = mode == HintStyle.MODE_SMART
+            b.foreground = HintKeys.HintDrawable(text, col, al, sz, if (smart) HintKeys.fillOf(prefs) else null, if (smart) HintStyle.MIN_KEY_DP else 0f)
         } catch (_: Throwable) { }
     }
 

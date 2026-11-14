@@ -54,7 +54,7 @@ object HintKeys {
             try {
                 val c = letterOf(b) ?: return@Runnable
                 val isNum = HintStyle.isDigit(c)   // v0.8.6: number-row key (Bangla digit hint); language does not matter
-                if ((!isNum && !host.hintTypingActive()) || !prefs.bool("hint_on", true)) return@Runnable
+                if ((!isNum && !host.hintTypingActive()) || !prefs.bool("hint_on", true) || !HintStyle.typingOn(prefs.int("hint_mode", HintStyle.MODE_SMART), true)) return@Runnable   // v0.17.82 (U6): Off = no long-press typing
                 val hint = (if (isNum) HintStyle.digitHintFor(c, prefs.bool("hint_digits", false), prefs.bool("numrow_bn", false), host.banglaNumbers()) else hintOf(c, prefs.bool("numrow", true), prefs.str("hint_custom", ""), host)) ?: return@Runnable   // v0.5.2 (custom override first); v0.9.4: digitHintFor (numrow_bn)
                 fired = true
                 host.typeHint(hint)
@@ -97,30 +97,47 @@ object HintKeys {
         })
     }
 
+    /** v0.17.82 (U6): the colour the hint sits on (Borderless = theme background, else the key colour). null = unknown = no colour fix. */
+    fun fillOf(prefs: JabraPrefs): Int? = try { if (JabraThemes.borderless(prefs)) JabraThemes.bg(prefs) else JabraLook.fill(prefs) } catch (_: Throwable) { null }
+
+    /** v0.17.82 (U6): mode of the hint switch (hint_mode), Smart when unset or bad. */
+    fun modeOf(prefs: JabraPrefs): Int = try { HintStyle.clampMode(prefs.int("hint_mode", HintStyle.MODE_SMART)) } catch (_: Throwable) { HintStyle.MODE_SMART }
+
     /** Shows or hides the small label on one letter key. */
     fun refresh(b: Button, prefs: JabraPrefs, host: HintHost, numrow: Boolean? = null, custom: String? = null, hide: Boolean? = null) {   // v0.6.1: optional pre-read prefs (null = read here, as before)
         try {
             val c = letterOf(b)
-            val on = KeyCfg.hintOn(prefs)   // v0.6.1: cached
+            val mode = try { HintStyle.clampMode(prefs.int("hint_mode", HintStyle.MODE_SMART)) } catch (_: Throwable) { HintStyle.MODE_SMART }   // v0.17.82 (U6)
+            val on = KeyCfg.hintOn(prefs) && mode != HintStyle.MODE_OFF   // v0.6.1: cached
             val isNum = c != null && HintStyle.isDigit(c)   // v0.8.6
             val show = c != null && LongPressHints.labelVisible(on && (isNum || host.hintLabelActive()), hide ?: prefs.bool("hint_hide", false))
             val t = if (!show) null else if (isNum) HintStyle.digitHintFor(c!!, prefs.bool("hint_digits", false), prefs.bool("numrow_bn", false), host.banglaNumbers()) else hintOf(c!!, numrow ?: prefs.bool("numrow", true), custom ?: prefs.str("hint_custom", ""), host)   // v0.5.2; v0.9.4: digitHintFor (numrow_bn)
-            if (t == null) { if (b.foreground is HintDrawable) b.foreground = null; return }
+            if (t == null || !LongPressHints.useful(mode, t, c.toString())) { if (b.foreground is HintDrawable) b.foreground = null; return }   // v0.17.82 (U6): a hint equal to the key says nothing
             val col = try { JabraThemes.iconColor(prefs) } catch (_: Throwable) { Color.parseColor("#222222") }
             val cur = b.foreground
             val al = try { HintStyle.alpha(prefs.int("hint_alpha_lv", HintStyle.LV_DEFAULT)) } catch (_: Throwable) { 170 }   // v0.8.6
             val sz = try { prefs.int("hint_size_lv", HintStyle.LV_DEFAULT) } catch (_: Throwable) { HintStyle.LV_DEFAULT }
-            if (cur is HintDrawable) cur.set(t, col, al, sz) else b.foreground = HintDrawable(t, col, al, sz)
+            val smart = mode == HintStyle.MODE_SMART
+            val fill = if (smart) fillOf(prefs) else null
+            val minDp = if (smart) HintStyle.MIN_KEY_DP else 0f
+            if (cur is HintDrawable) cur.set(t, col, al, sz, fill, minDp) else b.foreground = HintDrawable(t, col, al, sz, fill, minDp)
         } catch (_: Throwable) { }
     }
 
     /** Small grey character in the top-right corner; scales with the key size. */
-    class HintDrawable(private var text: String, color: Int, private var a: Int = 170, private var sizeLv: Int = HintStyle.LV_DEFAULT) : Drawable() {
+    class HintDrawable(private var text: String, color: Int, private var a: Int = 170, private var sizeLv: Int = HintStyle.LV_DEFAULT, fill: Int? = null, private var minDp: Float = 0f) : Drawable() {
         private val p = Paint(Paint.ANTI_ALIAS_FLAG)
-        init { p.textAlign = Paint.Align.RIGHT; p.color = color; p.alpha = a }
-        fun set(t: String, color: Int, alpha: Int = 170, lv: Int = HintStyle.LV_DEFAULT) { text = t; p.color = color; a = alpha; sizeLv = lv; p.alpha = alpha; invalidateSelf() }
+        init { p.textAlign = Paint.Align.RIGHT; apply(color, a, fill) }
+        /** v0.17.82 (U6): [fill] != null = Smart: colour / opacity are fixed when they would not read on that key colour (else exactly as chosen). */
+        private fun apply(color: Int, alpha: Int, fill: Int?) {
+            var c = color; var al = alpha
+            if (fill != null) { try { val x = HintStyle.readable(color, fill, alpha); c = x[0]; al = x[1] } catch (_: Throwable) { } }
+            a = al; p.color = c; p.alpha = al
+        }
+        fun set(t: String, color: Int, alpha: Int = 170, lv: Int = HintStyle.LV_DEFAULT, fill: Int? = null, minDpv: Float = 0f) { text = t; sizeLv = lv; minDp = minDpv; apply(color, alpha, fill); invalidateSelf() }
         override fun draw(canvas: Canvas) {
             val r = bounds
+            if (minDp > 0f && r.height() > 0 && r.height() < minDp * android.content.res.Resources.getSystem().displayMetrics.density) return   // v0.17.82 (U6): Smart skips a key that is too low to read
             p.textSize = HintStyle.textSize(r.height().toFloat(), sizeLv)   // level 1 = the old 0.27 x height rule
             canvas.drawText(text, r.right - r.width() * 0.10f, r.top + r.height() * 0.08f + p.textSize * 0.85f, p)
         }

@@ -1,0 +1,29 @@
+HANDOFF Jabra-Keyboard v0.17.82 (U6, MODIFY)   [plan: HANDOFF_Jabra-Keyboard_v0.17.75_UI-Plan.txt - NOT in the zip of this session, send it with the next step]
+
+DONE + CURRENT VERSION
+- R3-R7, S1-S8 (0.17.75) | [x] U1 (0.17.76) | [x] U2 (0.17.77) | [x] U3 (0.17.78) | [x] U4 (0.17.79) | [x] U5a (0.17.80) | [x] U5b (0.17.81) | [x] U6 (0.17.82). CURRENT: 0.17.82. Apply zips in order (U1+U2, U3, U4, U5a, U5b, then this one).
+
+WHAT CHANGED (file: 1 line)
+- typing/HintStyle.java: hint_mode rules (MODE_NAMES Smart / Always / Off, typingOn, labelOn, tooSmall 30 dp) + contrast / blend / readable (colour kept when it reads 3:1, else black / white / full opacity).
+- typing/LongPressHints.java: useful(mode, hint, keyLabel) = no empty hint, no hint equal to the key (Always shows any).
+- HintKeys.kt: HintDrawable gets fill + minDp (Smart), fillOf(prefs), modeOf(prefs); refresh + typing gate use hint_mode (Off = nothing).
+- CustomRows.kt: showHint + hold gate follow hint_mode (@actions untouched).
+- JabraExtras.kt: Bangla number page hold gate follows hint_mode (1 line).
+- SettingsGroups.kt: new row "Key hints" (Smart / Always / Off) first in Look > Hints; keys of the old rows unchanged.
+- KeyboardPreview.kt: preview draws the English letter hints (same rules) = live preview for the Hints section.
+- typing/ChangedPlan.java, SectionPlan.java, SettingsIndex.java, ProfileCodec.java: hint_mode registered (section Hints, basic row, help line, profile backup).
+- tools/HintStyleTest.java (+40 checks), ChangedPlanTest.java, SettingsIndexTest.java, ProfileTest.java (75 keys). app/build.gradle.kts 0.17.82. CHANGELOG.txt.
+
+CHECKS DONE
+bash tools/run_tests.sh = 142/142 green; Kotlin compile of all sources (tools/KOTLIN_CHECK.txt): 0 errors in changed files (only a missing androidx.annotation.RequiresApi stub, unrelated); bracket balance of the 5 changed Kotlin files.
+
+NOT TESTED (needs real use)
+Phone: see CHANGELOG v0.17.82 list (Key hints Smart / Always / Off on light + dark themes, tiny keys, preview card, custom rows, Bangla number page, 360 / 1280 dp). A red GitHub build log = FIX first.
+
+KNOWN LIMITS
+- hint_on (Long-press characters) and hint_custom stay on the Typing page (moving them breaks ChangedPlan / SectionPlan tables + tests). If wanted: separate step.
+- Edited custom layouts keep their baked hold text; Off blocks it at touch time only.
+
+NEXT STEP + GOAL
+U7: goal NOT known - the UI-Plan HANDOFF (section U7) was not attached. Send HANDOFF_Jabra-Keyboard_v0.17.75_UI-Plan.txt (+ the files U7 names), then start U7.
+Kickoff: Jabra-Keyboard step U7. Mode: MODIFY (per plan). Previous version: v0.17.82. Attached: this HANDOFF + the UI-Plan HANDOFF + files named in U7. Context: Done U1-U6.

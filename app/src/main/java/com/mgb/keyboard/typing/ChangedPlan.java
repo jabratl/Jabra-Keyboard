@@ -64,7 +64,7 @@ public final class ChangedPlan {
             if (in(key, "theme", "look", "key_border", "icons_on")) return "Theme & style";
             if (in(key, "ct_studio")) return "Custom theme";   // v0.15.7 (N7): pseudo key (no row), keeps the section in use
             if (in(key, "numrow_large", "numrow_bn", "nr_hpct", "nr_mode", "nr_chars")) return "Number row";
-            if (in(key, "hint_hide", "hint_digits", "hint_size_lv", "hint_alpha_lv")) return "Hints";
+            if (in(key, "hint_mode", "hint_hide", "hint_digits", "hint_size_lv", "hint_alpha_lv")) return "Hints";   // v0.17.82 (U6): hint_mode
             if (in(key, "onehand", "tb_tip")) return "Other";
         } else if (group.equals("Languages & layouts")) {
             if (in(key, "bn_layout", "bn_map", "lang_avro_on", "lang_probhat_on", "lang_en_on")) return "Bangla";

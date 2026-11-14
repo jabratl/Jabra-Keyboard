@@ -136,6 +136,7 @@ public final class SettingsIndex {
             case "numrow_bn": return LangNames.AVRO + " / " + LangNames.PROBHAT + " show Bangla digits on the number row; hold a key for the Latin digit.";
             case "hint_digits": return "Number row shows a small Bangla digit; hold the key to type it.";
             case "app_tips": return "Smart = help opens from the (i) icon. Always = under every setting. Off = hidden.";   // v0.17.78 (U3)
+            case "hint_mode": return "Smart = readable colour, hidden on tiny keys. Always = as set. Off = none.";   // v0.17.82 (U6)
             case "hint_size_lv": return "Size of the small hint characters (Normal = as before).";
             case "hint_alpha_lv": return "How strong the small hint characters look (Normal = as before).";
             case "hint_hide": return "Hides the small hint letters; long-press still works.";

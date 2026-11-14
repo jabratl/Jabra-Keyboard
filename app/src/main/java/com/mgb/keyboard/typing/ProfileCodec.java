@@ -29,6 +29,7 @@ public final class ProfileCodec {
         "lang_tap:i", "lang_fav:i", "lang_avro_on:b", "lang_probhat_on:b", "lang_en_on:b", "lang_order:i", "xrow_chars:s",
         "haptic_lv:i", "hint_custom:s",   // v0.5.2
         "hint_digits:b", "hint_size_lv:i", "hint_alpha_lv:i",   // v0.8.6
+        "hint_mode:i",   // v0.17.82 (U6)
         "tb_tip:b",   // v0.8.8
         "space_lang:b", "key_lang:b",   // v0.8.9
         "fb_down:b", "haptic_native:b",   // v0.9.1

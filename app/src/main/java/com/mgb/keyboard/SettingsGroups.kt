@@ -601,6 +601,7 @@ object SettingsGroups {
             cycle(g, "Number row keys", "nr_mode", { arrayOf("Digits", "Digits + symbols", "My characters") }, { com.mgb.keyboard.typing.NumRowPlan.sanitizeMode(prefs.int("nr_mode", 0)) }, { prefs.setInt("nr_mode", it) })   // v0.16.7 (X7)
             textRow(g, "Number row characters", "nr_chars", "up to 10 characters, e.g. @#&_-+()/",   // v0.16.7 (X7): used when "Number row keys" = My characters
                 { com.mgb.keyboard.typing.NumRowPlan.sanitizeChars(it) }, "No characters found")
+            cycle(g, "Key hints", "hint_mode", { com.mgb.keyboard.typing.HintStyle.MODE_NAMES }, { com.mgb.keyboard.typing.HintStyle.clampMode(prefs.int("hint_mode", 0)) }, { prefs.setInt("hint_mode", it) }, 0)   // v0.17.82 (U6): Smart / Always / Off, first row of the Hints section (live preview card above shows it)
             toggle(g, "Hide long-press hints", "hint_hide", false)
             toggle(g, "Toolbar name tip (hold icon)", "tb_tip", true)   // v0.8.8
             toggle(g, "Bangla digit hints", "hint_digits", false)   // v0.8.6
