@@ -93,5 +93,5 @@ public final class ClipFilter {
     }
 
     /** Bottom bar summary in select mode. */
-    public static String selectedText(int n) { return n <= 0 ? "Tap clips to select" : n + " selected"; }
+    public static String selectedText(int n) { return n <= 0 ? "Tap to select" : n + " selected"; }
 }

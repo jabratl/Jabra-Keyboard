@@ -86,7 +86,7 @@ public class ClipFilterTest {
         ok(ClipFilter.emptyText(0, true).equals("No match") && ClipFilter.emptyText(3, true).equals("No match"), "search = No match");
         for (int c = 1; c <= 4; c++) ok(!ClipFilter.emptyText(c, false).isEmpty() && !ClipFilter.emptyText(c, false).equals(ClipFilter.emptyText(0, false)), "empty text chip " + c);
         ok(ClipFilter.emptyText(-3, false).equals(ClipFilter.emptyText(0, false)), "bad chip empty text = All");
-        ok(ClipFilter.selectedText(0).equals("Tap clips to select") && ClipFilter.selectedText(-2).equals("Tap clips to select"), "selected 0 / negative");
+        ok(ClipFilter.selectedText(0).equals("Tap to select") && ClipFilter.selectedText(-2).equals("Tap to select"), "selected 0 / negative");
         ok(ClipFilter.selectedText(1).equals("1 selected") && ClipFilter.selectedText(12).equals("12 selected"), "selected n");
 
         System.out.println("ClipFilterTest: " + (total - fail) + " ok, " + fail + " failed");

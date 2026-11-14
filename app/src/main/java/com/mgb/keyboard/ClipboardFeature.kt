@@ -336,7 +336,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
             confirmClear = false
             refreshTop()   // v0.16.1
         }
-        JabraIcons.putThemed(ctx, searchBtn, if (searching) "close" else "search")   // v0.0.7
+        // v0.18.7: no second putThemed here - Glyphs.dress (inside btn) already drew ONE icon + the word "Search"; putThemed added a 2nd icon and removed the word
         top.addView(searchBtn)
         top.addView(btn("Add", 1.0f, 40) { addFromField() })   // v0.2.5.1: save the current field text as a clip
         val clearBtn = btn(if (confirmClear) "Sure? (unpinned)" else "Clear", 1.8f, 40) {
@@ -526,7 +526,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
             ovOpen = false
             refreshTop()
         }
-        JabraIcons.putThemed(ctx, searchBtn, if (searching) "close" else "search")
+        if (slim) JabraIcons.putThemed(ctx, searchBtn, "search")   // v0.18.7: only the icon-only (slim) button; with words (select mode / searching) Glyphs.dress already drew the icon, a 2nd one doubled it and hid "Search"
         top.addView(searchBtn)
         if (!selOn) { val addB = btn("Add", 1.0f, t40) { addFromField() }; top.addView(if (nlOn) ClipBar.on(ctx, pf, addB) else addB) }   // v0.17.58 (C3): Add = the one filled (primary) button
         val manageNew = btn(if (selOn) "Done" else if (slim) (if (ovOpen) "\u25B4" else "\u22EF") else "Manage", if (slim) 0.8f else 1.3f, t40) {
@@ -570,7 +570,8 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
             msg = ""
             val head = row()
             head.gravity = Gravity.CENTER_VERTICAL
-            if (tidy()) head.minimumHeight = dp(sz(34) + 4)   // v0.18.4: the line keeps its height with or without Undo, so the list never jumps
+            val idleSel = selOn && shownMsg.isEmpty() && !confirmClear && !undoAvail()   // v0.18.7: select mode with nothing to say = no empty band (~38 dp) above the list
+            if (tidy() && !idleSel) head.minimumHeight = dp(sz(34) + 4)   // v0.18.4: the line keeps its height with or without Undo, so the list never jumps
             val m = TextView(ctx)
             m.text = if (confirmClear) "Delete all unpinned clips?" else if (shownMsg.isEmpty() && nlOn && !selOn) ClipCopy.countLine(store.pinnedView("").size + store.recentView("").size, store.pinnedCount()) else shownMsg   // v0.17.58 (C3): quiet count line
             m.textSize = 12f
@@ -605,7 +606,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
                     head.addView(ClipBar.danger(pf, small("Clear") { confirmClear = true; refresh() }))   // v0.17.30 (UI6)
                 }
             }
-            root.addView(head)
+            if (!idleSel) root.addView(head)   // v0.18.7: nothing to show in select mode = no empty line at all
             if (nlOn && !selOn && ovOpen && !confirmClear) {   // v0.17.58 (C3): overflow tray = every rare action in one place
                 // v0.17.66 -> v0.17.67 (R7): the "..." tray is now a dropdown menu card: Sort + View show ALL choices (the chosen one is ticked), actions below
                 val menu = menuCard()
@@ -812,7 +813,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
             c.setTextColor(ink())
             c.setTypeface(c.typeface, android.graphics.Typeface.BOLD)
             c.setPadding(dp(8), 0, dp(4), 0)
-            c.maxLines = 1
+            c.maxLines = 2   // v0.18.7: was 1 (cut as "Tap clips to sele..."); a long text now wraps to 2 lines
             c.ellipsize = TextUtils.TruncateAt.END
             c.gravity = Gravity.CENTER_VERTICAL
             c.layoutParams = LinearLayout.LayoutParams(0, dp(sz(t40)), 1.4f)
@@ -1456,7 +1457,11 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
             ck.setTextColor(try { if (picked) JabraTokens.cardStroke(pf, true, false) else JabraTokens.onCardDim(pf) } catch (_: Throwable) { if (picked) Color.parseColor("#2F6FD0") else Color.DKGRAY })
             Glyphs.dress(ck)
             ck.gravity = Gravity.CENTER
-            ck.layoutParams = LinearLayout.LayoutParams(dp(40), dp(36))
+            try {   // v0.18.7: a drawn check box sticks to the left edge of its view (touched the card border) - centre it with left padding
+                val gw = ck.compoundDrawablesRelative[0]?.intrinsicWidth ?: 0
+                if (gw > 0) ck.setPadding(((dp(44) - gw) / 2).coerceAtLeast(dp(6)), 0, 0, 0)
+            } catch (_: Throwable) { }
+            ck.layoutParams = LinearLayout.LayoutParams(dp(44), dp(36))
             box.addView(ck)
         } else {
             box.addView(ClipCards.small(ctx, host, if (item.pinned) "\u2605" else "\u2606", if (item.pinned) "pinned" else "pin", iconsOn) { store.togglePin(item); refresh() })
