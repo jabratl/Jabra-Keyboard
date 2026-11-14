@@ -1,0 +1,24 @@
+HANDOFF Jabra-Keyboard v0.17.71 (S4, MODIFY)   [paste this at the start of the next chat]
+
+DONE LIST + CURRENT VERSION
+- R3-R7 (0.17.63-67) export rename+ZIP, Home, jump bar, export folder, Clipboard menus. S1 (0.17.68) own icons. S2 (0.17.69) Ridmik grid. S3 (0.17.70) TAR export + classic swipe ঞ ৎ.
+- S4 (0.17.71): Enter key shows a search icon when the field asks for Search.
+- CURRENT: 0.17.71. Apply S1, S2, S3, then S4 (S4 only touches MgbIme.kt on top of S3).
+
+WHAT CHANGED
+- MgbIme.kt: enterIcon() / enterIconName() / refreshEnterIcons(); custom Enter key (line "enter" ->) and classic Enter key use it; refresh at onStartInputView.
+- app/build.gradle.kts 0.17.71. CHANGELOG.txt.
+
+CHECKS DONE
+bash tools/run_tests.sh = 137/137 green; bracket balance MgbIme.kt.
+
+NOT TESTED (needs real use)
+Kotlin NOT compiled (S1-S4): if GitHub build fails send the log -> FIX first. Phone: search field = magnifier on Enter and it searches; normal chat = return icon; switching field updates the icon; icons_on OFF = old text; dark + light.
+
+KNOWN LIMITS
+- Ridmik shift-mode hints NOT built: needs a NEW Ridmik shift-mode screenshot (RidmikGridTest locks the grid, no guessing).
+- Number row default NOT changed (user setting, Ridmik ref had it OFF).
+- A layout EDITED in the layout editor is not rebuilt: app > Rebuild layout from current settings.
+
+NEXT STEP + GOAL
+S5 (MODIFY): S1 leftovers: Toolbar.kt / MgbIme.kt clip fallback, ToolbarQuick, AppToolbarEditor, ThemeStudio signs -> drawn icons. Ask user for: Ridmik shift screenshot (hints) and number row ON/OFF default.

@@ -1,3 +1,10 @@
+v0.17.71 - MODIFY (S4): Enter key shows a search icon when the field asks for Search (Ridmik)
+- Custom and classic keyboard: the Enter key draws the search icon while the app field has the Search action (and setting "enter_action" is ON); every other field = the old return icon. Action itself is unchanged (doEnter). Updates on every new field (onStartInputView).
+- NOT done on purpose: Ridmik shift-mode hints (no Ridmik shift screenshot = the grid lock RidmikGridTest forbids guessing), number row default (stays the user's own setting; Ridmik ref had it OFF, no silent change).
+- Code: MgbIme.kt (enterIcon, enterIconName, refreshEnterIcons, 2 key lines + 1 line in onStartInputView). app/build.gradle.kts 0.17.71.
+- TESTED: bash tools/run_tests.sh = 137/137 green; bracket balance MgbIme.kt. NOT tested: Kotlin NOT compiled; phone (search field e.g. browser address bar / Play Store search shows the magnifier; chat field shows return; icons_on OFF = old text).
+- Rollback: restore MgbIme.kt from v0.17.70.
+
 v0.17.70 - MODIFY (S3): Clipboard export gets a TAR pack option; classic Probhat path gets the ঞ / ৎ swipe
 - Export screen (2+ clips): One file | ZIP (file per clip) | TAR (file per clip). Rename (file / ZIP / TAR name, before export) was added in R3 and works for all three; 1 clip = rename its single file. Buttons say "Share TAR .txt" etc.
 - Classic (non-custom) Bangla fixed path, Ridmik look: swipe up (or hold) on ৃ types ঞ, on ্ types ৎ. Normal tap unchanged.

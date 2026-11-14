@@ -403,8 +403,30 @@ class MgbIme : InputMethodService() {
         showPanel("vault")
     }
 
+    // v0.17.70 (S4): Ridmik shows a search icon on Enter when the field wants Search. Same key, same action (doEnter), only the drawn icon changes.
+    private val enterBtns = mutableListOf<Button>()
+    private fun enterIconName(imeOptions: Int): String = try {
+        if (prefs.bool("enter_action", true) && com.mgb.keyboard.typing.EnterAction.decide(imeOptions) == 3) "search" else "enter"   // 3 = IME_ACTION_SEARCH
+    } catch (_: Throwable) { "enter" }
+    private fun enterIcon(b: Button): Button {
+        try {
+            JabraIcons.putThemed(this, b, enterIconName(currentInputEditorInfo?.imeOptions ?: 0))
+            enterBtns.removeAll { it.parent == null }
+            enterBtns.add(b)
+        } catch (_: Throwable) { }
+        return b
+    }
+    private fun refreshEnterIcons(info: EditorInfo?) {
+        try {
+            val n = enterIconName(info?.imeOptions ?: 0)
+            enterBtns.removeAll { it.parent == null }
+            enterBtns.forEach { JabraIcons.putThemed(this, it, n) }
+        } catch (_: Throwable) { }
+    }
+
     override fun onStartInputView(info: EditorInfo?, restarting: Boolean) {
         super.onStartInputView(info, restarting)
+        refreshEnterIcons(info)   // v0.17.70 (S4)
         try { fixLangState() } catch (_: Throwable) { }   // v0.17.62 (R2): English / a layout switched off in settings while it was active
         try { val pk = info?.packageName; if (pk != pcLastPkg) { if (pcLastPkg != null) pcResetMods(); pcLastPkg = pk } } catch (_: Throwable) { }   // v0.17.49 (PC1): app (package) change = no stuck Ctrl
         try { if (prefs.bool("bk_auto", true) && prefs.int("bk_day", 0) != BackupStore.today()) BackupStore.autoIfDue(this) } catch (_: Throwable) { }   // v0.4.0: auto backup once per day (background Thread)
@@ -737,7 +759,7 @@ class MgbIme : InputMethodService() {
                     try { if (prefs.bool("bs_repeat", true)) RepeatKeyHelper({ onBackspace() }, { v -> feedback(v) }, if (prefs.bool("bs_word", true)) ({ onBackspaceWord() }) else null).attach(bk) } catch (_: Throwable) { }
                     bk
                 }
-                "enter" -> JabraIcons.putThemed(this@MgbIme, key("\u23CE", k.weight) { commitWord(); doEnter() }, "enter")
+                "enter" -> enterIcon(key("\u23CE", k.weight) { commitWord(); doEnter() })   // v0.17.70 (S4): search icon when the field asks for Search
                 "sym" -> {
                     val sk = key(if (k.label[0].isNotEmpty()) k.label[0] else "?123", k.weight) { showPanel("symbols") }
                     try { JabraLongPress.attach(sk, prefs) { pickKeyboard() } } catch (_: Throwable) { }
@@ -1706,7 +1728,7 @@ class MgbIme : InputMethodService() {
         periodBtn = periodKey
         if (!qmShown) { try { JabraLongPress.attach(periodKey, prefs) { commitWord(); typeText(com.mgb.keyboard.layout.LayoutRoute.dotLong(dandaDot(), bangla && !latinOnly)) } } catch (_: Throwable) { } }   // v0.17.1 (K1); v0.17.18 (L1): rule ON + Bangla = long-press gives the full stop: long-press "." = "?" (Bangla: "।"; password / email / URL fields: always "?", same rule as the old key)
         r4.addView(periodKey)
-        r4.addView(fn(JabraIcons.putThemed(this, key("⏎", com.mgb.keyboard.typing.BottomPlan.enterWeight(bst)) { commitWord(); doEnter() }, "enter")))   // v0.0.7 + v0.0.9
+        r4.addView(fn(enterIcon(key("⏎", com.mgb.keyboard.typing.BottomPlan.enterWeight(bst)) { commitWord(); doEnter() })))   // v0.17.70 (S4)   // v0.0.7 + v0.0.9
         try {   // v0.10.27: Ridmik-like bottom row: space takes what is left, so the row stays as wide as before (old style = space 4, nothing changes)
             if (com.mgb.keyboard.typing.BottomPlan.ridmik(bst)) {
                 var others = 0f
