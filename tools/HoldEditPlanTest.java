@@ -14,8 +14,7 @@ public class HoldEditPlanTest {
         t("custom override wins (c)", HoldEditPlan.actionFor('c', true, "c=@", false) == null);
         t("custom for other letter does not block", "copy".equals(HoldEditPlan.actionFor('c', true, "a=@", false)));
         t("null custom ok", "paste".equals(HoldEditPlan.actionFor('v', true, null, false)));
-        t("password: no copy / cut", HoldEditPlan.actionFor('c', true, "", true) == null && HoldEditPlan.actionFor('x', true, "", true) == null);
-        t("password: paste ok", "paste".equals(HoldEditPlan.actionFor('v', true, "", true)));
+        t("password: copy / cut / paste all work (v0.18.2)", "copy".equals(HoldEditPlan.actionFor('c', true, "", true)) && "cut".equals(HoldEditPlan.actionFor('x', true, "", true)) && "paste".equals(HoldEditPlan.actionFor('v', true, "", true)));
         t("labels", "Copy".equals(HoldEditPlan.label("copy")) && "Paste".equals(HoldEditPlan.label("paste")) && "Cut".equals(HoldEditPlan.label("cut")) && HoldEditPlan.label("x").isEmpty());
         System.out.println("HoldEditPlanTest: " + ok + " PASS / " + bad + " FAIL");
         if (bad > 0) System.exit(1);

@@ -1,3 +1,11 @@
+v0.18.2 - FIX/MODIFY: Hold C / V / X = Copy / Cut also in password fields
+- SEEN/WHY: you need copy and cut in password fields (v0.18.1 blocked them there).
+- What changed for the user: hold c = copy, x = cut, v = paste now work in every field, password fields too. Setting hold_edit is still default OFF. Copied password text is still NOT saved to the clipboard history (history skips password fields as before).
+- Code: typing/HoldEditPlan.java (password rule removed, argument kept), tools/HoldEditPlanTest.java (test updated), typing/SettingsIndex.java (search text), app/build.gradle.kts 0.18.2.
+- BROKE: nothing known. Some password fields (the app itself) block copy / cut at the editor: then the system copy does nothing and our fallback may get no selected text, so nothing is copied.
+- TESTED here: bash tools/run_tests.sh green. NOT tested: phone: hold c / x in a password field of a normal app.
+- Rollback: restore the 3 files from v0.18.1.
+
 v0.18.1 - MODIFY (U12): Copied images / screenshots in the clipboard + hold C / V / X = Copy / Paste / Cut
 - SEEN: (1) the clipboard only kept text: copying a screenshot or picture added a useless "content://..." text clip. (2) Copy / Paste / Cut existed only as toolbar / edit-bar buttons; hold of c / v / x typed the hint characters ' : ".
 - What you get: (1) Setting "Show copied images (screenshots)" (Clipboard page, default ON): a copied picture is kept (max 8, newest first, only on the phone, max 6 MB each, png / jpg / webp / gif) and shows as small thumbnails on top of the clipboard panel. Tap = paste the picture (the app must accept images: the editor takes it directly, else we put it on the system clipboard and paste; if the app refuses a short note shows). Hold a thumbnail = delete it. The useless content:// text clip is no longer added for images. "Clear clipboard history" also clears the pictures. OFF = nothing stored or shown. (2) Setting "Hold C / V / X = Copy / Paste / Cut" (Typing page, Show advanced, default OFF): hold c = copy, v = paste, x = cut of the selected text (small bubble says which). Your own "Long-press override" for that letter wins; copy / cut never run in a password field (paste does); with Ctrl / Alt held in PC mode nothing changes.

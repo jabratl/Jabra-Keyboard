@@ -119,7 +119,7 @@ public final class SettingsIndex {
             case "hint_on": return "Long-press a letter to type its small hint character.";
             case "lp_accents": return "Hold a, e, i, o, u, c, n, s, y, z, l: slide to pick an accent letter (e.g. u: ù ú û ü ū).";
             case "key_press_anim": return "The key shrinks a little while you press it and springs back (smoother feel). Off = no animation.";
-            case "hold_edit": return "Hold c = copy, v = paste, x = cut (works on the selected text). Off = the normal long-press hints. Your own Long-press override for that letter wins. Not in password fields for copy / cut.";
+            case "hold_edit": return "Hold c = copy, v = paste, x = cut (works on the selected text). Off = the normal long-press hints. Your own Long-press override for that letter wins.";
             case "clip_img": return "Shows copied pictures and screenshots (max 8, kept only on the phone) on top of the clipboard. Tap = paste, hold = delete. Cleared with the clipboard history.";
             case "lp_punct": return "Hold , or . to slide over more symbols (2-row grid). Lift without moving = the old long-press.";
             case "theme": return "Colour theme of the keyboard (picker is inside the keyboard).";

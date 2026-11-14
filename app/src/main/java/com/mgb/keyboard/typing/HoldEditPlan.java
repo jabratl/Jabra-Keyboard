@@ -2,7 +2,7 @@ package com.mgb.keyboard.typing;
 
 /**
  * v0.18.1: pure rules for "hold C = copy, hold V = paste, hold X = cut" (pref hold_edit, default OFF = nothing changes).
- * Smart: your own "Long-press override" for that letter wins; Copy / Cut never run in a password field. No Android classes.
+ * Smart: your own "Long-press override" for that letter wins. v0.18.2: Copy / Cut / Paste also work in password fields (user request); the passwordField argument is kept but ignored. No Android classes.
  */
 public final class HoldEditPlan {
     private HoldEditPlan() { }
@@ -19,7 +19,6 @@ public final class HoldEditPlan {
         else if (k == 'x') a = "cut";
         else return null;
         try { if (LongPressHints.customFor(k, custom == null ? "" : custom) != null) return null; } catch (Throwable e) { }
-        if (passwordField && !"paste".equals(a)) return null;
         return a;
     }
 

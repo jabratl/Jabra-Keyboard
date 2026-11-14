@@ -1,0 +1,19 @@
+HANDOFF Jabra-Keyboard v0.18.2 (hold C/V/X in password fields, FIX/MODIFY)   [plan: HANDOFF_Jabra-Keyboard_v0.17.75_UI-Plan.txt]
+
+DONE + CURRENT VERSION
+- UI plan U1-U11 (0.18.0) | U12 clipboard images + hold C/V/X (0.18.1) | [x] 0.18.2 password fields allowed. CURRENT: 0.18.2. Apply 0.18.0, 0.18.1 zips first.
+
+WHAT CHANGED (file: 1 line)
+- typing/HoldEditPlan.java: copy / cut / paste no longer blocked in password fields (arg kept, ignored).
+- tools/HoldEditPlanTest.java: test updated. typing/SettingsIndex.java: search text. app/build.gradle.kts 0.18.2. CHANGELOG.txt entry.
+
+CHECKS DONE
+bash tools/run_tests.sh green.
+
+NOT TESTED
+Phone: hold c / x in a password field; Kotlin compile of 0.18.1 files still unconfirmed (GitHub build log decides; red = FIX first).
+
+KNOWN LIMITS / NEXT
+- Apps that block copy / cut in password fields at editor level: nothing is copied.
+- Earlier NEXT items of v0.18.1 still open (key hint letters for c / v / x, image auto-delete, lp_accents order).
+- Phone test + build log = next step.
