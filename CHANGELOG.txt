@@ -1,3 +1,12 @@
+v0.17.73 - FIX (S6): Number row toggle (and other layout settings) did nothing on the custom keyboard
+- SEEN: Number row switched OFF / ON in settings, but the row stayed gone (or stayed).
+- ROOT CAUSE: the custom keyboard is a stored layout built ONCE from the settings (LayoutDefaults: number row layer only when numrow was ON at build time). A later toggle never rebuilt it (only the app button "Rebuild layout from current settings" did). The S2 rebuild (BUILT_VERSION 4) baked whatever numrow was at that moment.
+- FIX: LayoutStore keeps a settings signature (built_sig, layout/BuiltSig.java) next to an UNEDITED default layout; when a baked setting changed (number row + its size / mode / chars, hints, bn_design, bottom row keys, row gap, space size ...) the default layout is rebuilt on the next keyboard build. First start after this update rebuilds once (no signature yet).
+- WHAT COULD BREAK: a layout you EDITED in the layout editor (edited = ON) is still never rebuilt: use app > Rebuild layout from current settings (this also gives back the number row). Rebuilding replaces an unedited default only, so no own work is lost.
+- Code: LayoutStore.kt (sigOf, check in load, signature saved on build / rebuild), layout/BuiltSig.java NEW, tools/BuiltSigTest.java NEW. app/build.gradle.kts 0.17.73.
+- TESTED: bash tools/run_tests.sh = 138/138 green; bracket balance LayoutStore.kt. NOT tested: Kotlin NOT compiled; phone: toggle Number row OFF -> row gone, ON -> row back (English + Bangla fixed), also Key emoji / EN key toggles.
+- Rollback: restore LayoutStore.kt from v0.17.72, delete BuiltSig.java / BuiltSigTest.java.
+
 v0.17.72 - MODIFY (S5): last emoji / text signs replaced by the drawn icons (S1 leftovers)
 - Clip key of the edit bar (MgbIme.kt old bar, Toolbar.kt): label is now the word "Clip" (was the clipboard emoji); icon is drawn as before, Icons OFF = the word.
 - ToolbarQuick: "Edit shortcut" pencil and the "check" on the shortcut tiles are drawn icons ("+ " stays text).

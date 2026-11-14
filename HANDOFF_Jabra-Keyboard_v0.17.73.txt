@@ -1,0 +1,27 @@
+HANDOFF Jabra-Keyboard v0.17.73 (S6, FIX)   [paste this at the start of the next chat]
+
+DONE LIST + CURRENT VERSION
+- R3-R7 (0.17.63-67), S1 (0.17.68) icons, S2 (0.17.69) Ridmik grid, S3 (0.17.70) TAR export + classic swipe, S4 (0.17.71) Enter = search icon, S5 (0.17.72) last signs -> icons.
+- S6 (0.17.73) FIX: Number row toggle did nothing on the custom keyboard.
+- CURRENT: 0.17.73. Apply S1..S5 zips, then this one (touches LayoutStore.kt only + 2 new files).
+
+ROOT CAUSE
+Custom layout is stored text built ONCE from settings (LayoutDefaults adds the "nr" layer only if numrow was ON then). Changing the setting later never rebuilt it.
+
+WHAT CHANGED
+- LayoutStore.kt: sigOf() + stale check in load(); signature (built_sig) written on first build and on rebuildFromSettings.
+- layout/BuiltSig.java NEW: signature text of baked settings.
+- tools/BuiltSigTest.java NEW. app/build.gradle.kts 0.17.73. CHANGELOG.txt.
+
+CHECKS DONE
+bash tools/run_tests.sh = 138/138 green; bracket balance LayoutStore.kt.
+
+NOT TESTED (needs real use)
+Kotlin NOT compiled (S1-S6): if GitHub build fails send the log -> FIX first. Phone: Number row OFF -> gone, ON -> back (English, Bangla phonetic, Bangla fixed); Key emoji / EN key / bottom style toggles now apply; first start after update = one rebuild.
+
+KNOWN LIMITS
+- A layout EDITED in the layout editor is never rebuilt: app > Rebuild layout from current settings.
+- If the number row is still missing after this: that layout is "edited" -> use the button above (tell which, so it can be handled automatically).
+
+NEXT STEP + GOAL
+S7 (MODIFY): Bangla fixed (Ridmik look) with Number row OFF: swipe up on row 1 = digit (Bangla digit if numrow_bn, else English); hold = shift letter as now. Keep RidmikGridTest green (update it for the numRow-off case only). Then: Ridmik shift hints (needs screenshot), AppThemeStudio warning sign.

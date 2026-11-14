@@ -26,6 +26,7 @@ object LayoutStore {
     private const val K_BOOK = "book_v1"       // v0.17.13 (K9): all named layouts (LayoutBook text)
     private const val K_ACTIVE = "active"      // v0.17.13 (K9): name of the active saved layout
     private const val K_RULES = "rules_v1"      // v0.17.17 (K13): layout rules (per language / screen / app), LayoutRules text
+    private const val K_SIG = "built_sig"      // v0.17.73 (S6 FIX): settings signature of an unedited default layout (BuiltSig); a change = rebuilt
     private const val K_EDITED = "edited"      // v0.17.6: set by the editor (K6) so a user's own layout is never rebuilt
 
     @Volatile private var cacheText: String? = null
@@ -46,13 +47,17 @@ object LayoutStore {
         try {
             val s = sp(ctx)
             var text = s.getString(K_LAYOUT, null)
+            if (text != null && !s.getBoolean(K_EDITED, false)) {   // v0.17.73 (S6 FIX): a default layout is baked from the settings (number row ...): changed settings = rebuilt (was: Number row toggle did nothing)
+                val stale = try { s.getString(K_SIG, null) != sigOf(prefs) } catch (_: Throwable) { false }
+                if (stale) { text = null; cacheText = null; cacheModel = null }
+            }
             if (text != null && text == cacheText && cacheModel != null) return cacheModel
             if (text != null && LayoutRoute.needsRebuild(s.getInt(K_BUILT, 0), s.getBoolean(K_EDITED, false))) text = null   // v0.17.6: a v0.17.5 default (built with fewer settings) is rebuilt once; the editor does not exist yet, nothing is lost
             var g = LayoutGuard.gate(text)
             if (g.code == LayoutGuard.EMPTY) {   // nothing saved yet: build the default = exactly the classic keyboard
                 text = buildDefaultText(ctx, prefs)
                 if (text != null) {
-                    s.edit().putString(K_LAYOUT, text).putString(K_GOOD, text).putInt(K_BUILT, LayoutRoute.BUILT_VERSION).apply()
+                    s.edit().putString(K_LAYOUT, text).putString(K_GOOD, text).putInt(K_BUILT, LayoutRoute.BUILT_VERSION).putString(K_SIG, sigOf(prefs)).apply()
                     g = LayoutGuard.gate(text)
                 }
             }
@@ -62,6 +67,14 @@ object LayoutStore {
             return g.model
         } catch (_: Throwable) { lastProblem = "layout could not be read"; return null }
     }
+
+    /** v0.17.73 (S6 FIX): the settings buildDefaultText bakes into a default layout (not screen size / key height: those never rebuilt it). */
+    private fun sigOf(prefs: JabraPrefs): String = com.mgb.keyboard.layout.BuiltSig.of(
+        prefs.bool("row_gap", true), prefs.bool("numrow", true), prefs.bool("hint_on", true), prefs.str("hint_custom", ""), prefs.bool("bn_hints", true),
+        prefs.int("bn_design", 0), prefs.bool("lp_accents", false), prefs.bool("lp_punct", false), prefs.int("nr_mode", 0), prefs.str("nr_chars", ""),
+        prefs.int("nr_hpct", 100), prefs.bool("numrow_large", false), prefs.bool("pb_home_gap", false), prefs.int("bot_style", 0), prefs.bool("key_qm", false),
+        prefs.bool("key_lang", true), prefs.bool("space_lang", false), prefs.bool("key_globe", false), prefs.bool("key_voice", false), prefs.bool("key_emoji", false),
+        prefs.int("sp_wpct", 100), prefs.int("sp_hpct", 100))
 
     /** v0.17.6: today's keyboard (all the settings that shape it) as layout text. null = could not be built. */
     private fun buildDefaultText(ctx: Context, prefs: JabraPrefs): String? {
@@ -105,7 +118,7 @@ object LayoutStore {
         try {
             val text = buildDefaultText(ctx, prefs) ?: return false
             if (!LayoutGuard.gate(text).ok()) return false
-            sp(ctx).edit().putString(K_LAYOUT, text).putString(K_GOOD, text).putInt(K_BUILT, LayoutRoute.BUILT_VERSION).putBoolean(K_EDITED, false).putInt(K_SAFE, 0).apply()
+            sp(ctx).edit().putString(K_LAYOUT, text).putString(K_GOOD, text).putInt(K_BUILT, LayoutRoute.BUILT_VERSION).putBoolean(K_EDITED, false).putInt(K_SAFE, 0).putString(K_SIG, sigOf(prefs)).apply()
             cacheText = null; cacheModel = null; lastProblem = ""
             return true
         } catch (_: Throwable) { return false }
