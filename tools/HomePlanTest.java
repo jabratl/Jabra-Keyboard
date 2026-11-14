@@ -101,6 +101,38 @@ public class HomePlanTest {
         eq("revealY", HomePlan.revealY(500, 72), 428);
         eq("revealY top", HomePlan.revealY(10, 72), 0);
         eq("revealY negative pad", HomePlan.revealY(100, -5), 100);
+        // v0.17.79 (U4): status card priority
+        eq("st none", HomePlan.status(false, "", ""), HomePlan.ST_NONE);
+        eq("st none null", HomePlan.status(false, null, null), HomePlan.ST_NONE);
+        eq("st setup wins", HomePlan.status(true, "warn", "bk"), HomePlan.ST_SETUP);
+        eq("st guard over backup", HomePlan.status(false, "warn", "bk"), HomePlan.ST_GUARD);
+        eq("st backup", HomePlan.status(false, "", "bk"), HomePlan.ST_BACKUP);
+        eq("st backup null guard", HomePlan.status(false, null, "bk"), HomePlan.ST_BACKUP);
+        eq("title none", HomePlan.statusTitle(HomePlan.ST_NONE), "");
+        eq("title guard", HomePlan.statusTitle(HomePlan.ST_GUARD), "A keyboard panel is switched off");
+        eq("action guard", HomePlan.statusAction(HomePlan.ST_GUARD), "Switch it on again");
+        eq("action backup", HomePlan.statusAction(HomePlan.ST_BACKUP), "Open Data & Backup");
+        eq("action setup none", HomePlan.statusAction(HomePlan.ST_SETUP), "");
+        eq("action none", HomePlan.statusAction(HomePlan.ST_NONE), "");
+        eq("text guard", HomePlan.statusText(HomePlan.ST_GUARD, "g", "b"), "g");
+        eq("text backup", HomePlan.statusText(HomePlan.ST_BACKUP, "g", "b"), "b");
+        eq("text none", HomePlan.statusText(HomePlan.ST_NONE, "g", "b"), "");
+        eq("text null", HomePlan.statusText(HomePlan.ST_GUARD, null, null), "");
+        // changed badge per page
+        int[] c = PagePlan.changedByPage(Arrays.asList("Look", "Look", "Typing", "Weird group", "Keys & gestures"), new boolean[] { true, true, false, true, false });
+        eq("by page look", c[PagePlan.index(PagePlan.LOOK)], 2);
+        eq("by page typing", c[PagePlan.index(PagePlan.TYPING)], 0);
+        eq("by page unknown -> data", c[PagePlan.index(PagePlan.DATA)], 1);
+        eq("by page keys", c[PagePlan.index(PagePlan.KEYS)], 0);
+        eq("by page len", c.length, PagePlan.ORDER.length);
+        eq("by page null", PagePlan.changedByPage(null, new boolean[1]).length, PagePlan.ORDER.length);
+        eq("by page short flags", PagePlan.changedByPage(Arrays.asList("Look", "Look"), new boolean[] { true })[PagePlan.index(PagePlan.LOOK)], 1);
+        eq("badge zero", PagePlan.badge(0), "");
+        eq("badge neg", PagePlan.badge(-3), "");
+        eq("badge n", PagePlan.badge(3), "3 changed");
+        eq("desc none", PagePlan.tileDescription(PagePlan.KEYS, "Vibrate on", 0), "Keys & Gestures. Vibrate on");
+        eq("desc one", PagePlan.tileDescription(PagePlan.KEYS, "Vibrate on", 1), "Keys & Gestures. Vibrate on, 1 setting changed");
+        eq("desc many", PagePlan.tileDescription(PagePlan.KEYS, null, 4), "Keys & Gestures. , 4 settings changed");
         System.out.println("HomePlanTest: " + ok + " ok, " + bad + " bad");
         if (bad > 0) System.exit(1);
     }

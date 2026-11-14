@@ -14,6 +14,7 @@ import android.widget.ScrollView
 import android.widget.TextView
 import com.mgb.keyboard.typing.AppTokens
 import com.mgb.keyboard.typing.EdgePlan
+import com.mgb.keyboard.typing.HomePlan
 import com.mgb.keyboard.typing.PagePlan
 import com.mgb.keyboard.typing.PersonalPlan
 import com.mgb.keyboard.typing.SizePct
@@ -30,7 +31,7 @@ class AppHomeView(val view: View, val refresh: () -> Unit, val select: (String) 
  */
 object AppHome {
 
-    fun build(act: SettingsActivity, setupCard: View?, pvLink: PreviewLink, search: AppSearchView?, open: (String) -> Unit): AppHomeView {   // v0.13.0 (M3): search = global search (null = none)
+    fun build(act: SettingsActivity, setupCard: View?, pvLink: PreviewLink, search: AppSearchView?, rowsChanged: () -> List<Pair<String, Boolean>> = { emptyList() }, open: (String) -> Unit): AppHomeView {   // v0.17.79 (U4): rowsChanged = (old group, changed flag) of every row, for the tile badges   // v0.13.0 (M3): search = global search (null = none)
         val prefs = JabraPrefs(act)
         val d = act.resources.displayMetrics.density
         fun dp(v: Int): Int = (v * d).toInt()
@@ -55,28 +56,84 @@ object AppHome {
         names.setPadding(dp(AppTokens.S3), 0, 0, 0)
         val title = TextView(act)
         title.text = "Jabra Keyboard"
-        title.textSize = 22f
+        title.textSize = AppTokens.T_HEAD.toFloat()
         title.setTypeface(null, Typeface.BOLD)
         try { title.setTextColor(AppUi.text(act)) } catch (_: Throwable) { }
         try { title.isAccessibilityHeading = true } catch (_: Throwable) { }
         val ver = TextView(act)
         ver.text = "Version ${BuildConfig.VERSION_NAME} (build ${BuildConfig.VERSION_CODE})"
-        ver.textSize = 12f   // v0.17.64 (R4): quieter version line
+        ver.textSize = AppTokens.T_CAPTION.toFloat()   // v0.17.64 (R4): quieter version line
         try { ver.setTextColor(AppUi.dim(act)) } catch (_: Throwable) { }
         names.addView(title)
         names.addView(ver)
         head.addView(names, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
         col.addView(head)
 
-        try { if (search != null) { col.addView(search.view); col.addView(search.favs) } } catch (_: Throwable) { }   // v0.15.0 (M5): favourites right under the search box   // v0.13.0 (M3): ONE search for all settings, right under the header
-
-        try {   // warning when the crash guard switched a panel off / backup is old (same text as the old screen)
-            val bn = com.mgb.keyboard.typing.HealthCheck.backupNote(prefs.bool("bk_auto", true), prefs.str("bk_last", ""), System.currentTimeMillis())
-            val w = listOf(PanelGuard.note(act), bn).filter { it.isNotEmpty() }.joinToString("\n")
-            if (w.isNotEmpty()) { val wt = TextView(act); wt.text = w; wt.setTextColor(AppUi.warn(act)); wt.setPadding(0, dp(AppTokens.S2), 0, 0); col.addView(wt) }
+        // ---- v0.17.79 (U4): sticky search. The input line leaves the scrolling list and stays on top; its results (2nd child of the box) move to the top of the list.
+        //      Unknown box shape = old behaviour (whole search view inside the list). Favourites stay right under the search. ----
+        var fieldBox: ViewGroup? = null
+        var resultsView: View? = null
+        try {
+            if (search != null) {
+                val box = search.view as? ViewGroup
+                val res = if (box != null && box.childCount >= 2) box.getChildAt(1) else null
+                if (box != null && res != null) { box.removeView(res); fieldBox = box; resultsView = res; col.addView(res) } else col.addView(search.view)
+                col.addView(search.favs)   // v0.15.0 (M5): favourites right under the search box
+            }
         } catch (_: Throwable) { }
 
-        try { if (setupCard != null) { (setupCard.parent as? ViewGroup)?.removeView(setupCard); col.addView(setupCard) } } catch (_: Throwable) { }   // ONE setup card (the 2 duplicate buttons are not in the new screen)
+        // ---- v0.17.79 (U4): ONE status card = the setup card / wizard while setup is open, else ONE warning card (crash guard first, then old backup) with an action ----
+        val statusBox = LinearLayout(act)
+        statusBox.orientation = LinearLayout.VERTICAL
+        try { if (setupCard != null) { (setupCard.parent as? ViewGroup)?.removeView(setupCard); statusBox.addView(setupCard) } } catch (_: Throwable) { }
+        val warnCard = LinearLayout(act)
+        warnCard.orientation = LinearLayout.VERTICAL
+        warnCard.visibility = View.GONE
+        try { warnCard.background = AppUi.card(act) } catch (_: Throwable) { }
+        warnCard.setPadding(dp(AppTokens.S3), dp(AppTokens.S3), dp(AppTokens.S3), dp(AppTokens.S3))
+        val wTitle = TextView(act)
+        wTitle.textSize = AppTokens.T_TITLE.toFloat()
+        wTitle.setTypeface(null, Typeface.BOLD)
+        try { wTitle.setTextColor(AppUi.warn(act)); wTitle.isAccessibilityHeading = true } catch (_: Throwable) { }
+        val wText = TextView(act)
+        wText.textSize = AppTokens.T_BODY.toFloat()
+        wText.setPadding(0, dp(AppTokens.S1), 0, 0)
+        try { wText.setTextColor(AppUi.text(act)) } catch (_: Throwable) { }
+        val wBtn = Button(act)
+        wBtn.isAllCaps = false
+        wBtn.minHeight = dp(AppTokens.TOUCH)
+        wBtn.minimumHeight = dp(AppTokens.TOUCH)
+        try { AppRows.styleAction(act, wBtn) } catch (_: Throwable) { }
+        warnCard.addView(wTitle)
+        warnCard.addView(wText)
+        warnCard.addView(wBtn)
+        val warnLp = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+        warnLp.setMargins(0, dp(AppTokens.S3), 0, dp(AppTokens.S1))
+        statusBox.addView(warnCard, warnLp)
+        var statusNow = HomePlan.ST_NONE
+        fun refreshStatus() {
+            try {
+                val pending = setupCard != null && setupCard.visibility == View.VISIBLE
+                val g = try { PanelGuard.note(act) } catch (_: Throwable) { "" }
+                val b = try { com.mgb.keyboard.typing.HealthCheck.backupNote(prefs.bool("bk_auto", true), prefs.str("bk_last", ""), System.currentTimeMillis()) } catch (_: Throwable) { "" }
+                statusNow = HomePlan.status(pending, g, b)
+                if (statusNow == HomePlan.ST_GUARD || statusNow == HomePlan.ST_BACKUP) {
+                    wTitle.text = HomePlan.statusTitle(statusNow)
+                    wText.text = HomePlan.statusText(statusNow, g, b)
+                    wBtn.text = HomePlan.statusAction(statusNow)
+                    wBtn.contentDescription = wBtn.text
+                    warnCard.visibility = View.VISIBLE
+                } else warnCard.visibility = View.GONE
+            } catch (_: Throwable) { warnCard.visibility = View.GONE }
+        }
+        wBtn.setOnClickListener {
+            try {
+                if (statusNow == HomePlan.ST_GUARD) { PanelGuard.reset(act); refreshStatus() }
+                else if (statusNow == HomePlan.ST_BACKUP) open(PagePlan.DATA)
+            } catch (_: Throwable) { }
+        }
+        refreshStatus()
+        col.addView(statusBox)
 
         // ---- v0.18 (easy browse): the Settings list comes first, then Customize, then Quick looks, then the test field ----
         col.addView(label(act, "Settings", dp(AppTokens.S4)))
@@ -92,7 +149,7 @@ object AppHome {
         try {   // v0.17.64 (R4): one line that says what a Quick look does
             val qh = TextView(act)
             qh.text = "One tap sets key size and spacing. You can undo it."
-            qh.textSize = 12f
+            qh.textSize = AppTokens.T_CAPTION.toFloat()
             qh.setTextColor(AppUi.dim(act))
             qh.setPadding(0, dp(AppTokens.S1), 0, dp(AppTokens.S1))
             col.addView(qh)
@@ -103,7 +160,7 @@ object AppHome {
 
         val note = TextView(act)
         try { note.setTextColor(AppUi.dim(act)) } catch (_: Throwable) { }
-        note.textSize = 12f
+        note.textSize = AppTokens.T_CAPTION.toFloat()
         note.setPadding(0, dp(AppTokens.S1), 0, 0)
         val undo = Button(act)
         undo.isAllCaps = false
@@ -116,11 +173,20 @@ object AppHome {
 
         val tileSum = ArrayList<Pair<String, TextView>>()
         val tileViews = HashMap<String, View>()   // v0.13.0 (M3)
+        val tileBadge = HashMap<String, TextView>()   // v0.17.79 (U4): "3 changed" pill per tile (hidden at 0)
+        fun counts(): IntArray = try {   // changed rows per page, same order as PagePlan.ORDER
+            val rows = rowsChanged()
+            PagePlan.changedByPage(rows.map { it.first }, BooleanArray(rows.size) { rows[it].second })
+        } catch (_: Throwable) { IntArray(PagePlan.ORDER.size) }
+        fun badgeOf(id: String, c: IntArray): Int { val i = PagePlan.index(id); return if (i in c.indices) c[i] else 0 }
         fun refreshTiles() {
+            val c = counts()
             for ((id, tv) in tileSum) {
                 try {
                     tv.text = summary(act, prefs, id)
-                    tileViews[id]?.contentDescription = PagePlan.title(id) + ". " + tv.text   // v0.13.0 (M3): TalkBack reads title + summary
+                    val n = badgeOf(id, c)
+                    tileBadge[id]?.let { b -> b.text = PagePlan.badge(n); b.visibility = if (n > 0) View.VISIBLE else View.GONE }
+                    tileViews[id]?.contentDescription = PagePlan.tileDescription(id, tv.text.toString(), n)   // v0.13.0 (M3): TalkBack reads title + summary (+ changed count, U4)
                 } catch (_: Throwable) { }
             }
         }
@@ -136,7 +202,7 @@ object AppHome {
             val b = Button(act)
             b.isAllCaps = false
             b.text = PagePlan.quickLabel(id)
-            b.textSize = 12f
+            b.textSize = AppTokens.T_CAPTION.toFloat()
             b.minHeight = dp(AppTokens.TOUCH)
             b.minimumHeight = dp(AppTokens.TOUCH)
             b.minWidth = 0
@@ -208,6 +274,8 @@ object AppHome {
             tilesBox.removeAllViews()
             tileSum.clear()
             tileViews.clear()
+            tileBadge.clear()
+            val cnt = counts()
             val ids = PersonalPlan.visible(prefs.str(PersonalPlan.PREF_ORDER, ""), prefs.str(PersonalPlan.PREF_HIDE, ""))
             for (i in ids.indices) {
                 val id = ids[i]
@@ -246,26 +314,38 @@ object AppHome {
                 texts.setPadding(dp(AppTokens.S3), 0, dp(AppTokens.S2), 0)
                 val tt = TextView(act)
                 tt.text = PagePlan.title(id)
-                tt.textSize = 16f
+                tt.textSize = AppTokens.T_TITLE.toFloat()
                 tt.setTypeface(null, Typeface.BOLD)
                 try { tt.setTextColor(AppUi.text(act)) } catch (_: Throwable) { }
                 texts.addView(tt)
                 val sm = TextView(act)
-                sm.textSize = 13f
+                sm.textSize = AppTokens.T_LABEL.toFloat()
                 sm.maxLines = 2; sm.ellipsize = android.text.TextUtils.TruncateAt.END   // v0.17.64 (R4): even tile height
                 try { sm.setTextColor(AppUi.dim(act)) } catch (_: Throwable) { }
                 sm.text = summary(act, prefs, id)
                 texts.addView(sm)
                 tile.addView(texts, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
+                // v0.17.79 (U4): changed-count badge (hidden at 0; spoken inside the tile description)
+                val nChanged = badgeOf(id, cnt)
+                try {
+                    val bd = AppUi.pill(act, PagePlan.badge(nChanged), false)
+                    bd.textSize = AppTokens.T_CAPTION.toFloat()
+                    bd.visibility = if (nChanged > 0) View.VISIBLE else View.GONE
+                    bd.importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+                    val blp = LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+                    blp.setMargins(0, 0, dp(AppTokens.S2), 0)
+                    tile.addView(bd, blp)
+                    tileBadge[id] = bd
+                } catch (_: Throwable) { }
                 // arrow
                 val arrow = TextView(act)
                 arrow.text = "\u203A"
-                arrow.textSize = 26f
+                arrow.textSize = AppTokens.T_DISPLAY.toFloat()
                 try { arrow.setTextColor(AppUi.dim(act)) } catch (_: Throwable) { }
                 arrow.importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
                 tile.addView(arrow)
                 tileSum.add(Pair(id, sm))
-                tile.contentDescription = PagePlan.title(id) + ". " + sm.text   // v0.13.0 (M3)
+                tile.contentDescription = PagePlan.tileDescription(id, sm.text.toString(), nChanged)   // v0.13.0 (M3) + U4
                 AppA11y.asButton(tile)
                 tileViews[id] = tile
                 tile.setOnClickListener { try { open(id) } catch (_: Throwable) { } }
@@ -285,7 +365,7 @@ object AppHome {
             val b = Button(act)
             b.isAllCaps = false
             b.text = label
-            b.textSize = 12f
+            b.textSize = AppTokens.T_CAPTION.toFloat()
             b.minWidth = 0; b.minimumWidth = 0
             b.minHeight = dp(AppTokens.TOUCH); b.minimumHeight = dp(AppTokens.TOUCH)
             b.contentDescription = desc
@@ -301,7 +381,7 @@ object AppHome {
             val hid = PersonalPlan.hidden(rawH)
             val hint = TextView(act)
             hint.text = "Move tiles with the arrows. A hidden tile still opens from the search."
-            hint.textSize = 12f
+            hint.textSize = AppTokens.T_CAPTION.toFloat()
             try { hint.setTextColor(AppUi.dim(act)) } catch (_: Throwable) { }
             hint.setPadding(0, dp(AppTokens.S1), 0, dp(AppTokens.S1))
             custom.addView(hint)
@@ -312,7 +392,7 @@ object AppHome {
                 line.gravity = Gravity.CENTER_VERTICAL
                 val name = TextView(act)
                 name.text = PagePlan.title(id) + (if (isHid) " (hidden)" else "")
-                name.textSize = 14f
+                name.textSize = AppTokens.T_BODY.toFloat()
                 try { name.setTextColor(if (isHid) AppUi.dim(act) else AppUi.text(act)) } catch (_: Throwable) { }
                 line.addView(name, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
                 line.addView(mini("\u25B2", "Move " + PagePlan.title(id) + " up", id != full.first()) {
@@ -354,15 +434,28 @@ object AppHome {
                 col.addView(search.lists)
                 val at = col.indexOfChild(search.view)
                 if (at >= 0) search.bindRest((at + 1 until col.childCount).map { col.getChildAt(it) })
+                else if (resultsView != null) {   // v0.17.79 (U4): sticky search: the logo header and everything after the results hide while a text is typed
+                    val ra = col.indexOfChild(resultsView)
+                    if (ra >= 0) search.bindRest(listOf<View>(head) + (ra + 1 until col.childCount).map { col.getChildAt(it) })
+                }
             }
         } catch (_: Throwable) { }
 
         val sv = ScrollView(act)
         sv.isFillViewport = true
         sv.addView(col)
-        try { if (dark) sv.setBackgroundColor(AppUi.bg(act)) } catch (_: Throwable) { }
-        return AppHomeView(sv, {
-            try { refreshTiles(); undo.visibility = if (hasUndo()) View.VISIBLE else View.GONE } catch (_: Throwable) { }
+        // v0.17.79 (U4): outer = [sticky search line] + [scrolling list]. No sticky line (no search / unknown shape) = the scroll view alone, as before.
+        val outer = LinearLayout(act)
+        outer.orientation = LinearLayout.VERTICAL
+        try { if (dark) outer.setBackgroundColor(AppUi.bg(act)) } catch (_: Throwable) { }
+        val fb = fieldBox
+        if (fb != null) {
+            fb.setPadding(dp(AppTokens.S4), dp(AppTokens.S2), dp(AppTokens.S4), dp(AppTokens.S1))
+            outer.addView(fb, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
+        }
+        outer.addView(sv, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f))
+        return AppHomeView(outer, {
+            try { refreshTiles(); refreshStatus(); undo.visibility = if (hasUndo()) View.VISIBLE else View.GONE } catch (_: Throwable) { }
             try { search?.refresh?.invoke() } catch (_: Throwable) { }
         }, { id -> select(id) })
     }
@@ -372,7 +465,7 @@ object AppHome {
         try { return AppRows.sectionHeader(act, text) } catch (_: Throwable) { }
         val t = TextView(act)
         t.text = text
-        t.textSize = 16f
+        t.textSize = AppTokens.T_TITLE.toFloat()
         t.setTypeface(null, Typeface.BOLD)
         try { t.setTextColor(AppUi.text(act)) } catch (_: Throwable) { }
         t.setPadding(0, topPx, 0, (4 * act.resources.displayMetrics.density).toInt())

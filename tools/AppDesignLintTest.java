@@ -15,7 +15,6 @@ public class AppDesignLintTest {
     static int fail = 0, total = 0;
     // file, max hard-coded text sizes, max hard-coded 0xFF colours
     static final String[][] BASELINE = {
-        {"AppHome.kt", "12", "0"},
         {"AppPages.kt", "4", "0"},
         {"AppSearch.kt", "7", "0"},
         {"AppThemeGrid.kt", "3", "0"},

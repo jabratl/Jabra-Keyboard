@@ -86,4 +86,23 @@ public final class PagePlan {
         if (QL_LARGE.equals(id)) { out[0] = 135; out[1] = 115; out[2] = 3; out[3] = 2; return out; }
         return null;
     }
+
+    // ---- v0.17.79 (U4): changed-count badge on the Home tiles ----
+    /** Number of changed rows per page, same order as ORDER. [groups] = old group name of each row, [changed] = its changed flag (shorter list wins; null = zeros). */
+    public static int[] changedByPage(java.util.List<String> groups, boolean[] changed) {
+        int[] out = new int[ORDER.length];
+        if (groups == null || changed == null) return out;
+        int n = Math.min(groups.size(), changed.length);
+        for (int i = 0; i < n; i++) if (changed[i]) out[index(pageOfGroup(groups.get(i)))]++;
+        return out;
+    }
+
+    /** Badge text: "" when nothing changed (badge hidden), else "3 changed". */
+    public static String badge(int n) { return n <= 0 ? "" : n + " changed"; }
+
+    /** Screen reader text of a tile: title, summary, changed count. */
+    public static String tileDescription(String id, String summary, int changed) {
+        String s = title(id) + ". " + (summary == null ? "" : summary);
+        return changed > 0 ? s + ", " + changed + (changed == 1 ? " setting changed" : " settings changed") : s;
+    }
 }

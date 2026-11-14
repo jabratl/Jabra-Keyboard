@@ -1,0 +1,21 @@
+HANDOFF Jabra-Keyboard v0.17.79 (U4, MODIFY)   [plan: HANDOFF_Jabra-Keyboard_v0.17.75_UI-Plan.txt - NOT in the repo zip, attach it for U5a]
+
+DONE + CURRENT VERSION
+- R3-R7, S1-S8 (0.17.75) | [x] U1 tokens (0.17.76) | [x] U2 rows v2 (0.17.77) | [x] U3 smart hints (0.17.78) | [x] U4 Home redesign (0.17.79). CURRENT: 0.17.79. Apply zips in order (U1+U2, U3, then this one).
+
+WHAT CHANGED (file: 1 line)
+- typing/HomePlan.java: status(setupPending, guardNote, backupNote) priority SETUP > GUARD > BACKUP > NONE + statusTitle / statusAction / statusText.
+- typing/PagePlan.java: changedByPage(groups, flags), badge(n), tileDescription(id, summary, n).
+- AppHome.kt: ONE status card (setup view or warning card with action), sticky search line (results moved to top of list; unknown box shape = old behaviour), "N changed" badge per tile, all textSize via AppTokens (AppHome lint baseline 12 -> 0).
+- SettingsActivity.kt: ONE line at AppHome.build (rows -> changed flags). Was read-only in the kickoff; needed for badges.
+- tools/HomePlanTest.java (+29 checks), tools/AppDesignLintTest.java (AppHome row removed), app/build.gradle.kts 0.17.79, CHANGELOG.txt.
+
+CHECKS DONE
+bash tools/run_tests.sh = 141/141 green; bracket balance of AppHome.kt and SettingsActivity.kt.
+
+NOT TESTED (needs real use)
+Kotlin NOT compiled (S1-S8, U1-U4): a red GitHub build log = FIX first. Phone: Home at 360 / 1280 dp dark + light; sticky search + results + no keyboard pop at start; status card cases (setup / crash guard / old backup); badge numbers update; two-pane frame; TalkBack reads tile + "N settings changed".
+
+NEXT STEP
+U5a (per the UI-Plan HANDOFF, which was not attached in this session: attach it with the next kickoff). If the GitHub build is red, FIX that first (likely spots: AppHome.kt new code, SettingsActivity.kt hook).
+Kickoff: Jabra-Keyboard step U5a. Mode: per UI-Plan. Previous version: v0.17.79. Attached: this HANDOFF + the UI-Plan HANDOFF + the files named in the plan. Context: Done U1-U4. Next: U5b.

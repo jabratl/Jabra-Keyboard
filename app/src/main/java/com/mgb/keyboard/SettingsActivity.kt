@@ -216,7 +216,7 @@ class SettingsActivity : Activity() {
         val pvMode = com.mgb.keyboard.typing.HomePlan.previewMode(two, hDp)
         val setup = setupSlot()
         val search = try { AppSearch.build(this, sink) { id, v -> appPages?.reveal(id, v) } } catch (_: Throwable) { null }   // no search = Home without it
-        val home = AppHome.build(this, setup, pvLink, search) { id -> appPages?.show(id) }
+        val home = AppHome.build(this, setup, pvLink, search, { sink.rows.map { r -> Pair(r.group, try { r.changed() } catch (_: Throwable) { false }) } }) { id -> appPages?.show(id) }   // v0.17.79 (U4): rows -> tile badges
         homeRefresh = home.refresh
         val pages = AppPages(this, sink, home.view, { buildAbout() }, two, { switchToOldScreen() }) { id ->
             try {

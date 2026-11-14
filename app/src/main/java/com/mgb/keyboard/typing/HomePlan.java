@@ -130,4 +130,35 @@ public final class HomePlan {
 
     /** Scroll position that shows a row with a little room above it. */
     public static int revealY(int rowTopPx, int padPx) { return Math.max(0, rowTopPx - Math.max(0, padPx)); }
+
+    // ---- v0.17.79 (U4): ONE status card on Home. Priority: finish setup > crash guard > old backup > nothing. ----
+    public static final int ST_NONE = 0, ST_SETUP = 1, ST_GUARD = 2, ST_BACKUP = 3;
+
+    /** Which single status Home shows. setupPending wins (nothing else matters before the keyboard is on); a non-empty note means "has a warning". */
+    public static int status(boolean setupPending, String guardNote, String backupNote) {
+        if (setupPending) return ST_SETUP;
+        if (guardNote != null && !guardNote.isEmpty()) return ST_GUARD;
+        if (backupNote != null && !backupNote.isEmpty()) return ST_BACKUP;
+        return ST_NONE;
+    }
+
+    public static String statusTitle(int st) {
+        if (st == ST_SETUP) return "Finish setup";
+        if (st == ST_GUARD) return "A keyboard panel is switched off";
+        if (st == ST_BACKUP) return "Backup needs attention";
+        return "";
+    }
+
+    /** Button text of the warning card ("" = no button). */
+    public static String statusAction(int st) {
+        if (st == ST_GUARD) return "Switch it on again";
+        if (st == ST_BACKUP) return "Open Data & Backup";
+        return "";
+    }
+
+    public static String statusText(int st, String guardNote, String backupNote) {
+        if (st == ST_GUARD) return guardNote == null ? "" : guardNote;
+        if (st == ST_BACKUP) return backupNote == null ? "" : backupNote;
+        return "";
+    }
 }
