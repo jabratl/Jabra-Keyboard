@@ -1305,7 +1305,7 @@ class MgbIme : InputMethodService() {
             return f
         }
         if (id == "mode") { val mk = modeKey(barH()); try { mk.textSize = BarSize.textSp(prefs.int("tb_ipct", BarSize.DEF)) } catch (_: Throwable) { }; attachEdit(mk, Toolbar.title("mode")); return mk }   // v0.2.7
-        if (id == "hpause") { val hk = histPauseKey(); if (hk != null) return hk }   // v0.22.0 (H3): typing history Pause key (any problem = the normal key below)
+        if (id == "hpause") { val hk = histPauseKey(); if (hk != null) return hk }   // v0.23.0 (H3): typing history Pause key (any problem = the normal key below)
         val k = key(Toolbar.label(id), 1f) { toolbarAction(id) }   // v0.2.2
         JabraIcons.putThemed(this, k, Toolbar.icon(id))
         k.textSize = try { BarSize.textSp(prefs.int("tb_ipct", BarSize.DEF)) } catch (_: Throwable) { 12f }   // v0.16.6 (X6): 100 = 12 sp
@@ -1314,23 +1314,99 @@ class MgbIme : InputMethodService() {
     }
 
     /**
-     * v0.22.0 (H3): toolbar item "hpause" (an extra, OFF until turned on in Edit toolbar). Label = state (H + filled circle = saving, pause sign = paused, empty circle = history OFF).
+     * v0.23.0 (H3): toolbar item "hpause" (an extra, OFF until turned on in Edit toolbar). Label = state (H + filled circle = saving, pause sign = paused, empty circle = history OFF).
      * Tap while saving = pause 1 hour (resumes by itself); tap while paused = resume now. A small bubble says why / what (HistPause.tip, uses the reason of the open field).
      * History OFF: the tap only shows the bubble. Returns null on any problem.
+     */
+    private var histPick: android.widget.PopupWindow? = null
+
+    /** v0.23.0 (H3): small bubble above the H key with 3 chips (15 min / 1 hour / 1 day). Returns false when it could not be shown. */
+    private fun histShowPicker(anchor: Button, after: () -> Unit): Boolean = try {
+        try { histPick?.dismiss() } catch (_: Throwable) { }
+        histPick = null
+        val d = resources.displayMetrics.density
+        val txt = try { JabraTokens.btnText(prefs) } catch (_: Throwable) { null } ?: Color.parseColor("#222222")
+        val fill = try { JabraTokens.btnFill(prefs) } catch (_: Throwable) { null } ?: Color.WHITE
+        val box = LinearLayout(this)
+        box.orientation = LinearLayout.VERTICAL
+        box.setPadding((8 * d).toInt(), (6 * d).toInt(), (8 * d).toInt(), (8 * d).toInt())
+        val bg = android.graphics.drawable.GradientDrawable()
+        bg.setColor(JabraTokens.withAlpha(fill, 0xF2))
+        bg.setStroke((1 * d).toInt().coerceAtLeast(1), JabraTokens.withAlpha(txt, 0x55))
+        bg.cornerRadius = 14 * d
+        box.background = bg
+        val title = android.widget.TextView(this)
+        title.text = com.mgb.keyboard.hist.HistPause.pickTitle()
+        title.textSize = 11f
+        title.setTextColor(JabraTokens.withAlpha(txt, 0xB0))
+        title.gravity = android.view.Gravity.CENTER
+        title.setPadding(0, 0, 0, (4 * d).toInt())
+        box.addView(title)
+        val row = LinearLayout(this)
+        row.orientation = LinearLayout.HORIZONTAL
+        val cur = HistStore.pauseLevel(prefs)
+        for (i in com.mgb.keyboard.hist.HistPause.NAMES.indices) {
+            val chip = android.widget.TextView(this)
+            chip.text = com.mgb.keyboard.hist.HistPause.NAMES[i]
+            chip.textSize = 14f
+            chip.gravity = android.view.Gravity.CENTER
+            chip.setTextColor(if (i == cur) fill else txt)
+            val cb = android.graphics.drawable.GradientDrawable()
+            cb.setColor(if (i == cur) txt else JabraTokens.withAlpha(txt, 0x22))
+            cb.cornerRadius = 20 * d
+            chip.background = cb
+            chip.setPadding((14 * d).toInt(), (9 * d).toInt(), (14 * d).toInt(), (9 * d).toInt())
+            chip.minimumHeight = (40 * d).toInt()
+            chip.setOnClickListener {
+                try { histPick?.dismiss() } catch (_: Throwable) { }
+                histPick = null
+                try { HistStore.pauseTap(this, prefs, i) } catch (_: Throwable) { }
+                try { after() } catch (_: Throwable) { }
+            }
+            val lp = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT)
+            lp.setMargins((3 * d).toInt(), 0, (3 * d).toInt(), 0)
+            row.addView(chip, lp)
+        }
+        box.addView(row)
+        box.measure(View.MeasureSpec.UNSPECIFIED, View.MeasureSpec.UNSPECIFIED)
+        val w = box.measuredWidth
+        val h = box.measuredHeight
+        val pw = android.widget.PopupWindow(box, w, h, false)
+        pw.isTouchable = true
+        pw.isFocusable = false
+        ToolTip.inScreen(pw)
+        val loc = IntArray(2)
+        anchor.getLocationOnScreen(loc)
+        val sw = resources.displayMetrics.widthPixels
+        pw.showAtLocation(anchor, android.view.Gravity.NO_GRAVITY, com.mgb.keyboard.typing.TipPlace.x(loc[0], anchor.width, w, sw), com.mgb.keyboard.typing.TipPlace.y(loc[1], h, (6 * d).toInt()))
+        histPick = pw
+        anchor.postDelayed({ try { if (histPick === pw) { pw.dismiss(); histPick = null } } catch (_: Throwable) { } }, 5000L)
+        true
+    } catch (_: Throwable) { false }
+
+    /**
+     * v0.23.0 (H3): toolbar item "hpause" (an extra, OFF until turned on in Edit toolbar). Label = state (H + filled circle = saving, pause sign = paused, empty circle = history OFF).
+     * Tap while saving = a small picker bubble: 15 min / 1 hour / 1 day (the length used last is marked); tap while paused = resume now. When the time is over saving starts again by itself.
+     * A bubble says what happened / WHY nothing is saved here (HistPause.tip, uses the reason of the open field). History OFF: the tap only shows the bubble.
+     * If the picker cannot open, a tap pauses for the length used last. Returns null on any problem.
      */
     private fun histPauseKey(): Button? = try {
         fun label(): String = com.mgb.keyboard.hist.HistPause.keyLabel(prefs.bool("hist_on", false), HistStore.isPaused(prefs))
         fun tipText(): String = com.mgb.keyboard.hist.HistPause.tip(prefs.bool("hist_on", false), prefs.bool("hist_pause", false), HistStore.pauseUntil(prefs), System.currentTimeMillis(), HistStore.lastReason())
         var kk: Button? = null
+        fun bubble() {
+            val b = kk ?: return
+            b.text = label()
+            ToolTip.show(b, prefs, tipText())
+            b.postDelayed({ try { ToolTip.dismiss() } catch (_: Throwable) { } }, 2200L)
+        }
         val k = key(label(), 1f) {
             try {
-                if (prefs.bool("hist_on", false)) HistStore.pauseTap(this, prefs)
                 val b = kk
-                if (b != null) {
-                    b.text = label()
-                    ToolTip.show(b, prefs, tipText())
-                    b.postDelayed({ try { ToolTip.dismiss() } catch (_: Throwable) { } }, 2000L)
-                }
+                if (histPick != null) { try { histPick?.dismiss() } catch (_: Throwable) { }; histPick = null; return@key }
+                if (!prefs.bool("hist_on", false)) { bubble(); return@key }
+                if (HistStore.isPaused(prefs)) { HistStore.pauseTap(this, prefs); bubble(); return@key }   // paused -> resume
+                if (b == null || !histShowPicker(b) { bubble() }) { HistStore.pauseTap(this, prefs); bubble() }   // no picker possible: last length
             } catch (_: Throwable) { }
         }
         kk = k

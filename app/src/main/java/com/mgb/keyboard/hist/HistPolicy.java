@@ -51,7 +51,7 @@ public final class HistPolicy {
         return false;
     }
 
-    /** v0.22.0 (H3): the excluded packages as a clean list (no empty, no duplicates, same order). */
+    /** v0.23.0 (H3): the excluded packages as a clean list (no empty, no duplicates, same order). */
     public static java.util.List<String> parseApps(String apps) {
         java.util.List<String> out = new java.util.ArrayList<String>();
         if (apps == null) return out;

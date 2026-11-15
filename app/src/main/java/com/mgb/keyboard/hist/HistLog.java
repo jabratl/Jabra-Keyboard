@@ -168,7 +168,7 @@ public final class HistLog {
         return true;
     }
 
-    /** v0.22.0 (H3): removes every entry (and the open run) of one app. Returns how many entries were removed. */
+    /** v0.23.0 (H3): removes every entry (and the open run) of one app. Returns how many entries were removed. */
     public int removeApp(String app) {
         if (app == null || app.isEmpty()) return 0;
         int n = 0;
@@ -180,7 +180,7 @@ public final class HistLog {
         return n;
     }
 
-    /** v0.22.0 (H3): how many entries (the open run too) belong to one app. */
+    /** v0.23.0 (H3): how many entries (the open run too) belong to one app. */
     public int countApp(String app) {
         if (app == null || app.isEmpty()) return 0;
         int n = (open != null && app.equals(openApp)) ? 1 : 0;

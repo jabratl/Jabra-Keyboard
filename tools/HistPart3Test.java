@@ -2,9 +2,10 @@ import com.mgb.keyboard.hist.HistExcl;
 import com.mgb.keyboard.hist.HistLog;
 import com.mgb.keyboard.hist.HistPause;
 import com.mgb.keyboard.hist.HistPolicy;
+import com.mgb.keyboard.hist.HistUi;
 import java.util.Arrays;
 
-/** v0.22.0 (H3) tests: excluded-app list helpers, HistLog.removeApp / countApp, timed pause (computer only). */
+/** v0.23.0 (H3) tests: excluded-app list helpers, HistLog.removeApp / countApp, timed pause (computer only). */
 public class HistPart3Test {
     static int ok = 0, bad = 0;
     static void t(String n, boolean c) { if (c) ok++; else { bad++; System.out.println("FAIL: " + n); } }
@@ -60,21 +61,28 @@ public class HistPart3Test {
         t("timed paused", HistPause.paused(false, now + 1000, now));
         t("timed over = resumed by itself", !HistPause.paused(false, now - 1, now) && !HistPause.paused(false, now, now));
         t("timed() only without flag", HistPause.timed(false, now + 5, now) && !HistPause.timed(true, now + 5, now) && !HistPause.timed(false, 0, now));
-        t("tap while saving = pause 1 hour", HistPause.tapUntil(false, 0, now) == now + HistPause.HOUR_MS);
-        t("tap while timed paused = resume", HistPause.tapUntil(false, now + 1000, now) == 0L);
-        t("tap while flag paused = resume", HistPause.tapUntil(true, 0, now) == 0L);
-        t("tap after expiry = pause again", HistPause.tapUntil(false, now - 5, now) == now + HistPause.HOUR_MS);
+        t("tap while saving = pause 1 hour (default)", HistPause.tapUntil(false, 0, now, HistPause.DEF_LEVEL) == now + HistPause.HOUR_MS);
+        t("tap picks 15 min / 1 day", HistPause.tapUntil(false, 0, now, 0) == now + 15 * 60000L && HistPause.tapUntil(false, 0, now, 2) == now + 86400000L);
+        t("bad level = default", HistPause.level(-1) == 1 && HistPause.level(9) == 1 && HistPause.ms(7) == HistPause.HOUR_MS);
+        t("names", HistPause.name(0).equals("15 min") && HistPause.name(1).equals("1 hour") && HistPause.name(2).equals("1 day") && HistPause.NAMES.length == HistPause.DURS.length);
+        t("tap while timed paused = resume", HistPause.tapUntil(false, now + 1000, now, 2) == 0L);
+        t("tap while flag paused = resume", HistPause.tapUntil(true, 0, now, 2) == 0L);
+        t("tap after expiry = pause again", HistPause.tapUntil(false, now - 5, now, 1) == now + HistPause.HOUR_MS);
         t("left 42 min", HistPause.left(now + 42 * 60000L, now).equals("42 min left"));
         t("left rounds up", HistPause.left(now + 60001L, now).equals("2 min left") && HistPause.left(now + 1L, now).equals("1 min left"));
+        t("left hours", HistPause.left(now + 80 * 60000L, now).equals("1 h 20 min left") && HistPause.left(now + 120 * 60000L, now).equals("2 h left"));
+        t("left days", HistPause.left(now + 86400000L, now).equals("1 day left") && HistPause.left(now + 27 * 3600000L, now).equals("1 day 3 h left") && HistPause.left(now + 50 * 3600000L, now).startsWith("2 days"));
         t("left never negative", HistPause.left(now - 5, now).equals("0 min left"));
         t("line none", HistPause.line(false, 0, now).isEmpty());
         t("line flag", HistPause.line(true, 0, now).startsWith("Paused until"));
         t("line timed", HistPause.line(false, now + 30 * 60000L, now).contains("30 min left"));
+        t("line timed 1 day", HistPause.line(false, now + 86400000L, now).contains("1 day left"));
         t("keyLabel 3 states", !HistPause.keyLabel(true, false).equals(HistPause.keyLabel(true, true)) && !HistPause.keyLabel(false, false).equals(HistPause.keyLabel(true, false)));
         t("tip off", HistPause.tip(false, false, 0, now, HistPolicy.OFF).contains("OFF"));
         t("tip paused flag", HistPause.tip(true, true, 0, now, HistPolicy.PAUSED).contains("resume"));
         t("tip paused timed", HistPause.tip(true, false, now + 120000L, now, HistPolicy.PAUSED).contains("2 min left"));
         t("tip saving", HistPause.tip(true, false, 0, now, HistPolicy.OK).contains("saving"));
+        t("pick title", HistPause.pickTitle().contains("Pause"));
         t("tip password reason", HistPause.tip(true, false, 0, now, HistPolicy.PASSWORD).startsWith("Password field"));
         t("tip app excluded reason", HistPause.tip(true, false, 0, now, HistPolicy.APP_OFF).startsWith("This app is excluded"));
 
@@ -86,6 +94,14 @@ public class HistPart3Test {
         t("done toast", HistExcl.doneToast(0).equals("App excluded") && HistExcl.doneToast(2).contains("2 entries") && HistExcl.doneToast(1).contains("1 entry deleted"));
         t("section title", HistExcl.sectionTitle(3).contains("3"));
         t("hint keeps Tap and Hold", HistExcl.hintLine().contains("Tap") && HistExcl.hintLine().contains("Hold"));
+
+        // ---- HistUi
+        t("hero titles", HistUi.heroTitle(false, false).contains("OFF") && HistUi.heroTitle(true, false).contains("ON") && HistUi.heroTitle(true, true).contains("paused"));
+        t("hero state", HistUi.state(false, true) == 0 && HistUi.state(true, false) == 1 && HistUi.state(true, true) == 2);
+        t("hero sub on", HistUi.heroSub(true, 2, 5).equals("5 entries \u00B7 kept 7 days") && HistUi.heroSub(true, 0, 1).startsWith("1 entry "));
+        t("hero sub off", HistUi.heroSub(false, 2, 0).contains("Nothing is saved") && HistUi.heroSub(false, 2, 3).contains("3 entries still stored"));
+        t("pause labels", HistUi.pauseNow("1 day").equals("Pause for 1 day") && !HistUi.resumeNow().isEmpty());
+        t("badge", HistUi.badge("whatsapp").equals("W") && HistUi.badge("").equals("?") && HistUi.badge(null).equals("?") && HistUi.badge("  chat").equals("C"));
 
         System.out.println("HistPart3Test: " + ok + " ok, " + bad + " bad");
         if (bad > 0) System.exit(1);

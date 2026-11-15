@@ -34,7 +34,7 @@ object HistStore {
     private var active = false                      // the current field is accepted by HistPolicy
     private var activeApp = ""
     private var reason = HistPolicy.OFF
-    private var lastType = 0                        // v0.22.0 (H3): the open field's type / options / package, to re-check when a pause ends in the middle of a field
+    private var lastType = 0                        // v0.23.0 (H3): the open field's type / options / package, to re-check when a pause ends in the middle of a field
     private var lastIme = 0
     private var lastPkg = ""
     private val seq = AtomicLong(0)
@@ -117,7 +117,7 @@ object HistStore {
     /** The user typed [s] with the keyboard (never called for pasted clips / vault / tools: MgbIme decides). */
     fun type(s: String) {
         try {
-            if (!active) recheck()                    // v0.22.0 (H3): a pause that ended (or was resumed) while this field is open
+            if (!active) recheck()                    // v0.23.0 (H3): a pause that ended (or was resumed) while this field is open
             if (!active) return
             val p = prefs ?: return
             if (!p.bool("hist_on", false) || isPaused(p)) { log.closeRun(); return }   // switched off / paused while this field is open
@@ -125,20 +125,27 @@ object HistStore {
         } catch (_: Throwable) { }
     }
 
-    /** v0.22.0 (H3): paused = the old switch (hist_pause) or a running timed pause (hist_pause_until). */
+    /** v0.23.0 (H3): paused = the old switch (hist_pause) or a running timed pause (hist_pause_until). */
     fun pauseUntil(p: JabraPrefs): Long = try { p.str("hist_pause_until", "0").toLongOrNull() ?: 0L } catch (_: Throwable) { 0L }
     fun isPaused(p: JabraPrefs): Boolean = try { HistPause.paused(p.bool("hist_pause", false), pauseUntil(p), System.currentTimeMillis()) } catch (_: Throwable) { p.bool("hist_pause", false) }
 
-    /** One tap on the keyboard Pause key: saving -> pause 1 hour (resumes by itself); paused -> resume now. Returns the new paused state. */
-    fun pauseTap(ctx: Context, p: JabraPrefs): Boolean {
+    /** The length picked last (pref hist_pause_lv: 0 = 15 min, 1 = 1 hour, 2 = 1 day). */
+    fun pauseLevel(p: JabraPrefs): Int = HistPause.level(p.int("hist_pause_lv", HistPause.DEF_LEVEL))
+
+    /**
+     * Pause / resume. Paused (switch or timer) -> resume now. Saving -> pause for the chosen length ([level] 0..2; -1 = the length used last),
+     * and that length becomes the new default. Returns the new paused state.
+     */
+    fun pauseTap(ctx: Context, p: JabraPrefs, level: Int = -1): Boolean {
         try {
             attach(ctx, p)
             val now = System.currentTimeMillis()
             val flag = p.bool("hist_pause", false)
-            val until = HistPause.tapUntil(flag, pauseUntil(p), now)
+            val lv = if (level in 0..2) level else pauseLevel(p)
+            val until = HistPause.tapUntil(flag, pauseUntil(p), now, lv)
             if (flag) p.setBool("hist_pause", false)
             p.setStr("hist_pause_until", until.toString())
-            if (until > 0L) log.closeRun()
+            if (until > 0L) { p.setInt("hist_pause_lv", lv); log.closeRun() }
         } catch (_: Throwable) { }
         return isPaused(p)
     }
@@ -156,10 +163,10 @@ object HistStore {
         } catch (_: Throwable) { }
     }
 
-    /** v0.22.0 (H3): entries of one app (for the "also delete old entries?" question and the excluded list). */
+    /** v0.23.0 (H3): entries of one app (for the "also delete old entries?" question and the excluded list). */
     fun countApp(pkg: String): Int = try { log.countApp(pkg) } catch (_: Throwable) { 0 }
 
-    /** v0.22.0 (H3): deletes every entry of one app (only after the person said yes). Returns how many were removed. */
+    /** v0.23.0 (H3): deletes every entry of one app (only after the person said yes). Returns how many were removed. */
     fun removeApp(pkg: String): Int = try { val n = log.removeApp(pkg); if (n > 0) schedule(); n } catch (_: Throwable) { 0 }
 
     /** Backspace removed [n] characters of text we typed. */

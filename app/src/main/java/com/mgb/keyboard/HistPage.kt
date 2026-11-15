@@ -6,6 +6,7 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.graphics.Typeface
+import android.graphics.drawable.GradientDrawable
 import android.graphics.drawable.ColorDrawable
 import android.os.Handler
 import android.os.Looper
@@ -29,6 +30,7 @@ import com.mgb.keyboard.hist.HistPause
 import com.mgb.keyboard.hist.HistInfo
 import com.mgb.keyboard.hist.HistLog
 import com.mgb.keyboard.hist.HistPolicy
+import com.mgb.keyboard.hist.HistUi
 import com.mgb.keyboard.typing.AppTokens
 import java.util.TimeZone
 
@@ -108,8 +110,43 @@ object HistPage {
             t.setPadding(0, dp(ctx, AppTokens.S1), 0, dp(ctx, AppTokens.S1))
             return t
         }
+        // v0.23.0 (H3): round app badge (first letter) used on rows and on the excluded list
+        fun avatar(name: String): TextView {
+            val t = TextView(ctx)
+            t.text = HistUi.badge(name)
+            t.gravity = Gravity.CENTER
+            t.textSize = AppTokens.T_LABEL.toFloat()
+            t.setTypeface(null, Typeface.BOLD)
+            t.setTextColor(AppUi.accent(ctx))
+            val g = GradientDrawable(); g.shape = GradientDrawable.OVAL; g.setColor(AppUi.accentSoft(ctx))
+            t.background = g
+            t.importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+            return t
+        }
+
         val status = small(dim)
         root.addView(status)
+        // v0.23.0 (H3): pause banner with a Resume button (only while paused)
+        val banner = LinearLayout(ctx)
+        banner.orientation = LinearLayout.HORIZONTAL
+        banner.gravity = Gravity.CENTER_VERTICAL
+        banner.background = AppUi.card(ctx, AppTokens.R_CARD)
+        banner.setPadding(dp(ctx, AppTokens.S3), dp(ctx, AppTokens.S1), dp(ctx, AppTokens.S1), dp(ctx, AppTokens.S1))
+        banner.visibility = View.GONE
+        val bannerText = TextView(ctx)
+        bannerText.textSize = AppTokens.T_BODY.toFloat()
+        bannerText.setTextColor(warnC)
+        banner.addView(bannerText, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
+        val bannerBtn = Button(ctx)
+        bannerBtn.isAllCaps = false
+        bannerBtn.text = HistUi.bannerResume()
+        bannerBtn.minimumHeight = dp(ctx, AppTokens.TOUCH)
+        AppRows.styleAction(ctx, bannerBtn)
+        bannerBtn.layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+        banner.addView(bannerBtn)
+        val blp = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+        blp.setMargins(0, dp(ctx, AppTokens.S1), 0, dp(ctx, AppTokens.S2))
+        root.addView(banner, blp)
 
         // ---- search ----
         val search = EditText(ctx)
@@ -147,7 +184,7 @@ object HistPage {
         root.addView(summary)
         val hint = small(dim)
         hint.textSize = AppTokens.T_CAPTION.toFloat()
-        hint.text = HistExcl.hintLine()   // v0.22.0 (H3): hold = menu (delete / exclude app)
+        hint.text = HistExcl.hintLine()   // v0.23.0 (H3): hold = menu (delete / exclude app)
         root.addView(hint)
 
         // ---- list ----
@@ -214,7 +251,7 @@ object HistPage {
             } catch (_: Throwable) { }
         }
 
-        // v0.22.0 (H3): stop saving one app. The app goes into hist_apps_off; old entries of it are deleted ONLY if the person says yes.
+        // v0.23.0 (H3): stop saving one app. The app goes into hist_apps_off; old entries of it are deleted ONLY if the person says yes.
         fun excludeApp(pkg: String, appLabel: String) {
             try {
                 prefs.setStr("hist_apps_off", HistPolicy.addApp(prefs.str("hist_apps_off", ""), pkg, ctx.packageName))
@@ -241,7 +278,10 @@ object HistPage {
 
         fun row(e: HistLog.Entry): View {
             val card = LinearLayout(ctx)
-            card.orientation = LinearLayout.VERTICAL
+            card.orientation = LinearLayout.HORIZONTAL
+            card.gravity = Gravity.TOP
+            val col = LinearLayout(ctx)
+            col.orientation = LinearLayout.VERTICAL
             card.background = AppUi.cardBg(ctx, AppTokens.R_CARD)
             card.setPadding(dp(ctx, AppTokens.S3), dp(ctx, AppTokens.S2), dp(ctx, AppTokens.S3), dp(ctx, AppTokens.S2))
             val metaText = HistDays.timeText(e.time, tz) + "  \u00B7  " + HistDays.appName(e.app, labeler)
@@ -249,7 +289,7 @@ object HistPage {
             meta.text = metaText
             meta.textSize = AppTokens.T_CAPTION.toFloat()
             meta.setTextColor(dim)
-            card.addView(meta)
+            col.addView(meta)
             val body = TextView(ctx)
             body.text = e.text
             body.textSize = AppTokens.T_TITLE.toFloat()
@@ -257,13 +297,18 @@ object HistPage {
             body.maxLines = 8
             body.ellipsize = TextUtils.TruncateAt.END
             body.setPadding(0, dp(ctx, 2), 0, 0)
-            card.addView(body)
+            col.addView(body)
+            val av = avatar(HistDays.appName(e.app, labeler))
+            val alp = LinearLayout.LayoutParams(dp(ctx, 36), dp(ctx, 36))
+            alp.setMargins(0, dp(ctx, 2), dp(ctx, AppTokens.S3), 0)
+            card.addView(av, alp)
+            card.addView(col, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
             card.isClickable = true
             card.isFocusable = true
             card.minimumHeight = dp(ctx, AppTokens.TOUCH)
             card.contentDescription = metaText + ". " + e.text + ". Tap to copy. Hold for more: delete or exclude the app."
             card.setOnClickListener { copyEntry(e) }
-            card.setOnLongClickListener { rowMenu(e); true }   // v0.22.0 (H3): was delete directly
+            card.setOnLongClickListener { rowMenu(e); true }   // v0.23.0 (H3): was delete directly
             val lp = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
             lp.topMargin = dp(ctx, AppTokens.S1)
             card.layoutParams = lp
@@ -277,13 +322,14 @@ object HistPage {
                 val all = HistStore.entries()
                 val total = all.size
                 val on = prefs.bool("hist_on", false)
-                val paused = HistStore.isPaused(prefs)   // v0.22.0 (H3): the switch or a running 1-hour pause
+                val paused = HistStore.isPaused(prefs)   // v0.23.0 (H3): the switch or a running 1-hour pause
                 val pauseLine = HistPause.line(prefs.bool("hist_pause", false), HistStore.pauseUntil(prefs), System.currentTimeMillis())
                 val lv = HistPolicy.level(prefs.int("hist_days_lv", HistPolicy.DEF_LEVEL))
                 val days = HistDays.group(all, System.currentTimeMillis(), tz, q, labeler)
                 val shown = HistDays.count(days)
                 lastShown = shown
-                status.text = HistInfo.statusLine(on, paused, lv, total) + (if (on && pauseLine.isNotEmpty()) "\n" + pauseLine else "")
+                status.text = HistInfo.statusLine(on, paused, lv, total)
+                if (on && pauseLine.isNotEmpty()) { bannerText.text = pauseLine; banner.visibility = View.VISIBLE } else banner.visibility = View.GONE
                 summary.text = HistDays.summaryLine(shown, total, q)
                 hint.visibility = if (shown > 0) View.VISIBLE else View.GONE
 
@@ -329,7 +375,7 @@ object HistPage {
                     }
                 }
 
-                // v0.22.0 (H3): excluded apps, each with "Allow again"
+                // v0.23.0 (H3): excluded apps, each with "Allow again"
                 val ex = HistPolicy.parseApps(prefs.str("hist_apps_off", ""))
                 if (ex.isNotEmpty()) {
                     list.addView(AppUi.sectionHeader(ctx, HistExcl.sectionTitle(ex.size)))
@@ -344,8 +390,12 @@ object HistPage {
                         line.gravity = Gravity.CENTER_VERTICAL
                         line.background = AppUi.cardBg(ctx, AppTokens.R_CARD)
                         line.setPadding(dp(ctx, AppTokens.S3), dp(ctx, AppTokens.S1), dp(ctx, AppTokens.S1), dp(ctx, AppTokens.S1))
-                        val nm = TextView(ctx)
                         val shownName = HistDays.appName(pkg, labeler)
+                        val eav = avatar(shownName)
+                        val elp = LinearLayout.LayoutParams(dp(ctx, 36), dp(ctx, 36))
+                        elp.setMargins(0, 0, dp(ctx, AppTokens.S3), 0)
+                        line.addView(eav, elp)
+                        val nm = TextView(ctx)
                         nm.text = if (shownName == pkg) pkg else shownName + "\n" + pkg
                         nm.textSize = AppTokens.T_BODY.toFloat()
                         nm.setTextColor(text)
@@ -439,6 +489,8 @@ object HistPage {
                 if (e != null && HistStore.restore(e)) { toast(HistDays.restoredToast()); render() }
             } catch (_: Throwable) { }
         }
+
+        bannerBtn.setOnClickListener { try { HistStore.pauseTap(ctx, prefs); render() } catch (_: Throwable) { } }   // v0.23.0 (H3): resume from the page
 
         val doSearch = Runnable { try { limit = PAGE; render() } catch (_: Throwable) { } }
         search.addTextChangedListener(object : TextWatcher {

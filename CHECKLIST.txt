@@ -1085,20 +1085,23 @@ TYPING HISTORY PAGE (v0.21.0, part 2) - phone test
  [ ] Close the page: the card shows the new count (e.g. after a delete / clear) without reopening Data & Backup.
  [ ] Dark app theme: rows, search box, undo bar are readable. Rotate the phone with the page open: nothing crashes (the list may reload).
 
-TYPING HISTORY PART 3 (v0.22.0) - phone test
- [ ] Typing history page: HOLD a row = a menu with the app name as title: "Delete this entry" and "Do not save typing in <App>" + Cancel.
- [ ] "Delete this entry" = row disappears + Undo bar (as in part 2).
- [ ] "Do not save typing in <App>": if that app has old entries a question shows "<App> is excluded ... Delete N entries now?" [Delete N entries] [Keep them]. Keep = entries stay. Delete = they go.
- [ ] The page bottom shows "Excluded apps (1)" with the app + "Allow again". Tap Allow again = the app is gone from the list.
- [ ] Type in the excluded app: nothing new is saved (open the page again: no new row). Type in another app: saved as before. After Allow again: saved again.
- [ ] Edit toolbar (keyboard gear > Edit toolbar): new item "Typing history: pause / resume" (OFF until you turn it on). Turn it on: a key "H" + dot shows in the toolbar.
- [ ] Tap the H key with history ON: label changes to H + pause sign and a bubble "History paused, 60 min left. Tap to resume". Type: nothing saved. Tap again: back to the dot, bubble "History is saving...", typing is saved.
- [ ] Pause, then keep the SAME field open and tap the key to resume, then type: it is saved (no need to leave the field).
- [ ] Hold the H key 0.3 s: name bubble. Hold 1.5 s: the usual "Edit shortcut" bubble.
- [ ] In a password field tap the H key: bubble says "Password field (never saved). Tap to pause 1 hour". In an email field (skip ON): "Email, URL or number field (skipped)...".
- [ ] History OFF: label is H + empty circle; tap = bubble "Typing history is OFF (turn it on in Data & Backup)", nothing changes.
- [ ] Data & Backup > Typing history: new button "Pause for 1 hour (resumes by itself)". After tap: status shows "Paused for 1 hour: N min left..." and the button says "Resume typing history now". The page shows the same line under its status.
- [ ] Old button "Pause: ON": typing is not saved until you turn it OFF. Turning it OFF also ends a running 1-hour pause.
- [ ] (Slow test, optional) Pause 1 hour, wait over an hour (or change the phone clock): typing is saved again by itself.
- [ ] Privacy page "Typing history: ON (paused) ..." follows the pause (also the 1-hour one).
-
+TYPING HISTORY PART 3 (v0.23.0) - phone test
+ [ ] Data & Backup > Typing history: a card with a coloured dot + "Typing history is ON / OFF / paused", entry count, keep time; a filled button "Open typing history (N)"; sections Saving / Pause / Clear. Light AND dark app theme: all text readable.
+ [ ] "Save my typing" switch: first ON shows the confirm window (Turn ON / Cancel). Cancel = the switch goes back to OFF.
+ [ ] "Keep for" shows 1 / 3 / 7 / 30 days as a segmented control; the chosen one is highlighted.
+ [ ] Skip switches work (email / URL / number field not saved while ON).
+ [ ] Pause length: 15 min / 1 hour / 1 day. Button "Pause for 1 hour" -> status dot turns orange, "Paused: 59 min left...", button says "Resume now". Resume = green again.
+ [ ] "Pause until I turn it off" switch: paused for ever; switching it off resumes.
+ [ ] Pause 15 min, wait 15 min (or change the phone clock): typing is saved again by itself.
+ [ ] History page: every row has a round badge with the first letter of the app; the paused banner "Paused: ... [Resume]" shows only while paused; Resume works.
+ [ ] History page: HOLD a row = menu "Delete this entry" / "Do not save typing in <App>" / Cancel. Delete = Undo bar.
+ [ ] Exclude: after "Do not save typing in <App>" a question "Delete N entries now?" [Delete N entries] [Keep them]. Page bottom: "Excluded apps (1)" with badge + "Allow again".
+ [ ] Type in the excluded app: nothing new saved. Allow again: saved again.
+ [ ] Keyboard: Edit toolbar > turn on "Typing history: pause / resume": a key "H" + dot shows.
+ [ ] Tap H (history ON, saving): a bubble with 3 chips 15 min / 1 hour / 1 day shows above the key (the last used is filled). Tap a chip: label becomes H + pause sign, bubble "History paused, 59 min left. Tap to resume". Typing is not saved.
+ [ ] Tap H again: resumes (dot), typing saved again, also in the SAME open field. Tap H while the chips are open: they close.
+ [ ] Chips do nothing after 5 s: they disappear by themselves.
+ [ ] Hold H 0.3 s: name bubble. Hold 1.5 s: "Edit shortcut".
+ [ ] In a password field tap H, then choose nothing: no change. (Bubble reasons show after a resume / when history is OFF: "Typing history is OFF ...".)
+ [ ] History OFF: label H + empty circle; tap = bubble "Typing history is OFF ...", no chips.
+ [ ] Privacy page "Typing history: ON (paused) ..." follows the pause (also timed).

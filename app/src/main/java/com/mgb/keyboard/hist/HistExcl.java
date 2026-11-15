@@ -1,6 +1,6 @@
 package com.mgb.keyboard.hist;
 
-/** v0.22.0 (H3) texts for "exclude this app" on the typing history page (pure Java, tested by tools/HistPart3Test.java). */
+/** v0.23.0 (H3) texts for "exclude this app" on the typing history page (pure Java, tested by tools/HistPart3Test.java). */
 public final class HistExcl {
     private HistExcl() { }
 
