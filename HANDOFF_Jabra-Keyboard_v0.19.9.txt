@@ -1,0 +1,4 @@
+HANDOFF Jabra-Keyboard v0.19.9 - Simple look for the Cards view (earlier notes: HANDOFF_Jabra-Keyboard_v0.19.7.txt, HANDOFF_Jabra-Keyboard_v0.19.8.txt)
+Owner writes Bangla / Banglish: reply in Banglish, short.
+DONE: pref clip_simple (default ON) now covers List (ClipboardFeature.itemRowTidy) and Cards (ClipCards.card): flat soft cards, pin at the right of the meta line, no x, no pinned border.
+OPEN (phone): card height / link card, dark + custom themes, hold-to-select. If GitHub build is red, look first at ClipCards.kt flatMeta line and ClipboardFeature.kt chip loop (ch.backgroundTintList).

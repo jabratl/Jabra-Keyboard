@@ -112,8 +112,11 @@ object ClipCards {
         val box = LinearLayout(ctx)
         box.orientation = LinearLayout.VERTICAL
         val pf = try { JabraPrefs(ctx) } catch (_: Throwable) { null }   // v0.8.7: theme colours (Classic = same as before)
+        val flat = try { ClipLook.newLook(pf) && (pf?.bool("clip_simple", true) ?: false) } catch (_: Throwable) { false }   // v0.19.8 / v0.19.9: simple look = soft card without border, pin at the right of the meta line, no x
+        var flatMeta: View? = null   // v0.19.9: the meta line (tag + info) of a flat card; it shares the bottom row with the pin
         box.background = try { UiKit.cardBackground(ctx, pf!!, picked, item.pinned) } catch (_: Throwable) { oldCardBg(ctx, picked, item.pinned) }
-        if (item.pinned && !picked) { try { box.background = pinnedBg(ctx, pf!!) } catch (_: Throwable) { } }   // v0.9.10.5: pinned card is clearly visible (tint + 2dp border)
+        if (flat && !picked) { try { box.background = flatBg(ctx, pf!!) } catch (_: Throwable) { } }   // v0.19.9: soft fill, no border, no pinned border (the pin icon says it)
+        else if (item.pinned && !picked) { try { box.background = pinnedBg(ctx, pf!!) } catch (_: Throwable) { } }   // v0.9.10.5: pinned card is clearly visible (tint + 2dp border)
         val lp = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 1f)   // equal width, same height as the other card in the row
         lp.setMargins(dp(ctx, 3), dp(ctx, 3), dp(ctx, 3), dp(ctx, 3))
         box.layoutParams = lp
@@ -190,7 +193,7 @@ object ClipCards {
                 }
             }
         } catch (_: Throwable) { }
-        if (linkCard && !sm.on) {   // v0.18.11: link card (not in select mode): tag + info line and pin / x are ONE line (before: 2 lines = 3 rows per card)
+        if (linkCard && !sm.on && !flat) {   // v0.19.9: flat cards use the shared bottom row below; v0.18.11: link card (not in select mode): tag + info line and pin / x are ONE line (before: 2 lines = 3 rows per card)
             try {
                 val crow = LinearLayout(ctx)
                 crow.orientation = LinearLayout.HORIZONTAL
@@ -248,7 +251,7 @@ object ClipCards {
                     ct.setPadding(dp(ctx, 8), 0, dp(ctx, 8), 0)
                     line.addView(ct)
                 }
-                box.addView(line)
+                if (flat && !sm.on) flatMeta = line else box.addView(line)   // v0.19.9
             }
         } catch (_: Throwable) { }
 
@@ -281,6 +284,11 @@ object ClipCards {
                 tag.setPadding(0, 0, dp(ctx, 8), 0)
                 bar.addView(tag)
             }
+        } else if (flat) {   // v0.19.9: [tag + info ........ pin]; no x (delete = hold the card, then Delete)
+            val fm = flatMeta
+            if (fm != null) { fm.layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f); bar.addView(fm) }
+            else { val fl = View(ctx); fl.layoutParams = LinearLayout.LayoutParams(0, 1, 1f); bar.addView(fl) }
+            bar.addView(small(ctx, host, if (item.pinned) "★" else "☆", if (item.pinned) "pinned" else "pin", iconsOn) { onPin(item) })
         } else {
             bar.addView(small(ctx, host, if (item.pinned) "★" else "☆", if (item.pinned) "pinned" else "pin", iconsOn) { onPin(item) })
             if (item.pinned && !ClipLook.tidy(pf)) {   // v0.9.10.5: visible "Pinned" tag on every pinned card (before: only in select mode); v0.18.4: tidy = the gold border + filled pin already say it
@@ -308,6 +316,14 @@ object ClipCards {
         g.setColor(androidx.core.graphics.ColorUtils.compositeColors(JabraTokens.withAlpha(gold, 0x22), base))
         g.cornerRadius = JabraTokens.dp(ctx, JabraTokens.R_CARD).toFloat()
         g.setStroke(dp(ctx, 2), gold)
+        return g
+    }
+
+    /** v0.19.9: simple card = the normal card fill, rounded, NO border. */
+    private fun flatBg(ctx: Context, p: JabraPrefs): GradientDrawable {
+        val g = GradientDrawable()
+        g.setColor(JabraTokens.cardFill(p, false))
+        g.cornerRadius = JabraTokens.dp(ctx, JabraTokens.R_CARD).toFloat()
         return g
     }
 
