@@ -1,5 +1,6 @@
 package com.mgb.keyboard
 
+import android.app.AlertDialog
 import android.app.Dialog
 import android.content.ClipData
 import android.content.ClipboardManager
@@ -23,6 +24,8 @@ import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
 import com.mgb.keyboard.hist.HistDays
+import com.mgb.keyboard.hist.HistExcl
+import com.mgb.keyboard.hist.HistPause
 import com.mgb.keyboard.hist.HistInfo
 import com.mgb.keyboard.hist.HistLog
 import com.mgb.keyboard.hist.HistPolicy
@@ -144,7 +147,7 @@ object HistPage {
         root.addView(summary)
         val hint = small(dim)
         hint.textSize = AppTokens.T_CAPTION.toFloat()
-        hint.text = HistDays.hintLine()
+        hint.text = HistExcl.hintLine()   // v0.22.0 (H3): hold = menu (delete / exclude app)
         root.addView(hint)
 
         // ---- list ----
@@ -211,6 +214,31 @@ object HistPage {
             } catch (_: Throwable) { }
         }
 
+        // v0.22.0 (H3): stop saving one app. The app goes into hist_apps_off; old entries of it are deleted ONLY if the person says yes.
+        fun excludeApp(pkg: String, appLabel: String) {
+            try {
+                prefs.setStr("hist_apps_off", HistPolicy.addApp(prefs.str("hist_apps_off", ""), pkg, ctx.packageName))
+                val n = HistStore.countApp(pkg)
+                if (n <= 0) { toast(HistExcl.doneToast(0)); render(); return }
+                AlertDialog.Builder(ctx).setTitle(HistExcl.askTitle(appLabel)).setMessage(HistExcl.askBody(n))
+                    .setPositiveButton(HistExcl.deleteThem(n)) { _, _ -> try { val r = HistStore.removeApp(pkg); pending = null; undoBar.visibility = View.GONE; toast(HistExcl.doneToast(r)); render() } catch (_: Throwable) { } }
+                    .setNegativeButton(HistExcl.keepThem()) { _, _ -> try { toast(HistExcl.doneToast(0)); render() } catch (_: Throwable) { } }
+                    .show()
+            } catch (_: Throwable) { try { render() } catch (_: Throwable) { } }
+        }
+
+        fun rowMenu(e: HistLog.Entry) {
+            try {
+                val label = HistDays.appName(e.app, labeler)
+                val canEx = !e.app.isNullOrEmpty() && e.app != ctx.packageName && !HistPolicy.listed(prefs.str("hist_apps_off", ""), e.app)
+                val items = if (canEx) arrayOf(HistExcl.deleteItem(), HistExcl.excludeItem(label)) else arrayOf(HistExcl.deleteItem())
+                AlertDialog.Builder(ctx).setTitle(HistExcl.menuTitle(label))
+                    .setItems(items) { _, which -> try { if (which == 0) deleteEntry(e) else excludeApp(e.app, label) } catch (_: Throwable) { } }
+                    .setNegativeButton(HistExcl.cancel(), null)
+                    .show()
+            } catch (_: Throwable) { deleteEntry(e) }   // menu could not open: old behaviour (hold = delete, with Undo)
+        }
+
         fun row(e: HistLog.Entry): View {
             val card = LinearLayout(ctx)
             card.orientation = LinearLayout.VERTICAL
@@ -233,9 +261,9 @@ object HistPage {
             card.isClickable = true
             card.isFocusable = true
             card.minimumHeight = dp(ctx, AppTokens.TOUCH)
-            card.contentDescription = metaText + ". " + e.text + ". Tap to copy. Hold to delete."
+            card.contentDescription = metaText + ". " + e.text + ". Tap to copy. Hold for more: delete or exclude the app."
             card.setOnClickListener { copyEntry(e) }
-            card.setOnLongClickListener { deleteEntry(e); true }
+            card.setOnLongClickListener { rowMenu(e); true }   // v0.22.0 (H3): was delete directly
             val lp = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
             lp.topMargin = dp(ctx, AppTokens.S1)
             card.layoutParams = lp
@@ -249,12 +277,13 @@ object HistPage {
                 val all = HistStore.entries()
                 val total = all.size
                 val on = prefs.bool("hist_on", false)
-                val paused = prefs.bool("hist_pause", false)
+                val paused = HistStore.isPaused(prefs)   // v0.22.0 (H3): the switch or a running 1-hour pause
+                val pauseLine = HistPause.line(prefs.bool("hist_pause", false), HistStore.pauseUntil(prefs), System.currentTimeMillis())
                 val lv = HistPolicy.level(prefs.int("hist_days_lv", HistPolicy.DEF_LEVEL))
                 val days = HistDays.group(all, System.currentTimeMillis(), tz, q, labeler)
                 val shown = HistDays.count(days)
                 lastShown = shown
-                status.text = HistInfo.statusLine(on, paused, lv, total)
+                status.text = HistInfo.statusLine(on, paused, lv, total) + (if (on && pauseLine.isNotEmpty()) "\n" + pauseLine else "")
                 summary.text = HistDays.summaryLine(shown, total, q)
                 hint.visibility = if (shown > 0) View.VISIBLE else View.GONE
 
@@ -297,6 +326,48 @@ object HistPage {
                         AppRows.styleAction(ctx, more)
                         more.setOnClickListener { try { limit += PAGE; render() } catch (_: Throwable) { } }
                         list.addView(more)
+                    }
+                }
+
+                // v0.22.0 (H3): excluded apps, each with "Allow again"
+                val ex = HistPolicy.parseApps(prefs.str("hist_apps_off", ""))
+                if (ex.isNotEmpty()) {
+                    list.addView(AppUi.sectionHeader(ctx, HistExcl.sectionTitle(ex.size)))
+                    val eh2 = TextView(ctx)
+                    eh2.text = HistExcl.sectionHelp()
+                    eh2.textSize = AppTokens.T_CAPTION.toFloat()
+                    eh2.setTextColor(dim)
+                    list.addView(eh2)
+                    for (pkg in ex) {
+                        val line = LinearLayout(ctx)
+                        line.orientation = LinearLayout.HORIZONTAL
+                        line.gravity = Gravity.CENTER_VERTICAL
+                        line.background = AppUi.cardBg(ctx, AppTokens.R_CARD)
+                        line.setPadding(dp(ctx, AppTokens.S3), dp(ctx, AppTokens.S1), dp(ctx, AppTokens.S1), dp(ctx, AppTokens.S1))
+                        val nm = TextView(ctx)
+                        val shownName = HistDays.appName(pkg, labeler)
+                        nm.text = if (shownName == pkg) pkg else shownName + "\n" + pkg
+                        nm.textSize = AppTokens.T_BODY.toFloat()
+                        nm.setTextColor(text)
+                        line.addView(nm, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
+                        val ab = Button(ctx)
+                        ab.isAllCaps = false
+                        ab.text = HistExcl.allowLabel()
+                        ab.minimumHeight = dp(ctx, AppTokens.TOUCH)
+                        AppRows.styleAction(ctx, ab)
+                        ab.contentDescription = HistExcl.allowLabel() + " " + shownName
+                        ab.setOnClickListener {
+                            try {
+                                prefs.setStr("hist_apps_off", HistPolicy.removeApp(prefs.str("hist_apps_off", ""), pkg))
+                                toast(HistExcl.allowedToast())
+                                render()
+                            } catch (_: Throwable) { }
+                        }
+                        line.addView(ab, LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT))
+                        val llp = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+                        llp.topMargin = dp(ctx, AppTokens.S1)
+                        line.layoutParams = llp
+                        list.addView(line)
                     }
                 }
 

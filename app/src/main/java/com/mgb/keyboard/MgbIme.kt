@@ -1305,12 +1305,39 @@ class MgbIme : InputMethodService() {
             return f
         }
         if (id == "mode") { val mk = modeKey(barH()); try { mk.textSize = BarSize.textSp(prefs.int("tb_ipct", BarSize.DEF)) } catch (_: Throwable) { }; attachEdit(mk, Toolbar.title("mode")); return mk }   // v0.2.7
+        if (id == "hpause") { val hk = histPauseKey(); if (hk != null) return hk }   // v0.22.0 (H3): typing history Pause key (any problem = the normal key below)
         val k = key(Toolbar.label(id), 1f) { toolbarAction(id) }   // v0.2.2
         JabraIcons.putThemed(this, k, Toolbar.icon(id))
         k.textSize = try { BarSize.textSp(prefs.int("tb_ipct", BarSize.DEF)) } catch (_: Throwable) { 12f }   // v0.16.6 (X6): 100 = 12 sp
         attachEdit(k, Toolbar.title(id))   // v0.2.7: hold 1.5 s = Edit shortcut; v0.8.8: hold 0.3 s = name tip
         return k
     }
+
+    /**
+     * v0.22.0 (H3): toolbar item "hpause" (an extra, OFF until turned on in Edit toolbar). Label = state (H + filled circle = saving, pause sign = paused, empty circle = history OFF).
+     * Tap while saving = pause 1 hour (resumes by itself); tap while paused = resume now. A small bubble says why / what (HistPause.tip, uses the reason of the open field).
+     * History OFF: the tap only shows the bubble. Returns null on any problem.
+     */
+    private fun histPauseKey(): Button? = try {
+        fun label(): String = com.mgb.keyboard.hist.HistPause.keyLabel(prefs.bool("hist_on", false), HistStore.isPaused(prefs))
+        fun tipText(): String = com.mgb.keyboard.hist.HistPause.tip(prefs.bool("hist_on", false), prefs.bool("hist_pause", false), HistStore.pauseUntil(prefs), System.currentTimeMillis(), HistStore.lastReason())
+        var kk: Button? = null
+        val k = key(label(), 1f) {
+            try {
+                if (prefs.bool("hist_on", false)) HistStore.pauseTap(this, prefs)
+                val b = kk
+                if (b != null) {
+                    b.text = label()
+                    ToolTip.show(b, prefs, tipText())
+                    b.postDelayed({ try { ToolTip.dismiss() } catch (_: Throwable) { } }, 2000L)
+                }
+            } catch (_: Throwable) { }
+        }
+        kk = k
+        k.textSize = try { BarSize.textSp(prefs.int("tb_ipct", BarSize.DEF)) } catch (_: Throwable) { 12f }
+        attachEdit(k, Toolbar.title("hpause"))
+        k
+    } catch (_: Throwable) { null }
 
     /** v0.2.7: hold a toolbar key 1.5 s -> "Edit shortcut" bubble -> quick add / remove page. */
     private fun attachEdit(b: Button, tip: String? = null) { try { ToolbarEdit.attach(b, prefs, tip) { showPanel("tbquick") } } catch (_: Throwable) { } }

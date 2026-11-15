@@ -6,6 +6,7 @@ import android.os.Looper
 import android.util.AtomicFile
 import android.view.inputmethod.EditorInfo
 import com.mgb.keyboard.hist.HistLog
+import com.mgb.keyboard.hist.HistPause
 import com.mgb.keyboard.hist.HistPolicy
 import java.io.File
 import java.util.concurrent.atomic.AtomicLong
@@ -33,6 +34,9 @@ object HistStore {
     private var active = false                      // the current field is accepted by HistPolicy
     private var activeApp = ""
     private var reason = HistPolicy.OFF
+    private var lastType = 0                        // v0.22.0 (H3): the open field's type / options / package, to re-check when a pause ends in the middle of a field
+    private var lastIme = 0
+    private var lastPkg = ""
     private val seq = AtomicLong(0)
     private var written = 0L                        // guarded by lock
     private var onLoaded: (() -> Unit)? = null
@@ -95,9 +99,10 @@ object HistStore {
             ensure(ctx)
             if (!restarting) log.closeRun()
             val pkg = info?.packageName ?: ""
+            lastType = info?.inputType ?: 0; lastIme = info?.imeOptions ?: 0; lastPkg = pkg
             val r = HistPolicy.decide(
-                p.bool("hist_on", false), p.bool("hist_pause", false), p.bool("hist_skip_sens", true), p.bool("hist_skip_incog", true),
-                info?.inputType ?: 0, info?.imeOptions ?: 0, pkg, ctx.packageName, p.str("hist_apps_off", ""))
+                p.bool("hist_on", false), isPaused(p), p.bool("hist_skip_sens", true), p.bool("hist_skip_incog", true),
+                lastType, lastIme, pkg, ctx.packageName, p.str("hist_apps_off", ""))
             reason = r
             if (r != HistPolicy.OK || pkg != activeApp) log.closeRun()
             active = r == HistPolicy.OK
@@ -112,12 +117,50 @@ object HistStore {
     /** The user typed [s] with the keyboard (never called for pasted clips / vault / tools: MgbIme decides). */
     fun type(s: String) {
         try {
+            if (!active) recheck()                    // v0.22.0 (H3): a pause that ended (or was resumed) while this field is open
             if (!active) return
             val p = prefs ?: return
-            if (!p.bool("hist_on", false) || p.bool("hist_pause", false)) { log.closeRun(); return }   // switched off / paused while this field is open
+            if (!p.bool("hist_on", false) || isPaused(p)) { log.closeRun(); return }   // switched off / paused while this field is open
             if (log.type(s, activeApp, System.currentTimeMillis())) schedule()
         } catch (_: Throwable) { }
     }
+
+    /** v0.22.0 (H3): paused = the old switch (hist_pause) or a running timed pause (hist_pause_until). */
+    fun pauseUntil(p: JabraPrefs): Long = try { p.str("hist_pause_until", "0").toLongOrNull() ?: 0L } catch (_: Throwable) { 0L }
+    fun isPaused(p: JabraPrefs): Boolean = try { HistPause.paused(p.bool("hist_pause", false), pauseUntil(p), System.currentTimeMillis()) } catch (_: Throwable) { p.bool("hist_pause", false) }
+
+    /** One tap on the keyboard Pause key: saving -> pause 1 hour (resumes by itself); paused -> resume now. Returns the new paused state. */
+    fun pauseTap(ctx: Context, p: JabraPrefs): Boolean {
+        try {
+            attach(ctx, p)
+            val now = System.currentTimeMillis()
+            val flag = p.bool("hist_pause", false)
+            val until = HistPause.tapUntil(flag, pauseUntil(p), now)
+            if (flag) p.setBool("hist_pause", false)
+            p.setStr("hist_pause_until", until.toString())
+            if (until > 0L) log.closeRun()
+        } catch (_: Throwable) { }
+        return isPaused(p)
+    }
+
+    /** Pause just ended (or was resumed) while the field is still open: decide again, with the same rules as onField. */
+    private fun recheck() {
+        try {
+            val p = prefs ?: return
+            val c = app ?: return
+            if (reason != HistPolicy.PAUSED || isPaused(p)) return
+            val r = HistPolicy.decide(p.bool("hist_on", false), false, p.bool("hist_skip_sens", true), p.bool("hist_skip_incog", true),
+                lastType, lastIme, lastPkg, c.packageName, p.str("hist_apps_off", ""))
+            reason = r
+            active = r == HistPolicy.OK
+        } catch (_: Throwable) { }
+    }
+
+    /** v0.22.0 (H3): entries of one app (for the "also delete old entries?" question and the excluded list). */
+    fun countApp(pkg: String): Int = try { log.countApp(pkg) } catch (_: Throwable) { 0 }
+
+    /** v0.22.0 (H3): deletes every entry of one app (only after the person said yes). Returns how many were removed. */
+    fun removeApp(pkg: String): Int = try { val n = log.removeApp(pkg); if (n > 0) schedule(); n } catch (_: Throwable) { 0 }
 
     /** Backspace removed [n] characters of text we typed. */
     fun back(n: Int) {

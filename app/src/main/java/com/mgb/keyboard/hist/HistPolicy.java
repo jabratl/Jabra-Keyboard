@@ -51,6 +51,37 @@ public final class HistPolicy {
         return false;
     }
 
+    /** v0.22.0 (H3): the excluded packages as a clean list (no empty, no duplicates, same order). */
+    public static java.util.List<String> parseApps(String apps) {
+        java.util.List<String> out = new java.util.ArrayList<String>();
+        if (apps == null) return out;
+        for (String p : apps.split("[,;\\s]+")) if (!p.isEmpty() && !out.contains(p)) out.add(p);
+        return out;
+    }
+
+    /** Text to save in hist_apps_off (comma separated). */
+    public static String joinApps(java.util.List<String> list) {
+        StringBuilder b = new StringBuilder();
+        for (String p : list) { if (b.length() > 0) b.append(','); b.append(p); }
+        return b.toString();
+    }
+
+    /** Adds a package to the excluded list. Empty names and Jabra itself (always skipped anyway) are ignored. */
+    public static String addApp(String apps, String pkg, String ownPkg) {
+        java.util.List<String> l = parseApps(apps);
+        if (pkg == null) return joinApps(l);
+        String p = pkg.trim();
+        if (p.isEmpty() || p.matches(".*[,;\\s].*") || p.equals(ownPkg)) return joinApps(l);
+        if (!l.contains(p)) l.add(p);
+        return joinApps(l);
+    }
+
+    public static String removeApp(String apps, String pkg) {
+        java.util.List<String> l = parseApps(apps);
+        if (pkg != null) l.remove(pkg.trim());
+        return joinApps(l);
+    }
+
     public static int decide(boolean on, boolean paused, boolean skipSens, boolean skipIncog,
                              int inputType, int imeOptions, String pkg, String ownPkg, String offApps) {
         if (!on) return OFF;

@@ -40,7 +40,7 @@ object PrivacyPage {
             body.addView(head("Settings now"))
             body.addView(line(PrivacyInfo.clipLine(prefs.bool("clip_on", true), prefs.int("clip_expire", 0), prefs.bool("clip_sens", false))))
             body.addView(line(PrivacyInfo.learnLine(prefs.bool("learn_on", false))))
-            body.addView(line(com.mgb.keyboard.hist.HistInfo.privacyLine(prefs.bool("hist_on", false), prefs.bool("hist_pause", false), prefs.int("hist_days_lv", com.mgb.keyboard.hist.HistPolicy.DEF_LEVEL))))   // v0.20.0 (H1)
+            body.addView(line(com.mgb.keyboard.hist.HistInfo.privacyLine(prefs.bool("hist_on", false), HistStore.isPaused(prefs), prefs.int("hist_days_lv", com.mgb.keyboard.hist.HistPolicy.DEF_LEVEL))))   // v0.20.0 (H1)
             body.addView(line(com.mgb.keyboard.hist.HistInfo.privacySkipLine(prefs.bool("hist_skip_sens", true), prefs.bool("hist_skip_incog", true))))
             body.addView(head("Stored on this phone"))
             val clipBytes = prefBytes("clips_v1") + prefBytes("clip_meta_v1")

@@ -168,6 +168,26 @@ public final class HistLog {
         return true;
     }
 
+    /** v0.22.0 (H3): removes every entry (and the open run) of one app. Returns how many entries were removed. */
+    public int removeApp(String app) {
+        if (app == null || app.isEmpty()) return 0;
+        int n = 0;
+        if (open != null && app.equals(openApp)) { open = null; n++; }
+        for (int i = closed.size() - 1; i >= 0; i--) {
+            if (app.equals(closed.get(i).app)) { totalChars -= closed.get(i).text.length(); closed.remove(i); n++; }
+        }
+        if (n > 0) dirty = true;
+        return n;
+    }
+
+    /** v0.22.0 (H3): how many entries (the open run too) belong to one app. */
+    public int countApp(String app) {
+        if (app == null || app.isEmpty()) return 0;
+        int n = (open != null && app.equals(openApp)) ? 1 : 0;
+        for (Entry e : closed) if (app.equals(e.app)) n++;
+        return n;
+    }
+
     /** Removes everything. Returns how many entries were removed. */
     public int clear() {
         int n = size();

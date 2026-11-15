@@ -9,6 +9,7 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import com.mgb.keyboard.hist.HistDays
 import com.mgb.keyboard.hist.HistInfo
+import com.mgb.keyboard.hist.HistPause
 import com.mgb.keyboard.hist.HistPolicy
 
 /**
@@ -41,11 +42,15 @@ object HistCard {
             HistStore.ensure(ctx)
             HistStore.pruneNow()
             val on = prefs.bool("hist_on", false)
-            val paused = prefs.bool("hist_pause", false)
+            val paused = HistStore.isPaused(prefs)   // v0.22.0 (H3): the switch or the 1-hour pause
             val lv = HistPolicy.level(prefs.int("hist_days_lv", HistPolicy.DEF_LEVEL))
             val n = HistStore.count()
             val st = line(HistInfo.statusLine(on, paused, lv, n)); st.setTypeface(null, Typeface.BOLD)
             body.addView(st)
+            try {   // v0.22.0 (H3): how long a timed pause still runs
+                val pl = HistPause.line(prefs.bool("hist_pause", false), HistStore.pauseUntil(prefs), System.currentTimeMillis())
+                if (on && pl.isNotEmpty()) body.addView(line(pl))
+            } catch (_: Throwable) { }
             body.addView(btn(HistDays.openLabel(n)) {   // v0.21.0 (H2): the history page; when it closes the card refreshes (count, status)
                 armed = false
                 HistPage.open(ctx) { try { fill() } catch (_: Throwable) { } }
@@ -86,8 +91,11 @@ object HistCard {
             body.addView(btn("Skip incognito fields: " + onOff(prefs.bool("hist_skip_incog", true))) {
                 armed = false; prefs.setBool("hist_skip_incog", !prefs.bool("hist_skip_incog", true)); fill()
             })
-            body.addView(btn("Pause: " + onOff(paused)) {
-                armed = false; prefs.setBool("hist_pause", !prefs.bool("hist_pause", false)); fill()
+            body.addView(btn("Pause: " + onOff(prefs.bool("hist_pause", false))) {
+                armed = false; prefs.setBool("hist_pause", !prefs.bool("hist_pause", false)); prefs.setStr("hist_pause_until", "0"); fill()   // v0.22.0 (H3): a switch change also ends a 1-hour pause
+            })
+            body.addView(btn(if (paused) "Resume typing history now" else "Pause for 1 hour (resumes by itself)") {   // v0.22.0 (H3)
+                armed = false; HistStore.pauseTap(ctx, prefs); fill()
             })
             val cb = btn(HistInfo.clearLabel(armed, n)) {
                 if (n <= 0) return@btn
@@ -96,6 +104,7 @@ object HistCard {
             }
             cb.isEnabled = n > 0
             body.addView(cb)
+            body.addView(line("Tip: Edit toolbar can add a small \"H\" key to the keyboard: tap = pause / resume typing history."))
             body.addView(line("Passwords and pasted text are never saved. Saved as plain text in the app's private storage on this phone; it is not part of Backup."))
         }
         root.addView(body)
