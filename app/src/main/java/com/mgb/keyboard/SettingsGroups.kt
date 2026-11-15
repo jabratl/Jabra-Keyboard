@@ -285,6 +285,7 @@ object SettingsGroups {
                 val h = SettingsIndex.help(key)
                 val built = if (ChangedPlan.useSegments(names.size, names.sumOf { it.length }))
                     AppRows.choiceRow(ctx, title, h, { names }, { cur() }) { i -> val old = cur(); prefs.setInt(key, i); noteChange(key, old) }
+                else if (prefs.bool("ui_pill", true)) AppRows.pillRow(ctx, title, h, { names }, { cur() }) { i -> val old = cur(); prefs.setInt(key, i); noteChange(key, old) }   // v0.19.5 (S6): dropdown instead of cycling
                 else AppRows.chipRow(ctx, title, h, { names[cur()] }) { val old = cur(); prefs.setInt(key, (old + 1) % names.size); noteChange(key, old) }
                 addRowNew(box, key, title, built, { prefs.setInt(key, it.coerceIn(0, names.size - 1)) }, { cur() }, def.coerceIn(0, names.size - 1), null) { names[cur()] }
                 return
@@ -306,6 +307,7 @@ object SettingsGroups {
                 fun cur() = get().coerceIn(0, names().size - 1)
                 val built = if (ChangedPlan.useSegments(names().size, names().sumOf { it.length }))
                     AppRows.choiceRow(ctx, title, h, names, { cur() }) { i -> val old = cur(); set(i); noteChange(key, old) }
+                else if (prefs.bool("ui_pill", true)) AppRows.pillRow(ctx, title, h, names, { cur() }) { i -> val old = cur(); set(i); noteChange(key, old) }   // v0.19.5 (S6): dropdown instead of cycling
                 else AppRows.chipRow(ctx, title, h, { names()[cur()] }) { val old = cur(); set((get() + 1) % names().size); noteChange(key, old) }
                 addRowNew(box, key, title, built, { set(it) }, { cur() }, def, null) { names()[cur()] }
                 return

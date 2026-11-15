@@ -1037,3 +1037,11 @@ v0.19.4 (dropdown plan S5) - Vault pills
  [ ] Select mode: pick another folder / kind leaves select mode; move to folder, delete, paste still work.
  [ ] Open a Vault entry (Edit / + Add on text): "Snippet v" + "Folder v" pills; pick Template / Note / Term and any folder directly; Save keeps them.
  [ ] Settings > "Compact dropdown menus" OFF = old folder + kind chips and old cycle buttons in the editor.
+
+v0.19.5 (dropdown plan S6) - Settings app dropdown lists
+ [ ] Settings > Clipboard & tools (or any row with a long list, e.g. clip sort / auto-delete / order): right side shows "Value v"; tap = small list under it, current ticked + bold; pick = applies, chip text updates.
+ [ ] Row that used to cycle on every tap now opens the list instead (no cycling).
+ [ ] Many options (7+): list scrolls; row near the bottom of the screen: list opens ABOVE the chip, nothing cut. Tap outside / Back closes without change.
+ [ ] Changed dot appears after a pick, Reset puts the default back; settings search finds the row and jumps to it; TalkBack reads "title: value".
+ [ ] 2-4 short options still show as one-tap segments; switches / steppers unchanged. Dark + light app theme: list readable.
+ [ ] Settings > "Compact dropdown menus" OFF = old dialog list / old cycling chip.

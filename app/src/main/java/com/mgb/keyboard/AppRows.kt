@@ -123,6 +123,76 @@ object AppRows {
         return Built(box) { paint(c, btns, names, cur) }
     }
 
+    /** v0.19.5 (dropdown plan S6): the same value chip + pick list, forced (for rows that used to CYCLE on tap: long lists / long names). */
+    fun pillRow(c: Context, title: String, help: String, names: () -> Array<String>, cur: () -> Int, onPick: (Int) -> Unit): Built =
+        choiceList(c, title, help, names, cur, onPick)
+
+    private var openPop: android.widget.PopupWindow? = null
+    private fun closePop() { try { openPop?.dismiss() } catch (_: Throwable) { }; openPop = null }
+
+    /** v0.19.5 (S6): small dropdown list under the chip (max 6 rows then it scrolls, current row ticked + bold, outside tap / Back closes). false = could not show (caller falls back). */
+    private fun showPop(c: Context, anchor: View, names: Array<String>, now: Int, onPickIdx: (Int) -> Unit): Boolean {
+        try {
+            closePop()
+            val n = names
+            if (n.size < 2) return false
+            val dm = c.resources.displayMetrics
+            val rowPx = dp(c, com.mgb.keyboard.typing.PanelLayout.MIN_TOUCH)
+            val pad = dp(c, AppTokens.S3)
+            val tickRoom = dp(c, 24)
+            val paint = android.graphics.Paint()
+            paint.textSize = android.util.TypedValue.applyDimension(android.util.TypedValue.COMPLEX_UNIT_SP, AppTokens.T_LABEL.toFloat(), dm)
+            paint.typeface = Typeface.DEFAULT_BOLD
+            var maxText = 0f
+            val col = LinearLayout(c)
+            col.orientation = LinearLayout.VERTICAL
+            val cur = com.mgb.keyboard.typing.SelectPlan.clamp(now, n.size)
+            for (i in n.indices) {
+                val r = TextView(c)
+                r.textSize = AppTokens.T_LABEL.toFloat()
+                r.setTextColor(AppUi.text(c))
+                r.gravity = Gravity.CENTER_VERTICAL
+                r.maxLines = 1
+                r.ellipsize = android.text.TextUtils.TruncateAt.END
+                val isNow = i == cur
+                r.setPadding(if (isNow) pad else pad + tickRoom, 0, pad, 0)
+                if (isNow) { r.setTypeface(r.typeface, Typeface.BOLD); r.setBackgroundColor(AppUi.accentSoft(c)) }
+                r.text = com.mgb.keyboard.typing.SelectPlan.rowText(n[i], isNow)
+                safe { Glyphs.dress(r) }
+                r.contentDescription = n[i] + (if (isNow) ", selected" else "")
+                r.layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, rowPx)
+                r.setOnClickListener { closePop(); safe { onPickIdx(i) } }
+                col.addView(r)
+                val w = paint.measureText(n[i]); if (w > maxText) maxText = w
+            }
+            val content: View = if (com.mgb.keyboard.typing.SelectPlan.scrolls(n.size)) { val sv = android.widget.ScrollView(c); sv.addView(col); sv } else col
+            val box = FrameLayout(c)
+            val bg = GradientDrawable()
+            bg.setColor(AppUi.surface2(c) or (0xFF shl 24))
+            bg.setStroke(dp(c, 1), AppUi.outline(c))
+            bg.cornerRadius = dp(c, AppTokens.R_BTN).toFloat()
+            box.background = bg
+            box.clipToOutline = true
+            box.addView(content)
+            val margin = dp(c, AppTokens.S2)
+            val contentW = Math.ceil(maxText.toDouble()).toInt() + 2 * pad + tickRoom
+            val w = com.mgb.keyboard.typing.SelectPlan.popupWidth(anchor.width, contentW, dm.widthPixels, margin, dp(c, 96))
+            val h = com.mgb.keyboard.typing.SelectPlan.popupHeight(n.size, rowPx)
+            val loc = IntArray(2)
+            anchor.getLocationOnScreen(loc)
+            val x = com.mgb.keyboard.typing.SelectPlan.popupX(loc[0], w, dm.widthPixels, margin)
+            val y = com.mgb.keyboard.typing.SelectPlan.popupY(loc[1], anchor.height, h, dm.heightPixels, dp(c, AppTokens.S1), margin)
+            val pop = android.widget.PopupWindow(box, w, h, true)   // focusable: outside tap and Back close it (normal Activity window)
+            pop.isOutsideTouchable = true
+            pop.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(0))
+            try { pop.elevation = dp(c, 6).toFloat() } catch (_: Throwable) { }
+            pop.setOnDismissListener { if (openPop === pop) openPop = null }
+            pop.showAtLocation(anchor, Gravity.NO_GRAVITY, x, y)
+            openPop = pop
+            return true
+        } catch (_: Throwable) { closePop(); return false }
+    }
+
     /** v0.17.76 (U2): title left, value chip (with a drawn caret) right; tap = a pick list with every option and the current one marked. */
     private fun choiceList(c: Context, title: String, help: String, names: () -> Array<String>, cur: () -> Int, onPick: (Int) -> Unit): Built {
         val box = LinearLayout(c)
@@ -150,6 +220,9 @@ object AppRows {
         chip.setOnClickListener {
             safe {
                 val n = names()
+                // v0.19.5 (S6): pref ui_pill (default ON) = small dropdown under the chip; OFF / cannot show = the old pick dialog (never a dead control)
+                val pillOn = try { JabraPrefs(c).bool("ui_pill", true) } catch (_: Throwable) { true }
+                if (pillOn && showPop(c, chip, n, cur()) { which -> safe { onPick(which); show() } }) return@safe
                 android.app.AlertDialog.Builder(c)
                     .setTitle(title)
                     .setSingleChoiceItems(n, RowPlan.clamp(cur(), n.size)) { d, which -> safe { onPick(which); show() }; d.dismiss() }
