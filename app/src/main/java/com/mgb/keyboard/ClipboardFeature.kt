@@ -487,6 +487,18 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
     private var fChip = 0            // v0.16.9: filter chip (not saved: a fresh open starts at All)
     private var ovOpen = false       // v0.17.58 (C3): the header overflow tray (Manage / Sort / View / Export all / Clear)
     private fun nl(): Boolean = try { ClipLook.newLook(pf) } catch (_: Throwable) { false }   // v0.17.58 (C3): pref clip_new_look (default ON)
+    private fun simple(): Boolean = try { nl() && JabraPrefs(ctx).bool("clip_simple", true) } catch (_: Throwable) { false }   // v0.19.8: pref clip_simple (default ON) = flat text filter row + flat list rows with the pin on the right; OFF = exactly v0.19.7
+    /** v0.19.8: a flat row + a thin divider line under it. Any problem = the row itself. */
+    private fun flatLine(v: View): View = try {
+        val w = LinearLayout(ctx)
+        w.orientation = LinearLayout.VERTICAL
+        w.addView(v)
+        val ln = View(ctx)
+        ln.setBackgroundColor(JabraTokens.withAlpha(dim(), 0x30))
+        ln.layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, maxOf(1, dp(1))).also { it.setMargins(dp(8), 0, dp(8), 0) }
+        w.addView(ln)
+        w
+    } catch (_: Throwable) { v }
     private var pasteMenu = false    // v0.19.2 (S3): the chevron tray of the split \"Paste\" button (Paste 1 line / To Vault / Export)
     private var moreOpen = false     // v0.16.9: the "More" tray of the bottom bar (All / Unpin / Merge / Edit / Paste in 1 line / To Vault)
 
@@ -543,7 +555,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
         root.addView(top)
 
         // ---- v0.19.1 (dropdown plan S2): pref ui_pill (default ON) = filter / sort / view are 3 dropdown pills in ONE row (instead of the 5 chips + Sort / View rows in the tray); OFF = the old chips
-        val pillOn = nlOn && try { pf.bool("ui_pill", true) } catch (_: Throwable) { true }
+        val pillOn = nlOn && !simple() && try { pf.bool("ui_pill", true) } catch (_: Throwable) { true }   // v0.19.8: simple look = one flat chip row instead of the 3 dropdown pills
         if (pillOn && !(selOn && moreOpen)) {
             val prow = row()
             try {
@@ -590,6 +602,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
                     }
                 }
                 ch.setPadding(dp(2), 0, dp(2), 0)
+                if (simple() && c != fChip) { try { ch.background = null; ch.backgroundTintList = null; ch.stateListAnimator = null; ch.setTextColor(dim()) } catch (_: Throwable) { } }   // v0.19.8: only the chosen filter has a background
                 fontFit(ch)   // v0.17.32 (UI8)
                 ch.maxLines = 1
                 ch.layoutParams = LinearLayout.LayoutParams(0, dp(sz(t40)), 1f).also { it.setMargins(dp(2), dp(2), dp(2), dp(2)) }
@@ -1561,7 +1574,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
 
     /** v0.10.24 (C1): list row + a thin divider line under it. Any problem = the plain row as before. */
     private fun itemRow(item: ClipList.Item): View {
-        if (tidy()) { try { return itemRowTidy(item) } catch (_: Throwable) { } }   // v0.18.4: tidy card row; any problem = the row below
+        if (tidy()) { try { val tr = itemRowTidy(item); return if (simple()) flatLine(tr) else tr } catch (_: Throwable) { } }   // v0.18.4: tidy card row; any problem = the row below
         val r = itemRowBase(item)
         return try {
             val w = LinearLayout(ctx)
@@ -1583,6 +1596,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
     private fun itemRowTidy(item: ClipList.Item): View {
         val lv = try { JabraPrefs(ctx).int("clip_lines", 0).coerceIn(0, 2) } catch (_: Throwable) { 0 }
         val selOn = sel.isOn
+        val flat = simple()   // v0.19.8
         val picked = selOn && sel.isSelected(item)
         val iconsOn = try { JabraPrefs(ctx).bool("icons_on", true) } catch (_: Throwable) { true }
         val box = LinearLayout(ctx)
@@ -1590,6 +1604,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
         box.gravity = Gravity.CENTER_VERTICAL
         box.background = try { UiKit.cardBackground(ctx, pf, picked, item.pinned) } catch (_: Throwable) { null }
         if (item.pinned && !picked) { try { box.background = ClipCards.pinnedBg(ctx, pf) } catch (_: Throwable) { } }
+        if (flat && !picked) box.background = null   // v0.19.8: flat row (a picked row keeps its card so the selection stays visible)
         val blp = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
         blp.setMargins(dp(3), dp(3), dp(3), dp(3))
         box.layoutParams = blp
@@ -1609,7 +1624,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
             } catch (_: Throwable) { }
             ck.layoutParams = LinearLayout.LayoutParams(dp(44), dp(36))
             box.addView(ck)
-        } else {
+        } else if (!flat) {   // v0.19.8: flat row has the pin on the RIGHT
             box.addView(ClipCards.small(ctx, host, if (item.pinned) "\u2605" else "\u2606", if (item.pinned) "pinned" else "pin", iconsOn) { store.togglePin(item); refresh() })
         }
 
@@ -1620,10 +1635,10 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
         val t = TextView(ctx)
         t.text = item.text.replace("\n", " \u23CE ")
         t.textSize = fs(13f)
-        t.setTextColor(try { JabraTokens.cardText(pf) } catch (_: Throwable) { Color.BLACK })
+        t.setTextColor(if (flat && !picked) ink() else try { JabraTokens.cardText(pf) } catch (_: Throwable) { Color.BLACK })   // v0.19.8: flat row sits on the panel colour
         t.maxLines = 2 + 2 * lv
         t.ellipsize = TextUtils.TruncateAt.END
-        t.setPadding(dp(4), dp(6), dp(4), dp(2))
+        t.setPadding(dp(if (flat && !selOn) 10 else 4), dp(6), dp(4), dp(2))
         // v0.18.6: the WHOLE row is the tap target (text, meta line, check box, empty space); the text view itself is no longer clickable
         try {   // soft tint while pressed (same as the cards), now on the whole row
             val pr = android.graphics.drawable.GradientDrawable()
@@ -1670,7 +1685,10 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
         box.addView(mid)
 
         // right: x (not in select mode)
-        if (!selOn) box.addView(ClipCards.small(ctx, host, "\u2715", "close", iconsOn) { keepUndo(listOf(item)); store.remove(item); msg = ClipCopy.deleted(1); refresh() })
+        if (!selOn) {
+            if (flat) box.addView(ClipCards.small(ctx, host, if (item.pinned) "\u2605" else "\u2606", if (item.pinned) "pinned" else "pin", iconsOn) { store.togglePin(item); refresh() })   // v0.19.8: pin on the right, no x (delete = hold the row, then Delete; Undo stays)
+            else box.addView(ClipCards.small(ctx, host, "\u2715", "close", iconsOn) { keepUndo(listOf(item)); store.remove(item); msg = ClipCopy.deleted(1); refresh() })
+        }
         return box
     }
 

@@ -203,6 +203,7 @@ public final class SettingsIndex {
             case "clip_card_pct": return "Size of the clip cards. Smaller = more text and more clips fit. 100% = normal.";   // v0.17.33 (UI9)
             case "clip_btn_pct": return "Size of the Clipboard buttons. Smaller = the clip list shows more. 100% = normal.";   // v0.17.32 (UI8)
             case "clip_hold": return "How long to hold a clip to start select mode. System = the old long-press.";   // v0.16.16 (E2)
+            case "clip_simple": return "Flat, quiet clipboard list: pin on the right, no x. OFF = the old card rows.";   // v0.19.8
             case "ui_pill": return "Clipboard filter, sort and view as small dropdowns. OFF = the old chip rows.";   // v0.19.1
             case "clip_pwd": return "Saves copied passwords (password managers) in the clip history. OFF = never saved.";   // v0.18.12
             case "clip_sens": return "Removes copied one-time codes (4-8 digits, short codes) after 2 minutes.";   // v0.10.10
