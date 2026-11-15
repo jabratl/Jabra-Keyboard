@@ -1,3 +1,12 @@
+v0.19.3 - MODIFY: Export screen = Scope + Pack dropdown pills in ONE row (dropdown plan S4 of 7)
+- SEEN/WHY: the Export screen had a row of 3 scope chips and (with 2+ clips) another row of 3 pack chips, so it was tall and scrolled on small phones.
+- What you get: ONE row "Selected (3) v | One file v". Scope list = Selected (n) / All (n) / Pinned (n); Pack list = One file / ZIP (file per clip) / TAR (Pack pill only when 2+ clips are exported, then Scope takes the full row). Each pill shows the current value; tap = list, current ticked. Details / Format / Skip codes stay as 3 tick chips; Rename / Auto, Save to text, Share + Save buttons, folder name: unchanged. Same state (expScope) and prefs (clip_exp_zip, clip_exp_tar) as before.
+- Safety: only with "Compact dropdown menus" ON (ui_pill). OFF, or any problem building the pills = the old 3 + 3 chips exactly as v0.19.2.
+- Code: ClipboardFeature.kt only (makeExport: pillsDone flag, pill row, pack chips only when !pillsDone), app/build.gradle.kts 0.19.3, CHANGELOG, CHECKLIST, HANDOFF. UiKit.kt untouched. No pref, key, id or data changed.
+- BROKE: nothing known.
+- TESTED here: bash tools/run_tests.sh = 148/148 green (no Java file changed); bracket balance of ClipboardFeature.kt OK. NOT tested: Kotlin NOT compiled (no network); PHONE NOT tested (pills use the S2 popup, still unseen on a phone).
+- Rollback: Settings > "Compact dropdown menus" OFF, or restore ClipboardFeature.kt, CHECKLIST.txt, app/build.gradle.kts from v0.19.2.
+
 v0.19.2 - MODIFY: slim "..." tray + select bar with a split Paste button (dropdown plan S3 of 7)
 - SEEN/WHY: after S2 the "..." tray still had an Undo row of 5 chips + a labelled Do row, and the select-mode More tray had 3 labelled rows (Select / Change / Send). Plan: fewer rows, nothing lost.
 - What you get: (1) "..." tray = ONE row: [Undo 30 v] [Manage] [Deleted n] [Export all] [Clear] (no row labels). "Undo 30 v" is a dropdown pill: Undo Off / 10 / 30 / 50 / 100 (a value set in Settings, e.g. 20, is added to the list and ticked). With big clip buttons (size > 110%) the row wraps to 3 + 2 so text is not cut. (2) Select-mode bottom bar: Pin | Delete | [Paste | v] | More. Tap "Paste" = paste at once (as before). The small v opens a tray with Paste 1 line / To Vault / Export (To Vault only if the Vault exists, as before). (3) Select-mode More tray = ONE row: All | None | Edit | Merge | Unpin (the Send row moved to the Paste v tray). Same actions, same messages, same prefs (clip_undo_n).

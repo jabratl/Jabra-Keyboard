@@ -1083,10 +1083,33 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
 
         val nAll = expOrder().size
         val nPin = store.pinnedView("").size
-        val scopes = row()
+        val pillOn = nl() && try { pf.bool("ui_pill", true) } catch (_: Throwable) { true }   // v0.19.3 (dropdown plan S4)
+        try { UiKit.closeSelect() } catch (_: Throwable) { }
         val labels = arrayOf(/* v0.18.9: the chosen chip of every Export row now shows a tick */ "Selected (" + expSel.size + ")", "All ($nAll)", "Pinned ($nPin)")
+        var pillsDone = false
+        if (pillOn) {   // v0.19.3 (S4): Scope v + Pack v = ONE row of dropdown pills (Pack only when there is more than one clip). Any problem = the old chips below.
+            try {
+                val optS0 = pr.bool("clip_exp_skip", true)
+                val n0 = expEntries(optS0, IntArray(1)).size
+                val prow = row()
+                prow.addView(UiKit.pillSelect(ctx, pf, "Scope", { labels }, { expScope.coerceIn(0, 2) }, sz(t40), 1f, { v -> fb(v) }, fs(12f)) { i -> expScope = i.coerceIn(0, 2); expMsg = ""; refresh() })
+                if (n0 > 1) {
+                    val pNames = arrayOf("One file", "ZIP (file per clip)", "TAR")
+                    prow.addView(UiKit.pillSelect(ctx, pf, "Pack", { pNames },
+                        { val z = pr.bool("clip_exp_zip", false); val t = pr.bool("clip_exp_tar", false) && !z; if (z) 1 else if (t) 2 else 0 },
+                        sz(t40), 1f, { v -> fb(v) }, fs(12f)) { i ->
+                        pr.setBool("clip_exp_zip", i == 1); pr.setBool("clip_exp_tar", i == 2); expMsg = ""; refresh()
+                    })
+                }
+                outer.addView(prow)
+                pillsDone = true
+            } catch (_: Throwable) { pillsDone = false }
+        }
+        if (!pillsDone) {
+        val scopes = row()
         for (i in 0 until 3) scopes.addView(UiKit.chip(ctx, pf, (if (i == expScope) "\u2713 " else "") + labels[i], i == expScope, sz(t40), { v -> fb(v) }) { expScope = i; expMsg = ""; refresh() })
         outer.addView(scopes)
+        }
 
         val optD = pr.bool("clip_exp_details", true); val optF = pr.bool("clip_exp_fmt", true); val optS = pr.bool("clip_exp_skip", true)
         val opts = row()
@@ -1100,7 +1123,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
         val zipOn = expZip(es.size)   // v0.17.63 (R3)
         val tarOn = expTar(es.size)   // v0.17.70 (S3)
         val pk3 = if (zipOn) "ZIP" else if (tarOn) "TAR" else ""
-        if (es.size > 1) {   // v0.17.63 (R3): one file with all clips, or a ZIP with one file per clip
+        if (es.size > 1 && !pillsDone) {   // v0.17.63 (R3): one file with all clips, or a ZIP with one file per clip
             val pk = row()
             val packZip = pr.bool("clip_exp_zip", false); val packTar = pr.bool("clip_exp_tar", false) && !packZip
             pk.addView(UiKit.chip(ctx, pf, (if (!packZip && !packTar) "\u2713 " else "") + "One file", !packZip && !packTar, sz(t40), { v -> fb(v) }) { pr.setBool("clip_exp_zip", false); pr.setBool("clip_exp_tar", false); expMsg = ""; refresh() })

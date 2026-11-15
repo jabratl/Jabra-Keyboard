@@ -1022,3 +1022,10 @@ v0.19.2 (dropdown plan S3) - slim "..." tray + split Paste button
  [ ] More: ONE row All | None | Edit | Merge | Unpin (Edit needs ONE clip, Merge 2+). More and the Paste v tray never show together. Pin / Delete (Sure? for 3+) still work.
  [ ] Settings > "Compact dropdown menus" OFF = old Undo chips + Do row, old bar (Pin / Delete / Paste / More) and old 3-row More tray.
  [ ] Clip button size 140%: tray / More rows wrap to 3 + 2, text not cut; 70%: still tappable. Dark + light + Borderless.
+
+v0.19.3 (dropdown plan S4) - Export screen pills
+ [ ] Clipboard > hold a clip > More > Export (or "..." > Export all): ONE row "Selected (n) v | One file v"; with 1 clip only the Scope pill (full width).
+ [ ] Scope list Selected / All / Pinned: info line count changes; Pack list One file / ZIP / TAR: hint + Share / Save button names change (ZIP / TAR).
+ [ ] Export One file, ZIP and TAR (Share + Save) all still give the file; Rename + Auto, Details / Format / Skip codes still work.
+ [ ] Screen is shorter: at 360 dp the Share / Save buttons are visible without scrolling (or much less scrolling).
+ [ ] Settings > "Compact dropdown menus" OFF = the old scope + pack chip rows.
