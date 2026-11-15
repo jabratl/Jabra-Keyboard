@@ -1029,3 +1029,11 @@ v0.19.3 (dropdown plan S4) - Export screen pills
  [ ] Export One file, ZIP and TAR (Share + Save) all still give the file; Rename + Auto, Details / Format / Skip codes still work.
  [ ] Screen is shorter: at 360 dp the Share / Save buttons are visible without scrolling (or much less scrolling).
  [ ] Settings > "Compact dropdown menus" OFF = the old scope + pack chip rows.
+
+v0.19.4 (dropdown plan S5) - Vault pills
+ [ ] Vault: ONE row "All n v | All n v" (Folder + Kind). Folder list shows All / Unfiled / every folder with counts; pick = list filters; with 7+ folders the list scrolls. Long Bangla folder name = cut with "...", not wrapped.
+ [ ] Kind list All / Snippets / Notes / Glossary filters; counts right.
+ [ ] After picking a folder, "+ Add" / Save from clipboard goes to that folder (vault_dest memory). Search: only the Kind pill, folder filter ignored as before.
+ [ ] Select mode: pick another folder / kind leaves select mode; move to folder, delete, paste still work.
+ [ ] Open a Vault entry (Edit / + Add on text): "Snippet v" + "Folder v" pills; pick Template / Note / Term and any folder directly; Save keeps them.
+ [ ] Settings > "Compact dropdown menus" OFF = old folder + kind chips and old cycle buttons in the editor.

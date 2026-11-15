@@ -1,3 +1,12 @@
+v0.19.4 - MODIFY: Vault = Folder + Kind dropdown pills in ONE row, editor uses pills too (dropdown plan S5 of 7)
+- SEEN/WHY: the Vault list had a sideways-scrolling folder chip row + a kind chip row, and the entry editor had two buttons that CYCLED kind / folder one by one (many folders = many taps).
+- What you get: (list, new look) ONE row "Work 5 v | Snippets 12 v". Folder list = All n / Unfiled n / every folder with its count (scrolls when more than 6); Kind list = All / Snippets / Notes / Glossary with counts. Picking a folder still remembers it as the destination (pref vault_dest) and leaves select mode, same as the old chips. While searching only the Kind pill is shown (the folder chips were hidden then too). (editor) "Snippet v" and "Folder v" are now dropdown pills: pick the kind (Snippet / Template / Note / Term) or folder directly instead of cycling. "New folder", "Folders" button, search, select mode, move to folder: unchanged.
+- Safety: only with "Compact dropdown menus" ON (ui_pill). OFF, or any problem building the pills = the old chip rows / cycle buttons exactly as v0.19.3.
+- Code: VaultPanel.kt only (makeListNew: pillsDone flag + pill row, old chips only when !pillsDone; makeEdit: edPills flag, old cycle buttons only when !edPills), app/build.gradle.kts 0.19.4, CHANGELOG, CHECKLIST, HANDOFF. UiKit.kt untouched. No pref, key, id or data changed. The classic (old look) Vault list is not changed.
+- BROKE: nothing known.
+- TESTED here: bash tools/run_tests.sh = 148/148 green (no Java file changed); bracket balance of VaultPanel.kt OK. NOT tested: Kotlin NOT compiled (no network); PHONE NOT tested (pills use the S2 popup, still unseen on a phone).
+- Rollback: Settings > "Compact dropdown menus" OFF, or restore VaultPanel.kt, CHECKLIST.txt, app/build.gradle.kts from v0.19.3.
+
 v0.19.3 - MODIFY: Export screen = Scope + Pack dropdown pills in ONE row (dropdown plan S4 of 7)
 - SEEN/WHY: the Export screen had a row of 3 scope chips and (with 2+ clips) another row of 3 pack chips, so it was tall and scrolled on small phones.
 - What you get: ONE row "Selected (3) v | One file v". Scope list = Selected (n) / All (n) / Pinned (n); Pack list = One file / ZIP (file per clip) / TAR (Pack pill only when 2+ clips are exported, then Scope takes the full row). Each pill shows the current value; tap = list, current ticked. Details / Format / Skip codes stay as 3 tick chips; Rename / Auto, Save to text, Share + Save buttons, folder name: unchanged. Same state (expScope) and prefs (clip_exp_zip, clip_exp_tar) as before.

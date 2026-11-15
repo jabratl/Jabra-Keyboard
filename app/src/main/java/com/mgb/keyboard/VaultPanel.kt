@@ -458,8 +458,37 @@ class VaultPanel(private val ctx: Context, private val host: JabraHost, private 
         try { val live = VaultView.liveIds(ArrayList(sel), all); sel.retainAll(live.toSet()) } catch (_: Throwable) { sel.clear() }
         if (sheetId != 0 && l.find(sheetId) == null) sheetId = 0
 
+        // v0.19.4 (dropdown plan S5): pref ui_pill (default ON) = Folder v + Kind v are two dropdown pills in ONE row (counts inside the names); OFF / any problem = the old chip rows below
+        try { UiKit.closeSelect() } catch (_: Throwable) { }
+        var pillsDone = false
+        if (try { prefs.bool("ui_pill", true) } catch (_: Throwable) { true }) {
+            try {
+                val prow = row()
+                val fb: (View) -> Unit = { v -> try { host.feedback(v) } catch (_: Throwable) { } }
+                if (!searching) {
+                    val fVals = ArrayList<String?>(); fVals.add(null); fVals.add(""); fVals.addAll(l.folders())
+                    val fNames = Array(fVals.size) { i -> (if (i == 0) "All" else folderName(fVals[i] ?: "")) + " " + Math.max(0, if (i == 0) l.size() else l.countIn(fVals[i] ?: "")) }
+                    prow.addView(UiKit.pillSelect(ctx, prefs, "Folder", { fNames }, { fVals.indexOf(folderF).coerceAtLeast(0) }, 32, 1.4f, fb, 12f) { i ->
+                        val value = fVals[i.coerceIn(0, fVals.size - 1)]
+                        folderF = value
+                        if (value != null) { try { prefs.setStr("vault_dest", value) } catch (_: Throwable) { } }
+                        leaveSel(); sheetId = 0
+                        refreshTop()
+                    })
+                }
+                val kNames0 = arrayOf("All", "Snippets", "Notes", "Glossary")
+                val kKinds0 = arrayOf<String?>(null, VaultList.SNIPPET, VaultList.NOTE, VaultList.TERM)
+                val kNames = Array(4) { i -> kNames0[i] + " " + l.countKind(kKinds0[i]) }
+                prow.addView(UiKit.pillSelect(ctx, prefs, "Kind", { kNames }, { kindF.coerceIn(0, 3) }, 32, 1f, fb, 12f) { i ->
+                    kindF = i.coerceIn(0, 3); leaveSel(); sheetId = 0; refreshTop()
+                })
+                root.addView(prow)
+                pillsDone = true
+            } catch (_: Throwable) { pillsDone = false }
+        }
+
         // folder chips with counts (scroll sideways)
-        if (!searching) {
+        if (!searching && !pillsDone) {
             val hs = HorizontalScrollView(ctx)
             hs.isHorizontalScrollBarEnabled = false
             val fr = row()
@@ -484,12 +513,12 @@ class VaultPanel(private val ctx: Context, private val host: JabraHost, private 
         val chips = row()
         val names = arrayOf("All", "Snippets", "Notes", "Glossary")
         val kinds = arrayOf<String?>(null, VaultList.SNIPPET, VaultList.NOTE, VaultList.TERM)
-        for (i in 0..3) {
+        if (!pillsDone) for (i in 0..3) {
             val kc = UiKit.chip(ctx, prefs, names[i] + " " + l.countKind(kinds[i]), kindF == i, 32, { v -> host.feedback(v) }) { kindF = i; leaveSel(); sheetId = 0; refreshTop() }
             try { val klp = kc.layoutParams as LinearLayout.LayoutParams; klp.width = 0; klp.weight = 1f; kc.layoutParams = klp } catch (_: Throwable) { }
             chips.addView(kc)
         }
-        root.addView(chips)
+        if (!pillsDone) root.addView(chips)
 
         if (searching) {
             val q = TextView(ctx)
@@ -935,6 +964,25 @@ class VaultPanel(private val ctx: Context, private val host: JabraHost, private 
         val isTerm = eKind == VaultList.TERM
         val r2 = row()
         r2.addView(small(btn(if (eField == 0) "Typing: Title" else if (isTerm) "Typing: Meaning" else "Typing: Text", 1.5f, 32) { eField = 1 - eField; eConfirm = false; refresh() }))
+        var edPills = false
+        try { UiKit.closeSelect() } catch (_: Throwable) { }
+        if (try { prefs.bool("ui_pill", true) } catch (_: Throwable) { true }) {   // v0.19.4 (S5): Kind v and Folder v = dropdown pills (no more cycling); any problem = the old cycle buttons
+            try {
+                val fb: (View) -> Unit = { v -> try { host.feedback(v) } catch (_: Throwable) { } }
+                val kNames = Array(VaultList.KINDS.size) { i -> VaultList.kindLabel(VaultList.KINDS[i]) }
+                val fAll = ArrayList<String>(); fAll.add(""); fAll.addAll(l.folders())
+                val fNames = Array(fAll.size) { i -> folderName(fAll[i]) }
+                val kPill = UiKit.pillSelect(ctx, prefs, "Kind", { kNames }, { VaultList.KINDS.indexOf(eKind).coerceAtLeast(0) }, 32, 1f, fb, 12f) { i ->
+                    eKind = VaultList.KINDS[i.coerceIn(0, VaultList.KINDS.size - 1)]; eConfirm = false; refresh()
+                }
+                val fPill = UiKit.pillSelect(ctx, prefs, "Folder", { fNames }, { fAll.indexOf(eFolder).coerceAtLeast(0) }, 32, 1.4f, fb, 12f) { i ->
+                    eFolder = fAll[i.coerceIn(0, fAll.size - 1)]; eConfirm = false; refresh()
+                }
+                r2.addView(kPill); r2.addView(fPill)
+                edPills = true
+            } catch (_: Throwable) { edPills = false }
+        }
+        if (!edPills) {
         r2.addView(small(btn(VaultList.kindLabel(eKind) + " ▾", 1f, 32) { eKind = VaultList.nextKind(eKind); eConfirm = false; refresh() }))
         r2.addView(small(btn(folderName(eFolder) + " ▾", 1.4f, 32) {
             val all = ArrayList<String>(); all.add(""); all.addAll(l.folders())
@@ -942,6 +990,7 @@ class VaultPanel(private val ctx: Context, private val host: JabraHost, private 
             eFolder = all[(i + 1) % all.size]
             eConfirm = false; refresh()
         }))
+        }
         root.addView(r2)
 
         val shown = msg
