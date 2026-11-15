@@ -1014,3 +1014,11 @@ v0.19.1 (dropdown plan S2) - Clipboard dropdown pills
  [ ] Select mode (hold a clip): only the filter pill is shown (no Sort / View), More tray still hides it.
  [ ] Settings > Clipboard & tools > "Compact dropdown menus": OFF = the old chip row + Sort / View rows in the tray come back exactly as v0.18.12; ON = pills. Search "dropdown" finds it.
  [ ] Light + dark theme, Borderless theme (pill = text + triangle only), Jabra look; Clip button size 70% / 140%; landscape: text not cut, pills one line.
+
+v0.19.2 (dropdown plan S3) - slim "..." tray + split Paste button
+ [ ] "..." tray: ONE row "Undo 30 v | Manage | Deleted n | Export all | Clear" (no labels, text not cut at 360 dp). Tap "Undo 30 v": list Undo Off / 10 / 30 / 50 / 100 opens, current ticked; pick Off = "Deleted" button disappears; pick 50 = it comes back.
+ [ ] Manage / Deleted n / Export all / Clear each still work (Clear asks first).
+ [ ] Hold a clip (select mode): bar = Pin | Delete | Paste + small v | More. Tap Paste = pastes the selected clips. Tap the small v = tray "Paste 1 line | To Vault | Export", each works on the selected clips; tap v again closes it.
+ [ ] More: ONE row All | None | Edit | Merge | Unpin (Edit needs ONE clip, Merge 2+). More and the Paste v tray never show together. Pin / Delete (Sure? for 3+) still work.
+ [ ] Settings > "Compact dropdown menus" OFF = old Undo chips + Do row, old bar (Pin / Delete / Paste / More) and old 3-row More tray.
+ [ ] Clip button size 140%: tray / More rows wrap to 3 + 2, text not cut; 70%: still tappable. Dark + light + Borderless.

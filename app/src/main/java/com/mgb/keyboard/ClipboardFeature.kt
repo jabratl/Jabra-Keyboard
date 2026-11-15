@@ -195,7 +195,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
         refresh()
     }
 
-    fun reset() { editing = null; confirmSave = false; undoBuf = emptyList(); searching = false; query = ""; confirmClear = false; msg = ""; sel.leave(); confirmDel = false; keepY = -1; fromRefresh = false; fChip = 0; moreOpen = false; ovOpen = false; exporting = false; expMsg = ""; renaming = false; expName = ""; trashOpen = false; trashSure = false; trashMsg = ""; undoSteps = 0 }   // v0.18.4: Recently deleted closed, Undo steps start fresh; v0.17.63 (R3): rename closed + name cleared; v0.16.1 (X1); v0.17.57 (C2): export screen closed; v0.16.9 (X9): chip + More tray start fresh
+    fun reset() { editing = null; confirmSave = false; undoBuf = emptyList(); searching = false; query = ""; confirmClear = false; msg = ""; sel.leave(); confirmDel = false; keepY = -1; fromRefresh = false; fChip = 0; moreOpen = false; pasteMenu = false; ovOpen = false; exporting = false; expMsg = ""; renaming = false; expName = ""; trashOpen = false; trashSure = false; trashMsg = ""; undoSteps = 0 }   // v0.18.4: Recently deleted closed, Undo steps start fresh; v0.17.63 (R3): rename closed + name cleared; v0.16.1 (X1); v0.17.57 (C2): export screen closed; v0.16.9 (X9): chip + More tray start fresh
 
     private fun dp(v: Int): Int = (v * ctx.resources.displayMetrics.density).toInt()
 
@@ -487,6 +487,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
     private var fChip = 0            // v0.16.9: filter chip (not saved: a fresh open starts at All)
     private var ovOpen = false       // v0.17.58 (C3): the header overflow tray (Manage / Sort / View / Export all / Clear)
     private fun nl(): Boolean = try { ClipLook.newLook(pf) } catch (_: Throwable) { false }   // v0.17.58 (C3): pref clip_new_look (default ON)
+    private var pasteMenu = false    // v0.19.2 (S3): the chevron tray of the split \"Paste\" button (Paste 1 line / To Vault / Export)
     private var moreOpen = false     // v0.16.9: the "More" tray of the bottom bar (All / Unpin / Merge / Edit / Paste in 1 line / To Vault)
 
     private fun makeNew(restoreY: Int): View {
@@ -498,7 +499,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
         root.setPadding(dp(2), dp(4), dp(2), dp(4))
         try { sel.prune(store.pinnedView("") + store.recentView("")) } catch (_: Throwable) { sel.leave() }
         val selOn = sel.isOn
-        if (!selOn) moreOpen = false
+        if (!selOn) { moreOpen = false; pasteMenu = false }
         val nlOn = nl()   // v0.17.58 (C3)
         if (selOn || searching || !nlOn) ovOpen = false
         fChip = ClipFilter.sanitize(fChip)
@@ -660,14 +661,6 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
                 }
                 // v0.18.4: Undo = how many deleted clips are kept (Off / 10 / 30 / 50 / 100); Do = Manage | Deleted n | Export all | Clear
                 val undoLim = try { trash.limit() } catch (_: Throwable) { com.mgb.keyboard.clip.ClipTrash.DEFAULT_LIMIT }
-                menu.addView(menuRow("Undo", ovCols, *Array<View>(com.mgb.keyboard.clip.ClipTrash.QUICK.size) { i ->
-                    val qv = com.mgb.keyboard.clip.ClipTrash.QUICK[i]
-                    ovPill((if (qv == undoLim) "\u2713 " else "") + (if (qv == 0) "Off" else qv.toString()), qv == undoLim) {
-                        try { JabraPrefs(ctx).setInt("clip_undo_n", qv) } catch (_: Throwable) { }
-                        try { trash.count() } catch (_: Throwable) { }
-                        refresh()
-                    }
-                }))
                 val doItems = ArrayList<View>()
                 doItems.add(ovPill("Manage") { ovOpen = false; sel.enter(); confirmClear = false; confirmDel = false; refresh() })
                 if (undoLim > 0) {
@@ -676,7 +669,36 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
                 }
                 doItems.add(ovPill("Export all") { ovOpen = false; expSel = emptyList(); expScope = 1; expMsg = ""; expName = ""; renaming = false; exporting = true; moreOpen = false; confirmDel = false; refresh() })
                 doItems.add(ClipBar.danger(pf, ovPill("Clear") { ovOpen = false; confirmClear = true; refresh() }))
-                menu.addView(menuRow("Do", ovCols, *doItems.toTypedArray()))
+                if (pillOn) {
+                    // v0.19.2 (S3): Undo = ONE dropdown pill (\"Undo 30 v\") + the 4 actions: ONE row (3 per row when the clip buttons are big), no row labels
+                    var undoPill: View? = null
+                    try {
+                        val uVals = ArrayList<Int>()
+                        for (q in com.mgb.keyboard.clip.ClipTrash.QUICK) uVals.add(q)
+                        if (!uVals.contains(undoLim)) { uVals.add(undoLim); uVals.sort() }   // a value set in Settings (e.g. 20) stays visible + ticked
+                        val uNames = Array(uVals.size) { i -> "Undo " + (if (uVals[i] == 0) "Off" else uVals[i].toString()) }
+                        val ufb: (View) -> Unit = { v -> try { host.feedback(v) } catch (_: Throwable) { } }
+                        undoPill = UiKit.pillSelect(ctx, pf, "Undo", { uNames },
+                            { uVals.indexOf(try { trash.limit() } catch (_: Throwable) { undoLim }).coerceAtLeast(0) },
+                            sz(34), 1f, ufb, fs(11f)) { i ->
+                            try { JabraPrefs(ctx).setInt("clip_undo_n", uVals[i.coerceIn(0, uVals.size - 1)]) } catch (_: Throwable) { }
+                            try { trash.count() } catch (_: Throwable) { }
+                            refresh()
+                        }
+                    } catch (_: Throwable) { undoPill = null }
+                    if (undoPill != null) {
+                        doItems.add(0, undoPill)
+                        val per = if (bpct() > 110) 3 else 5
+                        var k = 0
+                        while (k < doItems.size) { menu.addView(menuRow("", per, *doItems.subList(k, minOf(k + per, doItems.size)).toTypedArray())); k += per }
+                    } else {
+                        menu.addView(oldUndoRow(ovCols, undoLim))
+                        menu.addView(menuRow("Do", ovCols, *doItems.toTypedArray()))
+                    }
+                } else {
+                    menu.addView(oldUndoRow(ovCols, undoLim))
+                    menu.addView(menuRow("Do", ovCols, *doItems.toTypedArray()))
+                }
                 root.addView(menu)
             }
         }
@@ -753,7 +775,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
         } catch (_: Throwable) { }
 
         // ---- bottom summary bar (select mode)
-        if (selOn) root.addView(selectBarNew(visible))
+        if (selOn) root.addView(selectBarNew(visible, pillOn))
 
         // ---- tiny search keyboard (Latin letters only), same as the classic panel
         if (searching) {
@@ -795,7 +817,18 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
         return c
     }
 
-    /** One menu row: small label + [cols] equal columns (missing items = empty space, so every row lines up). */
+    /** v0.19.2: the old Undo row (5 chips Off / 10 / 30 / 50 / 100) - used when the dropdown pills are off (or the pill cannot be built). Same code as v0.19.1. */
+    private fun oldUndoRow(ovCols: Int, undoLim: Int): LinearLayout =
+        menuRow("Undo", ovCols, *Array<View>(com.mgb.keyboard.clip.ClipTrash.QUICK.size) { i ->
+            val qv = com.mgb.keyboard.clip.ClipTrash.QUICK[i]
+            ovPill((if (qv == undoLim) "\u2713 " else "") + (if (qv == 0) "Off" else qv.toString()), qv == undoLim) {
+                try { JabraPrefs(ctx).setInt("clip_undo_n", qv) } catch (_: Throwable) { }
+                try { trash.count() } catch (_: Throwable) { }
+                refresh()
+            }
+        })
+
+    /** One menu row: small label + [cols] equal columns (missing items = empty space, so every row lines up). v0.19.2: an EMPTY label = no label column (more room for the pills). */
     private fun menuRow(label: String, cols: Int, vararg items: View): LinearLayout {
         val r = LinearLayout(ctx)
         r.orientation = LinearLayout.HORIZONTAL
@@ -806,7 +839,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
         l.setTextColor(hush())
         l.maxLines = 1
         l.layoutParams = LinearLayout.LayoutParams(dp(50), LinearLayout.LayoutParams.WRAP_CONTENT)
-        r.addView(l)
+        if (label.isNotEmpty()) r.addView(l)
         for (v in items) r.addView(v)
         for (i in items.size until cols) { val f = View(ctx); f.layoutParams = LinearLayout.LayoutParams(0, dp(sz(34)), 1f); r.addView(f) }
         return r
@@ -828,11 +861,23 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
     }
 
     /** v0.16.9 (X9): bottom bar of the NEW panel in select mode: "N selected" + Pin | Delete | Paste | More; the More tray holds All / Unpin / Merge / Edit / Paste in 1 line / To Vault (every classic action stays reachable). */
-    private fun selectBarNew(visible: List<ClipList.Item>): View {
+    private fun selectBarNew(visible: List<ClipList.Item>, pillOn: Boolean = false): View {
         val t40 = PanelLayout.MIN_TOUCH   // btn() scales it (v0.17.32 UI8)
         val all = LinearLayout(ctx)
         all.orientation = LinearLayout.VERTICAL
-        if (moreOpen) {   // v0.17.67 (R7): grouped dropdown menu (same actions as before + "None")
+        if (moreOpen && pillOn) {   // v0.19.2 (S3): ONE row (All | None | Edit | Merge | Unpin; 3 per row when the clip buttons are big). Send moved to the Paste split button.
+            val menu = menuCard()
+            val items = listOf<View>(
+                menuPill("All") { sel.selectAll(visible); confirmDel = false; refresh() },
+                menuPill("None") { sel.clear(); confirmDel = false; refresh() },
+                menuPill("Edit") { actEdit() },
+                menuPill("Merge") { actMerge() },
+                menuPill("Unpin") { actPin(false) })
+            val per = if (bpct() > 110) 3 else 5
+            var k = 0
+            while (k < items.size) { menu.addView(menuRow("", per, *items.subList(k, minOf(k + per, items.size)).toTypedArray())); k += per }
+            all.addView(menu)
+        } else if (moreOpen) {   // v0.17.67 (R7): grouped dropdown menu (same actions as before + "None")
             val menu = menuCard()
             menu.addView(menuRow("Select", 3, menuPill("All") { sel.selectAll(visible); confirmDel = false; refresh() }, menuPill("None") { sel.clear(); confirmDel = false; refresh() }))
             menu.addView(menuRow("Change", 3, menuPill("Edit") { actEdit() }, menuPill("Merge") { actMerge() }, menuPill("Unpin") { actPin(false) }))
@@ -845,12 +890,45 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
         }
         val n = sel.count()
         val allPinned = n > 0 && sel.pinnedCount() == n
-        val main = PanelKit.stickyBar(ctx, pf, host, listOf<Pair<String, () -> Unit>>(
+        if (!pillOn) pasteMenu = false
+        if (pasteMenu && !moreOpen && pillOn) {   // v0.19.2 (S3): the chevron tray of the split Paste button (same actions as the old More > Send row)
+            val menu = menuCard()
+            val send = ArrayList<View>()
+            send.add(menuPill("Paste 1 line") { actPaste(true) })
+            if (toVault != null) send.add(menuPill("To Vault") { actToVault() })
+            send.add(menuPill("Export") { actExport() })
+            menu.addView(menuRow("", 3, *send.toTypedArray()))
+            all.addView(menu)
+        }
+        val main = if (!pillOn) PanelKit.stickyBar(ctx, pf, host, listOf<Pair<String, () -> Unit>>(
             (if (allPinned) "Unpin" else "Pin") to { actPin(!allPinned) },
             (if (confirmDel) "Sure? delete $n" else "Delete") to { actDelete() },
             "Paste" to { actPaste(false) },
             (if (moreOpen) "Less \u25B4" else "More \u25BE") to { moreOpen = !moreOpen; confirmDel = false; refresh() }),
             listOf(1f, if (confirmDel) 3f else 1.2f, 1.1f, 1.1f))
+        else {
+            // v0.19.2 (S3): Pin | Delete | [Paste | v] (split button) | More. Tap Paste = paste at once; the chevron opens Paste 1 line / To Vault / Export.
+            val m = PanelKit.stickyBar(ctx, pf, host, listOf<Pair<String, () -> Unit>>(
+                (if (allPinned) "Unpin" else "Pin") to { actPin(!allPinned) },
+                (if (confirmDel) "Sure? delete $n" else "Delete") to { actDelete() },
+                (if (moreOpen) "Less \u25B4" else "More \u25BE") to { moreOpen = !moreOpen; pasteMenu = false; confirmDel = false; refresh() }),
+                listOf(1f, if (confirmDel) 3f else 1.2f, 1.1f))
+            try {
+                val split = LinearLayout(ctx)
+                split.orientation = LinearLayout.HORIZONTAL
+                split.gravity = Gravity.CENTER_VERTICAL
+                split.layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1.5f)
+                split.addView(btn("Paste", 1f, t40) { actPaste(false) })
+                val chev = btn("\u25BE", 0f, t40) { pasteMenu = !pasteMenu; moreOpen = false; confirmDel = false; refresh() }
+                chev.layoutParams = LinearLayout.LayoutParams(dp(30), dp(sz(t40))).also { it.setMargins(dp(2), dp(2), dp(2), dp(2)) }
+                chev.contentDescription = "More paste options"
+                split.addView(if (pasteMenu) ClipBar.on(ctx, pf, chev) else chev)
+                m.addView(split, minOf(2, m.childCount))
+            } catch (_: Throwable) {
+                m.addView(btn("Paste", 1.1f, t40) { actPaste(false) }, minOf(2, m.childCount))   // never lose Paste
+            }
+            m
+        }
         if (!confirmDel) {
             val c = TextView(ctx)
             c.text = ClipFilter.selectedText(n)
