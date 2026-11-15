@@ -248,7 +248,9 @@ object UiKit {
                 val w = paint.measureText(n[i])
                 if (w > maxText) maxText = w
             }
-            val content: View = if (SelectPlan.scrolls(n.size)) { val sv = android.widget.ScrollView(ctx); sv.addView(col); sv } else col
+            val margin = JabraTokens.dp(ctx, JabraTokens.S2)
+            val h = SelectPlan.capHeight(SelectPlan.popupHeight(n.size, rowPx), dm.heightPixels, margin)   // v0.19.6 (S7): never taller than the screen
+            val content: View = if (SelectPlan.scrolls(n.size) || h < n.size * rowPx) { val sv = android.widget.ScrollView(ctx); sv.addView(col); sv } else col
             val box = android.widget.FrameLayout(ctx)
             val bg = GradientDrawable()
             bg.setColor(JabraTokens.panelBg(p) or (0xFF shl 24))
@@ -257,10 +259,8 @@ object UiKit {
             box.background = bg
             box.clipToOutline = true
             box.addView(content)
-            val margin = JabraTokens.dp(ctx, JabraTokens.S2)
             val contentW = Math.ceil(maxText.toDouble()).toInt() + 2 * pad + tickRoom
             val w = SelectPlan.popupWidth(anchor.width, contentW, dm.widthPixels, margin, JabraTokens.dp(ctx, 96))
-            val h = SelectPlan.popupHeight(n.size, rowPx)
             val loc = IntArray(2)
             anchor.getLocationOnScreen(loc)
             val gap = JabraTokens.dp(ctx, JabraTokens.S1)

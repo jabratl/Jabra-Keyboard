@@ -531,11 +531,13 @@ class MgbIme : InputMethodService() {
 
     override fun onFinishInputView(finishingInput: Boolean) {
         super.onFinishInputView(finishingInput)
+        try { UiKit.closeSelect() } catch (_: Throwable) { }   // v0.19.6 (S7): an open dropdown list never stays on screen after the keyboard closes
         pcResetMods()   // v0.17.49 (PC1): Ctrl must not stay on after the keyboard closes
     }
 
     override fun onWindowHidden() {
         super.onWindowHidden()
+        try { UiKit.closeSelect() } catch (_: Throwable) { }   // v0.19.6 (S7)
         pcResetMods()   // v0.17.49 (PC1)
     }
 
@@ -1308,6 +1310,7 @@ class MgbIme : InputMethodService() {
     }
 
     private fun showLetters() {
+        try { UiKit.closeSelect() } catch (_: Throwable) { }   // v0.19.6 (S7): panel switch closes an open dropdown list
         val c = container ?: return
         autoNumpad = false
         inPanel = false   // v0.3.3
@@ -1353,6 +1356,7 @@ class MgbIme : InputMethodService() {
     }
 
     private fun showPanel(name: String) {
+        try { UiKit.closeSelect() } catch (_: Throwable) { }   // v0.19.6 (S7)
         val c = container ?: return
         commitWord()
         if (PanelGuard.blocked(this, name)) { BackupStore.toast(this, "Panel switched off after 2 crashes. See Health Check in the app screen."); showLetters(); return }   // v0.5.3

@@ -1045,3 +1045,12 @@ v0.19.5 (dropdown plan S6) - Settings app dropdown lists
  [ ] Changed dot appears after a pick, Reset puts the default back; settings search finds the row and jumps to it; TalkBack reads "title: value".
  [ ] 2-4 short options still show as one-tap segments; switches / steppers unchanged. Dark + light app theme: list readable.
  [ ] Settings > "Compact dropdown menus" OFF = old dialog list / old cycling chip.
+
+v0.19.6 (dropdown plan S7) - final phone pass for ALL dropdown pills (S2-S6)
+ [ ] FIRST: Clipboard pills "All v | Newest v | List v": list opens above or below the pill, fully visible INSIDE the keyboard window, not cut off. If cut off or misplaced: tell me (fix = in-panel tray in UiKit).
+ [ ] Open a list, then: tap outside = closes; pick = applies; switch panel (ABC / Vault / Emoji) = closes; close the keyboard (Back / tap the app) = closes and does not stay over the app.
+ [ ] Landscape: open a list = it fits on screen (scrolls when short); pills one line, text not cut. Portrait 360 dp same.
+ [ ] Clip button size 70% and 140%; icons OFF (Settings) = plain "v" sign; Borderless theme = text + v only; Custom theme follows Theme studio; light + dark.
+ [ ] Many Vault folders (7+) = Folder list scrolls; Settings app long list scrolls; near the bottom edge the list opens above.
+ [ ] "Compact dropdown menus" OFF = every screen (clipboard, tray, select bar, export, Vault, editor, Settings lists) is the old one.
+ [ ] Send me every problem as: screen + what you see (+ screenshot); one problem = one small FIX version.

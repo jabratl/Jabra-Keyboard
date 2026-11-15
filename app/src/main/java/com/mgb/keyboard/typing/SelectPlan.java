@@ -66,6 +66,14 @@ public final class SelectPlan {
         return visibleRows(n) * rowPx;
     }
 
+    /** v0.19.6 (S7): the list is never taller than the screen minus both margins (landscape / tiny panels); the caller scrolls when it is cut. */
+    public static int capHeight(int popH, int screenH, int marginPx) {
+        int m = Math.max(0, marginPx);
+        int max = screenH - 2 * m;
+        if (max < 1) max = Math.max(1, screenH);
+        return popH > max ? max : (popH < 0 ? 0 : popH);
+    }
+
     /** Popup width: at least as wide as the pill and as the content, never wider than the screen minus margins; minW wins only when it fits. */
     public static int popupWidth(int anchorW, int contentW, int screenW, int marginPx, int minW) {
         int max = screenW - 2 * Math.max(0, marginPx);

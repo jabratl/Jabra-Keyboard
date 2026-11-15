@@ -165,7 +165,9 @@ object AppRows {
                 col.addView(r)
                 val w = paint.measureText(n[i]); if (w > maxText) maxText = w
             }
-            val content: View = if (com.mgb.keyboard.typing.SelectPlan.scrolls(n.size)) { val sv = android.widget.ScrollView(c); sv.addView(col); sv } else col
+            val margin = dp(c, AppTokens.S2)
+            val h = com.mgb.keyboard.typing.SelectPlan.capHeight(com.mgb.keyboard.typing.SelectPlan.popupHeight(n.size, rowPx), dm.heightPixels, margin)   // v0.19.6 (S7)
+            val content: View = if (com.mgb.keyboard.typing.SelectPlan.scrolls(n.size) || h < n.size * rowPx) { val sv = android.widget.ScrollView(c); sv.addView(col); sv } else col
             val box = FrameLayout(c)
             val bg = GradientDrawable()
             bg.setColor(AppUi.surface2(c) or (0xFF shl 24))
@@ -174,10 +176,8 @@ object AppRows {
             box.background = bg
             box.clipToOutline = true
             box.addView(content)
-            val margin = dp(c, AppTokens.S2)
             val contentW = Math.ceil(maxText.toDouble()).toInt() + 2 * pad + tickRoom
             val w = com.mgb.keyboard.typing.SelectPlan.popupWidth(anchor.width, contentW, dm.widthPixels, margin, dp(c, 96))
-            val h = com.mgb.keyboard.typing.SelectPlan.popupHeight(n.size, rowPx)
             val loc = IntArray(2)
             anchor.getLocationOnScreen(loc)
             val x = com.mgb.keyboard.typing.SelectPlan.popupX(loc[0], w, dm.widthPixels, margin)

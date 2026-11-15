@@ -44,6 +44,11 @@ public class SelectPlanTest {
         ok(y2 == 58, "y below at the very top");
         int y3 = SelectPlan.popupY(950, 50, 300, 1000, 8, 16);
         ok(y3 + 300 <= 1000 - 16, "y keeps the bottom margin");
+        // v0.19.6 (S7) capHeight
+        ok(SelectPlan.capHeight(240, 1000, 16) == 240, "cap: fits");
+        ok(SelectPlan.capHeight(240, 200, 16) == 168, "cap: landscape, cut to screen minus margins");
+        ok(SelectPlan.capHeight(-5, 1000, 16) == 0, "cap: negative = 0");
+        ok(SelectPlan.capHeight(240, 10, 16) == 10, "cap: degenerate screen keeps >= 1");
         System.out.println("SelectPlanTest: " + (total - fail) + "/" + total + (fail == 0 ? " OK" : " FAILED"));
         if (fail > 0) System.exit(1);
     }
