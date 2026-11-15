@@ -734,6 +734,7 @@ object SettingsGroups {
 
         group("Clipboard & tools") { g ->
             toggle(g, "Clip history", "clip_on", true)
+            toggle(g, "Save copied passwords", "clip_pwd", true)   // v0.18.12: copies marked sensitive (password managers) and copies made in password fields are saved in the history
             level(g, "Clip lines", "clip_lines", 0, arrayOf("2 lines", "4 lines", "6 lines"))   // v0.2.5.1
             level(g, "Clipboard view", "clip_view", 0, arrayOf("List", "Cards"))   // v0.2.5.2
             level(g, "Clip sort", "clip_sort", 0, com.mgb.keyboard.clip.ClipMeta.SORT_NAMES)   // v0.4.3

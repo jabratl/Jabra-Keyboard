@@ -298,12 +298,13 @@ class MgbIme : InputMethodService() {
     /** v0.0.6: save the current clipboard text into the history (not in password fields, not if marked sensitive, not if turned OFF). */
     private fun captureClip() {
         try {
-            if (pwdField || !prefs.bool("clip_on", true)) return
+            val pwdOn = prefs.bool("clip_pwd", true)   // v0.18.12: "Save copied passwords" (default ON): copies from a password manager / password field are kept like any clip
+            if ((pwdField && !pwdOn) || !prefs.bool("clip_on", true)) return
             if (System.currentTimeMillis() - selfClipAt < 1500L) return   // v0.17.40 (M7): the clip we put there ourselves for a formatted paste
             val d = (getSystemService(CLIPBOARD_SERVICE) as ClipboardManager).primaryClip ?: return
             if (d.itemCount == 0) return
             val sensitive = try { d.description?.extras?.getBoolean("android.content.extra.IS_SENSITIVE", false) ?: false } catch (_: Throwable) { false }
-            if (sensitive) return
+            if (sensitive && !pwdOn) return   // v0.18.12: Android marks password-manager copies as sensitive; with clip_pwd ON they are saved too
             var t: String? = null   // v0.16.15 (E3): first item that has text (was: item 0 only)
             var html: String? = null   // v0.17.39 (M6): the html of that same item (null = plain)
             for (i in 0 until d.itemCount) { val s = try { d.getItemAt(i).coerceToText(this)?.toString() } catch (_: Throwable) { null }; if (!s.isNullOrBlank()) { t = s; html = try { d.getItemAt(i).htmlText } catch (_: Throwable) { null }; break } }
