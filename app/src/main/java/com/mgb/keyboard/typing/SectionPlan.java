@@ -19,7 +19,7 @@ public final class SectionPlan {
 
     // Typing page = groups "Languages & layouts" + "Typing"; Look page = group "Look". Every row key of these 3 groups is listed once.
     private static final String[] BASIC_KEYS = {
-        "bn_layout", "lang_tap", "lang_en_on", "lang_avro_on", "lang_probhat_on", "space_lang", "key_lang", "numrow", "numpad_auto", "pc_mode", "mode_key",
+        "bn_layout", "lang_tap", "bn_url", "lang_en_on", "lang_avro_on", "lang_probhat_on", "space_lang", "key_lang", "numrow", "numpad_auto", "pc_mode", "mode_key",
         "bs_repeat", "autocap", "enter_action", "ds_period", "hint_on", "hint_mode",
         "theme", "look", "key_border", "icons_on", "numrow_large", "onehand", "bn_design", "app_tips",
         // v0.17.81 (U5b) Layout & size

@@ -517,6 +517,7 @@ object SettingsGroups {
                 { prefs.setInt("bn_map", if (it == 1) 0 else 1) })
             cycle(g, "Language key tap", "lang_tap", { Array(3) { i -> com.mgb.keyboard.typing.LangOrder.TAP_NAMES[i] } }, { prefs.int("lang_tap", 0).coerceIn(0, 2) }, { prefs.setInt("lang_tap", it) })   // v0.5.0
             cycle(g, "Bangla first", "lang_fav", { Array(3) { i -> com.mgb.keyboard.typing.LangOrder.FAV_NAMES[i] } }, { prefs.int("lang_fav", 0).coerceIn(0, 2) }, { prefs.setInt("lang_fav", it) })   // v0.5.0
+            toggle(g, "Bangla in browser / URL fields", "bn_url", true)   // v0.19.7: ON = Bangla layout + typing work in address / search bars (field type "URL"); OFF = old rule, English only there. Password / email / number fields stay English always.
             toggle(g, "English available", "lang_en_on", true)   // v0.17.62 (R2): OFF = English leaves the language key + space swipe (at least one mode always stays on)
             toggle(g, "${com.mgb.keyboard.typing.LangNames.AVRO} available", "lang_avro_on", true)   // v0.5.0
             toggle(g, "${com.mgb.keyboard.typing.LangNames.PROBHAT} available", "lang_probhat_on", true)   // v0.5.0

@@ -475,7 +475,7 @@ class MgbIme : InputMethodService() {
                 v == InputType.TYPE_TEXT_VARIATION_WEB_PASSWORD ||
                 v == InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS ||
                 v == InputType.TYPE_TEXT_VARIATION_WEB_EMAIL_ADDRESS ||
-                v == InputType.TYPE_TEXT_VARIATION_URI
+                (v == InputType.TYPE_TEXT_VARIATION_URI && !(try { prefs.bool("bn_url", true) } catch (_: Throwable) { false }))   // v0.19.7: browser address / search bars report "URL" = Bangla was forced to English; pref bn_url (default ON) lets Bangla work there, OFF = old rule
             pwdField = v == InputType.TYPE_TEXT_VARIATION_PASSWORD || v == InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD ||
                 v == InputType.TYPE_TEXT_VARIATION_WEB_PASSWORD ||
                 (cls == InputType.TYPE_CLASS_NUMBER && v == InputType.TYPE_NUMBER_VARIATION_PASSWORD)   // v0.0.6
