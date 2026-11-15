@@ -1004,3 +1004,13 @@ Z134  v0.17.42  Empty clipboard hint
 Z135  v0.17.43  Cursor pad note
  [ ] 1. Open the cursor pad: the grey note under the keys is two short lines, fully readable at 360 dp, dark and light; the pad is not taller than the letters keyboard.
  [ ] 2. Select, arrows, Top / Bottom, ABC work as before.
+
+v0.19.1 (dropdown plan S2) - Clipboard dropdown pills
+ [ ] Clipboard (new look): ONE row under the header with 3 pills "All v | Newest v | List v" (the 5 chips are gone). Each pill shows the CURRENT value.
+ [ ] Tap "All v": a list opens (All / Pinned / Text / Links / Numbers), current one ticked + bold, inside the screen (above or below the pill), not cut off by the keyboard. Pick = the list filters, list closes, pill shows the new value.
+ [ ] Tap outside the list = it closes. Open a list, then tap ABC / the "..." button = list closes, nothing stuck.
+ [ ] "Newest v" lists Newest / Oldest / A-Z / Most used; "List v" lists List / Cards; both change the view at once (same prefs clip_sort / clip_view as Settings).
+ [ ] "..." tray now has only Undo + Manage / Deleted / Export all / Clear (no Sort / View rows) and the pill row stays visible above it.
+ [ ] Select mode (hold a clip): only the filter pill is shown (no Sort / View), More tray still hides it.
+ [ ] Settings > Clipboard & tools > "Compact dropdown menus": OFF = the old chip row + Sort / View rows in the tray come back exactly as v0.18.12; ON = pills. Search "dropdown" finds it.
+ [ ] Light + dark theme, Borderless theme (pill = text + triangle only), Jabra look; Clip button size 70% / 140%; landscape: text not cut, pills one line.

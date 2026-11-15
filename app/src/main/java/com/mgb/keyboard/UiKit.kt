@@ -174,12 +174,13 @@ object UiKit {
      */
     fun pillSelect(
         ctx: Context, p: JabraPrefs, title: String, names: () -> Array<String>, cur: () -> Int,
-        hDp: Int = 32, weight: Float = 0f, feedback: ((View) -> Unit)? = null, onPick: (Int) -> Unit
+        hDp: Int = 32, weight: Float = 0f, feedback: ((View) -> Unit)? = null, textSp: Float = 0f, onPick: (Int) -> Unit   // v0.19.1: textSp 0 = 12 sp; panels pass fs(12f) (clip_btn_pct)
     ): Button {
         return try {
             val b = base(ctx, "", weight, hDp, feedback) { btn -> showSelectList(ctx, p, btn, title, names, cur, feedback, onPick) }
-            b.textSize = JabraTokens.T_BTN
-            capFont(ctx, b, JabraTokens.T_BTN)
+            val sp0 = if (textSp > 0f) textSp else JabraTokens.T_BTN
+            b.textSize = sp0
+            capFont(ctx, b, sp0)
             try { JabraThemes.style(p, b) } catch (_: Throwable) { }
             val side = JabraTokens.dp(ctx, 10)
             b.setPadding(side, 0, side, 0)

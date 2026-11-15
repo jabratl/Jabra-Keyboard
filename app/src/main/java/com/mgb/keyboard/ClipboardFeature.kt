@@ -491,6 +491,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
 
     private fun makeNew(restoreY: Int): View {
         val t40 = PanelLayout.MIN_TOUCH   // btn() scales it (v0.17.32 UI8)
+        try { UiKit.closeSelect() } catch (_: Throwable) { }   // v0.19.1: a dropdown list of the old screen never stays over the new one
         val root = LinearLayout(ctx)
         root.orientation = LinearLayout.VERTICAL
         paintBg(root)
@@ -540,8 +541,42 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
         top.addView(manageNew)
         root.addView(top)
 
+        // ---- v0.19.1 (dropdown plan S2): pref ui_pill (default ON) = filter / sort / view are 3 dropdown pills in ONE row (instead of the 5 chips + Sort / View rows in the tray); OFF = the old chips
+        val pillOn = nlOn && try { pf.bool("ui_pill", true) } catch (_: Throwable) { true }
+        if (pillOn && !(selOn && moreOpen)) {
+            val prow = row()
+            try {
+                val fb: (View) -> Unit = { v -> try { host.feedback(v) } catch (_: Throwable) { } }
+                val psp = fs(12f)
+                val fNames = Array(ClipFilter.COUNT) { c -> ClipFilter.label(c) }
+                prow.addView(UiKit.pillSelect(ctx, pf, "Filter", { fNames }, { fChip }, sz(t40), 1f, fb, psp) { c ->
+                    if (c != fChip) {
+                        fChip = c
+                        if (sel.isOn) sel.clear()   // a hidden selection could be pinned / deleted by mistake
+                        confirmDel = false
+                        confirmClear = false
+                        refreshTop()
+                    }
+                })
+                if (!selOn) {   // no Sort / View in select mode (same as before)
+                    val sNames = com.mgb.keyboard.clip.ClipMeta.SORT_NAMES
+                    prow.addView(UiKit.pillSelect(ctx, pf, "Sort", { sNames }, { try { JabraPrefs(ctx).int("clip_sort", 0).coerceIn(0, 3) } catch (_: Throwable) { 0 } }, sz(t40), 1f, fb, psp) { i ->
+                        try { JabraPrefs(ctx).setInt("clip_sort", i) } catch (_: Throwable) { }
+                        confirmClear = false
+                        refreshTop()
+                    })
+                    val vNames = arrayOf("List", "Cards")
+                    prow.addView(UiKit.pillSelect(ctx, pf, "View", { vNames }, { try { if (JabraPrefs(ctx).int("clip_view", 0) == 1) 1 else 0 } catch (_: Throwable) { 0 } }, sz(t40), 1f, fb, psp) { i ->
+                        try { JabraPrefs(ctx).setInt("clip_view", i) } catch (_: Throwable) { }
+                        confirmClear = false
+                        refreshTop()
+                    })
+                }
+            } catch (_: Throwable) { }
+            root.addView(prow)
+        }
         // ---- filter chips (hidden while the More tray is open: the space goes to the list)
-        if (!(selOn && moreOpen) && !(ovOpen && nlOn)) {   // v0.18.8: also hide the chips while the \u22EF menu is open (the space goes to the list)
+        if (!pillOn && !(selOn && moreOpen) && !(ovOpen && nlOn)) {   // v0.18.8: also hide the chips while the \u22EF menu is open (the space goes to the list)
             val chips = row()
             for (c in 0 until ClipFilter.COUNT) {
                 val ch = UiKit.chip(ctx, pf, ClipFilter.label(c), c == fChip, sz(t40), { v -> try { host.feedback(v) } catch (_: Throwable) { } }) {
@@ -611,6 +646,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
                 // v0.17.66 -> v0.17.67 (R7): the "..." tray is now a dropdown menu card: Sort + View show ALL choices (the chosen one is ticked), actions below
                 val menu = menuCard()
                 val ovCols = maxOf(5, com.mgb.keyboard.clip.ClipTrash.QUICK.size)   // v0.18.8: EVERY row of this menu uses the same 5 columns, so the pills line up (Undo has 5, the others 4 / 2)
+                if (!pillOn) {   // v0.19.1: with the dropdown pills Sort and View live in the header row, not in this tray
                 val sortNames = arrayOf("Newest", "Oldest", "A-Z", "Used")
                 menu.addView(menuRow("Sort", ovCols, *Array<View>(4) { i ->
                     ovPill((if (i == sortLv) "\u2713 " else "") + sortNames[i], i == sortLv) {
@@ -621,6 +657,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
                 menu.addView(menuRow("View", ovCols,
                     ovPill((if (!cardsOn) "\u2713 " else "") + "List", !cardsOn) { try { JabraPrefs(ctx).setInt("clip_view", 0) } catch (_: Throwable) { }; refreshTop() },
                     ovPill((if (cardsOn) "\u2713 " else "") + "Cards", cardsOn) { try { JabraPrefs(ctx).setInt("clip_view", 1) } catch (_: Throwable) { }; refreshTop() }))
+                }
                 // v0.18.4: Undo = how many deleted clips are kept (Off / 10 / 30 / 50 / 100); Do = Manage | Deleted n | Export all | Clear
                 val undoLim = try { trash.limit() } catch (_: Throwable) { com.mgb.keyboard.clip.ClipTrash.DEFAULT_LIMIT }
                 menu.addView(menuRow("Undo", ovCols, *Array<View>(com.mgb.keyboard.clip.ClipTrash.QUICK.size) { i ->
