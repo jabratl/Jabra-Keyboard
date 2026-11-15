@@ -1,0 +1,47 @@
+HANDOFF Jabra-Keyboard v0.20.0 - Typing history, PART 1 of 3 (engine + switches + privacy text). Paste this file at the start of the next chat. Rules of work: HANDOFF.txt section 0 (Banglish, patch do not rewrite, RULE 0, ask before new tracking / permission, max 1 question).
+Owner writes Banglish: reply in Banglish, short. Zip rule: name Jabra-Keyboard_v0_<X>_<Y>.zip (digits + underscores, e.g. Jabra-Keyboard_v0_21_0.zip), root folder Jabra-Keyboard-main/, ONLY changed / new files, CHANGELOG.txt first line must start with the new version, app/build.gradle.kts appVersionName bumped.
+
+PLAN (agreed with owner, split in 3 chats)
+ PART 1 (DONE here) engine, capture hooks, switches, privacy text, tests.
+ PART 2 (next) "Typing history" PAGE in the main app.
+ PART 3 (after) per-app exclude list + Pause button on the keyboard + polish.
+
+PART 1 - WHAT EXISTS (read these files first)
+ hist/HistLog.java      pure in-memory log. Entry{id,time,app,text}. type(s,app,now) / back(n,app,now) / backWord(app,now) / closeRun(); prune(now,ttlMs); remove(id); clear(); entries() (oldest first, copy, includes the open run); serialize() / parseOrNull() ("JHIST1" header, "time TAB app TAB text", \\ \n \r \t escaped); mergeOlder(); limits MAX_ENTRIES 2000, MAX_TOTAL_CHARS 300000, MAX_ENTRY_CHARS 500, IDLE_MS 120000, MAX_CHUNK 64 (longer single input = paste-like, not saved, ends the run).
+ hist/HistPolicy.java   decide(on,paused,skipSens,skipIncog,inputType,imeOptions,pkg,ownPkg,offApps) -> OK / OFF / PAUSED / OWN_APP / PASSWORD / SENSITIVE / INCOGNITO / APP_OFF; reasonText(); listed(apps,pkg) (separators , ; space newline); DAYS {1,3,7,30}, NAMES, DEF_LEVEL 2 (=7 days), ttlMs(level).
+ hist/HistInfo.java     all texts (status line, keep label, clear label, confirm dialog text, privacy lines).
+ HistStore.kt           the one process-wide store (like LearnStore). onField() from MgbIme.onStartInputView; type / back / backWord / enter / finish from MgbIme; pruneNow(); flush(); count(); entries(); remove(id); clearAll(ctx); lastReason(); isLoaded() / whenLoaded(cb); file typing_history_v1.txt (AtomicFile, background write, newest snapshot wins). Main thread only for the log.
+ HistCard.kt            the card in Data & Backup (DataPage.kt hook, section "Typing history").
+ MgbIme.kt hooks        histOk() = not password AND (not in a panel OR panel is emoji / numpad / symbols). typeText, commitWord, sgApply(del), onBackspace, onBackspaceWord, doEnter, onStartInputView (histFlushBuf + onField), onFinishInput (histFlushBuf + finish), onFinishInputView (flush), onUpdateSelection (histFlushBuf before the composing word is dropped).
+ BackupStore.kt         isSkipped() now also skips "hist_" (backup + restore). The history file is not in BackupPlan.FILES.
+ PrivacyPage.kt         +2 lines (HistInfo.privacyLine / privacySkipLine) and a "Typing history" size row.
+ prefs (all default shown): hist_on false, hist_ack false (confirm dialog already accepted), hist_days_lv 2, hist_skip_sens true, hist_skip_incog true, hist_pause false, hist_apps_off "" (package names, used by HistPolicy, no UI yet).
+ tests: tools/HistLogTest, HistPolicyTest, HistInfoTest. bash tools/run_tests.sh = 151/151 green. Kotlin NOT compiled (no network in that chat; see tools/KOTLIN_CHECK.txt to compile in a chat that has github access). PHONE NOT tested: use CHECKLIST.txt section "TYPING HISTORY (v0.20.0, part 1)".
+
+DECISIONS TO KEEP
+ - Real password fields are ALWAYS skipped (no switch): the Privacy page promises it. The owner's "optional switch" covers email, URL, number / phone fields.
+ - Jabra's own screens are never recorded (its search / dialogs / test box).
+ - Paste is never saved: clip / vault / text tools / formatter reach typeText() while a panel is open and are ignored; direct commitText paste paths never call the hooks; > 64 chars in one input is ignored.
+ - First ON shows a confirm dialog (HistInfo.confirmBody); after "Turn ON" hist_ack stays true. Restore / Backup never carry hist_*.
+ - OFF keeps old entries until the keep time removes them or the owner taps Clear (no silent delete). Pruning also runs while OFF.
+ - Data is plain text in the app-private folder (owner knows: anyone who unlocks the phone and opens Jabra can see it). Android Keystore lock / encryption = optional later, ASK FIRST.
+
+PART 2 PLAN - page "Typing history" (main app, same style as other pages: read AppHome.kt, AppPages.kt, typing/HomePlan.java, typing/PagePlan.java, AppRows.kt, SettingsGroups.kt for how a page / home tile is added; ChangedPlan / SectionPlan / SettingsIndex only if rows are added to the settings registry)
+ - New tile / page "Typing history" (+ a button "Open typing history" in HistCard). Data = HistStore.entries() (oldest first: show newest first).
+ - Sections by day: Today, Yesterday, then dates (local time). Each row: time, app, text. New pure helper typing-side class (e.g. hist/HistDays.java + HistDaysTest): day label, grouping, search match (case-insensitive, text + app), export text.
+ - Search box on top (the page's own search field is typed in Jabra's own app: it is never recorded because own package is skipped).
+ - Tap = copy to the clipboard (use the app's normal copy; the copied text then lands in clip history like any copy: tell the owner). Hold = delete ONE entry (HistStore.remove(id)); ask nothing for one entry but show a short Undo or a toast.
+ - "Clear all now" two-tap (reuse HistInfo.clearLabel / HistStore.clearAll).
+ - Export to .txt: reuse the clip export folder + FileProvider pattern (ClipExporter.kt, ClipFolder.kt, clip/ClipExport.java, file_paths.xml cache-path "exports"). No new permission.
+ - App name: store is the package name. Show PackageManager.getApplicationLabel when Android lets us see the package, else a cleaned package name. Do NOT add QUERY_ALL_PACKAGES (new permission = ask first).
+ - Empty state text when OFF: "Typing history is OFF" + a button to Data & Backup.
+PART 3 PLAN
+ - Per-app exclude: UI to add / remove packages in hist_apps_off (add helper add / remove to HistPolicy + tests); "Exclude this app" on an entry's hold menu; list of excluded apps with a remove button.
+ - Pause button on the keyboard (toolbar quick button or long-press; pref hist_pause already honoured live by HistStore.type()); small hint using HistStore.lastReason() + HistPolicy.reasonText() (e.g. "not saved here: password field").
+ - Polish: Health Check / Data page storage lines, settings search entries, HELP text, phone fixes from the part 1 checklist.
+ - Optional (ask first): Keystore lock for the page.
+
+KNOWN LIMITS / OBSERVATIONS
+ - Backspace only edits the run being typed: selection delete, cut, delete-line tools and "move cursor then backspace" are not followed (the entry can keep text that is gone, or lose the wrong tail). Bangla deletes are followed per code point (Android may delete a conjunct differently).
+ - Entries are runs: Enter, field / app change, 2 min idle, 500 chars end a run. Voice typing (system keyboard) is not captured.
+ - Stale text found, NOT changed: PrivacyInfo.permissionLines says password fields record no clipboard history, but v0.18.12 (clip_pwd, default ON) saves copies made in password fields. Ask the owner before changing the wording or the default.

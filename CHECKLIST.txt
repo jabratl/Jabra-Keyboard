@@ -1054,3 +1054,33 @@ v0.19.6 (dropdown plan S7) - final phone pass for ALL dropdown pills (S2-S6)
  [ ] Many Vault folders (7+) = Folder list scrolls; Settings app long list scrolls; near the bottom edge the list opens above.
  [ ] "Compact dropdown menus" OFF = every screen (clipboard, tray, select bar, export, Vault, editor, Settings lists) is the old one.
  [ ] Send me every problem as: screen + what you see (+ screenshot); one problem = one small FIX version.
+
+
+TYPING HISTORY (v0.20.0, part 1) - phone test
+ [ ] App icon screen > Data & Backup > section "Typing history": shows "Typing history: OFF (nothing is saved)". Privacy card says OFF too.
+ [ ] Type in any chat: nothing is saved while OFF (Typing history card says 0 entries after you reopen the page).
+ [ ] Tap "Typing history: OFF": a confirm window appears. Cancel = stays OFF. Turn ON = ON. Turning OFF then ON again shows no window.
+ [ ] ON: type "hello" in a notes app, press Enter, type "world": reopen Data & Backup = 2 entries.
+ [ ] Avro: type "ami valo achi" + space: the entry shows Bangla text (page 2 will show it; for now only the count changes).
+ [ ] Backspace: type "abc", backspace once, Enter: later page 2 shows "ab" (for now check the count only).
+ [ ] Password field, email field, browser address bar, number field: count does NOT grow (Skip switch ON). Skip switch OFF: email / URL / number grow, password still does not.
+ [ ] Incognito tab in Chrome: count does not grow (Skip incognito ON).
+ [ ] Paste a long text with the clipboard panel or long-press paste: count does not grow.
+ [ ] Keep for: tap = 1 / 3 / 7 / 30 days. Pause ON = nothing is saved. Clear typing history now = two taps, count 0.
+ [ ] Backup now, then Restore: Typing history stays as it was (a restore never turns it ON).
+
+TYPING HISTORY PAGE (v0.21.0, part 2) - phone test
+ [ ] Data & Backup > Typing history: a new button "Open typing history (N)". Tap = a full-screen page "Typing history" with Close.
+ [ ] OFF and no entries: the page says "Typing history is OFF" + button "Back to Data & Backup" (closes the page).
+ [ ] ON, type in a notes app: "hello" Enter "world" Enter. Open the page: 2 rows under "Today", newest first, each with time (24 h), app name and text.
+ [ ] Avro: "ami valo achi" + space: the row shows the Bangla text and it is readable.
+ [ ] Backspace: type "abc", backspace once, Enter: the row shows "ab".
+ [ ] App name: shows a real name for some apps, a cleaned package name (e.g. "Messaging") for others. Both are fine.
+ [ ] Search "hel": only rows with "hello". Search with the app name: finds that app's rows. A word with no hit: "Nothing found for ...". Clearing the box brings everything back. Typing in the search box does NOT add an entry (own app).
+ [ ] Tap a row: message "Copied ...". Paste somewhere: the text is there. Open the keyboard clipboard: the copy is in the clip history (expected).
+ [ ] Hold a row: it disappears and a bar "Entry deleted  [Undo]" shows. Undo = the row comes back in the same place. Waiting 6 s = the bar goes away.
+ [ ] "Clear typing history now" at the end: first tap = "Sure? Delete N entries" (goes back after 3 s), second tap = all gone, message "Cleared N entries.", page shows the empty state.
+ [ ] Export (share): share sheet opens, the .txt opens in a text app: header, "== Today ==", "HH:MM  App", the text indented. With a search active, only the shown rows are in the file.
+ [ ] Save to Downloads (Android 10+ or a chosen folder): message "Saved in Downloads: jabra_typing_history_....txt".
+ [ ] Close the page: the card shows the new count (e.g. after a delete / clear) without reopening Data & Backup.
+ [ ] Dark app theme: rows, search box, undo bar are readable. Rotate the phone with the page open: nothing crashes (the list may reload).

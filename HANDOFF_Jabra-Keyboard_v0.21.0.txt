@@ -1,0 +1,38 @@
+HANDOFF Jabra-Keyboard v0.21.0 - Typing history, PART 2 of 3 (the page). Paste this file at the start of the next chat. Rules of work: HANDOFF.txt section 0 (Banglish, patch do not rewrite, RULE 0, ask before new tracking / permission, max 1 question).
+Owner writes Banglish: reply in Banglish, short. Zip rule: name Jabra-Keyboard_v0_<X>_<Y>.zip (digits + underscores, e.g. Jabra-Keyboard_v0_22_0.zip), root folder Jabra-Keyboard-main/, ONLY changed / new files, CHANGELOG.txt first line must start with the new version, app/build.gradle.kts appVersionName bumped.
+NOTE: the v0.21.0 zip carried part 1 + part 2 together (every file changed since v0.19.9). If the owner uploaded it to GitHub, the repo now = v0.21.0.
+
+PLAN (agreed with owner, split in 3 chats)
+ PART 1 (DONE, v0.20.0) engine, capture hooks, switches, privacy text, tests. See HANDOFF_Jabra-Keyboard_v0.20.0.txt.
+ PART 2 (DONE here, v0.21.0) "Typing history" page.
+ PART 3 (next) per-app exclude list + Pause button on the keyboard + polish.
+
+PART 2 - WHAT EXISTS (read these files first)
+ hist/HistDays.java   pure rules for the page: dayNumber / dayLabel (Today, Yesterday, "Wed 11 Nov 2026") / timeText (24 h) / cleanPackage ("com.whatsapp" -> "Whatsapp") / appName(pkg, Labeler) / matches (all words, text OR package OR shown app name, case-insensitive) / group(oldestFirst, now, tz, query, labeler) -> days newest first / count / summaryLine / emptyTitle / emptyHelp / toasts / hintLine / openLabel / exportName / exportText (oldest first, "== day ==", "HH:MM  App", text indented). Interface Labeler { String label(String pkg); }.
+ HistPage.kt          the page: full-screen Dialog (same pattern as PracticePage), opened by HistPage.open(ctx) { onClose }. Status line, search box (debounce 250 ms), Export (share) + Save to Downloads (ClipExporter.share / saveToDownloads, no new permission), rows (tap = copy to clipboard, hold = delete one + Undo bar 6 s), "Show more" after 150 rows, Clear (two taps, 3 s), empty states, note about the export file. App name = PackageManager label in try / catch, else cleaned package name.
+ HistCard.kt          + button "Open typing history (N)" under the status line; the card refreshes when the page closes.
+ HistLog.java / HistStore.kt   + restore(entry) (Undo; same id, time order kept).
+ ClipExporter.kt      share() got an optional last parameter title (default "Export clips").
+ tests: tools/HistDaysTest (new, also tests HistLog.restore). bash tools/run_tests.sh = 152/152 green. Kotlin NOT compiled (no network in that chat; see tools/KOTLIN_CHECK.txt to compile in a chat that has github access, or look at the GitHub Actions result). PHONE NOT tested: CHECKLIST.txt section "TYPING HISTORY PAGE (v0.21.0, part 2)".
+
+DECISIONS TO KEEP (from part 1, unchanged)
+ - Real password fields are ALWAYS skipped (no switch). Jabra's own screens are never recorded. Paste is never saved. First ON shows a confirm dialog. Restore / Backup never carry hist_*. OFF keeps old entries until the keep time or Clear. Data = plain text in the app-private folder. Keystore lock = optional later, ASK FIRST.
+DECISIONS (part 2)
+ - No Home tile: the page opens from the button in the Data & Backup card (a new PagePlan id would touch tile order, Home tests, search groups). A tile can be added later (PagePlan.ORDER end + GROUPS + HomePlan/PersonalPlan tests) if the owner asks.
+ - No QUERY_ALL_PACKAGES: app names fall back to the cleaned package name when Android hides the app.
+ - Export file is plain text outside the private folder (the page says so); copy in cache/exports is cleaned by ClipExporter (10 files / 2 days).
+ - Tap copies to the system clipboard, so the text also lands in clipboard history (toast says so). Ask the owner if copying from this page should be kept out of clip history.
+
+PART 3 PLAN
+ - Per-app exclude: UI to add / remove packages in hist_apps_off (add helper add / remove to HistPolicy + tests); "Exclude this app" on an entry's hold menu (today hold = delete, so add a small menu or a second action: ASK the owner which); list of excluded apps with a remove button. Excluding an app should offer to delete its old entries (ask, do not delete silently).
+ - Pause button on the keyboard (toolbar quick button or long-press; pref hist_pause already honoured live by HistStore.type()); small hint using HistStore.lastReason() + HistPolicy.reasonText() (e.g. "not saved here: password field").
+ - Polish: Health Check / Data page storage lines, settings search entries (SettingsIndex) for the history switches, HELP text, phone fixes from the part 1 + part 2 checklists, maybe a Home tile.
+ - Optional (ask first): Keystore lock for the page.
+
+KNOWN LIMITS / OBSERVATIONS
+ - Backspace only edits the run being typed: selection delete, cut, delete-line tools and "move cursor then backspace" are not followed. Bangla deletes are followed per code point.
+ - Entries are runs: Enter, field / app change, 2 min idle, 500 chars end a run. Voice typing (system keyboard) is not captured.
+ - The page shows a snapshot: new typing in another app is visible after you close and reopen the page (the page is in front, so nothing is typed meanwhile).
+ - HistCard and the page both use HistStore.whenLoaded (one callback slot): the page overwrites the card's callback; the card refreshes on page close instead.
+ - Rotating the phone with the page open recreates the Activity; the dialog is closed with it (an Android "leaked window" log line is possible, no crash expected). NOT tested.
+ - Stale text found, NOT changed: PrivacyInfo.permissionLines says password fields record no clipboard history, but v0.18.12 (clip_pwd, default ON) saves copies made in password fields. Ask the owner before changing the wording or the default.

@@ -23,7 +23,7 @@ object ClipExporter {
     fun canSave(): Boolean = Build.VERSION.SDK_INT >= 29
     fun canSave(ctx: Context): Boolean = canSave() || ClipFolder.accessOk(ctx)   // v0.17.66 (R6): a chosen folder works on any Android version
 
-    fun share(ctx: Context, name: String, mime: String, bytes: ByteArray): String = try {
+    fun share(ctx: Context, name: String, mime: String, bytes: ByteArray, title: String = "Export clips"): String = try {   // v0.21.0 (H2): title is new (default = old text)
         val dir = File(ctx.cacheDir, DIR)
         dir.mkdirs()
         cleanup(dir)
@@ -36,7 +36,7 @@ object ClipExporter {
         send.putExtra(Intent.EXTRA_SUBJECT, name)
         send.clipData = ClipData.newRawUri(name, uri)
         send.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-        val chooser = Intent.createChooser(send, "Export clips")
+        val chooser = Intent.createChooser(send, title)
         chooser.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         ctx.startActivity(chooser)
         "Share sheet opened: $name"

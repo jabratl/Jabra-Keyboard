@@ -192,7 +192,7 @@ class MgbIme : InputMethodService() {
     /** v0.10.1 (G2): a tap on a suggestion: replace the word being typed by [text] (word + space). */
     private fun sgApply(text: String, del: Int, fromAvro: Boolean) {
         if (fromAvro) buf.setLength(0)   // typeText() below replaces the composing text
-        else if (del > 0) currentInputConnection?.deleteSurroundingText(del, 0)
+        else if (del > 0) { currentInputConnection?.deleteSurroundingText(del, 0); try { histBack(del) } catch (_: Throwable) { } }   // v0.20.0 (H1)
         typeText(text)
     }
 
@@ -202,7 +202,15 @@ class MgbIme : InputMethodService() {
         try { sg.schedule() } catch (_: Throwable) { }   // v0.10.1 (G2): only restarts a 50 ms timer
         try { pendingKind = com.mgb.keyboard.typing.AutoCapGate.kindOf(s) } catch (_: Throwable) { pendingKind = com.mgb.keyboard.typing.AutoCapGate.E_JUMP }   // v0.6.1
         currentInputConnection?.commitText(s, 1)
+        try { histType(s) } catch (_: Throwable) { }   // v0.20.0 (H1): typing history (does nothing unless pref hist_on = ON and the field is allowed)
     }
+
+    // v0.20.0 (H1) typing history hooks. Only text the person TYPED is passed on: letters, symbols, emoji, number pad, suggestion taps, Avro / Probhat words.
+    // Pasted clips, vault, text tools and formatter reach typeText() while their panel is open (inPanel) and are NOT passed on; direct commitText paste paths never call these.
+    private fun histOk(): Boolean = !pwdField && (!inPanel || shownPanel == "emoji" || shownPanel == "numpad" || shownPanel == "symbols")
+    private fun histType(s: String) { if (histOk()) HistStore.type(s) }
+    private fun histBack(n: Int) { if (histOk()) HistStore.back(n) }
+    private fun histFlushBuf() { if (buf.isNotEmpty()) histType(toBangla(buf.toString())) }   // an Avro word still being typed stays in the field when the cursor / field changes
 
     private fun letter(c: Char): Button {
         val b = key(c.toString(), 1f) { onLetter(c) }
@@ -459,6 +467,7 @@ class MgbIme : InputMethodService() {
 
     override fun onStartInputView(info: EditorInfo?, restarting: Boolean) {
         super.onStartInputView(info, restarting)
+        try { histFlushBuf() } catch (_: Throwable) { }   // v0.20.0 (H1): the word still being typed in the OLD field (decided by the old field's rules)
         refreshEnterIcons(info)   // v0.17.70 (S4)
         try { fixLangState() } catch (_: Throwable) { }   // v0.17.62 (R2): English / a layout switched off in settings while it was active
         try { val pk = info?.packageName; if (pk != pcLastPkg) { if (pcLastPkg != null) pcResetMods(); pcLastPkg = pk } } catch (_: Throwable) { }   // v0.17.49 (PC1): app (package) change = no stuck Ctrl
@@ -492,6 +501,7 @@ class MgbIme : InputMethodService() {
             try { shiftSt.reset(); autoCapUpdate() } catch (_: Throwable) { }   // v0.0.9: new field = shift/caps off, then sentence-start rule
             try { refreshLetters() } catch (_: Throwable) { }   // v0.0.4: Probhat labels follow the field type
         } catch (_: Throwable) { latinOnly = false }
+        try { HistStore.onField(this, prefs, info, restarting) } catch (_: Throwable) { }   // v0.20.0 (H1): may this field be recorded? (also removes expired entries)
         try { autoProfile(info?.packageName) } catch (_: Throwable) { }   // v0.10.19 (W6.2): auto-profile per app (pref ap_on, default OFF)
         try { checkRule() } catch (_: Throwable) { }   // v0.17.17 (K13): layout rule per app / field type
     }
@@ -532,6 +542,7 @@ class MgbIme : InputMethodService() {
     override fun onFinishInputView(finishingInput: Boolean) {
         super.onFinishInputView(finishingInput)
         try { UiKit.closeSelect() } catch (_: Throwable) { }   // v0.19.6 (S7): an open dropdown list never stays on screen after the keyboard closes
+        try { HistStore.flush() } catch (_: Throwable) { }   // v0.20.0 (H1): save typing history when the keyboard hides
         pcResetMods()   // v0.17.49 (PC1): Ctrl must not stay on after the keyboard closes
     }
 
@@ -545,6 +556,7 @@ class MgbIme : InputMethodService() {
         super.onFinishInput()
         pcResetMods()   // v0.17.49 (PC1)
         try { sg.flushLearned() } catch (_: Throwable) { }   // v0.10.2 (G3.1)
+        try { histFlushBuf(); HistStore.finish() } catch (_: Throwable) { }   // v0.20.0 (H1): last word, end the run, save (before pwdField is reset)
         buf.setLength(0)
         pwdField = false   // v0.16.15 (E3): was stuck on after a password field = text copied in other apps was never saved
     }
@@ -557,6 +569,7 @@ class MgbIme : InputMethodService() {
         try {
             // user moved the cursor / tapped elsewhere: forget the word being typed
             if (buf.isNotEmpty() && (candidatesStart < 0 || newSelStart != candidatesEnd || newSelEnd != candidatesEnd)) {
+                try { histFlushBuf() } catch (_: Throwable) { }   // v0.20.0 (H1): the word stays in the field (finishComposingText below)
                 buf.setLength(0)
                 currentInputConnection?.finishComposingText()
             }
@@ -571,6 +584,7 @@ class MgbIme : InputMethodService() {
 
     /** Enter key: if the app asked for an action (Send / Search / Go / Next / Done) do that, else a normal Enter. Setting "enter_action". */
     private fun doEnter() {
+        try { HistStore.enter() } catch (_: Throwable) { }   // v0.20.0 (H1): Enter ends the entry
         try {
             if (prefs.bool("enter_action", true)) {
                 val a = com.mgb.keyboard.typing.EnterAction.decide(currentInputEditorInfo?.imeOptions ?: 0)
@@ -1445,12 +1459,13 @@ class MgbIme : InputMethodService() {
         val word = toBangla(buf.toString())
         buf.setLength(0)
         ic?.commitText(word, 1)
+        try { histType(word) } catch (_: Throwable) { }   // v0.20.0 (H1)
     }
 
     /** v0.3.2: long hold on Backspace = delete one whole word per tick (setting bs_word). Avro word being typed = cleared at once. */
     private fun onBackspaceWord() {
         if (buf.isNotEmpty()) { buf.setLength(0); currentInputConnection?.setComposingText("", 1) }
-        else InputSafe.deleteWord(currentInputConnection)
+        else { InputSafe.deleteWord(currentInputConnection); try { if (histOk()) HistStore.backWord() } catch (_: Throwable) { } }   // v0.20.0 (H1)
     }
 
     private fun onBackspace() {
@@ -1461,6 +1476,7 @@ class MgbIme : InputMethodService() {
             if (buf.isEmpty()) currentInputConnection?.setComposingText("", 1) else renderWord()
         } else {
             InputSafe.backspace(currentInputConnection)   // v0.3.1: same DEL event; delete-text fallback if the app refuses it
+            try { histBack(1) } catch (_: Throwable) { }   // v0.20.0 (H1)
         }
     }
 

@@ -40,13 +40,15 @@ object PrivacyPage {
             body.addView(head("Settings now"))
             body.addView(line(PrivacyInfo.clipLine(prefs.bool("clip_on", true), prefs.int("clip_expire", 0), prefs.bool("clip_sens", false))))
             body.addView(line(PrivacyInfo.learnLine(prefs.bool("learn_on", false))))
+            body.addView(line(com.mgb.keyboard.hist.HistInfo.privacyLine(prefs.bool("hist_on", false), prefs.bool("hist_pause", false), prefs.int("hist_days_lv", com.mgb.keyboard.hist.HistPolicy.DEF_LEVEL))))   // v0.20.0 (H1)
+            body.addView(line(com.mgb.keyboard.hist.HistInfo.privacySkipLine(prefs.bool("hist_skip_sens", true), prefs.bool("hist_skip_incog", true))))
             body.addView(head("Stored on this phone"))
             val clipBytes = prefBytes("clips_v1") + prefBytes("clip_meta_v1")
             val sizes = longArrayOf(
-                fileLen("vault_v1.json"), fileLen("profiles_v1.json"), clipBytes, fileLen("learn_v1.txt"),
+                fileLen("vault_v1.json"), fileLen("profiles_v1.json"), clipBytes, fileLen("learn_v1.txt"), fileLen("typing_history_v1.txt"),
                 fileLen("emoji_user_v1.txt"), dirLen(File(ctx.filesDir, "backups")),
                 try { File(ctx.applicationInfo.dataDir, "shared_prefs/jabra.xml").let { if (it.exists()) it.length() else -1L } } catch (_: Throwable) { -1L })
-            val names = arrayOf("Vault", "Profiles", "Clipboard history", "Learned words", "Downloaded emoji list", "Backup copies in the app", "Settings file")
+            val names = arrayOf("Vault", "Profiles", "Clipboard history", "Learned words", "Typing history", "Downloaded emoji list", "Backup copies in the app", "Settings file")
             for (i in names.indices) body.addView(line(PrivacyInfo.storageLine(names[i], sizes[i])))
             body.addView(line("Total: " + PrivacyInfo.bytes(PrivacyInfo.total(sizes))))
             val cl = try { ClipList.parse(prefs.str("clips_v1", "")) } catch (_: Throwable) { ClipList() }
