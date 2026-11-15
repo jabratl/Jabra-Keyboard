@@ -1,0 +1,112 @@
+HANDOFF Jabra-Keyboard v0.19.0 - PLAN: compact dropdown menus (Clipboard, Vault, Settings)      status: S1 DONE (v0.19.0); next = S2
+Written 2026-11-15. Language of the owner: Bangla / Banglish (reply in Banglish, short). Assumption: owner wants fewer, smaller controls and NO lost feature.
+
+=====================================================================
+0. KICKOFF LINE FOR THE NEXT CHAT (copy this, attach the newest project zip + this file)
+   "Jabra-Keyboard dropdown plan: do step S2 only. Read HANDOFF_Jabra-Keyboard_v0.19.0_DropdownPlan.txt. Patch only, changed files in one zip, update CHANGELOG + HANDOFF, stop before 85% of the session."
+   After a step: tick [x] below, bump the file name (HANDOFF_Jabra-Keyboard_v<new version>_DropdownPlan.txt), kickoff line = next step.
+=====================================================================
+
+1. DECISION (which of the 4 styles, and why)
+You listed: Inline Text, Overflow (kebab), Split Button, Ghost / Pill Select.
+CHOSEN = ONE new part "PillSelect" (Ghost / Pill look + Inline Text look in Borderless theme). Per place:
+ a) PillSelect  = every single choice that today is a chip row or a cycle button: Clipboard filter (All / Pinned / Text / Links / Numbers), sort, view, Vault folder + kind, Export scope + pack, Settings lists with 5+ options or long names.
+    Why: the CURRENT value stays visible ("Newest v"), one control instead of 3-5 chips, ~40 dp high, works in every theme. A bare Inline Text is too small to hit (below the 40 dp MIN_TOUCH rule), so it is used only as the look in the Borderless theme (no fill, just text + v).
+ b) Overflow (the existing "..." tray) = ACTIONS only (Manage, Deleted n, Export all, Clear). Never for choices: it hides the current state.
+ c) Split Button = ONE place: select-mode bar "Paste v" (Paste = main tap, v = Paste 1 line / To Vault / Export). Nowhere else (not needed).
+ d) Keep as they are: Switch rows (on/off), segments for 2-4 SHORT options (RowPlan.segmented rule), steppers (- value +), text rows, big action buttons.
+Nothing is deleted: every option stays reachable, only the place changes. Safety: pref ui_pill (default ON) = OFF gives the old chips back (added in S2).
+
+2. PROJECT SUMMARY
+Android keyboard (Kotlin + a little Java), package com.mgb.keyboard, app id as in app/build.gradle.kts, appVersionName now 0.18.12 (this plan starts at 0.19.0). Languages EN + Bangla (Avro, Probhat, phonetic), panels: Clipboard, Vault (saved texts / notes / glossary), Formatter, Text tools, Emoji, GIF, Toolbar, Theme studio, Layout editor, Settings app (SettingsActivity + pages), Data & Backup, Privacy.
+Build: GitHub Actions (owner uploads patch zip to GitHub). In chats the Kotlin is NOT compiled unless the network is on (see tools/KOTLIN_CHECK.txt: kotlinc + android.jar from github.com); pure Java tests: `bash tools/run_tests.sh` (needs the javac shim in KOTLIN_CHECK.txt; currently 147/147 green).
+
+3. FILE MAP (only what this plan touches; app/src/main/java/com/mgb/keyboard/)
+ UiKit.kt (~340 lines)      panel parts: btn(), chip(), pillSelect() + closeSelect() (NEW v0.19.0), noteText(), sectionTitle(), cardBackground(), row(), header(); base()/capFont()/plain() private. Every fun has try/catch -> plain Button on error.
+ JabraTokens.kt (91)        R_SM 9, R_MD 12, R_LG 16, R_CARD 10 (radius dp); S1 4, S2 8, S3 12, S4 16, GAP 2 (dp); T_NOTE 11, T_BTN 12, T_BODY 14, T_HEAD 16, T_TITLE 22 (sp); ACCENT 0xFF2271B1, ACCENT_SOFT 0xFF9CC3E6, WARN 0xFFD84315, DANGER 0xFFAA0000, ON_ACCENT_SOFT 0xFF1B1B1B; Classic: bg DDDDDD, text 222222, note 555555, card F7F7F7, card picked DCE9FA, stroke C8C8C8. Helpers: dp(), withAlpha(), isClassic(p), isDark(p) (theme bg luminance < 0.4), panelBg/panelText/note/btnFill/btnText/funcFill/cardFill/cardStroke/cardText/dimText/rowPicked/cardNote/onCardDim.
+ JabraThemes / JabraLook      themes: Classic, Jabra look, Borderless, Custom (Theme studio). btn() goes through JabraThemes.style() -> JabraLook.shape(), so a new control built on btn()/base() follows every theme for free.
+ Glyphs.kt (98)             Glyphs.dress(view) turns "check / x / magnifier / undo / sort / v" signs in a label into small DRAWN icons (icons_on pref); Glyphs.relabel(view, text) = change label and dress again (NEVER set b.text = "magnifier ..." directly). TAIL sign = the small down triangle. A label with words keeps its words. LESSON (v0.18.7): do not also call JabraIcons.putThemed on a button with words (draws a 2nd icon and removes the word).
+ ClipboardFeature.kt (1596) ClipStore (prefs clips_v1, clip_meta_v1) + ClipPanel. Key places: makeNew() = new look header (top row: ABC | Clipboard n | Search | Add | "..." ), chips row (filter All/Pinned/Text/Links/Numbers; hidden when select+More or "..." tray is open), "..." tray (ovOpen; ovCols=5, ovPill(); rows Sort / View / Undo / Do), selectBarNew() (select mode bottom bar + More tray: Select / Change / Send rows via menuCard / menuRow / menuPill, 3 columns), export screen (scope chips Selected/All/Pinned with tick, pack chips One file / ZIP / TAR, option chips Details / Format / Skip codes), itemRowTidy() list row, fitList. sz(dp)/fs(sp) scale by pref clip_btn_pct. t40 = PanelLayout.MIN_TOUCH = 40 dp.
+ ClipCards.kt (339)         Cards view card(); link cards: one line + middle ellipsis (v0.18.11).
+ ClipBar.kt / ClipLook.kt   ClipBar.func / on / danger = look of special buttons; ClipLook.tag = kind tag ("Link").
+ typing/SelectPlan.java    (NEW v0.19.0) pure rules of the pill + popup (tested by tools/SelectPlanTest.java).
+ typing/ClipFilter.java     filter kinds + isLink; typing/ClipKind etc: pure, tested in tools/*Test.java.
+ VaultPanel.kt (1054)       Vault: folder chips row (scroll sideways, "All", "Unfiled", folders, with counts, pref vault_dest remembers destination), kind chips row (All / Snippets / Notes / Glossary with counts, kindF), search, sheet (sheetId), editor with buttons "kind v" (cycles VaultList.nextKind) and "folder v" (line ~938). btn() = UiKit.btn with old fallback btnOld(). VaultStore.kt = data (filesDir/vault_v1.json).
+ AppRows.kt (400)           Settings page rows: switchRow, choiceRow (segments, or choiceList = value chip with v + android.app.AlertDialog when RowPlan.segmented() is false), chipRow (tap CYCLES the value = poor for long lists), textRow, stepperRow, decorate (changed dot + reset), sectionHeader, styleAction, confirmAction. Colours/sizes from AppTokens (S1..S4, ROW_MIN, TOUCH, T_LABEL) + AppUi.
+ SettingsGroups.kt (798)    builders toggle() / level() / stepper() / group(); level() picks choiceRow (segments) or chipRow by ChangedPlan.useSegments(count, totalChars). Registry of every pref: typing/SectionPlan.java (key lists per section), typing/ChangedPlan.java (sub-group names, e.g. "Privacy"), typing/SettingsIndex.java (help line per key, MUST be <= 90 chars, tests HelpPlanTest / SettingsIndexTest), CHECKLIST.txt (phone checks).
+ PopupWindow users (proof it works in the keyboard window): ToolbarQuick.kt (line ~119, showAtLocation anchored to a button, ToolTip.inScreen(p) keeps it on screen), LpBar.kt, KeyPopup.kt, SuggestStrip.kt, ToolTip.kt. NOTE: PopupWindow(..., focusable=false) + showAtLocation(anchorView, ...) is the pattern used.
+ Settings app is a normal Activity: AlertDialog / PopupMenu / ListPopupWindow are allowed THERE; NOT inside the keyboard window.
+
+4. DESIGN RULES (found by audit; follow them, no new colours / fonts)
+ - Colours only from JabraTokens / JabraThemes (never hard-coded), dark/light by isDark(p); selected = ACCENT family, pinned = gold border (clips), danger = DANGER, state is never colour alone (drawn tick for the current item, same as Details / Format chips).
+ - Radius R_SM 9 for pills (same as keys in Jabra look); popup list R_MD 12. Spacing S1/S2/S3 = 4/8/12 dp, margin around panel buttons GAP 2 dp.
+ - Text: keyboard panels T_BTN 12 sp via fs(); app pages T_BODY 14 / T_LABEL; notes T_NOTE 11. System font (no custom font). Labels may be long in Bangla: single line, ellipsize END, max width = 45% of the row.
+ - Touch: min 40 dp high (PanelLayout.MIN_TOUCH, scaled by clip_btn_pct through sz()); pills in one row share width by weight.
+ - Themes: Classic / Jabra look = soft pill (key colour, light stroke); Borderless = NO fill, text + v only (this is the "Inline Text" look); Custom = follow Theme studio like btn().
+ - Icons: label + " v" through Glyphs.dress / Glyphs.relabel (icons_on pref OFF = plain text sign). A pill ALWAYS shows the current value, never a fixed word.
+ - Popup in the keyboard: PopupWindow (non focusable) above or below the pill, kept on screen, max 6 visible rows then scroll, closes on pick / outside tap / panel change / Back. Row height 40 dp, current item ticked. If the popup cannot show (any Throwable): fallback = the pill CYCLES the value on tap (never a dead control).
+ - Breakpoints: no CSS. Phones 360 dp wide are the minimum; landscape keeps the same rows (panel height is limited, so pills must not wrap to two lines); large font / clip_btn_pct 70-140 must not clip text.
+ - Every new function: try { } catch (_: Throwable) { fallback }. No new permission, no storage format change, no network.
+
+5. VERSION + CHANGELOG CONVENTION
+ - build.gradle.kts: val appVersionName = "0.19.x". One version per step (S1 = 0.19.0 (done), S2 = 0.19.1 ...). Newest on TOP of CHANGELOG.txt, format: "v0.19.x - NEW/MODIFY/FIX: title" then lines: SEEN/WHY, What you get, Code (files), BROKE, TESTED here / NOT tested, Rollback (files to restore).
+ - Handoff file per version: HANDOFF_Jabra-Keyboard_v<ver>_DropdownPlan.txt (delete the previous one inside the zip folder you work in, keep older ones on GitHub). Old plan files: HANDOFF_Jabra-Keyboard_v0.18.12.txt (clipboard review parts 1-5 + password toggle), PLAN_CLIP_V2.txt, HANDOFF_CLIP_V2.txt (design rules of Clipboard V2).
+ - New pref = register in SectionPlan + ChangedPlan + SettingsIndex (help <= 90 chars) + toggle in SettingsGroups, then run tests (HelpPlanTest checks the length).
+ - Output zip: ONLY changed / new files with exact repo paths (app/..., tools/..., CHANGELOG.txt, HANDOFF...txt), name Jabra-Keyboard_v<ver>_patch.zip. Owner extracts over the repo and uploads to GitHub.
+
+6. STEP PLAN  (size = % of one chat session; every step leaves the app working; hard stop 90%, aim to finish by 85%)
+
+[x] S1  BUILD   size S (~25%)   v0.19.0   Goal: the PillSelect part exists and is tested, but no screen uses it yet.
+      Add:     typing/SelectPlan.java (pure: label text "value v", clamp(index), visible rows max 6, popup x / y / width / flip-up math for a given anchor + screen, "current item" tick text), tools/SelectPlanTest.java (+ register in tools/run_tests.sh the same way as other tests).
+               UiKit.kt: fun pillSelect(ctx, p, names: () -> Array<String>, cur: () -> Int, hDp, weight, feedback, onPick: (Int)->Unit): Button   (look per theme rules above; tap = popup list; fallback = cycle) and a private popup builder (PopupWindow, ToolTip.inScreen style).
+      Modify:  UiKit.kt only (+ build.gradle.kts, CHANGELOG, HANDOFF).
+      Read-only context: JabraTokens.kt, Glyphs.kt (relabel), ToolbarQuick.kt (PopupWindow pattern), ToolTip.kt (inScreen), typing/PanelLayout.java.
+      Depends: none.  Design note: look = Jabra rules in section 4; do NOT call JabraIcons.putThemed on it.
+      Checks: run_tests (all green + new test), bracket balance of UiKit.kt, Kotlin compile if network is on. Phone: nothing visible changes (safe release).
+      RESULT (v0.19.0, done): typing/SelectPlan.java + tools/SelectPlanTest.java (148/148 green); UiKit.pillSelect(ctx, p, title, names: () -> Array<String>, cur: () -> Int, hDp = 32, weight = 0f, feedback, onPick: (Int) -> Unit): Button and UiKit.closeSelect(). Popup = PopupWindow(box, w, h, false) + ToolTip.inScreen, outside tap via touch interceptor ACTION_OUTSIDE, closes when the pill detaches, fallback = cycle. Row look: 40 dp, current row bold + JabraTokens.rowPicked + tick (Glyphs.dress), popup bg = JabraTokens.panelBg, stroke ink 25%, radius R_MD. NOT compiled in chat (no network) and popup placement NOT seen on a phone: S2 must check both first; if GitHub build is red, fix UiKit.kt first (small).
+      HOW TO USE in S2: val pill = UiKit.pillSelect(ctx, pf, "Sort", { sortNames }, { prefs.int("clip_sort", 0) }, t40, 1f, { v -> host.feedback(v) }) { i -> prefs.setInt("clip_sort", i); refresh() }  - add it to a row with row.addView(pill); call UiKit.closeSelect() at the start of refresh() / reset() of the panel.
+
+[ ] S2  MODIFY  size M (~40%)   v0.19.1   Goal: Clipboard header = ONE row of pills: Filter v | Sort v | View v (replaces the chips row; Sort + View leave the "..." tray).
+      Modify:  ClipboardFeature.kt (makeNew chips row, "..." tray rows Sort / View), SettingsGroups.kt + typing/SectionPlan.java + ChangedPlan.java + SettingsIndex.java (new pref ui_pill, toggle "Compact dropdown menus", default ON; OFF = old chips + old tray rows).
+      Read-only: ClipFilter.java (filter kinds, counts), ClipMeta (SORT_NAMES), pref keys clip_sort / clip_view / clip_order, typing/ClipOrder.
+      Depends: S1.  Design note: filter pill shows "Pinned 21" style counts inside the popup rows; header count "Clipboard n" stays; when "..." tray is open the pill row may stay visible (it is only one row now, v0.18.8 hid the chips for room).
+      Checks: tests, every old filter / sort / view still reachable (list them in CHANGELOG), phone: pick each value, search + select mode still work, ui_pill OFF = exactly the old screen.
+
+[ ] S3  MODIFY  size M (~35%)   v0.19.2   Goal: slim "..." tray + select-mode bar.
+      Modify:  ClipboardFeature.kt (ovOpen block: rows become Undo v pill + one row of actions Manage / Deleted n / Export all / Clear; selectBarNew: SPLIT BUTTON "Paste v" = Paste (tap) + chevron menu with Paste 1 line / To Vault / Export; Change row (Edit / Merge / Unpin) and Select (All / None) stay as small buttons or move into one "Edit v" pill if it saves a row).
+      Read-only: ClipTrash.kt (QUICK values, MAX_LIMIT), HoldSelect, ClipSelect state (sel.*), PLAN_CLIP_V2.txt.
+      Depends: S1, S2 (ui_pill).  Checks: Undo values Off / 10 / 30 / 50 / 100 all selectable, Pin / Delete / Paste still work on the selected clips, select + More tray shows more list rows than before.
+
+[ ] S4  MODIFY  size S (~25%)   v0.19.3   Goal: Export screen uses pills.
+      Modify:  ClipboardFeature.kt (export screen: scope chips -> Scope v pill (Selected n / All n / Pinned n), pack chips -> Pack v pill (One file / ZIP / TAR); Details / Format / Skip codes stay as 3 tick chips; Save buttons unchanged; folder name text from v0.18.10 stays).
+      Read-only: ClipExporter.kt, ClipFolder.kt (nameOf), clip/ClipExport.java.
+      Depends: S1, S2.  Checks: export One file / ZIP / TAR, all 3 scopes, Rename, Save vs Share still work; screen is shorter (no scroll at 360 dp).
+
+[ ] S5  MODIFY  size M (~40%)   v0.19.4   Goal: Vault = Folder v + Kind v pills on ONE line (+ search), editor uses the same pills.
+      Modify:  VaultPanel.kt (folder chips row + kind chips row -> two pills; keep counts in popup rows, keep vault_dest memory; editor "kind v" and "folder v" buttons -> pillSelect instead of cycling nextKind; "New folder" stays one item at the end of the folder popup if it exists today).
+      Read-only: VaultList.kt (kinds, countKind, folders, countIn), VaultStore.kt, pref vault_dest.
+      Depends: S1 (+ ui_pill from S2).  Checks: All / Unfiled / every folder reachable, kind All / Snippets / Notes / Glossary, search, select mode, move to folder, many folders (scroll in popup), long Bangla folder names ellipsize.
+      If the file is too big for one chat: split S5a = list header, S5b = editor.
+
+[ ] S6  MODIFY  size M (~35%)   v0.19.5   Goal: Settings app lists use the same pill (no cycling, no heavy dialog).
+      Modify:  AppRows.kt (choiceList: AlertDialog -> inline PillSelect with ListPopupWindow / PopupMenu look from section 4; chipRow cycling -> pill; segments stay for 2-4 short options), typing/RowPlan.java + ChangedPlan.useSegments if the 4-option rule changes (tests).
+      Read-only: SettingsGroups.kt level(), AppUi.kt / AppTokens, AppSearch.kt (settings search must still find + jump to rows), AppRows.decorate (changed dot + reset), typing/RowPlan.java.
+      Depends: S1.  Checks: changed-dot + reset still work on a pill row, search finds the row, long option names (clip sort, expire, order) readable, TalkBack text "title: value".
+
+[ ] S7  FIX/POLISH size S (~20%) v0.19.6   Goal: finish + safety.
+      Modify:  small fixes found on the phone after S2-S6, CHECKLIST.txt (new phone checks), edge cases: clip_btn_pct 70 / 140, landscape, light + dark + Borderless + Custom, icons_on OFF, popup near the screen edge, Back key closes popup, panel switch closes popup.
+      Depends: S2-S6 tested by the owner.  Checks: all tests, handoff final.
+
+7. STANDING RULES
+ - PATCH ONLY. Never rewrite a file; never touch code outside the step's file list. Changed / new files only in the zip.
+ - ONE step per chat. If a step runs past ~85% of the session: stop at a working point, ship what is done, write the rest into the handoff as the next step (hard stop 90%).
+ - Planning vs build: a step must leave the app working and every old capability reachable (ui_pill OFF = old UI until S7).
+ - Everything in try/catch, fallbacks, no new permission / storage format.
+ - Run `bash tools/run_tests.sh`; check bracket balance of every edited Kotlin file vs the old copy; if network is ON, run the Kotlin check in tools/KOTLIN_CHECK.txt. Never claim "compiled" without that.
+ - New prefs are registered in 3 registry files + tests (section 5). Help text <= 90 chars.
+ - CHANGELOG entry + HANDOFF update for EVERY step. Reply to the owner in Banglish, short: what changed, check status, phone test steps.
+ - Privacy: do not log or send clip / vault text anywhere.
+
+8. OPEN POINTS (not blocking, owner may change later)
+ - Popup vs in-panel tray: plan = PopupWindow (does not push the list down). If the phone test of S2 shows it is cut off by the keyboard window, switch the keyboard-side popup to an in-panel tray (like the "..." tray) inside UiKit only; screens do not change.
+ - Pinned section collapse / bulk To Vault, Prompt Slots, Auto Format, Bangla Doctor, clip-format backup gap: separate ideas, not part of this plan.

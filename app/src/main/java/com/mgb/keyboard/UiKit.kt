@@ -10,6 +10,7 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import com.mgb.keyboard.typing.LookColors
 import com.mgb.keyboard.typing.PanelSpec
+import com.mgb.keyboard.typing.SelectPlan
 
 /**
  * v0.6.3 UiKit (S4): ready-made panel parts, so panels do not each keep a private btn() copy.
@@ -155,6 +156,136 @@ object UiKit {
             r.addView(t)
         } catch (_: Throwable) { }
         return r
+    }
+
+    // ---- v0.19.0 (dropdown plan S1): PillSelect. Nothing calls it yet (S2+ move the screens over; pref ui_pill comes with S2). ----
+
+    @Volatile private var openSelect: android.widget.PopupWindow? = null
+
+    /** Closes the dropdown list that is open (if any). Panels call it when they are replaced. Never throws. */
+    fun closeSelect() { try { openSelect?.dismiss() } catch (_: Throwable) { }; openSelect = null }
+
+    /**
+     * Compact dropdown: ONE pill that shows the CURRENT value + a small down triangle ("Newest v"). Tap = a list pops up (max 6 rows, then it scrolls,
+     * current row ticked); pick = onPick(index) and the pill shows the new value. Look = btn() look of the theme (Classic / Jabra look = soft key-coloured pill,
+     * Borderless = text + triangle only, Custom = Theme studio colours). weight > 0 = equal share in a row, 0 = wrap content.
+     * title = spoken name for TalkBack ("Sort: Newest"). names / cur are functions so the pill always reads the live value.
+     * If the list cannot be shown (any problem) a tap CYCLES to the next value, so the control is never dead.
+     */
+    fun pillSelect(
+        ctx: Context, p: JabraPrefs, title: String, names: () -> Array<String>, cur: () -> Int,
+        hDp: Int = 32, weight: Float = 0f, feedback: ((View) -> Unit)? = null, onPick: (Int) -> Unit
+    ): Button {
+        return try {
+            val b = base(ctx, "", weight, hDp, feedback) { btn -> showSelectList(ctx, p, btn, title, names, cur, feedback, onPick) }
+            b.textSize = JabraTokens.T_BTN
+            capFont(ctx, b, JabraTokens.T_BTN)
+            try { JabraThemes.style(p, b) } catch (_: Throwable) { }
+            val side = JabraTokens.dp(ctx, 10)
+            b.setPadding(side, 0, side, 0)
+            b.maxLines = 1
+            b.ellipsize = android.text.TextUtils.TruncateAt.END
+            paintPill(b, title, names, cur)
+            b
+        } catch (_: Throwable) {
+            val b = plain(ctx, "", { })
+            try { b.text = SelectPlan.label(names(), cur()); b.setOnClickListener { try { onPick(SelectPlan.next(cur(), names().size)); b.text = SelectPlan.label(names(), cur()) } catch (_: Throwable) { } } } catch (_: Throwable) { }
+            b
+        }
+    }
+
+    private fun paintPill(b: Button, title: String, names: () -> Array<String>, cur: () -> Int) {
+        try {
+            val n = names()
+            Glyphs.relabel(b, SelectPlan.label(n, cur()))
+            b.contentDescription = SelectPlan.describe(title, n, cur())
+        } catch (_: Throwable) { }
+    }
+
+    private fun showSelectList(
+        ctx: Context, p: JabraPrefs, anchor: Button, title: String, names: () -> Array<String>, cur: () -> Int,
+        feedback: ((View) -> Unit)?, onPick: (Int) -> Unit
+    ) {
+        val n = try { names() } catch (_: Throwable) { return }
+        if (n.size < 2) return   // nothing to choose from
+        fun pick(i: Int) { try { onPick(i) } catch (_: Throwable) { }; paintPill(anchor, title, names, cur) }
+        try {
+            closeSelect()
+            val dm = ctx.resources.displayMetrics
+            val rowPx = JabraTokens.dp(ctx, com.mgb.keyboard.typing.PanelLayout.MIN_TOUCH)
+            val pad = JabraTokens.dp(ctx, JabraTokens.S3)
+            val tickRoom = JabraTokens.dp(ctx, 24)
+            val now = SelectPlan.clamp(cur(), n.size)
+            val ink = JabraTokens.panelText(p)
+            val paint = android.graphics.Paint()
+            paint.textSize = android.util.TypedValue.applyDimension(android.util.TypedValue.COMPLEX_UNIT_SP, JabraTokens.T_BTN, dm)
+            paint.typeface = Typeface.DEFAULT_BOLD
+            var maxText = 0f
+            val col = LinearLayout(ctx)
+            col.orientation = LinearLayout.VERTICAL
+            for (i in n.indices) {
+                val r = TextView(ctx)
+                r.textSize = JabraTokens.T_BTN
+                capFont(ctx, r, JabraTokens.T_BTN)
+                r.setTextColor(ink)
+                r.gravity = android.view.Gravity.CENTER_VERTICAL
+                r.maxLines = 1
+                r.ellipsize = android.text.TextUtils.TruncateAt.END
+                val isNow = i == now
+                r.setPadding(if (isNow) pad else pad + tickRoom, 0, pad, 0)
+                if (isNow) { r.setTypeface(r.typeface, Typeface.BOLD); r.setBackgroundColor(JabraTokens.rowPicked(p)) }
+                r.text = SelectPlan.rowText(n[i], isNow)
+                Glyphs.dress(r)
+                r.contentDescription = n[i] + (if (isNow) ", selected" else "")
+                r.layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, rowPx)
+                r.setOnClickListener {
+                    try { feedback?.invoke(anchor) } catch (_: Throwable) { }
+                    closeSelect()
+                    pick(i)
+                }
+                col.addView(r)
+                val w = paint.measureText(n[i])
+                if (w > maxText) maxText = w
+            }
+            val content: View = if (SelectPlan.scrolls(n.size)) { val sv = android.widget.ScrollView(ctx); sv.addView(col); sv } else col
+            val box = android.widget.FrameLayout(ctx)
+            val bg = GradientDrawable()
+            bg.setColor(JabraTokens.panelBg(p) or (0xFF shl 24))
+            bg.setStroke(JabraTokens.dp(ctx, 1), JabraTokens.withAlpha(ink, 0x40))
+            bg.cornerRadius = JabraTokens.dp(ctx, JabraTokens.R_MD).toFloat()
+            box.background = bg
+            box.clipToOutline = true
+            box.addView(content)
+            val margin = JabraTokens.dp(ctx, JabraTokens.S2)
+            val contentW = Math.ceil(maxText.toDouble()).toInt() + 2 * pad + tickRoom
+            val w = SelectPlan.popupWidth(anchor.width, contentW, dm.widthPixels, margin, JabraTokens.dp(ctx, 96))
+            val h = SelectPlan.popupHeight(n.size, rowPx)
+            val loc = IntArray(2)
+            anchor.getLocationOnScreen(loc)
+            val gap = JabraTokens.dp(ctx, JabraTokens.S1)
+            val x = SelectPlan.popupX(loc[0], w, dm.widthPixels, margin)
+            val y = SelectPlan.popupY(loc[1], anchor.height, h, dm.heightPixels, gap, margin)
+            val pop = android.widget.PopupWindow(box, w, h, false)
+            pop.isTouchable = true
+            pop.isOutsideTouchable = true
+            pop.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(0))
+            try { pop.elevation = JabraTokens.dp(ctx, 6).toFloat() } catch (_: Throwable) { }
+            pop.setTouchInterceptor { _, ev -> if (ev.action == android.view.MotionEvent.ACTION_OUTSIDE) { closeSelect(); true } else false }
+            ToolTip.inScreen(pop)
+            pop.setOnDismissListener { if (openSelect === pop) openSelect = null }
+            anchor.addOnAttachStateChangeListener(object : View.OnAttachStateChangeListener {
+                override fun onViewAttachedToWindow(v: View) { }
+                override fun onViewDetachedFromWindow(v: View) {
+                    try { if (openSelect === pop) closeSelect() } catch (_: Throwable) { }
+                    try { v.removeOnAttachStateChangeListener(this) } catch (_: Throwable) { }
+                }
+            })
+            pop.showAtLocation(anchor, android.view.Gravity.NO_GRAVITY, x, y)
+            openSelect = pop
+        } catch (_: Throwable) {
+            closeSelect()
+            pick(SelectPlan.next(cur(), n.size))   // fallback: the pill cycles
+        }
     }
 
     // ---- private ----
