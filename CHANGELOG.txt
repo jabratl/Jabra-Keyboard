@@ -1,3 +1,10 @@
+v0.23.1 - NEW: Formatter can use ANY saved clip as the source, not only the latest
+- SEEN/WHY: with Source = Clipboard the formatter only read the newest system clipboard text, so to format an older copy you had to copy it again.
+- What you get: Formatter > Run > Source = Clipboard shows a new button "Clip: Latest - tap to choose another". Tap it = the list of your saved clipboard history (newest first, pinned first, up to 40). Tap a clip = it becomes the source and is previewed at once. "Latest (system clipboard)" goes back to the old behaviour. A clip with stored formatting keeps its bold / italic. The chosen clip is forgotten when the Formatter is opened again (so it never formats an old text by surprise).
+- No new prefs, no new permission. Nothing is saved except what the clipboard history already saved.
+- NOT tested: Kotlin NOT compiled in this chat (no network); the phone is NOT tested. If GitHub Actions shows a Kotlin error, send me the red lines.
+- Changed files: FormatterFeature.kt, MgbIme.kt (one line), app/build.gradle.kts (version), CHANGELOG.txt.
+
 v0.23.0 - NEW (part 3 of 3): typing history - exclude apps, Pause key with a 15 min / 1 hour / 1 day picker (resumes by itself), nicer card + page
 - SEEN/WHY: part 1 + 2 can record and show typing, but (1) you could not say "never save this app" (e.g. a bank or private chat app), (2) pausing needed the Data & Backup screen, and (3) a Pause that you forget stays ON for ever. Part 3 closes these three. No new permission, no new tracking, nothing leaves the phone.
 - What you get:

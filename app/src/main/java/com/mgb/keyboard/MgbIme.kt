@@ -114,7 +114,7 @@ class MgbIme : InputMethodService() {
     private val switcher by lazy { ImeSwitcher(this) }   // v0.1.1 Globe / Voice key
     private val pcState = com.mgb.keyboard.typing.PcState()   // v0.1.2 PC mode state (mode itself = pref pc_mode)
     private var pcRows: PcRows? = null   // v0.1.2
-    private val fmtPanel by lazy { FormatterPanel(this, host, ImeFmtIo(this) { pwdField }) }   // v0.0.8 novel formatter
+    private val fmtPanel by lazy { FormatterPanel(this, host, ImeFmtIo(this) { pwdField }) { try { clipStore.view("").map { Pair(it.text, clipStore.fmtOf(it.text)) } } catch (_: Throwable) { emptyList() } } }   // v0.0.8 novel formatter
     private val host = object : JabraHost {
         override fun typeText(s: String) { this@MgbIme.typeText(s) }
         override fun commitWord() { this@MgbIme.commitWord() }

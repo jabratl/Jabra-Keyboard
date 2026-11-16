@@ -227,7 +227,7 @@ private const val BLUE = "#2271B1"
 private const val GREEN = "#4CAF50"
 private const val WHITE = "#FFFFFF"
 
-class FormatterPanel(private val ctx: Context, private val host: JabraHost, private val io: FmtIo) {
+class FormatterPanel(private val ctx: Context, private val host: JabraHost, private val io: FmtIo, private val clips: () -> List<Pair<String, String?>> = { emptyList() }) {   // v0.23.1: clips = clipboard history (text, stored html), newest first
 
     private val prefs = JabraPrefs(ctx)
     private val store = FmtStore(prefs)
@@ -242,9 +242,12 @@ class FormatterPanel(private val ctx: Context, private val host: JabraHost, priv
     private var selPreset = ""            // "b:name" or "u:name" (last applied, used by Delete)
     private var undoRes: String? = null   // text we inserted last
     private var undoOrig: String? = null  // text that was there before
+    private var pickedClip: String? = null   // v0.23.1: clip chosen from the history (null = latest system clipboard)
+    private var pickedHtml: String? = null
+    private var picking = false              // v0.23.1: the clip list is open
 
     /** Call when the panel is opened from outside. */
-    fun reset() { page = "run"; status = ""; peek = ""; confirm = ""; savedY = 0 }
+    fun reset() { page = "run"; status = ""; peek = ""; confirm = ""; savedY = 0; pickedClip = null; pickedHtml = null; picking = false }
 
     private fun dp(v: Int): Int = (v * ctx.resources.displayMetrics.density).toInt()
 
@@ -413,13 +416,49 @@ class FormatterPanel(private val ctx: Context, private val host: JabraHost, priv
     }
 
     // ---------- pages ----------
+    private fun clipLabel(t: String): String {   // v0.23.1: one short line for a clip button
+        val one = t.trim().replace(Regex("\\s+"), " ")
+        return if (one.length > 48) one.substring(0, 48) + "..." else one
+    }
+
+    /** v0.23.1: list of the clipboard history; tap one = it becomes the source (and is previewed). */
+    private fun clipPicker(col: LinearLayout) {
+        val list = try { clips() } catch (_: Throwable) { emptyList() }
+        col.addView(note("Tap a clip to use it as the source. " + list.size + " saved.", true))
+        val rt = row()
+        val latest = btn("Latest (system clipboard)", 1f, 40) { pickedClip = null; pickedHtml = null; picking = false; preview() }
+        if (pickedClip == null) paint(latest, GREEN, WHITE)
+        rt.addView(latest)
+        rt.addView(btn("Back", 0.5f, 40) { picking = false; refresh(false) })
+        col.addView(rt)
+        if (list.isEmpty()) { col.addView(note("No saved clips yet. Turn on clipboard history and copy something.", false)); return }
+        for ((t, h) in list.take(40)) {
+            val b = btn(clipLabel(t) + "  (" + t.length + ")", 1f, 40) { pickedClip = t; pickedHtml = h; picking = false; preview() }
+            try { b.isAllCaps = false; b.gravity = Gravity.START or Gravity.CENTER_VERTICAL; b.maxLines = 2; b.ellipsize = TextUtils.TruncateAt.END } catch (_: Throwable) { }
+            if (t == pickedClip) paint(b, GREEN, WHITE)
+            val rr = row()
+            rr.addView(b)
+            col.addView(rr)
+        }
+    }
+
     private fun runPage(col: LinearLayout) {
+        if (picking) { clipPicker(col); return }
         if (peek.isNotEmpty()) col.addView(peekView(peek))
         val r1 = row()
         r1.addView(pref("Source", "fmt_src", "text", listOf("text", "clip", "html"), listOf("Text", "Clipboard", "HTML code")))
         r1.addView(btn("Preview", 1f, 40) { preview() })
         r1.addView(pref("Show", "fmt_prev", "result", listOf("result", "original"), listOf("Result", "Original")))
         col.addView(r1)
+        if (prefs.str("fmt_src", "text") == "clip") {   // v0.23.1: choose any saved clip, not only the latest
+            val rp = row()
+            val pc = pickedClip
+            val pb = btn(if (pc == null) "Clip: Latest - tap to choose another" else "Clip: " + clipLabel(pc) + " - tap to change", 1f, 40) { picking = true; refresh(false) }
+            try { pb.isAllCaps = false; pb.maxLines = 2; pb.ellipsize = TextUtils.TruncateAt.END } catch (_: Throwable) { }
+            if (pc != null) paint(pb, BLUE, WHITE)
+            rp.addView(pb)
+            col.addView(rp)
+        }
         val r2 = row()
         val a = btn("Replace with HTML code", 1f, 44) { run("replaceCode") }
         val b = btn("Replace with clean text", 1f, 44) { run("replaceText") }
@@ -643,8 +682,9 @@ class FormatterPanel(private val ctx: Context, private val host: JabraHost, priv
         if (io.blocked()) { status = "Not available in password fields."; return null }
         val src = prefs.str("fmt_src", "text")
         if (src == "clip") {
-            val html = io.clipHtml()
-            val txt = io.clipText()
+            val pc = pickedClip
+            val html = if (pc != null) pickedHtml else io.clipHtml()   // v0.23.1: a clip picked from the history wins over the system clipboard
+            val txt = if (pc != null) pc else io.clipText()
             var blocks: List<NovelFormatter.Block> = emptyList()
             if (!html.isNullOrBlank()) blocks = NovelFormatter.parseHtml(html)
             if (blocks.isEmpty() && !txt.isNullOrEmpty()) blocks = NovelFormatter.parsePlain(txt)
