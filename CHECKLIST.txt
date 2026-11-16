@@ -1105,3 +1105,58 @@ TYPING HISTORY PART 3 (v0.23.0) - phone test
  [ ] In a password field tap H, then choose nothing: no change. (Bubble reasons show after a resume / when history is OFF: "Typing history is OFF ...".)
  [ ] History OFF: label H + empty circle; tap = bubble "Typing history is OFF ...", no chips.
  [ ] Privacy page "Typing history: ON (paused) ..." follows the pause (also timed).
+
+FIND & REPLACE PART 1 (v0.24.0) - phone test
+ [ ] Edit toolbar: turn on "Find & Replace (advanced)": a key "Rp" shows. Hold 0.3 s = name bubble.
+ [ ] Write a line in any app, e.g. "I like cat, Cat and concat." Tap Rp: the panel opens with boxes Find / With, options Text | Word | Regex, Aa, Bangla, \n.
+ [ ] Tap the Find box: a small keyboard opens (abc). Type cat, tap [Next: With], type dog, tap [Done]. The line under the boxes says "3 matches . whole field N" and the preview shows [cat -> dog].
+ [ ] Aa ON (match case): the count becomes 2. Mode Word: "concat" is not counted any more.
+ [ ] [Replace all (N)]: first tap shows "Sure? Replace all", second tap changes the field. Message "Replaced N". Then [Undo] brings the old text back. [1st] changes only the first match.
+ [ ] Select a word in the field, open Rp, tap [Sel] next to Find: Find = that word, scope = whole field. Tap [In: Field]: becomes [In: Selection] (only when text is selected). Replace in Selection = ONE tap.
+ [ ] Copy something, tap [Clip] next to With: the box shows it. [swap] exchanges Find and With.
+ [ ] Mini keyboard: page key cycles abc > #+= > Bangla consonants > Bangla vowels. Aa key = one capital letter. Back key deletes one character, space key works, Clear empties the box.
+ [ ] Regex: mode Regex, Find \d+ With #  = every number becomes #. Find (\w+) (\w+) With $2 $1 swaps two words. Find ^ With "- " puts "- " at the start of every line. With \U$1\E gives CAPITALS.
+ [ ] Regex: Find ( (one bracket) shows "Pattern error ..." and changes nothing.
+ [ ] Text mode: key \n (on #+=) turns the \n switch ON by itself; With = \n makes a new line.
+ [ ] Bangla: write "কষ" in a field, Find = কষ typed with the Bangla page, With = X: replaced. Bangla switch ON: text that has a ZWNJ inside the word is also found.
+ [ ] Password field: Rp does nothing (no panel). Panel closes with ABC and the letters are back.
+ [ ] Look: all text readable in light AND dark theme; 5 rows fit without cutting (if the panel is taller than the letters it scrolls).
+ [ ] Close and open the panel again: options (mode / Aa / Bangla / \n) are remembered; Find / With stay while the keyboard runs.
+
+
+=== FIND & REPLACE PART 2 (v0.25.0) - phone checks ===
+ 1. Rp > Sets: the list shows ready-made sets (and saved ones with a star). Tap "Arabic digits to English": panel shows "Set: ... (10)". Type/paste ٢٠٢٦ in the field, Rp > Replace all (2 taps) = 2026. Undo works.
+ 2. [x Set] returns to the Find / With rows.
+ 3. Type "cat cat cat" in a field, Find = cat, With = dog: [>] [<] change n/3, [Replace this] replaces only that one. Does the match get selected in the field? (works only in some apps; note which apps.)
+ 4. Korean: "안녕 ,반가워.만나서" + set "Korean clean-up" = "안녕, 반가워. 만나서". Japanese / Chinese / Russian: one sample each.
+ 5. App screen > Tools & Panels > "Find & Replace sets": New set, 2 rules, Save; it shows in Rp > Sets with a star. Test box shows the result live. Delete = 2 taps.
+ 6. Export (copy) then Import (paste) in the same page: names get " (2)" when they already exist.
+ 7. Backup, then Restore: saved sets are still there.
+ 8. Password field: Rp says "Not available in password fields."
+
+=== FIND & REPLACE PART 3A (v0.26.0) - phone checks ===
+ 1. NEW LOOK: App > Settings > Panel style = New. Toolbar key Rp: cards "Find" / "With", Text | Word | Regex bar, pill with the match count (top right), blue [Replace all]. Type "cat cat" in a field, Find = cat, With = dog: preview shows cat bold and dog in blue; [<] [>] [Replace this] work. Try a dark theme and the Borderless theme: all text readable?
+ 2. Panel style = Classic: Rp looks exactly like v0.25.0 (plus one new [Recent] button next to [Sets]).
+ 3. Sets (new look): tile grid, tap "Arabic digits to English"; row "Set: ... (N)" with [x Set]; Replace all + Undo still work.
+ 4. RECENT PAIRS OFF (default): Rp > [Recent] says it is OFF. Do a Replace; the Recent list stays empty.
+ 5. App > Data & Backup > "Recent Find & Replace": switch ON (the card text says Find / With are stored on the phone). Do 3 Replaces with different Find texts: Rp > [Recent] lists them, newest on top. Repeat the first pair: it moves to the top, no duplicate. Tap a pair: Find + With are filled.
+ 6. Do 12 different Replaces: the list keeps only 10. Replace with an active rule set: nothing stored. Password field: Rp is not available, nothing stored.
+ 7. [Clear] in the Recent list (2 taps) and "Clear recent pairs" in Data & Backup (2 taps): list empty. Switch OFF: stored pairs are gone, [Recent] says OFF.
+ 8. Switch ON, store a pair, then Backup, switch OFF, Restore: the switch stays OFF and the list is empty (rpr_ is never restored). Open the backup file in a text editor: no "rpr_" in it.
+ 9. Korean / Japanese / Chinese / Russian / Arabic text as Find: stored and shown correctly in the list, tap loads the same text.
+10. One-hand mode, landscape, big system font: new look still usable (panel scrolls)? Note any cut-off button.
+
+
+=== FIND & REPLACE PART 3B-2 (v0.28.0) - phone checks ===
+ 1. Keyboard Gear panel (Panel style = New): group "Tools" has a tile "Find & Replace". Tap it: the panel opens EMPTY (old Find / With are gone), options as saved. Open Rp with the toolbar key: same.
+ 2. In the same Gear panel search type "replace", "regex", "find replace": result "Find & Replace > Tools". Tap = panel opens fresh. Type a Find, tap a few keys: nothing resets while you type.
+ 3. Password field: the tile and the search result do not open the panel (letters keyboard comes back).
+ 4. App Home: search "replace": result "Find & Replace sets". Tap = Tools & Panels page opens and the button flashes. Pin it as a favourite (star) and unpin: no crash.
+ 5. App Home: card "Find & Replace" under the Settings tiles. Tap = the rule sets page opens. Two-pane / landscape: card looks fine.
+ 6. Rp > [?]: 3 pages Modes / Examples / Sets scroll. Examples: tap Korean = Find (\d+)원, With ₩$1, mode Regex loaded; type 커피 4500원 in a field: preview shows 커피 ₩4500. Same for Japanese, Chinese, Russian (Word), Arabic (swap). Back returns.
+ 7. Undo x3: field "a b c". Replace a->x, b->y, c->z (3 Replace all, 2 taps each). Button says "Undo (3)". Tap: z->c, "Undo (2)", ... after 3 taps the text is "a b c" again. Replace once more, edit the field by hand, Undo: "Cannot undo (text changed)".
+ 8. Undo with a selection (replace in selection): note whether the 2nd undo works (apps differ).
+ 9. Formatter bridge: Rp > Sets > "Korean clean-up". Tap [Fmt] / [To Formatter]: message "Rules copied". Open the Formatter (Aa) > Rules > "Rules from clipboard (replace)": the rules appear with 2 # lines on top; Run works.
+10. Emoji / rare character test: Find = a long text of 30 emoji; the Find button label and the preview line show whole emoji (no broken box at the end). Recent pairs list (switch ON) the same.
+11. One-hand mode, landscape, big system font, Borderless theme: Rp main view, [?] help, Sets, Recent: any cut-off button? (note which one)
+12. Speed: paste a very long text (about 100000 characters, e.g. a book chapter) into a field: Rp > Find "the" > the preview appears without a freeze; Replace all works or says "too long" at more than 100000.

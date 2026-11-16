@@ -48,14 +48,15 @@ public class PrivacyInfoTest {
         t("learn off", PrivacyInfo.learnLine(false).contains("OFF"));
         // permission lines
         String[] p = PrivacyInfo.permissionLines();
-        t("6 permission lines", p.length == 6);
+        t("7 permission lines", p.length == 7);
         boolean nonEmpty = true; for (String s : p) if (s == null || s.trim().isEmpty()) nonEmpty = false;
         t("all permission lines have text", nonEmpty);
         t("internet line says only on tap", p[0].startsWith("Internet") && p[0].contains("only when you tap"));
         t("internet line covers emoji list", p[0].contains("Update emoji list"));
         t("mentions vibrate", p[2].startsWith("Vibrate"));
         t("password line", p[4].startsWith("Password fields"));
-        t("no account / cloud line", p[5].contains("No account"));
+        t("no account / cloud line", p[6].contains("No account"));
+        t("find & replace line (v0.27.0)", p[5].startsWith("Find & Replace") && p[5].contains("Recent pairs") && p[5].contains("never in a backup") && p[5].contains("saved on this phone"));
         // clearLabel / clearDone
         t("clear none", PrivacyInfo.clearLabel(false, 0).contains("nothing to clear") && PrivacyInfo.clearLabel(true, 0).contains("nothing to clear"));
         t("clear idle", "Clear clipboard history now".equals(PrivacyInfo.clearLabel(false, 5)));

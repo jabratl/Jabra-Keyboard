@@ -88,6 +88,7 @@ class MgbIme : InputMethodService() {
     private val vaultPanel by lazy { VaultPanel(this, host, vaultStore) { fieldText() } }   // v0.4.4
     private val studioPanel by lazy { ThemeStudio(this, host) }   // v0.4.8 custom theme studio
     private val ttPanel by lazy { TextToolsPanel(this, host, ImeFmtIo(this) { pwdField }) }   // v0.4.6 text tools
+    private val rpPanel by lazy { ReplacePanel(this, host, ImeFmtIo(this) { pwdField }) }   // v0.24.0 (R1): advanced Find & Replace
     private val keyMapPanel by lazy { KeyMapPanel(this, host) }   // v0.16.5 (X5) key map cheat sheet (reads no pref)
     private val profilePanel by lazy { ProfilePanel(this, host, ProfileStore(this)) }   // v0.5.1 workspace profiles (file profiles_v1.json, read only when the panel opens)
     private val prefs by lazy { JabraPrefs(this) }
@@ -124,7 +125,7 @@ class MgbIme : InputMethodService() {
         override fun runAction(a: String) { this@MgbIme.atAction(a) }   // v0.17.21 (L5b)
         override fun isBanglaPhonetic(): Boolean = try { this@MgbIme.phoneticOn() || (this@MgbIme.probhatOn() && this@MgbIme.ridmikOn()) } catch (_: Throwable) { false }   // v0.17.61 (R1): Probhat in the Ridmik look uses the Bengali number page too   // v0.17.55 (M3)
         override fun showLetters() { this@MgbIme.showLetters() }
-        override fun showPanel(name: String) { this@MgbIme.showPanel(name) }
+        override fun showPanel(name: String) { if (name == "rpnew") this@MgbIme.openReplaceFresh() else this@MgbIme.showPanel(name) }   // v0.28.0 (R3): tile / search route for Find & Replace = reset first (ReplacePanel itself refreshes with showPanel("replace"), which must NOT reset)
         override fun feedback(v: View) { this@MgbIme.feedback(v) }
         override fun keyHeightDp(): Int = this@MgbIme.keyDp()
         override fun layoutChanged() { this@MgbIme.applyLayoutPref() }
@@ -1274,6 +1275,7 @@ class MgbIme : InputMethodService() {
             "pad" -> showPanel("pad")
             "vault" -> openVault()   // v0.4.4
             "tt" -> { if (!pwdField) { ttPanel.reset(); showPanel("tt") } }   // v0.4.6 (never in password fields)
+            "rp" -> { if (!pwdField) { rpPanel.reset(); showPanel("replace") } }   // v0.24.0 (R1): Find & Replace (never in password fields)
             "profiles" -> { profilePanel.reset(); showPanel("profiles") }   // v0.5.1
             "keymap" -> { keyMapPanel.reset(); showPanel("keymap") }   // v0.16.5
             "undo" -> padSend(KeyEvent.KEYCODE_Z, KeyEvent.META_CTRL_ON or KeyEvent.META_CTRL_LEFT_ON)   // v0.2.7: Ctrl+Z (apps that ignore key events: nothing happens)
@@ -1472,12 +1474,19 @@ class MgbIme : InputMethodService() {
         showLetters()
     }
 
+    /** v0.28.0 (R3): same as the toolbar key "rp": never in password fields, reset the old Find / With, then the panel. */
+    private fun openReplaceFresh() {
+        try { if (pwdField) { showLetters(); return } } catch (_: Throwable) { }
+        try { rpPanel.reset() } catch (_: Throwable) { }
+        showPanel("replace")
+    }
+
     private fun showPanel(name: String) {
         try { UiKit.closeSelect() } catch (_: Throwable) { }   // v0.19.6 (S7)
         val c = container ?: return
         commitWord()
         if (PanelGuard.blocked(this, name)) { BackupStore.toast(this, "Panel switched off after 2 crashes. See Health Check in the app screen."); showLetters(); return }   // v0.5.3
-        val v0 = try { if (name == "clipboard") { try { clipPanel.fitPx = if (!inPanel && c.height > 0) c.height else lettersH } catch (_: Throwable) { }; clipPanel.build() } else if (name == "format") fmtPanel.build() else if (name == "more") morePanel.build() else if (name == "emoji") emojiPanel.build() else if (name == "gif") gifPanel.build() else if (name == "typing") typingPanel.build() else if (name == "size") sizePanel.build() else if (name == "toolbar") toolbarPanel.build() else if (name == "tbquick") toolbarQuick.build() else if (name == "pad") padPanel.build(inPanel && shownPanel == "pad") else if (name == "themes") themePanel.build() else if (name == "vault") vaultPanel.build() else if (name == "tt") ttPanel.build() else if (name == "profiles") profilePanel.build() else if (name == "keymap") { try { keyMapPanel.fitPx = if (!inPanel && c.height > 0) c.height else lettersH } catch (_: Throwable) { }; keyMapPanel.build() } else if (name == "tstudio") studioPanel.build() else if (name == "pcmore" || name == "pcnum") pcMorePanel.build(name) else panels.build(name) } catch (_: Throwable) { try { PanelGuard.failed(this, name) } catch (_: Throwable) { }; null }   // v0.0.8: "format"; v0.1.0: "emoji"; v0.1.1: "typing"
+        val v0 = try { if (name == "clipboard") { try { clipPanel.fitPx = if (!inPanel && c.height > 0) c.height else lettersH } catch (_: Throwable) { }; clipPanel.build() } else if (name == "format") fmtPanel.build() else if (name == "more") morePanel.build() else if (name == "emoji") emojiPanel.build() else if (name == "gif") gifPanel.build() else if (name == "typing") typingPanel.build() else if (name == "size") sizePanel.build() else if (name == "toolbar") toolbarPanel.build() else if (name == "tbquick") toolbarQuick.build() else if (name == "pad") padPanel.build(inPanel && shownPanel == "pad") else if (name == "themes") themePanel.build() else if (name == "vault") vaultPanel.build() else if (name == "tt") ttPanel.build() else if (name == "replace") rpPanel.build() else if (name == "profiles") profilePanel.build() else if (name == "keymap") { try { keyMapPanel.fitPx = if (!inPanel && c.height > 0) c.height else lettersH } catch (_: Throwable) { }; keyMapPanel.build() } else if (name == "tstudio") studioPanel.build() else if (name == "pcmore" || name == "pcnum") pcMorePanel.build(name) else panels.build(name) } catch (_: Throwable) { try { PanelGuard.failed(this, name) } catch (_: Throwable) { }; null }   // v0.0.8: "format"; v0.1.0: "emoji"; v0.1.1: "typing"
         val v = if (v0 == null) null else try { withTools(name, v0) } catch (_: Throwable) { v0 }   // v0.17.53 (M1): tools row stays on the number / symbol page
         if (v == null) { showLetters(); return }
         try { PanelGuard.ok(this, name) } catch (_: Throwable) { }   // v0.5.3
@@ -1514,7 +1523,7 @@ class MgbIme : InputMethodService() {
     }
 
     private fun capTall(name: String, v: View, c: FrameLayout): View {
-        if (name != "settings" && name != "more" && name != "typing" && name != "size" && name != "themes" && name != "vault" && name != "tt" && name != "profiles" && name != "tstudio" && name != "keymap") return v
+        if (name != "settings" && name != "more" && name != "typing" && name != "size" && name != "themes" && name != "vault" && name != "tt" && name != "replace" && name != "profiles" && name != "tstudio" && name != "keymap") return v
         val cap = if (lettersH > 0) maxOf(lettersH, dp(keyDp() * 4 + 16)) else dp(38 + 5 * (keyDp() + 4))
         val w = if (c.width > 0) c.width else resources.displayMetrics.widthPixels
         v.measure(View.MeasureSpec.makeMeasureSpec(w, View.MeasureSpec.EXACTLY), View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED))

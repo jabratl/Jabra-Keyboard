@@ -779,6 +779,14 @@ object SettingsGroups {
             stepper(g, "Toolbar icon / text size", "tb_ipct", com.mgb.keyboard.typing.BarSize.MIN, com.mgb.keyboard.typing.BarSize.MAX, com.mgb.keyboard.typing.BarSize.STEP, "%",   // v0.16.6 (X6): 100 = old 12 sp, 44 dp wide
                 { com.mgb.keyboard.typing.BarSize.sanitize(prefs.int("tb_ipct", com.mgb.keyboard.typing.BarSize.DEF)) }, com.mgb.keyboard.typing.BarSize.DEF)
             toggle(g, "Formatter (Aa button)", "fmt_on", true)
+            if (sink != null) {   // v0.25.0 (R2): "Find & Replace sets" page button (new app screen only); any problem = no button
+                try {
+                    val rb = ReplaceSetsPage.button(ctx)
+                    rb.tag = "secreset"   // same rule as the key map button: not counted as a row, hidden while searching
+                    g.addView(rb)
+                    try { sink?.rows?.add(SinkRow("rp_sets", "Find & Replace sets", "Tools & Panels", "Rule sets for the Rp panel: edit, test, export. Words: replace find regex", rb, { false }, { "" })) } catch (_: Throwable) { }   // v0.28.0 (R3): the global search on Home finds the button
+                } catch (_: Throwable) { }
+            }
             level(g, "Vault sort", "vault_sort", 0, arrayOf("Newest", "A-Z", "Used"))   // v0.15.4 (N4)
             cycle(g, "Vault save folder", "vault_dest", { arrayOf("Unfiled") + vaultFolders().toTypedArray() },   // v0.15.4 (N4): folder used by "To Vault" (index 0 = Unfiled)
                 { val d = prefs.str("vault_dest", ""); if (d.isEmpty()) 0 else vaultFolders().indexOf(d) + 1 },

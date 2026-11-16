@@ -27,7 +27,7 @@ object BackupStore {
     private val FILES = BackupPlan.FILES   // v0.10.7: vault_v1.json, profiles_v1.json, learn_v1.txt (list lives in typing/BackupPlan.java)
     private const val DIR = "backups"
 
-    private fun isSkipped(k: String): Boolean = k.startsWith("bk_") || k.startsWith("upd_") || k.startsWith("update") || k.startsWith("hist_")   // v0.20.0 (H1): typing-history switches are never saved / restored (a restore must not turn tracking ON by itself)
+    private fun isSkipped(k: String): Boolean = try { BackupPlan.isSkippedPref(k) } catch (_: Throwable) { k.startsWith("bk_") || k.startsWith("upd_") || k.startsWith("update") || k.startsWith("hist_") || k.startsWith("rpr_") }   // v0.20.0 (H1): typing-history switches are never saved / restored (a restore must not turn tracking ON by itself); v0.26.0 (R3): + rpr_ (Recent Find / With pairs), list now in BackupPlan.isSkippedPref
 
     /** Day number in local time (changes at local midnight). */
     fun today(): Int = try { ((System.currentTimeMillis() + java.util.TimeZone.getDefault().rawOffset) / 86400000L).toInt() } catch (_: Throwable) { 0 }

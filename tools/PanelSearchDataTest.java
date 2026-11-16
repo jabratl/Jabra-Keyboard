@@ -55,6 +55,10 @@ public class PanelSearchDataTest {
         t("'snippets' -> vault", has(PanelSearchData.search("snippets"), "vault"));
         t("'emoji' -> emoji", has(PanelSearchData.search("emoji"), "emoji"));
         t("'cursor' -> pad", has(PanelSearchData.search("cursor"), "pad"));
+        t("'replace' -> rpnew", has(PanelSearchData.search("replace"), "rpnew"));
+        t("'regex' -> rpnew", has(PanelSearchData.search("regex"), "rpnew"));
+        t("'find replace' (2 words) -> rpnew", has(PanelSearchData.search("find replace"), "rpnew"));
+        t("Korean / Japanese / Chinese / Russian / Arabic words find it", has(PanelSearchData.search("\uCC3E\uAE30"), "rpnew") && has(PanelSearchData.search("\u7F6E\u63DB"), "rpnew") && has(PanelSearchData.search("\u66FF\u6362"), "rpnew") && has(PanelSearchData.search("\u0437\u0430\u043C\u0435\u043D\u0430"), "rpnew") && has(PanelSearchData.search("\u0627\u0633\u062A\u0628\u062F\u0627\u0644"), "rpnew"));
         t("every hit route is known", allKnown(PanelSearchData.search("key")));
         t("search twice = same result", PanelSearchData.search("height").size() == PanelSearchData.search("height").size());
         System.out.println("PanelSearchDataTest: " + ok + " ok, " + bad + " failed");

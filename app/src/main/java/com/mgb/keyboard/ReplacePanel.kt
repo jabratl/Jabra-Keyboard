@@ -1,0 +1,891 @@
+package com.mgb.keyboard
+
+import android.content.Context
+import android.graphics.Color
+import android.graphics.Typeface
+import android.graphics.drawable.GradientDrawable
+import android.graphics.drawable.StateListDrawable
+import android.text.SpannableStringBuilder
+import android.text.Spanned
+import android.text.style.ForegroundColorSpan
+import android.text.style.StyleSpan
+import android.view.Gravity
+import android.view.View
+import android.widget.Button
+import android.widget.LinearLayout
+import android.widget.ScrollView
+import android.widget.TextView
+import com.mgb.keyboard.typing.LookColors
+import com.mgb.keyboard.typing.PanelLayout
+import com.mgb.keyboard.typing.RecentPairs
+import com.mgb.keyboard.typing.ReplaceEngine
+import com.mgb.keyboard.typing.ReplaceExtras
+import com.mgb.keyboard.typing.ReplaceHelp
+import com.mgb.keyboard.typing.ReplacePads
+import com.mgb.keyboard.typing.ReplaceRules
+
+/*
+ * v0.24.0 (R1) ADVANCED FIND & REPLACE panel (route showPanel("replace"), toolbar item "rp", OFF until the user adds it in Edit toolbar).
+ * Engine = typing/ReplaceEngine.java (pure Java, tested). Keys of the small keyboard = typing/ReplacePads.java.
+ * Main view: Find / With boxes (tap = type; Sel = take the selected text; Clip = take the clipboard), options (Text | Word | Regex, Aa, Bangla-safe, \n),
+ * live match count + preview of the first matches, [Replace all (N)] [1st] [In: Field / Selection] [Undo / Copy].
+ * Typing view: an IME panel cannot hold a normal text box, so a small keyboard is drawn inside the panel (same idea as the clipboard search):
+ * pages abc | #+= (with regex helper keys) | Bangla consonants | Bangla vowels, signs, digits. Typing only updates one text line (no rebuild per key).
+ * Source = the selected text or the whole field (same reader as the Formatter / Text tools: FmtIo). Replace on the WHOLE field = two taps (Sure?) + Undo.
+ * Saved: ONLY the option switches (pref rp_opt, one number). Find / With texts stay in memory while the keyboard runs (never written to disk).
+ * build() returns null on any problem -> the keyboard shows the letters.
+ */
+class ReplacePanel(private val ctx: Context, private val host: JabraHost, private val io: FmtIo) {
+
+    private val prefs = JabraPrefs(ctx)
+
+    private var opt = ReplaceEngine.Opt()
+    private var find = ""
+    private var repl = ""
+    private var typing = 0                 // 0 = main view, 1 = typing Find, 2 = typing With
+    private var padPage = 0
+    private var shift = false
+    private var src = ""                   // text being worked on
+    private var usedSel = false            // true = src is the selection
+    private var hasSel = false             // the field has a selection right now
+    private var msg = ""
+    private var confirmAll = false
+    private val undoStack = ReplaceExtras.UndoStack()   // v0.28.0 (R3b): last 3 Replace taps, memory only (was: undoRes / undoOrig = one level)
+    private var helpPage = 0                                // v0.28.0 (R3b): typing == 5 = help view, page of ReplaceHelp
+    private var valueTv: TextView? = null  // typing view: the line that shows the field
+    private var keysBox: LinearLayout? = null
+    // v0.25.0 (R2): rule sets + step through matches
+    private var setName: String? = null                       // a set is active = rules run instead of Find / With
+    private var setRules: List<ReplaceRules.Rule>? = null
+    private var setOpt = ReplaceEngine.Opt()
+    private var setRun: ReplaceRules.RunResult? = null
+    private var step = 0                                      // index of the match shown by [<] [>]
+    private var rprAsk = false                                // v0.26.0 (R3): Recent pairs > Clear needs two taps
+
+    /** Call when the panel is opened from outside: reads the options and the field once. */
+    fun reset() {
+        msg = ""; confirmAll = false; undoStack.clear(); helpPage = 0; typing = 0; padPage = 0; shift = false; step = 0; rprAsk = false
+        try { opt = ReplaceEngine.unpack(prefs.int("rp_opt", ReplaceEngine.pack(ReplaceEngine.Opt()))) } catch (_: Throwable) { opt = ReplaceEngine.Opt() }
+        readSource(true)
+    }
+
+    private fun saveOpt() { try { prefs.setInt("rp_opt", ReplaceEngine.pack(opt)) } catch (_: Throwable) { } }
+
+    /** pickSel = true: scope starts as the selection when there is one. false: keep the scope, but drop it when the selection is gone. */
+    private fun readSource(pickSel: Boolean) {
+        try {
+            if (io.blocked()) { src = ""; hasSel = false; usedSel = false; msg = "Not available in password fields."; return }
+            val sel = io.selected()
+            hasSel = !sel.isNullOrEmpty()
+            if (pickSel) usedSel = hasSel else if (!hasSel) usedSel = false
+            src = if (usedSel && hasSel && sel != null) sel else (io.wholeText() ?: "")
+        } catch (_: Throwable) { src = ""; usedSel = false; hasSel = false }
+    }
+
+    private fun dp(v: Int): Int = (v * ctx.resources.displayMetrics.density).toInt()
+    private fun refresh() { host.showPanel("replace") }
+
+    private fun btn(label: String, weight: Float, hDp: Int, onClick: (Button) -> Unit): Button {
+        try { return UiKit.btn(ctx, prefs, label, weight, hDp, 12f, { v -> host.feedback(v) }, onClick) } catch (_: Throwable) { }
+        return btnOld(label, weight, hDp, onClick)
+    }
+
+    private fun paintBg(v: View) { try { JabraThemes.paint(prefs, v) } catch (_: Throwable) { v.setBackgroundColor(Color.parseColor("#DDDDDD")) } }
+    private fun dim(): Int = try { JabraTokens.dimText(prefs) } catch (_: Throwable) { Color.DKGRAY }
+    private fun ink(): Int = try { JabraTokens.panelText(prefs) } catch (_: Throwable) { Color.BLACK }
+
+    private fun btnOld(label: String, weight: Float, hDp: Int, onClick: (Button) -> Unit): Button {
+        val b = Button(ctx)
+        b.text = label
+        b.isAllCaps = false
+        b.minWidth = 0
+        b.minimumWidth = 0
+        b.setPadding(0, 0, 0, 0)
+        b.textSize = 12f
+        b.setOnClickListener {
+            try { host.feedback(b) } catch (_: Throwable) { }
+            try { onClick(b) } catch (_: Throwable) { }
+        }
+        val lp = LinearLayout.LayoutParams(if (weight > 0f) 0 else LinearLayout.LayoutParams.WRAP_CONTENT, dp(hDp), if (weight > 0f) weight else 0f)
+        lp.setMargins(dp(2), dp(2), dp(2), dp(2))
+        b.layoutParams = lp
+        return b
+    }
+
+    private fun row(): LinearLayout {
+        val r = LinearLayout(ctx)
+        r.orientation = LinearLayout.HORIZONTAL
+        return r
+    }
+
+    private fun calc(): ReplaceEngine.Result {
+        val rules = setRules
+        if (rules != null) {   // v0.25.0 (R2): a set is active
+            val r = ReplaceEngine.Result()
+            try {
+                val rr = ReplaceRules.run(src, rules, setOpt)
+                setRun = rr
+                r.out = rr.out; r.count = rr.changed; r.changed = rr.changed
+            } catch (_: Throwable) { setRun = null }
+            return r
+        }
+        return try { ReplaceEngine.replaceAll(src, find, repl, opt) } catch (_: Throwable) { ReplaceEngine.Result() }
+    }
+
+    fun build(): View? = try { if (typing == 3) setsViewPick() else if (typing == 4) recentView() else if (typing == 5) helpView() else if (typing != 0) typeView() else mainViewPick() } catch (_: Throwable) { null }   // v0.26.0 (R3): 4 = Recent pairs; Pick = new look when panel_ui = New, else the classic view
+
+    // ------------------------------------------------------------------ main view
+
+    private fun fieldLabel(name: String, v: String): String {
+        if (v.isEmpty()) return name + ": (tap to type)"
+        val t = v.replace("\n", "\u23CE").replace("\t", "\u21E5")
+        return name + ": " + (if (t.length > 22) ReplaceExtras.head(t, 22) + "\u2026" else t)
+    }
+
+    private fun optChanged() { confirmAll = false; saveOpt(); refresh() }
+
+    private fun mainView(): View {
+        val root = LinearLayout(ctx)
+        root.orientation = LinearLayout.VERTICAL
+        paintBg(root)
+        root.setPadding(dp(2), dp(4), dp(2), dp(4))
+        valueTv = null
+        keysBox = null
+
+        val res = calc()
+        val shown = msg
+        msg = ""
+
+        if (setRules != null) {
+            val rs = row()
+            rs.addView(btn("ABC", 0.7f, 36) { host.showLetters() })
+            rs.addView(btn("Set: " + (setName ?: "") + " (" + (setRules?.count { it.kind != ReplaceRules.K_COMMENT } ?: 0) + ")", 3f, 36) { typing = 3; refresh() })
+            rs.addView(btn("\u2715 Set", 1f, 36) { setRules = null; setName = null; setRun = null; confirmAll = false; refresh() })
+            rs.addView(btn("Fmt", 0.8f, 36) { copyForFormatter() })   // v0.28.0 (R3b): Formatter bridge
+            root.addView(rs)
+        } else {
+        // Find
+        val r1 = row()
+        r1.addView(btn("ABC", 0.7f, 36) { host.showLetters() })
+        r1.addView(btn(fieldLabel("Find", find), 3f, 36) { startTyping(1) })
+        r1.addView(btn("Sel", 0.8f, 36) { take(true, io.selected(), "Nothing is selected") })
+        r1.addView(btn("Clip", 0.8f, 36) { take(true, io.clipText(), "Clipboard is empty") })
+        root.addView(r1)
+
+        // With
+        val r2 = row()
+        r2.addView(btn("\u21C4", 0.7f, 36) { swap() })
+        r2.addView(btn(fieldLabel("With", repl), 3f, 36) { startTyping(2) })
+        r2.addView(btn("Sel", 0.8f, 36) { take(false, io.selected(), "Nothing is selected") })
+        r2.addView(btn("Clip", 0.8f, 36) { take(false, io.clipText(), "Clipboard is empty") })
+        root.addView(r2)
+
+        // options
+        val r3 = row()
+        for (i in 0..2) {
+            r3.addView(btn((if (opt.mode == i) "\u2713 " else "") + ReplaceEngine.MODE_NAMES[i], 1f, 32) { opt.mode = i; optChanged() })
+        }
+        r3.addView(btn((if (opt.matchCase) "\u2713 " else "") + "Aa", 0.8f, 32) { opt.matchCase = !opt.matchCase; optChanged() })
+        if (opt.mode != ReplaceEngine.MODE_REGEX) {
+            r3.addView(btn((if (opt.bangla) "\u2713 " else "") + "\u09AC\u09BE\u0982", 0.9f, 32) { opt.bangla = !opt.bangla; optChanged() })
+            r3.addView(btn((if (opt.escapes) "\u2713 " else "") + "\\n", 0.8f, 32) { opt.escapes = !opt.escapes; optChanged() })
+        }
+        root.addView(r3)
+
+        // v0.25.0 (R2): sets + step through the matches
+        val r4 = row()
+        r4.addView(btn("Sets", 1f, 32) { typing = 3; confirmAll = false; refresh() })
+        r4.addView(btn("Recent", 1f, 32) { typing = 4; confirmAll = false; rprAsk = false; refresh() })   // v0.26.0 (R3)
+        r4.addView(btn("?", 0.5f, 32) { typing = 5; helpPage = 0; confirmAll = false; refresh() })   // v0.28.0 (R3b): help
+        val nHits = res.hits.size
+        if (nHits > 0 && res.err == null) {
+            step = step.coerceIn(0, nHits - 1)
+            r4.addView(btn("<", 0.6f, 32) { step = if (step <= 0) nHits - 1 else step - 1; showStep(res) })
+            r4.addView(btn((step + 1).toString() + "/" + res.count, 1f, 32) { showStep(res) })
+            r4.addView(btn(">", 0.6f, 32) { step = if (step >= nHits - 1) 0 else step + 1; showStep(res) })
+            r4.addView(btn("Replace this", 1.4f, 32) { onReplace(ReplaceEngine.replaceNth(src, find, repl, opt, step + 1), true) })
+        }
+        root.addView(r4)
+        }   // end of: no set active
+
+        // info line
+        val info = TextView(ctx)
+        var line = ReplaceEngine.info(res)
+        if (src.isEmpty() && res.err == null) line = "No text: select text or type some first"
+        else if (setRules != null) { val rr = setRun; if (rr != null) line = ReplaceRules.info(rr, setRules?.count { it.kind != ReplaceRules.K_COMMENT } ?: 0) + "  \u00B7  " + (if (usedSel) "selection " else "whole field ") + src.length }
+        else if (res.err == null) line += "  \u00B7  " + (if (usedSel) "selection " else "whole field ") + src.length
+        info.text = if (shown.isNotEmpty()) shown else line
+        info.textSize = 12f
+        info.setTextColor(dim())
+        info.setPadding(dp(8), dp(2), dp(8), dp(2))
+        root.addView(info)
+
+        // preview
+        val sv = ScrollView(ctx)
+        sv.layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(56))
+        val pv = TextView(ctx)
+        pv.text = previewText(res)
+        pv.textSize = 13f
+        pv.setTextColor(try { JabraTokens.cardText(prefs) } catch (_: Throwable) { Color.BLACK })
+        pv.setBackgroundColor(try { if (JabraTokens.isClassic(prefs)) Color.WHITE else (JabraTokens.btnFill(prefs) ?: Color.WHITE) } catch (_: Throwable) { Color.WHITE })
+        pv.setPadding(dp(8), dp(4), dp(8), dp(4))
+        sv.addView(pv)
+        root.addView(sv)
+
+        // actions
+        val act = row()
+        val ask = confirmAll && !usedSel
+        val allLabel = if (ask) "Sure? Replace all" else if (res.err == null && res.count > 0) "Replace all (" + res.count + ")" else "Replace all"
+        act.addView(btn(allLabel, 1.5f, 40) { onReplace(res, false) })
+        if (setRules == null) act.addView(btn("1st", 0.6f, 40) { onReplace(ReplaceEngine.replaceFirst(src, find, repl, opt), true) })
+        act.addView(btn(if (usedSel) "In: Selection" else "In: Field", 1.1f, 40) { toggleScope() })
+        if (undoStack.canUndo()) act.addView(btn("\u21B6 " + ReplaceExtras.undoLabel(undoStack.size()), 0.9f, 40) { undo() })
+        else act.addView(btn("Copy", 0.9f, 40) { copyResult(res) })
+        root.addView(act)
+        return root
+    }
+
+    private fun previewText(res: ReplaceEngine.Result): String {
+        val rules = setRules
+        if (rules != null) {   // v0.25.0 (R2): one line per rule that changed something
+            val rr = setRun ?: return "(no result)"
+            val sb = StringBuilder()
+            var n = 0
+            for (i in rules.indices) {
+                if (i >= rr.counts.size || rr.counts[i] == 0) continue
+                if (n >= 6) { sb.append("\n\u2026"); break }
+                if (n > 0) sb.append("\n")
+                val r = rules[i]
+                sb.append(rr.counts[i]).append("\u00D7  ").append(r.find.take(24)).append(if (r.kind == ReplaceRules.K_DEL || r.kind == ReplaceRules.K_DELRE) "  (line removed)" else "  \u2192  " + r.with.take(24))
+                n++
+            }
+            if (n == 0) return if (rr.err != null) rr.err!! else "(no match)"
+            return sb.toString()
+        }
+        val e = res.err
+        if (e != null) return "(fix the Find to see matches)"
+        if (res.blank) {
+            return when (opt.mode) {
+                ReplaceEngine.MODE_REGEX -> "Regex: \$1 = group 1, \\n = new line, \\U...\\E = CAPITALS. ^ and \$ work per line."
+                ReplaceEngine.MODE_WORD -> "Whole word only: cat finds cat, not concat. Tap Find to type, Sel = selected text, Clip = clipboard."
+                else -> "Tap Find / With to type. Sel = take the selected text, Clip = take the clipboard."
+            }
+        }
+        if (res.hits.isEmpty()) return "(no match)"
+        val sb = StringBuilder()
+        var n = 0
+        val from = if (step in res.hits.indices) step else 0
+        for (hi in from until res.hits.size) {
+            if (n >= 6) break
+            if (n > 0) sb.append("\n")
+            if (n == 0 && res.hits.size > 1) sb.append("\u25B6 ")
+            sb.append(ReplaceEngine.line(src, res.hits[hi], 14))
+            n++
+        }
+        if (res.count > from + n) sb.append("\n\u2026 +").append(res.count - from - n).append(" more")
+        return sb.toString()
+    }
+
+    private fun startTyping(which: Int) {
+        typing = which; padPage = 0; shift = false; confirmAll = false
+        refresh()
+    }
+
+    private fun swap() {
+        val t = find; find = repl; repl = t
+        confirmAll = false
+        refresh()
+    }
+
+    private fun take(isFind: Boolean, v: String?, empty: String) {
+        if (v.isNullOrEmpty()) { msg = empty; refresh(); return }
+        val t = v.take(ReplacePads.FIELD_MAX)
+        if (v.length > ReplacePads.FIELD_MAX) msg = "Only the first " + ReplacePads.FIELD_MAX + " characters were taken"
+        if (isFind) { find = t; usedSel = false } else repl = t
+        confirmAll = false
+        readSource(false)
+        refresh()
+    }
+
+    private fun toggleScope() {
+        readSource(false)
+        if (hasSel) { usedSel = !usedSel; readSource(false) } else msg = "Select text in the field first to use Selection"
+        confirmAll = false
+        refresh()
+    }
+
+    private fun onReplace(r: ReplaceEngine.Result, first: Boolean) {
+        if (io.blocked()) { msg = "Not available in password fields."; refresh(); return }
+        if (setRules == null && find.isEmpty()) { msg = "Type what to find first"; refresh(); return }
+        val e = r.err
+        if (e != null) { msg = e; refresh(); return }
+        if (r.count == 0) { msg = "No match"; refresh(); return }
+        if (r.changed == 0 || r.out == src) { msg = "No change"; refresh(); return }
+        if (!usedSel && !first && !confirmAll) { confirmAll = true; refresh(); return }
+        doReplace(r)
+    }
+
+    private fun doReplace(r: ReplaceEngine.Result) {
+        val before = src
+        val ok = try { if (usedSel) io.replaceSelection(r.out) else io.replaceAll(r.out) } catch (_: Throwable) { false }
+        confirmAll = false
+        if (ok) { undoStack.push(r.out, before); msg = "Replaced " + r.changed; recordPair(); readSource(false) } else msg = "Could not replace in this app (use Copy)"   // v0.26.0 (R3): recordPair = only when Recent pairs is ON
+        refresh()
+    }
+
+    private fun undo() {
+        val st = undoStack.peek()
+        if (st != null && io.undoReplace(st.res, st.orig)) {   // v0.28.0 (R3b): newest step first; a failed step (text changed) clears the stack
+            undoStack.drop()
+            msg = if (undoStack.canUndo()) "Undone (" + undoStack.size() + " more)" else "Undone"
+        } else { undoStack.clear(); msg = "Cannot undo (text changed)" }
+        readSource(false)
+        refresh()
+    }
+
+    private fun copyResult(res: ReplaceEngine.Result) {
+        msg = if (res.err == null && !res.blank && res.count > 0 && io.setClip(res.out, null)) "Result copied" else "Nothing to copy"
+        confirmAll = false
+        refresh()
+    }
+
+    /** v0.25.0 (R2): [<] [>] moved. Tries to select the match in the field (works only where the app allows setSelection); else the preview shows it. */
+    private fun showStep(res: ReplaceEngine.Result) {
+        confirmAll = false
+        try {
+            val h = res.hits.getOrNull(step)
+            if (h != null && !usedSel && io.selectRange(h.start, h.end)) msg = "Match " + (step + 1) + " selected in the field"
+        } catch (_: Throwable) { }
+        refresh()
+    }
+
+    // ------------------------------------------------------------------ sets view (v0.25.0 R2)
+
+    private fun setsView(): View {
+        val root = LinearLayout(ctx)
+        root.orientation = LinearLayout.VERTICAL
+        paintBg(root)
+        root.setPadding(dp(2), dp(4), dp(2), dp(4))
+        val head = row()
+        head.addView(btn("\u2190 Back", 1f, 34) { typing = 0; refresh() })
+        val hint = TextView(ctx)
+        hint.text = "Pick a set. Edit: app > Tools & Panels"
+        hint.textSize = 12f
+        hint.setTextColor(dim())
+        hint.gravity = android.view.Gravity.CENTER_VERTICAL
+        hint.layoutParams = LinearLayout.LayoutParams(0, dp(34), 3f)
+        head.addView(hint)
+        root.addView(head)
+        val sv = ScrollView(ctx)
+        sv.layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(170))
+        val col = LinearLayout(ctx)
+        col.orientation = LinearLayout.VERTICAL
+        sv.addView(col)
+        val all = ArrayList<Pair<String, ReplaceStore.Def>>()
+        try { for ((n, d) in ReplaceStore.load(prefs)) all.add(Pair("\u2605 " + n, d)) } catch (_: Throwable) { }
+        try { for ((n, d) in ReplaceStore.ready()) all.add(Pair(n, d)) } catch (_: Throwable) { }
+        var i = 0
+        while (i < all.size) {
+            val r = row()
+            for (j in 0..1) {
+                val e = all.getOrNull(i + j)
+                if (e == null) { val sp = View(ctx); sp.layoutParams = LinearLayout.LayoutParams(0, dp(36), 1f); r.addView(sp); continue }
+                r.addView(btn(e.first, 1f, 36) { pickSet(e.first.removePrefix("\u2605 "), e.second) })
+            }
+            col.addView(r)
+            i += 2
+        }
+        root.addView(sv)
+        return root
+    }
+
+    private fun pickSet(name: String, d: ReplaceStore.Def) {
+        val p = ReplaceRules.parse(d.rules)
+        if (p.active() == 0) { msg = "That set has no rules"; typing = 0; refresh(); return }
+        setRules = p.rules; setOpt = d.opt(); setName = name; setRun = null
+        typing = 0; confirmAll = false; step = 0
+        msg = "Set loaded: " + name + (if (p.bad.isNotEmpty()) " (" + p.bad.size + " unreadable lines skipped)" else "")
+        readSource(false)
+        refresh()
+    }
+
+    // ------------------------------------------------------------------ v0.26.0 (R3): NEW LOOK (pref panel_ui = 1), Recent pairs view
+
+    private fun newLook(): Boolean = try { PanelLayout.isNewStyle(prefs.int("panel_ui", 0)) } catch (_: Throwable) { false }
+
+    /** New look when panel_ui = New; any problem = the classic main view (pattern HistCard.buildModern / buildClassic). */
+    private fun mainViewPick(): View {
+        if (newLook()) {
+            val keep = msg
+            try { return mainViewNew() } catch (_: Throwable) { msg = keep }
+        }
+        return mainView()
+    }
+
+    private fun setsViewPick(): View {
+        if (newLook()) { try { return setsViewNew() } catch (_: Throwable) { } }
+        return setsView()
+    }
+
+    private fun small(label: String, hDp: Int, onClick: (Button) -> Unit): Button {
+        val b = btn(label, 0f, hDp, onClick)
+        try { b.minWidth = dp(44) } catch (_: Throwable) { }
+        return b
+    }
+
+    /** Filled button in one colour (Replace all). Same drawing idea as UiKit.chip. */
+    private fun accentButton(b: Button, color: Int) {
+        try {
+            val r = dp(JabraTokens.R_SM).toFloat()
+            val up = GradientDrawable(); up.setColor(color); up.cornerRadius = r
+            val down = GradientDrawable(); down.setColor(LookColors.darken(color, 0.18f)); down.cornerRadius = r
+            val sl = StateListDrawable()
+            sl.addState(intArrayOf(android.R.attr.state_pressed), down)
+            sl.addState(intArrayOf(), up)
+            b.background = sl
+            b.backgroundTintList = null
+            b.stateListAnimator = null
+            b.setTextColor(Color.WHITE)
+            b.setTypeface(b.typeface, Typeface.BOLD)
+        } catch (_: Throwable) { }
+    }
+
+    /** Match counter pill (rounded, soft blue; warning colour for an error). */
+    private fun pill(text: String, warn: Boolean): TextView {
+        val t = TextView(ctx)
+        t.text = text
+        t.textSize = JabraTokens.T_BTN
+        t.setTypeface(t.typeface, Typeface.BOLD)
+        t.gravity = Gravity.CENTER
+        t.maxLines = 1
+        t.setPadding(dp(10), 0, dp(10), 0)
+        val g = GradientDrawable()
+        g.cornerRadius = dp(20).toFloat()
+        g.setColor(if (warn) JabraTokens.WARN else JabraTokens.ACCENT_SOFT)
+        t.background = g
+        t.setTextColor(if (warn) Color.WHITE else JabraTokens.ON_ACCENT_SOFT)
+        val lp = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, dp(28))
+        lp.setMargins(dp(4), 0, dp(6), 0)
+        t.layoutParams = lp
+        return t
+    }
+
+    private fun shortVal(v: String): String {
+        val t = v.replace("\n", "\u23CE").replace("\t", "\u21E5")
+        return if (t.length > 60) ReplaceExtras.head(t, 60) + "\u2026" else t
+    }
+
+    /** One rounded card: small label on top, the text under it (tap = type), small buttons on the right. */
+    private fun fieldCard(label: String, value: String, onTap: () -> Unit, actions: List<Pair<String, () -> Unit>>): View {
+        val c = LinearLayout(ctx)
+        c.orientation = LinearLayout.HORIZONTAL
+        c.gravity = Gravity.CENTER_VERTICAL
+        c.setPadding(dp(10), dp(2), dp(4), dp(2))
+        try { c.background = UiKit.cardBackground(ctx, prefs, false, false) } catch (_: Throwable) { }
+        val col = LinearLayout(ctx)
+        col.orientation = LinearLayout.VERTICAL
+        val lb = TextView(ctx)
+        lb.text = label
+        lb.textSize = JabraTokens.T_NOTE
+        lb.setTextColor(try { JabraTokens.cardNote(prefs) } catch (_: Throwable) { Color.GRAY })
+        val vv = TextView(ctx)
+        vv.textSize = JabraTokens.T_BODY
+        vv.maxLines = 1
+        vv.ellipsize = android.text.TextUtils.TruncateAt.END
+        if (value.isEmpty()) { vv.text = "tap to type"; vv.setTextColor(try { JabraTokens.cardNote(prefs) } catch (_: Throwable) { Color.GRAY }) }
+        else { vv.text = shortVal(value); vv.setTextColor(try { JabraTokens.cardText(prefs) } catch (_: Throwable) { Color.BLACK }) }
+        col.addView(lb)
+        col.addView(vv)
+        col.layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+        c.addView(col)
+        for (a in actions) c.addView(small(a.first, 36) { a.second() })
+        c.isClickable = true
+        c.setOnClickListener { try { host.feedback(c) } catch (_: Throwable) { }; try { onTap() } catch (_: Throwable) { } }
+        val lp = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
+        lp.setMargins(dp(2), dp(2), dp(2), dp(2))
+        c.layoutParams = lp
+        return c
+    }
+
+    private fun addSpan(sb: SpannableStringBuilder, s: String, vararg spans: Any) {
+        val a = sb.length
+        sb.append(s)
+        val b = sb.length
+        if (b > a) for (sp in spans) sb.setSpan(sp, a, b, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+    }
+
+    /** Preview rows: found part bold, replacement in the accent colour. Same rows as previewText(); anything else = that plain text. */
+    private fun previewSpan(res: ReplaceEngine.Result): CharSequence {
+        val plain = previewText(res)
+        val accent = try { if (JabraTokens.isDark(prefs)) JabraTokens.ACCENT_SOFT else JabraTokens.ACCENT } catch (_: Throwable) { JabraTokens.ACCENT }
+        val sb = SpannableStringBuilder()
+        val rules = setRules
+        if (rules != null) {
+            val rr = setRun ?: return plain
+            var n = 0
+            for (i in rules.indices) {
+                if (i >= rr.counts.size || rr.counts[i] == 0) continue
+                if (n >= 6) { sb.append("\n\u2026"); break }
+                if (n > 0) sb.append("\n")
+                val r = rules[i]
+                sb.append(rr.counts[i].toString()).append("\u00D7  ")
+                addSpan(sb, r.find.take(24), StyleSpan(Typeface.BOLD))
+                if (r.kind == ReplaceRules.K_DEL || r.kind == ReplaceRules.K_DELRE) sb.append("  (line removed)")
+                else { sb.append("  \u2192  "); addSpan(sb, r.with.take(24), ForegroundColorSpan(accent), StyleSpan(Typeface.BOLD)) }
+                n++
+            }
+            return if (n == 0) plain else sb
+        }
+        if (res.err != null || res.blank || res.hits.isEmpty()) return plain
+        var n = 0
+        val from = if (step in res.hits.indices) step else 0
+        for (hi in from until res.hits.size) {
+            if (n >= 6) break
+            if (n > 0) sb.append("\n")
+            if (n == 0 && res.hits.size > 1) sb.append("\u25B6 ")
+            val p = ReplaceEngine.lineParts(src, res.hits[hi], 14)
+            sb.append(p[0])
+            addSpan(sb, p[1], StyleSpan(Typeface.BOLD))
+            sb.append(" \u2192 ")
+            addSpan(sb, p[2], ForegroundColorSpan(accent), StyleSpan(Typeface.BOLD))
+            sb.append(p[3])
+            n++
+        }
+        if (res.count > from + n) sb.append("\n\u2026 +").append((res.count - from - n).toString()).append(" more")
+        return sb
+    }
+
+    private fun mainViewNew(): View {
+        val root = LinearLayout(ctx)
+        root.orientation = LinearLayout.VERTICAL
+        paintBg(root)
+        root.setPadding(dp(2), dp(4), dp(2), dp(4))
+        valueTv = null
+        keysBox = null
+
+        val res = calc()
+        val shown = msg
+        msg = ""
+        val nRules = setRules?.count { it.kind != ReplaceRules.K_COMMENT } ?: 0
+
+        // top bar: [ABC] [Sets] [Recent] ........ match counter pill
+        val top = row()
+        top.gravity = Gravity.CENTER_VERTICAL
+        top.addView(small("ABC", 40) { host.showLetters() })
+        top.addView(small("Sets", 40) { typing = 3; confirmAll = false; refresh() })
+        top.addView(small("Recent", 40) { typing = 4; confirmAll = false; rprAsk = false; refresh() })
+        top.addView(small("?", 40) { typing = 5; helpPage = 0; confirmAll = false; refresh() })   // v0.28.0 (R3b): help
+        val sp = View(ctx)
+        sp.layoutParams = LinearLayout.LayoutParams(0, 1, 1f)
+        top.addView(sp)
+        val rr0 = setRun
+        val pillText: String
+        var warn = false
+        if (res.err != null || (setRules != null && rr0 != null && rr0.err != null)) { pillText = "Error"; warn = true }
+        else if (setRules != null) pillText = if (res.changed == 0) "No match" else (res.changed.toString() + (if (res.changed == 1) " change" else " changes"))
+        else if (res.blank) pillText = "Type Find"
+        else pillText = ReplaceEngine.info(res)
+        top.addView(pill(pillText, warn))
+        root.addView(top)
+
+        if (setRules != null) {
+            root.addView(fieldCard("Set", (setName ?: "") + " (" + nRules + ")", { typing = 3; refresh() },
+                listOf(Pair("\u2715 Set") { setRules = null; setName = null; setRun = null; confirmAll = false; refresh() }, Pair("To Formatter") { copyForFormatter() })))   // v0.28.0 (R3b): Formatter bridge
+        } else {
+            // Text | Word | Regex
+            root.addView(PanelKit.segmented(ctx, prefs, host, ReplaceEngine.MODE_NAMES.toList(), opt.mode) { i -> opt.mode = i; optChanged() })
+            // option chips
+            val oc = row()
+            oc.addView(UiKit.chip(ctx, prefs, "Aa", opt.matchCase, 36, { v -> host.feedback(v) }) { opt.matchCase = !opt.matchCase; optChanged() })
+            if (opt.mode != ReplaceEngine.MODE_REGEX) {
+                oc.addView(UiKit.chip(ctx, prefs, "\u09AC\u09BE\u0982", opt.bangla, 36, { v -> host.feedback(v) }) { opt.bangla = !opt.bangla; optChanged() })
+                oc.addView(UiKit.chip(ctx, prefs, "\\n", opt.escapes, 36, { v -> host.feedback(v) }) { opt.escapes = !opt.escapes; optChanged() })
+            }
+            root.addView(oc)
+            root.addView(fieldCard("Find", find, { startTyping(1) },
+                listOf(Pair("Sel") { take(true, io.selected(), "Nothing is selected") }, Pair("Clip") { take(true, io.clipText(), "Clipboard is empty") })))
+            root.addView(fieldCard("With", repl, { startTyping(2) },
+                listOf(Pair("\u21C4") { swap() }, Pair("Sel") { take(false, io.selected(), "Nothing is selected") }, Pair("Clip") { take(false, io.clipText(), "Clipboard is empty") })))
+        }
+
+        if (shown.isNotEmpty()) root.addView(UiKit.noteText(ctx, prefs, shown))
+
+        // step row: [<] n/N [>] [Replace this]
+        val nHits = res.hits.size
+        if (setRules == null && nHits > 0 && res.err == null) {
+            step = step.coerceIn(0, nHits - 1)
+            val sr = row()
+            sr.gravity = Gravity.CENTER_VERTICAL
+            sr.addView(small("<", 36) { step = if (step <= 0) nHits - 1 else step - 1; showStep(res) })
+            sr.addView(small((step + 1).toString() + "/" + res.count, 36) { showStep(res) })
+            sr.addView(small(">", 36) { step = if (step >= nHits - 1) 0 else step + 1; showStep(res) })
+            sr.addView(btn("Replace this", 1f, 36) { onReplace(ReplaceEngine.replaceNth(src, find, repl, opt, step + 1), true) })
+            root.addView(sr)
+        }
+
+        // preview card
+        val sv = ScrollView(ctx)
+        val svLp = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(64))
+        svLp.setMargins(dp(2), dp(2), dp(2), dp(2))
+        sv.layoutParams = svLp
+        try { sv.background = UiKit.cardBackground(ctx, prefs, false, false) } catch (_: Throwable) { }
+        val pv = TextView(ctx)
+        pv.textSize = 13f
+        pv.setTextColor(try { JabraTokens.cardText(prefs) } catch (_: Throwable) { Color.BLACK })
+        pv.setPadding(dp(8), dp(4), dp(8), dp(4))
+        var pt: CharSequence = try { previewSpan(res) } catch (_: Throwable) { previewText(res) }
+        if (src.isEmpty() && res.err == null) pt = "No text: select text or type some first"
+        pv.text = pt
+        sv.addView(pv)
+        root.addView(sv)
+        root.addView(UiKit.noteText(ctx, prefs, (if (usedSel) "selection " else "whole field ") + src.length))
+
+        // actions
+        val act = row()
+        val ask = confirmAll && !usedSel
+        val canGo = res.err == null && res.count > 0 && !res.blank
+        val allLabel = if (ask) "Sure? Replace all" else if (res.err == null && res.count > 0) "Replace all (" + res.count + ")" else "Replace all"
+        val all = btn(allLabel, 2f, 44) { onReplace(res, false) }
+        accentButton(all, if (ask) JabraTokens.WARN else JabraTokens.ACCENT)
+        all.alpha = if (canGo) 1f else 0.6f
+        act.addView(all)
+        if (setRules == null) act.addView(btn("1st", 0.7f, 44) { onReplace(ReplaceEngine.replaceFirst(src, find, repl, opt), true) })
+        act.addView(btn(if (usedSel) "In: Selection" else "In: Field", 1.3f, 44) { toggleScope() })
+        if (undoStack.canUndo()) act.addView(btn("\u21B6 " + ReplaceExtras.undoLabel(undoStack.size()), 1f, 44) { undo() })
+        else act.addView(btn("Copy", 1f, 44) { copyResult(res) })
+        root.addView(act)
+        return root
+    }
+
+    private fun setsViewNew(): View {
+        val root = LinearLayout(ctx)
+        root.orientation = LinearLayout.VERTICAL
+        paintBg(root)
+        root.setPadding(dp(2), dp(4), dp(2), dp(4))
+        root.addView(PanelKit.header(ctx, prefs, host, "Sets", "<", emptyList()) { typing = 0; refresh() })
+        root.addView(UiKit.noteText(ctx, prefs, "Pick a set. Edit: app > Tools & Panels"))
+        val sv = ScrollView(ctx)
+        sv.layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(170))
+        val tiles = ArrayList<PanelKit.Tile>()
+        try { for ((n, d) in ReplaceStore.load(prefs)) tiles.add(PanelKit.Tile("\u2605 " + n, "saved", n == setName) { pickSet(n, d) }) } catch (_: Throwable) { }
+        try { for ((n, d) in ReplaceStore.ready()) tiles.add(PanelKit.Tile(n, "ready-made", n == setName) { pickSet(n, d) }) } catch (_: Throwable) { }
+        sv.addView(PanelKit.tileGrid(ctx, prefs, host, 2, tiles))
+        root.addView(sv)
+        return root
+    }
+
+    // ------------------------------------------------------------------ v0.28.0 (R3b): Formatter bridge + help view
+
+    /** Copies the active set as Formatter rules text. In the Formatter: Rules > Rules from clipboard. Nothing is written to the Formatter itself. */
+    private fun copyForFormatter() {
+        try {
+            val rl = setRules
+            val text = if (rl == null) "" else ReplaceExtras.formatterText(setName, ReplaceRules.serialize(rl), setOpt.matchCase, setOpt.mode == ReplaceEngine.MODE_WORD)
+            msg = if (text.isEmpty()) "Nothing to copy" else if (io.setClip(text, null)) "Rules copied. Formatter > Rules > Rules from clipboard" else "Copy failed"
+        } catch (_: Throwable) { msg = "Copy failed" }
+        confirmAll = false
+        refresh()
+    }
+
+    /** Loads help example [i] into Find / With and the mode, then shows the main view. */
+    private fun useExample(i: Int) {
+        val e = ReplaceHelp.example(i) ?: return
+        find = e.find.take(ReplacePads.FIELD_MAX)
+        repl = e.with.take(ReplacePads.FIELD_MAX)
+        opt.mode = e.mode
+        opt.matchCase = e.matchCase
+        setRules = null; setName = null; setRun = null
+        usedSel = false; typing = 0; confirmAll = false; step = 0
+        msg = "Example loaded"
+        readSource(false)
+        refresh()
+    }
+
+    private fun helpView(): View {
+        val root = LinearLayout(ctx)
+        root.orientation = LinearLayout.VERTICAL
+        paintBg(root)
+        root.setPadding(dp(2), dp(4), dp(2), dp(4))
+        val back: () -> Unit = { typing = 0; refresh() }
+        val h = row()
+        h.addView(btn("\u2190 Back", 1f, 34) { back() })
+        for (i in ReplaceHelp.PAGES.indices) {
+            val on = i == ReplaceHelp.sanitizePage(helpPage)
+            h.addView(btn((if (on) "\u2713 " else "") + ReplaceHelp.PAGES[i], 1f, 34) { helpPage = i; refresh() })
+        }
+        root.addView(h)
+        val sv = ScrollView(ctx)
+        sv.layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(170))
+        val col = LinearLayout(ctx)
+        col.orientation = LinearLayout.VERTICAL
+        val page = ReplaceHelp.sanitizePage(helpPage)
+        val intro = TextView(ctx)
+        intro.text = ReplaceHelp.pageText(page)
+        intro.textSize = 13f
+        intro.setTextColor(dim())
+        intro.setPadding(dp(8), dp(6), dp(8), dp(6))
+        col.addView(intro)
+        if (page == ReplaceHelp.P_EXAMPLES) {
+            for (i in 0 until ReplaceHelp.exampleCount()) {
+                val e = ReplaceHelp.example(i) ?: continue
+                val r = row()
+                r.addView(btn(e.lang + ": " + e.find + " \u2192 " + e.with, 1f, 40) { useExample(i) })
+                col.addView(r)
+                val t = TextView(ctx)
+                t.text = e.what + "\n" + e.input + "\n\u2192 " + e.expected
+                t.textSize = 12f
+                t.setTextColor(dim())
+                t.setPadding(dp(8), dp(0), dp(8), dp(6))
+                col.addView(t)
+            }
+        }
+        sv.addView(col)
+        root.addView(sv)
+        return root
+    }
+
+    // ------------------------------------------------------------------ Recent pairs (v0.26.0 R3, step 3f)
+
+    private fun recordPair() {
+        try {
+            if (!RecentPairs.shouldRecord(prefs.bool(RecentPairs.PREF_ON, false), io.blocked(), find, setRules != null)) return
+            val list = RecentPairs.add(RecentPairs.parse(prefs.str(RecentPairs.PREF_LIST, "")), find, repl)
+            prefs.setStr(RecentPairs.PREF_LIST, RecentPairs.serialize(list))
+        } catch (_: Throwable) { }
+    }
+
+    private fun usePair(p: RecentPairs.Pair) {
+        find = p.find.take(ReplacePads.FIELD_MAX)
+        repl = p.with.take(ReplacePads.FIELD_MAX)
+        setRules = null; setName = null; setRun = null
+        usedSel = false; typing = 0; confirmAll = false; rprAsk = false; step = 0
+        msg = "Pair loaded"
+        readSource(false)
+        refresh()
+    }
+
+    private fun recentView(): View {
+        val root = LinearLayout(ctx)
+        root.orientation = LinearLayout.VERTICAL
+        paintBg(root)
+        root.setPadding(dp(2), dp(4), dp(2), dp(4))
+        val on = prefs.bool(RecentPairs.PREF_ON, false)
+        val list = if (on) RecentPairs.parse(prefs.str(RecentPairs.PREF_LIST, "")) else ArrayList<RecentPairs.Pair>()
+        val clear: () -> Unit = {
+            if (!rprAsk) { rprAsk = true; refresh() }
+            else { rprAsk = false; prefs.setStr(RecentPairs.PREF_LIST, ""); refresh() }
+        }
+        val clearLabel = if (rprAsk) "Sure? Clear" else "Clear"
+        val back: () -> Unit = { typing = 0; rprAsk = false; refresh() }
+        val acts: List<Pair<String, () -> Unit>> = if (list.isEmpty()) emptyList() else listOf(Pair(clearLabel, clear))
+        var newHead: View? = null
+        if (newLook()) { try { newHead = PanelKit.header(ctx, prefs, host, "Recent pairs", "<", acts) { back() } } catch (_: Throwable) { newHead = null } }
+        val headView: View = newHead ?: run {
+            val h = row()
+            h.addView(btn("\u2190 Back", 1f, 34) { back() })
+            val hint = TextView(ctx)
+            hint.text = "Recent pairs"
+            hint.textSize = 12f
+            hint.setTextColor(dim())
+            hint.gravity = Gravity.CENTER_VERTICAL
+            hint.layoutParams = LinearLayout.LayoutParams(0, dp(34), 2f)
+            h.addView(hint)
+            if (list.isNotEmpty()) h.addView(btn(clearLabel, 1.2f, 34) { clear() })
+            h
+        }
+        root.addView(headView)
+        if (list.isEmpty()) {
+            val t = TextView(ctx)
+            t.text = RecentPairs.emptyText(on)
+            t.textSize = 13f
+            t.setTextColor(dim())
+            t.setPadding(dp(8), dp(8), dp(8), dp(8))
+            root.addView(t)
+            return root
+        }
+        root.addView(UiKit.noteText(ctx, prefs, "Tap a pair to fill Find and With."))
+        val sv = ScrollView(ctx)
+        sv.layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(170))
+        val col = LinearLayout(ctx)
+        col.orientation = LinearLayout.VERTICAL
+        for (p in list) {
+            val r = row()
+            r.addView(btn(RecentPairs.label(p, 18), 1f, 40) { usePair(p) })
+            col.addView(r)
+        }
+        sv.addView(col)
+        root.addView(sv)
+        return root
+    }
+
+    // ------------------------------------------------------------------ typing view (small keyboard)
+
+    private fun cur(): String = if (typing == 1) find else repl
+    private fun setCur(v: String) { if (typing == 1) find = v else repl = v; confirmAll = false }
+
+    private fun showValue() {
+        val v = cur()
+        val s = if (v.length > 60) "\u2026" + ReplaceExtras.tail(v, 60) else v   // v0.28.0: surrogate-safe cut
+        valueTv?.text = (if (typing == 1) "Find: " else "With: ") + s + "\u258F"
+    }
+
+    private fun typeText(s: String) { setCur(ReplacePads.append(cur(), s)); showValue() }
+
+    private fun typeTok(tok: String) {
+        var v = ReplacePads.value(tok)
+        if (shift && padPage == 0) { v = v.uppercase(); shift = false; fillKeys() }
+        if ((v == "\\n" || v == "\\t") && opt.mode != ReplaceEngine.MODE_REGEX && !opt.escapes) { opt.escapes = true; saveOpt(); msg = "Option \\n turned ON (it makes \\n a new line)" }
+        typeText(v)
+    }
+
+    private fun typeView(): View {
+        val root = LinearLayout(ctx)
+        root.orientation = LinearLayout.VERTICAL
+        paintBg(root)
+        root.setPadding(dp(2), dp(4), dp(2), dp(4))
+
+        val head = row()
+        val tv = TextView(ctx)
+        tv.textSize = 15f
+        tv.setTextColor(ink())
+        tv.setPadding(dp(8), 0, dp(4), 0)
+        tv.gravity = android.view.Gravity.CENTER_VERTICAL
+        tv.maxLines = 1
+        val lp = LinearLayout.LayoutParams(0, dp(34), 3.2f)
+        lp.setMargins(dp(2), dp(2), dp(2), dp(2))
+        tv.layoutParams = lp
+        head.addView(tv)
+        valueTv = tv
+        head.addView(btn("Clear", 1f, 34) { setCur(""); showValue() })
+        head.addView(btn(if (typing == 1) "Next: With" else "Next: Find", 1.4f, 34) { typing = if (typing == 1) 2 else 1; padPage = 0; shift = false; refresh() })
+        root.addView(head)
+        showValue()
+
+        val box = LinearLayout(ctx)
+        box.orientation = LinearLayout.VERTICAL
+        root.addView(box)
+        keysBox = box
+        fillKeys()
+        return root
+    }
+
+    private fun fillKeys() {
+        val box = keysBox ?: return
+        box.removeAllViews()
+        for (ri in 0..3) {
+            val r = row()
+            if (padPage == 0 && ri == 3) r.addView(btn((if (shift) "\u2713" else "") + "Aa", 1.4f, 34) { shift = !shift; fillKeys() })
+            for (tok in ReplacePads.tokens(padPage, ri)) {
+                val lab = ReplacePads.label(tok)
+                r.addView(btn(if (shift && padPage == 0) lab.uppercase() else lab, 1f, 34) { typeTok(tok) })
+            }
+            box.addView(r)
+        }
+        val bot = row()
+        bot.addView(btn(ReplacePads.PAGE_NAMES[ReplacePads.next(padPage)], 1.3f, 34) { padPage = ReplacePads.next(padPage); shift = false; fillKeys() })
+        bot.addView(btn("\u2423", 3f, 34) { typeText(" ") })
+        bot.addView(btn("\u232B", 1.3f, 34) { setCur(ReplacePads.backspace(cur())); showValue() })
+        bot.addView(btn("\u2713 Done", 1.4f, 34) { typing = 0; valueTv = null; keysBox = null; readSource(false); refresh() })
+        box.addView(bot)
+    }
+}

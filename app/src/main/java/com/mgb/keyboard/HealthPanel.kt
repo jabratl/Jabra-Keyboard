@@ -122,6 +122,7 @@ object HealthRun {
         fun int(k: String, d: Int): Int = try { s.getInt(k, d) } catch (_: Throwable) { d }
         i.clips = str("clips_v1"); i.fmtCur = str("fmt_cur"); i.fmtPresets = str("fmt_presets"); i.ctJson = str("ct_json")
         i.theme = int("theme", 0)
+        i.rpSets = str("rp_sets")   // v0.27.0: Find & Replace saved sets
         i.vault = readFile(File(ctx.filesDir, "vault_v1.json"))
         i.profiles = readFile(File(ctx.filesDir, "profiles_v1.json"))
         try {

@@ -50,6 +50,7 @@ public final class HealthCheck {
         public boolean extSet = false;      // v0.10.7: pref bk_ext_uri not empty
         public boolean extAccessOk = false; // v0.10.7: app still holds the permission for that folder
         public String extLast = "";         // v0.10.7: pref bk_ext_last
+        public String rpSets = "";          // v0.27.0: pref rp_sets (Find & Replace saved sets, JSON)
         public int vaultCount = 0;          // v0.10.7: Vault entries on disk (<= 0 = none / unreadable)
     }
 
@@ -115,6 +116,13 @@ public final class HealthCheck {
             boolean active = in.now - in.crashT < BLOCK_MS;
             out.add(new Item("crash", active ? BAD : WARN, "Panel \"" + in.crashPanel + "\" " + (active ? "is switched off after " : "crashed ") + in.crashN + " crashes in a row", "crash"));
         } else out.add(new Item("crash", OK, "Panels: no repeated crash", ""));
+        // Find & Replace saved sets (v0.27.0): report only
+        try {
+            String r = in.rpSets == null ? "" : in.rpSets.trim();
+            if (r.isEmpty() || r.equals("{}")) out.add(new Item("replace", OK, "Find & Replace: no saved sets (ready-made sets always work)", ""));
+            else if (isJson(r)) out.add(new Item("replace", OK, "Find & Replace: saved sets readable", ""));
+            else out.add(new Item("replace", WARN, "Find & Replace: saved sets damaged (ready-made sets still work). Restore a backup to get them back.", ""));
+        } catch (Throwable t) { out.add(new Item("replace", BAD, "Find & Replace: could not check", "")); }
         return out;
     }
 

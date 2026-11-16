@@ -37,6 +37,7 @@ public final class PanelTiles {
         new Tile("vault", "Vault", "Clipboard", "vault"),
         new Tile("tt", "Text tools", "Tools", "tt"),
         new Tile("pad", "Pad", "Tools", "pad"),
+        new Tile("rp", "Find & Replace", "Tools", "rpnew"),   // v0.28.0 (R3): "rpnew" = fresh panel (MgbIme resets the old state first, then shows "replace")
         new Tile("profiles", "Profiles", "Data", "profiles"),
     };
 

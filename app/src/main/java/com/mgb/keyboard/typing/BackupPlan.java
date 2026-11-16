@@ -30,6 +30,15 @@ public final class BackupPlan {
         return false;
     }
 
+    /**
+     * v0.26.0 (R3): settings keys that are NEVER saved in a backup and never restored. Same list as before (bk_ upd_ update hist_) + rpr_ (Recent Find / With pairs:
+     * typed text, and a restore must not turn that storage ON by itself). BackupStore.isSkipped uses this.
+     */
+    public static boolean isSkippedPref(String k) {
+        if (k == null) return false;
+        return k.startsWith("bk_") || k.startsWith("upd_") || k.startsWith("update") || k.startsWith("hist_") || k.startsWith("rpr_");
+    }
+
     /** "jabra_20261113.json" */
     public static String externalName(int year, int month, int day) {
         return String.format(Locale.US, "jabra_%04d%02d%02d.json", year, month, day);

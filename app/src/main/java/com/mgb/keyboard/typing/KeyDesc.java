@@ -121,6 +121,7 @@ public final class KeyDesc {
             case "pad": return "Cursor pad";
             case "vault": return "Text Vault";
             case "tt": return "Text tools";
+            case "rp": return "Find and replace";   // v0.24.0 (R1)
             case "profiles": return "Profiles";
             case "keymap": return "Key map";
             case "selword": return "Select word";

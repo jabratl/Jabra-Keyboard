@@ -36,7 +36,17 @@ public class HealthTest {
         // ---- all fine ----
         List<Item> r = HealthCheck.run(base());
         t("all ok", HealthCheck.worst(r) == HealthCheck.OK);
-        t("9 lines", r.size() == 9);
+        t("10 lines", r.size() == 10);
+        {   // v0.27.0: Find & Replace item
+            HealthCheck.Input q = new HealthCheck.Input();
+            q.rpSets = "{\"My set\":{\"r\":\"a => b\",\"c\":0,\"w\":0}}";
+            HealthCheck.Item ok1 = null; for (HealthCheck.Item it : HealthCheck.run(q)) if (it.id.equals("replace")) ok1 = it;
+            t("replace: valid sets = OK", ok1 != null && ok1.level == HealthCheck.OK && ok1.text.contains("readable"));
+            q.rpSets = "{broken"; HealthCheck.Item w1 = null; for (HealthCheck.Item it : HealthCheck.run(q)) if (it.id.equals("replace")) w1 = it;
+            t("replace: damaged = WARN, report only", w1 != null && w1.level == HealthCheck.WARN && w1.fix.isEmpty());
+            q.rpSets = ""; HealthCheck.Item e1 = null; for (HealthCheck.Item it : HealthCheck.run(q)) if (it.id.equals("replace")) e1 = it;
+            t("replace: empty = OK", e1 != null && e1.level == HealthCheck.OK);
+        }
         t("label OK", get(r, "clips").label().startsWith("OK"));
 
         // ---- clips ----

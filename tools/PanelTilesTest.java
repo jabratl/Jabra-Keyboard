@@ -30,7 +30,7 @@ public class PanelTilesTest {
         t("tiles() same count as ALL groups sum", sumOfGroups() == all.size());
         t("every tile group is a known group", allKnown(all));
         t("order follows GROUPS", orderOk(all));
-        String[] must = { "more", "keymap", "typing", "size", "toolbar", "tbquick", "themes", "vault", "tt", "profiles", "clipboard", "format", "emoji", "pad", "tstudio" };
+        String[] must = { "more", "keymap", "typing", "size", "toolbar", "tbquick", "themes", "vault", "tt", "profiles", "clipboard", "format", "emoji", "pad", "tstudio", "rpnew" };
         // every old panel reachable except 'more' itself (tiles replace it)
         for (String r : must) if (!r.equals("more")) t("route reachable: " + r, routes.contains(r));
         t("byRoute keymap", PanelTiles.byRoute("keymap") != null && PanelTiles.byRoute("keymap").group.equals("Languages"));

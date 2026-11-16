@@ -79,6 +79,7 @@ public final class PanelSearchData {
         // Tools / data
         new Item("Text tools", "Tools", "tt", "uppercase lowercase convert"),
         new Item("Cursor / select pad", "Tools", "pad", "move cursor select arrows"),
+        new Item("Find & Replace", "Tools", "rpnew", "replace find regex search swap substitute rules sets recent \uCC3E\uAE30 \uBC14\uAFB8\uAE30 \u7F6E\u63DB \u66FF\u6362 \u0437\u0430\u043C\u0435\u043D\u0430 \u0627\u0633\u062A\u0628\u062F\u0627\u0644"),
         new Item("Profiles", "Data", "profiles", "backup restore save export import"),
         new Item("More settings", "Typing", "more", "extra page"),
         new Item("Settings", "Typing", "settings", "gear home"),

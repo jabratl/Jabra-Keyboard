@@ -60,6 +60,7 @@ public final class PrivacyInfo {
             "Vibrate: key feedback.",
             "Not used: microphone, contacts, location, storage, accounts.",
             "Password fields: nothing is recorded there (no clipboard history, no learned words).",
+            "Find & Replace: the Find / With texts stay in memory only. If you turn on Recent pairs (Data & Backup) the last 10 pairs are saved on this phone, never in a backup. Rule sets you save are kept on this phone.",
             "Your texts, clips and vault stay on this phone. No account, no cloud, no tracking."
         };
     }

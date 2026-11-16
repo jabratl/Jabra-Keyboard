@@ -132,6 +132,13 @@ public class BackupPlanTest {
         w = find(HealthCheck.run(in));
         t("run: access revoked = WARN, no crash", w != null && w.level == HealthCheck.WARN);
 
+        // v0.26.0 (R3): settings keys that never go into a backup / restore
+        t("skip: bk_ upd_ update hist_ (old)", BackupPlan.isSkippedPref("bk_last") && BackupPlan.isSkippedPref("upd_x") && BackupPlan.isSkippedPref("update_check") && BackupPlan.isSkippedPref("hist_on") && BackupPlan.isSkippedPref("hist_days_lv"));
+        t("skip: rpr_on / rpr_list (Recent Find / With)", BackupPlan.isSkippedPref("rpr_on") && BackupPlan.isSkippedPref("rpr_list"));
+        t("skip: rp_opt / rp_sets / theme are normal prefs", !BackupPlan.isSkippedPref("rp_opt") && !BackupPlan.isSkippedPref("rp_sets") && !BackupPlan.isSkippedPref("theme") && !BackupPlan.isSkippedPref("panel_ui"));
+        t("skip: null / empty", !BackupPlan.isSkippedPref(null) && !BackupPlan.isSkippedPref(""));
+        t("skip: prefix only at the start", !BackupPlan.isSkippedPref("my_rpr_x") && !BackupPlan.isSkippedPref("x_hist_on"));
+
         System.out.println("BackupPlanTest: " + ok + " ok, " + bad + " fail");
         if (bad > 0) System.exit(1);
     }

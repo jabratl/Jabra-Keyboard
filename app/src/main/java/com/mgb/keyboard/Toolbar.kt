@@ -29,7 +29,7 @@ object Toolbar {
         "fmt" -> "Aa"; "mode" -> "PH"
         "emoji" -> "\u263A"; "numpad" -> "123"; "sym" -> "#+="; "gear" -> "\u2699"; "voice" -> "\uD83C\uDFA4"
         "globe" -> "\uD83C\uDF10"; "theme" -> "Th"; "onehand" -> "1H"; "size" -> "Sz"; "pad" -> "Pad"; "undo" -> "\u21B6"; "redo" -> "\u21B7"; "vault" -> "Vlt"; "tt" -> "Tt"; "profiles" -> "Pf"; "keymap" -> "Km"
-        "selword" -> "SWd"; "selline" -> "SLn"; "delword" -> "DWd"; "delline" -> "DLn"; "linestart" -> "|<"; "lineend" -> ">|"; "dupline" -> "Dup"; "selnone" -> "Sel0"; "hpause" -> "H\u25CF"   // v0.16.13 (X13): edit items; v0.23.0 (H3): hpause = typing history pause
+        "selword" -> "SWd"; "selline" -> "SLn"; "delword" -> "DWd"; "delline" -> "DLn"; "linestart" -> "|<"; "lineend" -> ">|"; "dupline" -> "Dup"; "selnone" -> "Sel0"; "hpause" -> "H\u25CF"; "rp" -> "Rp"   // v0.24.0 (R1): rp = Find & Replace; v0.16.13 (X13): edit items; v0.23.0 (H3): hpause = typing history pause
         // v0.16.5: keymap; v0.4.4; v0.4.6; v0.5.1
         else -> id
     }
@@ -39,7 +39,7 @@ object Toolbar {
         "cut" -> "Cut"; "copy" -> "Copy"; "paste" -> "Paste"; "plain" -> "Paste plain"
         "emoji" -> "Emoji panel"; "numpad" -> "Number pad (123)"; "sym" -> "Symbols"; "gear" -> "Settings (gear)"
         "voice" -> "Voice typing"; "globe" -> "Next keyboard"; "theme" -> "Theme (cycle)"; "onehand" -> "One-hand (cycle)"; "size" -> "Size page"; "pad" -> "Cursor / select pad"; "undo" -> "Undo"; "redo" -> "Redo"; "vault" -> "Text Vault (snippets / notes / glossary)"; "tt" -> "Text tools (count / case / clean / repeat / date)"; "profiles" -> "Profiles (layout sets)"; "keymap" -> "Key map (Bangla cheat sheet)"
-        "selword" -> "Select word"; "selline" -> "Select line"; "delword" -> "Delete word"; "delline" -> "Delete line"; "linestart" -> "Line start"; "lineend" -> "Line end"; "dupline" -> "Duplicate line"; "selnone" -> "Select none"; "hpause" -> "Typing history: pause / resume"   // v0.16.13 (X13): edit items; v0.23.0 (H3)
+        "selword" -> "Select word"; "selline" -> "Select line"; "delword" -> "Delete word"; "delline" -> "Delete line"; "linestart" -> "Line start"; "lineend" -> "Line end"; "dupline" -> "Duplicate line"; "selnone" -> "Select none"; "hpause" -> "Typing history: pause / resume"; "rp" -> "Find & Replace (advanced)"   // v0.24.0 (R1); v0.16.13 (X13): edit items; v0.23.0 (H3)
         // v0.16.5; v0.4.4; v0.4.6
         else -> id
     }

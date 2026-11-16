@@ -140,6 +140,8 @@ object DataPage {
         try { root.addView(HealthPanel.build(ctx)) } catch (_: Throwable) { }   // v0.5.3 Jabra Health Check
         root.addView(dpHead("Typing history"))   // v0.20.0 (H1): ON / OFF (default OFF), keep time, skips, Pause, Clear
         try { root.addView(HistCard.build(ctx)) } catch (_: Throwable) { }
+        root.addView(dpHead("Recent Find & Replace"))   // v0.26.0 (R3): last 10 Find / With pairs (OFF by default, never in Backup)
+        try { root.addView(RecentCard.build(ctx)) } catch (_: Throwable) { }
         root.addView(dpHead("Privacy"))
         try { root.addView(PrivacyPage.build(ctx)) } catch (_: Throwable) { }   // v0.10.10 (W4): Privacy & storage card
         root.addView(line("Everything is saved only on this phone (settings, clips, presets, backups). Nothing is sent anywhere. The only internet use is \"Check for updates\" and \"Update emoji list\" (only when you tap them). Permissions: Internet (update check, emoji list), Install packages (update), Vibrate. Export / Import and the external backup folder use the system pickers, no storage permission. The external copy goes only to the folder you choose."))
