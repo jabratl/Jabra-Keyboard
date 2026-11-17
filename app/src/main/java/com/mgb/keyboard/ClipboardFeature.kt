@@ -18,6 +18,7 @@ import com.mgb.keyboard.typing.ClipSelect
 import com.mgb.keyboard.typing.ClipOrder   // v0.15.2 (N2)
 import com.mgb.keyboard.typing.ClipSensitive   // v0.10.10 (W4)
 import com.mgb.keyboard.typing.ClipFilter   // v0.16.9 (X9)
+import com.mgb.keyboard.typing.ClipCompact   // v0.33.0 (CC1)
 import com.mgb.keyboard.typing.ClipCopy   // v0.17.58 (C3)
 import com.mgb.keyboard.typing.PanelLayout   // v0.16.9 (X9)
 
@@ -488,6 +489,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
     private var ovOpen = false       // v0.17.58 (C3): the header overflow tray (Manage / Sort / View / Export all / Clear)
     private fun nl(): Boolean = try { ClipLook.newLook(pf) } catch (_: Throwable) { false }   // v0.17.58 (C3): pref clip_new_look (default ON)
     private fun simple(): Boolean = try { nl() && JabraPrefs(ctx).bool("clip_simple", true) } catch (_: Throwable) { false }   // v0.19.8: pref clip_simple (default ON) = flat text filter row + flat list rows with the pin on the right; OFF = exactly v0.19.7
+    private fun compactOn(): Boolean = try { nl() && JabraPrefs(ctx).bool("clip_compact", true) } catch (_: Throwable) { false }   // v0.33.0 (CC1): pref clip_compact (default ON, needs the new look) = lower top row + smaller padding; OFF = exactly v0.32.0
     /** v0.19.8: a flat row + a thin divider line under it. Any problem = the row itself. */
     private fun flatLine(v: View): View = try {
         val w = LinearLayout(ctx)
@@ -508,7 +510,8 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
         val root = LinearLayout(ctx)
         root.orientation = LinearLayout.VERTICAL
         paintBg(root)
-        root.setPadding(dp(2), dp(4), dp(2), dp(4))
+        val cp = compactOn()   // v0.33.0 (CC1)
+        root.setPadding(dp(2), dp(ClipCompact.padV(cp)), dp(2), dp(ClipCompact.padV(cp)))
         try { sel.prune(store.pinnedView("") + store.recentView("")) } catch (_: Throwable) { sel.leave() }
         val selOn = sel.isOn
         if (!selOn) { moreOpen = false; pasteMenu = false }
@@ -518,7 +521,8 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
 
         // ---- sticky top bar
         val top = row()
-        top.addView(ClipBar.func(pf, btn("ABC", 1.0f, t40) { sel.leave(); confirmDel = false; moreOpen = false; host.showLetters() }))   // v0.17.30 (UI6): function-key look
+        val tTop = ClipCompact.rowDp(t40, cp)   // v0.33.0 (CC1): compact top row (OFF = t40)
+        top.addView(ClipBar.func(pf, btn("ABC", ClipCompact.weight(ClipCompact.ABC, cp, false), tTop) { sel.leave(); confirmDel = false; moreOpen = false; host.showLetters() }))   // v0.17.30 (UI6): function-key look
         val slim = nlOn && !selOn && !searching   // v0.17.58 (C3): header = ABC | title + count | search | Add | more
         if (slim) {
             val ttl = TextView(ctx)
@@ -530,10 +534,10 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
             ttl.setPadding(dp(8), 0, dp(4), 0)
             ttl.maxLines = 1
             ttl.ellipsize = TextUtils.TruncateAt.END
-            ttl.layoutParams = LinearLayout.LayoutParams(0, dp(sz(t40)), 2.2f)
+            ttl.layoutParams = LinearLayout.LayoutParams(0, dp(sz(tTop)), 2.2f)
             top.addView(ttl)
         }
-        val searchBtn = btn(if (searching) "✕ Search" else if (slim) "🔍" else "🔍 Search", if (slim) 0.9f else 1.6f, t40) {
+        val searchBtn = btn(if (searching) "✕ Search" else if (slim) "🔍" else "🔍 Search", ClipCompact.weight(ClipCompact.SEARCH, cp, slim), tTop) {
             searching = !searching
             query = ""
             confirmClear = false
@@ -542,8 +546,8 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
         }
         if (slim) JabraIcons.putThemed(ctx, searchBtn, "search")   // v0.18.7: only the icon-only (slim) button; with words (select mode / searching) Glyphs.dress already drew the icon, a 2nd one doubled it and hid "Search"
         top.addView(searchBtn)
-        if (!selOn) { val addB = btn("Add", 1.0f, t40) { addFromField() }; top.addView(if (nlOn) ClipBar.on(ctx, pf, addB) else addB) }   // v0.17.58 (C3): Add = the one filled (primary) button
-        val manageNew = btn(if (selOn) "Done" else if (slim) (if (ovOpen) "\u25B4" else "\u22EF") else "Manage", if (slim) 0.8f else 1.3f, t40) {
+        if (!selOn) { val addB = btn("Add", 1.0f, tTop) { addFromField() }; top.addView(if (nlOn) ClipBar.on(ctx, pf, addB) else addB) }   // v0.17.58 (C3): Add = the one filled (primary) button
+        val manageNew = btn(if (selOn) "Done" else if (slim) (if (ovOpen) "\u25B4" else "\u22EF") else "Manage", ClipCompact.weight(ClipCompact.DONE, cp, slim), tTop) {
             if (slim) { ovOpen = !ovOpen; confirmClear = false; refresh(); return@btn }   // v0.17.58 (C3): \u22EF = overflow tray
             if (selOn) { sel.leave(); moreOpen = false } else sel.enter()
             confirmClear = false

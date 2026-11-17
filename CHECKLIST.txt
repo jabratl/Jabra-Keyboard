@@ -1196,3 +1196,12 @@ FIND & REPLACE PART 1 (v0.24.0) - phone test
 6. Password field: hold [Replace all] / a set: card says "Not available in password fields." (or no card).
 7. Field with 100000 characters: the card appears fast (no freeze).
 8. If NO card appears on a set: the old inline Preview box shows instead (fallback) = tell me, it means PopupWindow does not work in the IME window on this phone.
+
+=== CLIPBOARD v0.33.0 - phone checks (COMPACT HEADER) ===
+1. Open the clipboard (new look): the top row (ABC | title | search | Add | ...) is a bit lower than before and the list starts higher.
+2. Long-press a clip (select mode): top row = ABC | Search | Done. ABC and Done are narrower, Search is wide. All 3 still work.
+3. Tap Search: the row shows "x Search"; type, results filter; tap again = closes.
+4. Settings > Clipboard & tools > "Compact clipboard header" OFF: the clipboard is exactly as in v0.32.0 (taller row, old widths). ON again = compact.
+5. Clipboard button size (70% / 140%): the row follows it, never smaller than a finger can hit (28 dp).
+6. Dark + light theme, portrait + landscape: no text cut inside the 3 buttons (ABC / Search / Done, also with big system font).
+7. Clipboard new look OFF: the old panel appears as before (the compact switch does nothing there).

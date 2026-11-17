@@ -1,0 +1,16 @@
+HANDOFF Jabra-Keyboard v0.33.0 - COMPACT CLIPBOARD HEADER (CC1). Paste this file at the start of the next chat. Rules of work: HANDOFF.txt section 0 (Banglish, patch do not rewrite, RULE 0, ask before new tracking / permission, max 1 question). Owner writes Banglish: reply in Banglish, short, ONLY changed / new files in the zip + handoff.
+Zip name: Jabra-Keyboard_v0_33_0.zip, root folder Jabra-Keyboard-main/. On GitHub the cleanup workflow keeps the newest 5 HANDOFF_Jabra-Keyboard_v*.txt, nothing to delete by hand. Older sections (Find & Replace v0.24 - v0.32, Peek) are in HANDOFF_Jabra-Keyboard_v0.32.0.txt: keep it.
+
+=== v0.33.0 (chat 2026-11-17) - WHAT EXISTS ===
+ OWNER ASK: clipboard keeps ALL options, design = compact + minimalist (screenshots: select mode with 3 header rows + bottom bar, cards cut off; a popover menu style as example). Plan = PLAN_CLIP_COMPACT.txt (4 steps CC1 - CC4). THIS VERSION = CC1 only.
+ CC1 DONE: top row of makeNew (ABC | title | search | Add | menu / Done) is 34 dp instead of 40, ABC / Done narrower, Search wider, panel padding 2 dp. Pref clip_compact (default ON, needs new look; OFF = v0.32.0). Pure numbers: typing/ClipCompact.java (rowDp, weight, padV, savedDp) + tools/ClipCompactTest.java (22 checks).
+ HOOKS in ClipboardFeature.kt: import ClipCompact, compactOn() (after simple()), in makeNew: val cp / tTop, padding line, ABC / title / search / Add / manage use tTop and ClipCompact.weight. Toggle row in SettingsGroups.kt (before "Clipboard new look"); key text in SettingsIndex / HelpPlan, key listed in ChangedPlan ("Look of clips") and SectionPlan.
+ TESTS: bash tools/run_tests.sh = 162 / 162 green. Kotlin NOT compiled; phone NOT tested (CHECKLIST.txt "CLIPBOARD v0.33.0", 7 checks).
+ LIKELY RED SPOTS if Actions is red: ClipboardFeature.kt makeNew: `slim` is declared AFTER the ABC button (ABC uses weight(..., false), fine); ClipCompact import; `tTop` is an Int passed to btn() (btn applies sz() itself, do not wrap it twice; the title TextView uses dp(sz(tTop)) like before).
+ FIRST THING next chat: ask if the GitHub Actions of v0.33.0 is green (and v0.32.0 / v0.31.2 if not yet confirmed).
+
+=== NEXT (see PLAN_CLIP_COMPACT.txt for the full text) ===
+ CC2 v0.34.0: filter row + Undo icon in ONE row, count into the title, no separate info line (pref clip_compact2). Saves a full row.
+ CC3 v0.35.0: slim bottom select bar (icon + 1 word, 34 dp) and a floating pill POPOVER for "More" and for the header 3-dot menu: width about 200 dp, label left + icon right, group dividers, tick on chosen Sort / View, Clear red (pref clip_pop; fallback = old trays; PopupWindow like PeekPopup.kt).
+ CC4 v0.36.0: tighter cards (padding 8 dp, one dim meta line, small checkbox only in select mode, clip_lines clamp + existing More / Less, no half-hidden first / last card) (pref clip_tight).
+ Owner decisions kept: NO Bangla in Find & Replace plans (examples Korean / Japanese / Chinese / Russian / Arabic). Do not rename any pref / id. New look OFF must stay the old panel.

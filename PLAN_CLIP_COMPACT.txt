@@ -1,0 +1,29 @@
+PLAN_CLIP_COMPACT - compact + minimalist clipboard in 4 small steps (owner request 2026-11-17, with screenshots)
+=====================================================================================================
+OWNER WANTS: every existing clipboard option stays. Only the DESIGN gets compact + minimalist: more room for the copied clips, clips not cut off.
+SEEN (screenshot, select mode, simple look): row 1 = ABC | Search | Done, row 2 = All / Pinned / Text / Links / Numbers, row 3 = Undo (right side, alone), then the cards, then the bottom bar (Pin / Delete / Paste / More). Cards: text cut at the top / bottom, big meta row (Aa, 62 - 21m), big checkbox.
+IDEAS the owner liked (from his list + a popover screenshot of an iOS menu): (1) compact pill popover, (2) icon + short label, (3) inline accordion, (4) horizontal chip bar. Menu style to copy (own drawing, not copied art): label LEFT, icon RIGHT, thin group dividers, tick on the active choice, rounded dark card, row 40 dp, red for delete.
+RULES: one step = one version = one topic. Patch only. New behaviour behind ONE pref each (default ON, OFF = exactly the version before). No existing id / pref / handler renamed. Respect clip_btn_pct, clip_list_pct, clip_lines, clip_fit, clip_card_pct.
+
+STEP CC1 (v0.33.0) DONE (Kotlin not compiled, phone not tested)
+  Top row lower (34 dp), ABC / Done narrower, Search wider, panel padding 2 dp. Pref clip_compact (default ON, needs new look). Pure numbers in typing/ClipCompact.java (+ test).
+  Result: about 10 dp more list height, no change of any action.
+
+STEP CC2 (v0.34.0) NEXT - filter row + Undo in ONE row (horizontal chip bar idea)
+  Today: the filter row (pill dropdown or flat chips) and the info / Undo line are 2 rows.
+  Do: Undo becomes a small icon button "undo arrow" at the END of the filter row (only when undoAvail()); the separate info line is not added in select mode (idleSel already skips it) and, in normal mode, the count moves into the title of the top row (title already shows count) so the count line can go. Messages (msg) and the "Delete all unpinned?" confirm keep their own line (they are rare and must be read).
+  Where: ClipboardFeature.makeNew (the 'info line' block + the chips / pill row), new pure helper typing/ClipCompact.java: rowPlan(selOn, undo, msg, confirm) = which of the 2 rows exist (tested).
+  Pref: clip_compact2 (default ON). OFF = v0.33.0 layout.
+  Saves one full row (about 34 dp).
+
+STEP CC3 (v0.35.0) - slim bottom select bar + popover "More" (idea 1 + 2)
+  Today: the bottom bar (selectBarNew) = "N selected" + Pin | Delete | Paste | More, 40 dp, plus a More tray (moreOpen) that pushes the list.
+  Do: bar height 34 dp, each button = small icon + ONE short word (Pin, Delete, Paste), the count goes into the Done button ("3 - Done") or a dim text; "More" opens a floating pill POPOVER above the bar (width about 200 dp, 40 dp rows, label left + icon right, thin divider between groups: [All, Unpin, Merge, Edit] [Paste in 1 line, To Vault, Export]) instead of a tray inside the layout. The popover is a PopupWindow like PeekPopup.kt (same pattern, but touchable); fallback = the old More tray when the popover cannot be shown. Same for the header menu (the 3-dot tray: Manage / Sort / View / Export all / Clear): tick on the chosen Sort / View, Clear in red at the end.
+  Pref: clip_pop (default ON). OFF = old trays. Every old action stays reachable.
+
+STEP CC4 (v0.36.0) - tighter cards (idea 3 spirit: quiet, nothing extra)
+  Card padding 12 -> 8 dp, meta (chars - age) as one dim 11 sp line at the bottom-right, the Aa tag only when a format exists (as now) but smaller, the checkbox only in select mode and smaller (24 dp), text clamp = clip_lines (2 / 4 / 6) with an ellipsis and the existing "More / Less" tap (v0.17.60) so nothing looks cut. Check the top / bottom cut of the first / last card (list padding top / bottom 4 dp so a card is never half hidden at rest).
+  Where: ClipCards.kt, ClipLook.kt, typing/ClipCardSize.java.
+  Pref: clip_tight (default ON). OFF = v0.35.0 cards.
+
+AFTER CC4: phone test of CC1 - CC4 together, then fix from the build log. Ideas NOT planned (only if the owner asks): inline accordion for Sort / View, icon-only top row, swipe to delete.
