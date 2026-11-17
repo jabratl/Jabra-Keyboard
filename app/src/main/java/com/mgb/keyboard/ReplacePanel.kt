@@ -52,6 +52,8 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
     private var usedSel = false            // true = src is the selection
     private var part = 0                   // v0.29.0: 0 = whole field, 1 = from the cursor to the end, 2 = from the start to the cursor
     private var partCut = -1               // cursor position used by part (kept fixed while the panel works, -1 = read it again)
+    private var copiedOut: String? = null    // v0.37.2: result of the last Copy (the Copy button becomes Paste while the result is the same)
+    private var copiedHtml: String? = null
     private var fullText = ""              // the whole field text when part != 0 (src is only a piece of it)
     private var setPreviewOn = false      // v0.31.0: Sets view: a tap shows a preview instead of loading
     private var setPrev: Pair<String, ReplaceStore.Def>? = null
@@ -297,6 +299,7 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
         if (setRules == null) act.addView(btn("1st", 0.6f, 40) { onReplace(ReplaceEngine.replaceFirst(src, find, repl, opt), true) })
         act.addView(btn(scopeLabel(), 1.1f, 40) { toggleScope() })
         if (undoStack.canUndo()) act.addView(btn("\u21B6 " + ReplaceExtras.undoLabel(undoStack.size()), 0.9f, 40) { undo() })
+        else if (copiedOut != null && copiedOut == res.out) act.addView(btn("Paste", 0.9f, 40) { pasteCopied() })
         else act.addView(btn("Copy", 0.9f, 40) { copyResult(res) })
         root.addView(act)
         return root
@@ -434,15 +437,33 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
         return android.text.Html.toHtml(sb, android.text.Html.TO_HTML_PARAGRAPH_LINES_CONSECUTIVE)
     }
 
+    /** v0.37.2: puts the copied result into the field in ONE tap (the user selected all in the app first): with its format when we have it, else plain. */
+    private fun pasteCopied() {
+        val t = copiedOut
+        if (t == null) { refresh(); return }
+        val h = copiedHtml
+        var done = false
+        var withFmt = false
+        if (h != null) { done = try { host.pasteFormatted(t, h) } catch (_: Throwable) { false }; withFmt = done }
+        if (!done) done = try { host.commitWord(); host.typeText(t); true } catch (_: Throwable) { false }
+        if (done) { copiedOut = null; copiedHtml = null }
+        msg = if (done) (if (withFmt) "Pasted with format" else "Pasted") else "Could not paste. Use the app's Paste"
+        readSource(false)
+        refresh()
+    }
+
     private fun copyResult(res: ReplaceEngine.Result) {
         var how = ""
         var ok = false
+        var lastHtml: String? = null
         if (res.err == null && !res.blank && res.count > 0) {
-            val html = try { richHtml(res) } catch (_: Throwable) { null }   // v0.37.1: keep the bold / italic / links of the rest of the text when the app gives them
+            val html = try { richHtml(res) } catch (_: Throwable) { null }
+            lastHtml = html   // v0.37.1: keep the bold / italic / links of the rest of the text when the app gives them
             ok = io.setClip(res.out, html)
             how = if (html != null) " (with format)" else " (plain text: this app gives no format)"
         }
-        msg = if (ok) "Result copied" + how else "Nothing to copy"
+        if (ok) { copiedOut = res.out; copiedHtml = lastHtml }
+        msg = if (ok) "Copied" + how + ". In the app: select all, then tap Paste" else "Nothing to copy"
         confirmAll = false
         refresh()
     }
@@ -778,6 +799,7 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
         if (setRules == null) act.addView(btn("1st", 0.7f, 44) { onReplace(ReplaceEngine.replaceFirst(src, find, repl, opt), true) })
         act.addView(btn(scopeLabel(), 1.3f, 44) { toggleScope() })
         if (undoStack.canUndo()) act.addView(btn("\u21B6 " + ReplaceExtras.undoLabel(undoStack.size()), 1f, 44) { undo() })
+        else if (copiedOut != null && copiedOut == res.out) act.addView(btn("Paste", 1f, 44) { pasteCopied() })
         else act.addView(btn("Copy", 1f, 44) { copyResult(res) })
         root.addView(act)
         return root

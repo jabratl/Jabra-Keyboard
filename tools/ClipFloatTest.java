@@ -15,6 +15,11 @@ public class ClipFloatTest {
         ok(!ClipFloat.wants(true, true, true, false), "searching = old bar");
         ok(!ClipFloat.wants(true, true, false, true), "old tray open = old bar");
         ok(ClipFloat.animate(false) && !ClipFloat.animate(true), "animate only on first show");
+        ok(ClipFloat.scrollAction(50, 10, 6, false) == -1, "scroll down hides");
+        ok(ClipFloat.scrollAction(10, 50, 6, false) == 1, "scroll up shows");
+        ok(ClipFloat.scrollAction(12, 10, 6, false) == 0, "tiny move keeps");
+        ok(ClipFloat.scrollAction(50, 10, 6, true) == 1, "end of list shows");
+        ok(ClipFloat.countText(3).equals("3") && ClipFloat.countText(150).equals("99+") && ClipFloat.countText(-2).equals("0"), "count text");
         System.out.println("ClipFloatTest " + (fails == 0 ? "OK " + n + "/" + n : "FAILED " + fails));
         if (fails > 0) System.exit(1);
     }

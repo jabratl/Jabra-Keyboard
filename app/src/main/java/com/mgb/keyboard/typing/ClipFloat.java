@@ -28,6 +28,18 @@ public final class ClipFloat {
         return selOn && prefOn && !searching && !trayOpen;
     }
 
+    /** Scroll reaction of the pill: 1 = show, -1 = hide, 0 = keep. Down (finger moves list up) hides, up shows, the end of the list shows. */
+    public static int scrollAction(int y, int oldY, int thresholdPx, boolean atBottom) {
+        if (atBottom) return 1;
+        int d = y - oldY;
+        if (d > thresholdPx) return -1;
+        if (d < -thresholdPx) return 1;
+        return 0;
+    }
+
+    /** Text of the count badge in the pill. */
+    public static String countText(int n) { return n > 99 ? "99+" : String.valueOf(Math.max(0, n)); }
+
     /** The slide-in plays only when the pill was NOT there in the previous build (every tap rebuilds the panel; it must not flicker). */
     public static boolean animate(boolean wasShown) { return !wasShown; }
 }

@@ -518,7 +518,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
             else acts.add(ClipFloatBar.Act("Delete", "trash", 1.1f, false) { actDelete() })
             acts.add(ClipFloatBar.Act("Paste", "paste", 1f, false) { actPaste(false) })
             acts.add(ClipFloatBar.Act("More", "more", 1f, false) { moreToggle() })
-            val b = ClipFloatBar.build(ctx, pf, acts, sz(ClipCompact.barDp(PanelLayout.MIN_TOUCH, true)), ClipFloat.animate(floatShown)) { v -> try { host.feedback(v) } catch (_: Throwable) { } } ?: return null
+            val b = ClipFloatBar.build(ctx, pf, acts, sz(ClipCompact.barDp(PanelLayout.MIN_TOUCH, true)), ClipFloat.animate(floatShown), n) { v -> try { host.feedback(v) } catch (_: Throwable) { } } ?: return null
             barAnchor = b.pill   // the More popover opens upward from the pill
             floatShown = true
             return b.wrap
@@ -897,6 +897,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
         val floatV: View? = if (floatBarOn()) floatBarV(visible) else null   // v0.37.0
         if (!selOn) floatShown = false
         if (floatV != null) { try { sv.clipToPadding = false; sv.setPadding(0, 0, 0, dp(ClipFloat.listPadDp(ClipCompact.barDp(PanelLayout.MIN_TOUCH, true)))) } catch (_: Throwable) { } }   // last clip can scroll above the pill
+        if (floatV != null) { try { ClipFloatBar.followScroll(sv, floatV, dp(6), dp(10)) } catch (_: Throwable) { } }   // v0.37.2: hide while scrolling down
         root.addView(sv)
         try {   // same scroll keeping as X1
             curSv = sv

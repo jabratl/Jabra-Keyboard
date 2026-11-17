@@ -1266,3 +1266,11 @@ FIND & REPLACE PART 1 (v0.24.0) - phone test
 6. Tap Done / deselect all: the pill disappears.
 7. Settings > Clipboard > "Floating select bar" OFF: the old slim bar is back, exactly as v0.36.5.
 8. Dark and light theme: pill text + icons readable, pill not see-through.
+
+
+=== v0.37.2 - phone checks (Replace Paste + pill scroll / count) ===
+1. Select 3 clips: the pill shows a round "3" at the left, then Pin / Delete / Paste / More.
+2. Scroll the clip list DOWN: the pill slides away. Scroll UP a little: it comes back. Scroll to the very end: it is there.
+3. Tap a clip (select / unselect): the count changes, the pill is visible.
+4. Replace panel, in an app where "Could not replace": tap Copy, message says "Copied (...). In the app: select all, then tap Paste". Now the button reads "Paste". In the app select all, tap Paste: the text is replaced (with format in apps that take it).
+5. Change Find / With: the button is "Copy" again.

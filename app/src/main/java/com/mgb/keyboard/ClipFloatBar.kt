@@ -25,7 +25,7 @@ object ClipFloatBar {
     class Act(val label: String, val icon: String?, val weight: Float, val danger: Boolean, val onTap: () -> Unit)
     class Built(val wrap: View, val pill: View)
 
-    fun build(ctx: Context, p: JabraPrefs, acts: List<Act>, barDp: Int, animate: Boolean, feedback: (View) -> Unit): Built? {
+    fun build(ctx: Context, p: JabraPrefs, acts: List<Act>, barDp: Int, animate: Boolean, count: Int, feedback: (View) -> Unit): Built? {
         try {
             if (acts.isEmpty()) return null
             val ink = JabraTokens.cardText(p)
@@ -47,6 +47,23 @@ object ClipFloatBar {
             } catch (_: Throwable) { pill.setBackgroundColor(Color.WHITE) }
             try { pill.elevation = JabraTokens.dp(ctx, 6).toFloat() } catch (_: Throwable) { }
 
+            if (count > 0) {   // count badge: how many clips are selected
+                try {
+                    val bd = TextView(ctx)
+                    bd.text = ClipFloat.countText(count)
+                    bd.textSize = 12f
+                    bd.setTypeface(bd.typeface, android.graphics.Typeface.BOLD)
+                    bd.setTextColor(ink)
+                    bd.gravity = Gravity.CENTER
+                    val g2 = GradientDrawable(); g2.setColor(JabraTokens.withAlpha(ink, 0x26)); g2.cornerRadius = JabraTokens.dp(ctx, 12).toFloat()
+                    bd.background = g2
+                    bd.minWidth = JabraTokens.dp(ctx, 24)
+                    bd.setPadding(JabraTokens.dp(ctx, 6), 0, JabraTokens.dp(ctx, 6), 0)
+                    bd.contentDescription = count.toString() + " selected"
+                    bd.layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, JabraTokens.dp(ctx, 24)).also { it.rightMargin = JabraTokens.dp(ctx, 2) }
+                    pill.addView(bd)
+                } catch (_: Throwable) { }
+            }
             for (a in acts) pill.addView(cell(ctx, a, ink, iconCol, iconOn, pillPx, feedback))
 
             val wrap = LinearLayout(ctx)
@@ -67,6 +84,30 @@ object ClipFloatBar {
             }
             return Built(wrap, pill)
         } catch (_: Throwable) { return null }
+    }
+
+    /** Pill hides while the list scrolls down, shows again when it scrolls up or reaches the end. Armed only by a real touch (a restored scroll position after a rebuild must not hide it). */
+    fun followScroll(sv: android.widget.ScrollView, wrap: View, thrPx: Int, slidePx: Int) {
+        var hidden = false
+        var armed = false
+        sv.setOnTouchListener { _, _ -> armed = true; false }
+        sv.setOnScrollChangeListener { v, _, y, _, oy ->
+            try {
+                if (!armed) return@setOnScrollChangeListener
+                val s = v as android.widget.ScrollView
+                val c = s.getChildAt(0)
+                val range = if (c == null) 0 else c.height + s.paddingTop + s.paddingBottom - s.height
+                val act = ClipFloat.scrollAction(y, oy, thrPx, range > 0 && y >= range - 2)
+                if (act < 0 && !hidden) {
+                    hidden = true
+                    wrap.animate().alpha(0f).translationY(slidePx.toFloat()).setDuration(120).withEndAction { if (hidden) wrap.visibility = View.INVISIBLE }.start()
+                } else if (act > 0 && hidden) {
+                    hidden = false
+                    wrap.visibility = View.VISIBLE
+                    wrap.animate().alpha(1f).translationY(0f).setDuration(120).start()
+                }
+            } catch (_: Throwable) { }
+        }
     }
 
     private fun cell(ctx: Context, a: Act, ink: Int, iconCol: Int, iconOn: Boolean, hPx: Int, feedback: (View) -> Unit): View {
