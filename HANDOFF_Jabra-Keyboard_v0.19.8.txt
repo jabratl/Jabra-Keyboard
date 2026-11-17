@@ -1,4 +1,0 @@
-HANDOFF Jabra-Keyboard v0.19.8 - Simple clipboard look (note; v0.19.7 note: HANDOFF_Jabra-Keyboard_v0.19.7.txt)
-Owner writes Bangla / Banglish: reply in Banglish, short.
-DONE: pref clip_simple (default ON) in ClipboardFeature.makeNew / itemRow / itemRowTidy. Mock the owner approved: header ABC | title | search | Add | ..., ONE flat filter chip row, flat rows with pin on the right, select bar Pin | Delete | Paste | More.
-OPEN (phone): look on dark / custom themes, hold-to-select on flat rows, chip row with 5 labels on small phones. Possible next steps only if the owner asks: meta line moved to a quieter colour, Cards view in the same flat style, Undo pill back in the "..." menu.

@@ -1,8 +1,0 @@
-HANDOFF Jabra-Keyboard v0.19.7 - FIX: Bangla in browser / URL fields (small note; the big plan file is HANDOFF_Jabra-Keyboard_v0.19.6_DropdownPlan.txt)
-Written 2026-11-15. Owner writes Bangla / Banglish: reply in Banglish, short, simple words.
-
-1) PROBLEM (owner): in some browsers the keyboard is English only. Swipe on space switches the language mode, but keys show English letters and typing is English.
-2) ROOT CAUSE: MgbIme.onStartInputView -> latinOnly = true for TYPE_TEXT_VARIATION_URI (also password / email / non-text classes). latinOnly forces layer "en" (LayoutRoute.layerFor), no phonetic, no Bangla hints. Browser address / search bars report URL.
-3) FIX (v0.19.7): pref bn_url (default ON) = URI no longer forces English. OFF = old rule. Password / email / number / phone fields unchanged (always English).
-4) NOT DONE / OPEN: phone test. If a normal web page text box is still English the browser reports another type (cls != TEXT, or TYPE_NULL): ask the owner for browser name + which field, then log editorInfo.inputType and widen the rule in the SAME place (MgbIme.kt, latinOnly block). Do not touch password / email.
-5) Files: MgbIme.kt, SettingsGroups.kt, typing/SettingsIndex.java, typing/SectionPlan.java, typing/ChangedPlan.java, app/build.gradle.kts, CHANGELOG.txt. Tests: bash tools/run_tests.sh = 148/148.
