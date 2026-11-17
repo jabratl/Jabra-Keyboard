@@ -83,7 +83,7 @@ class MgbIme : InputMethodService() {
     private var pwdField = false               // true in password fields: nothing is recorded there
     private var clipListener: ClipboardManager.OnPrimaryClipChangedListener? = null
     private val clipStore by lazy { ClipStore(JabraPrefs(this), ClipFmtStore(this)) }   // v0.17.39 (M6)
-    private val clipPanel by lazy { ClipPanel(this, host, clipStore) { fieldText() }.also { cp -> cp.toVault = { l -> vaultPanel.saveFromClips(l) } } }   // v0.2.5.1: Add button reads the field; v0.4.4: "To Vault" button
+    private val clipPanel by lazy { ClipPanel(this, host, clipStore) { fieldText() }.also { cp -> cp.toVault = { l -> vaultPanel.saveFromClips(l) }; cp.toReplace = { it0 -> openReplaceInClip(it0) } } }   // v0.2.5.1: Add button reads the field; v0.4.4: "To Vault" button
     private val vaultStore by lazy { VaultStore(this) }   // v0.4.4 Personal Text Vault (file vault_v1.json, loaded only when the panel opens)
     private val vaultPanel by lazy { VaultPanel(this, host, vaultStore) { fieldText() } }   // v0.4.4
     private val studioPanel by lazy { ThemeStudio(this, host) }   // v0.4.8 custom theme studio
@@ -1475,6 +1475,12 @@ class MgbIme : InputMethodService() {
     }
 
     /** v0.28.0 (R3): same as the toolbar key "rp": never in password fields, reset the old Find / With, then the panel. */
+    /** v0.29.0: Find & Replace on ONE clip (clip More tray > Replace). Result is saved back into the same clip. */
+    private fun openReplaceInClip(item: com.mgb.keyboard.clip.ClipList.Item) {
+        try { rpPanel.openForClip(ClipReplaceIo(clipStore, item.text, ImeFmtIo(this) { pwdField })) } catch (_: Throwable) { return }
+        showPanel("replace")
+    }
+
     private fun openReplaceFresh() {
         try { if (pwdField) { showLetters(); return } } catch (_: Throwable) { }
         try { rpPanel.reset() } catch (_: Throwable) { }
