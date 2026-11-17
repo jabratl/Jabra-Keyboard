@@ -52,7 +52,7 @@ public final class ReplaceEngine {
     public static final class Hit {
         public final int start, end;
         public final String found, repl;
-        Hit(int start, int end, String found, String repl) { this.start = start; this.end = end; this.found = found; this.repl = repl; }
+        public Hit(int start, int end, String found, String repl) { this.start = start; this.end = end; this.found = found; this.repl = repl; }
     }
 
     public static final class Result {
@@ -62,6 +62,7 @@ public final class ReplaceEngine {
         public boolean blank = false; // Find is empty
         public String err = null;     // null = ok
         public List<Hit> hits = new ArrayList<Hit>();   // first MAX_HITS matches (found + replacement) for the preview
+        public List<Hit> edits = new ArrayList<Hit>();  // v0.36.2: EVERY replaced match (ascending), so the field can be changed match by match (the rest of the text keeps its format)
     }
 
     private static final class Timeout extends RuntimeException {
@@ -125,7 +126,7 @@ public final class ReplaceEngine {
             int pos = 0, idx = 0, changed = 0;
             while (m.find()) {
                 idx++;
-                if (idx > MAX_MATCHES) { r.err = "Too many matches (more than " + MAX_MATCHES + "). Make Find more exact"; r.out = text; r.count = 0; r.changed = 0; r.hits.clear(); return r; }
+                if (idx > MAX_MATCHES) { r.err = "Too many matches (more than " + MAX_MATCHES + "). Make Find more exact"; r.out = text; r.count = 0; r.changed = 0; r.hits.clear(); r.edits.clear(); return r; }
                 boolean doIt = idx >= first && idx <= last;
                 String found = text.substring(m.start(), m.end());
                 String rep = null;
@@ -135,24 +136,25 @@ public final class ReplaceEngine {
                     out.append(rep);
                     pos = m.end();
                     changed++;
-                    if (out.length() > MAX_OUT) { r.err = "Result would be too long"; r.out = text; r.count = 0; r.changed = 0; r.hits.clear(); return r; }
+                    r.edits.add(new Hit(m.start(), m.end(), found, rep));   // v0.36.2
+                    if (out.length() > MAX_OUT) { r.err = "Result would be too long"; r.out = text; r.count = 0; r.changed = 0; r.hits.clear(); r.edits.clear(); return r; }
                 }
                 if (r.hits.size() < MAX_HITS) r.hits.add(new Hit(m.start(), m.end(), found, rep == null ? found : rep));
             }
             out.append(text, pos, text.length());
             r.count = idx;
             r.changed = changed;
-            if (out.length() > MAX_OUT) { r.err = "Result would be too long"; r.out = text; r.changed = 0; return r; }
+            if (out.length() > MAX_OUT) { r.err = "Result would be too long"; r.out = text; r.changed = 0; r.edits.clear(); return r; }
             r.out = changed == 0 ? text : out.toString();
         } catch (Timeout t) {
             r.err = "Too slow: this pattern is too complex";
-            r.out = text; r.count = 0; r.changed = 0; r.hits.clear();
+            r.out = text; r.count = 0; r.changed = 0; r.hits.clear(); r.edits.clear();
         } catch (StackOverflowError so) {
             r.err = "Pattern is too complex";
-            r.out = text; r.count = 0; r.changed = 0; r.hits.clear();
+            r.out = text; r.count = 0; r.changed = 0; r.hits.clear(); r.edits.clear();
         } catch (RuntimeException e) {
             r.err = "Could not run this replace";
-            r.out = text; r.count = 0; r.changed = 0; r.hits.clear();
+            r.out = text; r.count = 0; r.changed = 0; r.hits.clear(); r.edits.clear();
         }
         return r;
     }

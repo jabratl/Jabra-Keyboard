@@ -39,6 +39,8 @@ interface FmtIo {
     fun clipHtml(): String?
     fun setClip(plain: String, html: String?): Boolean
     fun selectRange(start: Int, end: Int): Boolean = false   // v0.25.0 (R2): select a match in the field (default: not supported)
+    /** v0.36.2: change the field MATCH BY MATCH (base = where the edited piece starts in the field). false = not possible here -> the caller uses replaceAll(after). Default: not supported. */
+    fun replaceEdits(base: Int, before: String, after: String, edits: List<com.mgb.keyboard.typing.ReplaceEngine.Hit>): Boolean = false
     fun cursorPos(): Int = -1   // v0.29.0: caret position in wholeText() (-1 = unknown; used by Find & Replace "From / To cursor")
 }
 
@@ -61,6 +63,41 @@ class ImeFmtIo(private val svc: InputMethodService, private val isPwd: () -> Boo
     } catch (_: Throwable) { false }
 
     override fun selected(): String? = try { ic()?.getSelectedText(0)?.toString() } catch (_: Throwable) { null }
+
+    // ---- v0.36.2: match-by-match replace (the text between the matches is never rewritten, so its bold / italic / links stay) ----
+    private class EditRec(val res: String, val orig: String, val inv: List<com.mgb.keyboard.typing.ReplaceEngine.Hit>, val base: Int)
+    private val editRecs = ArrayList<EditRec>()
+
+    /** Last match first (earlier offsets stay valid): select it, check the selected text really is the found text, commit the replacement. false = anything unexpected. */
+    private fun applyEdits(c: android.view.inputmethod.InputConnection, base: Int, edits: List<com.mgb.keyboard.typing.ReplaceEngine.Hit>): Boolean {
+        for (h in edits.sortedByDescending { it.start }) {
+            val a = base + h.start
+            val b = base + h.end
+            if (!c.setSelection(a, b)) return false
+            if (b > a) { val got = c.getSelectedText(0)?.toString() ?: return false; if (got != h.found) return false }
+            if (!c.commitText(h.repl, 1)) return false
+        }
+        return true
+    }
+
+    override fun replaceEdits(base: Int, before: String, after: String, edits: List<com.mgb.keyboard.typing.ReplaceEngine.Hit>): Boolean {
+        val c = ic() ?: return false
+        if (edits.isEmpty() || edits.size > 2000 || base < 0) return false
+        if (!com.mgb.keyboard.typing.EditPlan.matches(before, after, edits)) return false
+        var ok = false
+        try {
+            if (wholeText() != before) return false   // the field changed meanwhile: do nothing here
+            c.beginBatchEdit()
+            ok = applyEdits(c, base, edits)
+        } catch (_: Throwable) { ok = false } finally { try { c.endBatchEdit() } catch (_: Throwable) { } }
+        if (ok) ok = try { wholeText() == after } catch (_: Throwable) { false }   // never report success for a wrong result
+        if (ok) {
+            try { c.setSelection(after.length, after.length) } catch (_: Throwable) { }   // caret at the end, same as the whole-text replace
+            editRecs.add(EditRec(after, before, com.mgb.keyboard.typing.EditPlan.inverse(edits), base))
+            while (editRecs.size > 10) editRecs.removeAt(0)
+        }
+        return ok   // false after a half-done try: the caller's replaceAll(after) still writes the right text
+    }
 
     /** Ordered stages (data): 1 = editor's extracted text, 2 = text around the cursor. A failed stage is logged, then the next one runs. */
     override fun wholeText(): String? {
@@ -117,6 +154,20 @@ class ImeFmtIo(private val svc: InputMethodService, private val isPwd: () -> Boo
     /** Undo only if the text we inserted is still right before the cursor. */
     override fun undoReplace(res: String, orig: String): Boolean {
         val c = ic() ?: return false
+        try {   // v0.36.2: a match-by-match replace is undone match by match too (format of the rest stays)
+            val i = editRecs.indexOfLast { it.res == res && it.orig == orig }
+            if (i >= 0) {
+                val rec = editRecs[i]
+                if (wholeText() == res) {
+                    var ok = false
+                    try { c.beginBatchEdit(); ok = applyEdits(c, rec.base, rec.inv) } catch (_: Throwable) { ok = false } finally { try { c.endBatchEdit() } catch (_: Throwable) { } }
+                    if (ok) ok = wholeText() == orig
+                    if (ok) { try { c.setSelection(orig.length, orig.length) } catch (_: Throwable) { }; editRecs.removeAt(i); return true }
+                    editRecs.removeAt(i)
+                    return replaceAll(orig)   // half-done: write the old text whole (right text, format of the field is lost)
+                }
+            }
+        } catch (_: Throwable) { }
         return try {
             val before = c.getTextBeforeCursor(res.length, 0)?.toString()
             if (before != res) false else {

@@ -1255,3 +1255,12 @@ FIND & REPLACE PART 1 (v0.24.0) - phone test
  [ ] No selection: Shift works as before (one tap shift, double tap caps lock).
  [ ] Select Bangla text, tap Shift: nothing changes, normal shift state.
  [ ] Try Gmail / Notes / a browser field: the text stays selected after the tap.
+\n
+=== v0.36.2 - phone checks (REPLACE KEEPS FORMAT) ===
+ [ ] In a rich-text app (Gmail / Docs / Notes) write text with some bold + italic words and a word that appears 3 times.
+ [ ] Find & Replace: replace ONE match: only that word changes, the bold / italic of everything else stays.
+ [ ] Replace all: only the matches change, the rest keeps its format.
+ [ ] Undo: the old words come back, the rest still keeps its format.
+ [ ] "In: From cursor" / "To cursor": same, only matches change.
+ [ ] A plain field (no format): result text is exactly the same as before this version.
+ [ ] An app where it cannot work: the text is still replaced correctly (old way), message "Replaced N".
