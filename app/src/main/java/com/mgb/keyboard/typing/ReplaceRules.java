@@ -11,6 +11,8 @@ import java.util.List;
  *   del: text           removes every LINE that contains the text
  *   del-re: pattern     same, with a regex
  *   # comment           kept, never run
+ *   word: find => with  (v0.29.0) this rule only matches whole words;  keep: find => with  the replacement copies the case look (hello > world, Hello > World, HELLO > WORLD);
+ *   both can be combined (keep: word: ...) and keep: also works before re:
  * The SET carries the flags (Opt: mode Text/Word, match case, escapes). Rules run top to bottom, each on the result of the one before.
  * A rule with an error is skipped and reported; the rest still run. Limits: 50 rules, 1 s for the whole run.
  * The regex work is done by ReplaceEngine.run (nothing is copied here).
@@ -26,7 +28,9 @@ public final class ReplaceRules {
     public static final class Rule {
         public final int kind;
         public final String find, with;
-        public Rule(int kind, String find, String with) { this.kind = kind; this.find = find; this.with = with; }
+        public final boolean word, keep;   // v0.29.0: per-rule "word:" (whole word, plain rules) and "keep:" (keep the case look)
+        public Rule(int kind, String find, String with) { this(kind, find, with, false, false); }
+        public Rule(int kind, String find, String with, boolean word, boolean keep) { this.kind = kind; this.find = find; this.with = with; this.word = word; this.keep = keep; }
     }
 
     public static final class Parsed {
@@ -74,13 +78,19 @@ public final class ReplaceRules {
             int k = line.indexOf("=>");
             if (k < 0) { p.bad.add(i + 1); continue; }
             String f = trim(line.substring(0, k));
+            boolean wd = false, kp = false;   // v0.29.0: leading "word:" / "keep:" in any order, before an optional "re:"
+            while (true) {
+                if (f.startsWith("word:")) { wd = true; f = trim(f.substring(5)); }
+                else if (f.startsWith("keep:")) { kp = true; f = trim(f.substring(5)); }
+                else break;
+            }
             String to = line.substring(k + 2);
             if (to.startsWith(" ")) to = to.substring(1);
             to = trimEnd(to);
             int kind = K_TEXT;
             if (f.startsWith("re:")) { kind = K_REGEX; f = trim(f.substring(3)); }
             if (f.isEmpty()) { p.bad.add(i + 1); continue; }
-            p.rules.add(new Rule(kind, f, to));
+            p.rules.add(new Rule(kind, f, to, wd, kp));
         }
         return p;
     }
@@ -93,8 +103,8 @@ public final class ReplaceRules {
                 case K_COMMENT: sb.append("# ").append(r.find); break;
                 case K_DEL: sb.append("del: ").append(r.find); break;
                 case K_DELRE: sb.append("del-re: ").append(r.find); break;
-                case K_REGEX: sb.append("re: ").append(r.find).append(" => ").append(r.with); break;
-                default: sb.append(r.find).append(" => ").append(r.with); break;
+                case K_REGEX: sb.append(r.keep ? "keep: " : "").append("re: ").append(r.find).append(" => ").append(r.with); break;
+                default: sb.append(r.keep ? "keep: " : "").append(r.word ? "word: " : "").append(r.find).append(" => ").append(r.with); break;
             }
         }
         return sb.toString();
@@ -117,6 +127,8 @@ public final class ReplaceRules {
                 if (System.currentTimeMillis() > end) { fail(rr, active, "time is up (the rest was skipped)"); break; }
                 ReplaceEngine.Opt oo = o == null ? new ReplaceEngine.Opt() : o.copy();
                 String find = r.find, with = r.with;
+                if (r.keep && (r.kind == K_TEXT || r.kind == K_REGEX)) { oo.keepCase = true; oo.matchCase = false; }   // v0.29.0
+                if (r.word && r.kind == K_TEXT) oo.mode = ReplaceEngine.MODE_WORD;
                 if (r.kind == K_REGEX) { oo.mode = ReplaceEngine.MODE_REGEX; }
                 else if (r.kind == K_DEL) { oo.mode = ReplaceEngine.MODE_REGEX; find = "^[^\\n]*" + java.util.regex.Pattern.quote(r.find) + "[^\\n]*(\\n|$)"; with = ""; }
                 else if (r.kind == K_DELRE) { oo.mode = ReplaceEngine.MODE_REGEX; find = "^[^\\n]*(?:" + r.find + ")[^\\n]*(\\n|$)"; with = ""; }

@@ -1160,3 +1160,29 @@ FIND & REPLACE PART 1 (v0.24.0) - phone test
 10. Emoji / rare character test: Find = a long text of 30 emoji; the Find button label and the preview line show whole emoji (no broken box at the end). Recent pairs list (switch ON) the same.
 11. One-hand mode, landscape, big system font, Borderless theme: Rp main view, [?] help, Sets, Recent: any cut-off button? (note which one)
 12. Speed: paste a very long text (about 100000 characters, e.g. a book chapter) into a field: Rp > Find "the" > the preview appears without a freeze; Replace all works or says "too long" at more than 100000.
+
+=== FIND & REPLACE v0.29.0 - phone checks ===
+1. Rp: tap [Keep] (Aa turns off). Field "Hello HELLO hello", Find hello, With world, Replace all = "World WORLD world".
+2. Keep ON, Regex mode, Find (\w+) With $1x on "Ab CD" = case kept per match.
+3. Close + open Rp again: Keep still ON (saved).
+4. Clipboard: select ONE clip > More > Replace: Rp opens on the clip text; Replace all (2 taps) = clip text changed in the clipboard list; field untouched.
+5. Undo in that view = old clip text back.
+6. Select 2 clips > More > Replace = message "Select ONE clip to replace in".
+7. After step 4 press the Rp toolbar key: it works on the field again (not the clip).
+
+=== FIND & REPLACE v0.30.0 - phone checks ===
+1. Rp > tap Find: type "abcd", press [<] twice, type X = "abXcd"; backspace removes "X"; [>] moves right. Emoji: one [<] jumps over the whole emoji.
+2. Field "one two one", caret after "one " (middle). Rp: Find one, With 1. Tap "In:" until "In: From cursor": counter says 1 match; Replace all = only the last "one" changes. Undo = back.
+3. Same field, "In: To cursor": only the first "one" changes.
+4. App that hides the caret: scope tap says "Cursor position is not available" and stays Field (no crash).
+5. Step: 3 matches, [Skip] moves on, [Replace this] replaces and the next match shows at the same n/N; [Rest] replaces the shown match and all after it, Undo brings them back.
+6. Rule set text "keep: word: cat => dog" on "Cat concat CAT" = "Dog concat DOG".
+7. To Formatter on that set = pasted rules have no "keep:" / "word:" and one note line.
+
+=== FIND & REPLACE v0.31.0 - phone checks ===
+1. Rp: tap [List]. Find: cat|dog (type | on the #+= page), With: pet. Field "cat dog bird" = "pet pet bird".
+2. Field "cat category": Find cat|category With Z = "Z Z" (not "Zegory").
+3. List + Word + Keep: Find cat|dog, "Cat DOG dogma" = "Pet PET dogma".
+4. List OFF again: Find a|b matches the text "a|b" only.
+5. Sets > [Preview] ON > tap "Clean text": preview text + [Use this set]; the Find / With rows did NOT change. [Use this set] loads it. [Close] hides the preview.
+6. Close Rp, open again: Preview switch is OFF, a tap on a set loads it.

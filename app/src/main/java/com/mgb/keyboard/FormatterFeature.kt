@@ -39,6 +39,7 @@ interface FmtIo {
     fun clipHtml(): String?
     fun setClip(plain: String, html: String?): Boolean
     fun selectRange(start: Int, end: Int): Boolean = false   // v0.25.0 (R2): select a match in the field (default: not supported)
+    fun cursorPos(): Int = -1   // v0.29.0: caret position in wholeText() (-1 = unknown; used by Find & Replace "From / To cursor")
 }
 
 class ImeFmtIo(private val svc: InputMethodService, private val isPwd: () -> Boolean) : FmtIo {
@@ -46,6 +47,12 @@ class ImeFmtIo(private val svc: InputMethodService, private val isPwd: () -> Boo
     private fun cm() = svc.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
 
     override fun blocked(): Boolean = try { isPwd() } catch (_: Throwable) { false }
+
+    /** v0.29.0: caret position = length of the text before the caret (only when nothing is selected; a selection = unknown). */
+    override fun cursorPos(): Int = try {
+        val c = ic()
+        if (c == null || !c.getSelectedText(0).isNullOrEmpty()) -1 else (c.getTextBeforeCursor(100001, 0)?.length ?: -1)
+    } catch (_: Throwable) { -1 }
 
     /** v0.25.0 (R2): highlight a match. true only when the app took it AND the field now reports exactly that selection length (a wrong offset is never shown as success). */
     override fun selectRange(start: Int, end: Int): Boolean = try {

@@ -71,7 +71,53 @@ public final class ReplaceExtras {
         StringBuilder b = new StringBuilder();
         b.append("# From Find & Replace set: ").append(n.isEmpty() ? "(no name)" : n).append('\n');
         b.append("# Set options: match case ").append(matchCase ? "ON" : "OFF").append(", whole word ").append(word ? "ON" : "OFF").append('\n');
-        b.append(rulesText.endsWith("\n") ? rulesText : rulesText + "\n");
+        // v0.29.0: the Formatter does not know "word:" / "keep:" in front of a rule: they are removed (the rule stays, only the flag is lost)
+        String[] ls = rulesText.split("\n", -1);
+        boolean lost = false;
+        StringBuilder body = new StringBuilder();
+        for (int i = 0; i < ls.length; i++) {
+            String l = ls[i];
+            String t = l.trim();
+            if (!t.startsWith("#")) {
+                String x = t;
+                while (x.startsWith("word:") || x.startsWith("keep:")) { x = x.substring(5).trim(); lost = true; }
+                if (!x.equals(t)) l = x;
+            }
+            body.append(l);
+            if (i < ls.length - 1) body.append('\n');
+        }
+        if (lost) b.append("# Note: word: / keep: flags of single rules were dropped (the Formatter has no such flags)\n");
+        String bs = body.toString();
+        b.append(bs.endsWith("\n") ? bs : bs + "\n");
         return b.toString();
+    }
+
+    /**
+     * v0.31.0: text to look at a rule set BEFORE loading it: "name: 3 changes, 5 rules on 340 chars" + the first 6 rules with how often each one matched.
+     * Nothing is changed anywhere. Never throws ("" on any problem).
+     */
+    public static String setPreview(String name, String rulesText, ReplaceEngine.Opt o, String text) {
+        try {
+            ReplaceRules.Parsed p = ReplaceRules.parse(rulesText);
+            int act = p.active();
+            String n = name == null || name.trim().isEmpty() ? "(no name)" : name.trim();
+            if (act == 0) return n + ": no rules";
+            String t = text == null ? "" : text;
+            StringBuilder b = new StringBuilder();
+            if (t.isEmpty()) return b.append(n).append(": ").append(act).append(act == 1 ? " rule" : " rules").append(" (no text in the field to try it on)").toString();
+            ReplaceRules.RunResult rr = ReplaceRules.run(t, p.rules, o);
+            b.append(n).append(": ").append(ReplaceRules.info(rr, act)).append(" on ").append(t.length()).append(" chars");
+            int shown = 0, more = 0, idx = 0;
+            for (ReplaceRules.Rule r : p.rules) {
+                int i = idx++;
+                if (r.kind == ReplaceRules.K_COMMENT) continue;
+                if (shown >= 6) { more++; continue; }
+                shown++;
+                String one = ReplaceRules.serialize(java.util.Collections.singletonList(r)).replace('\n', ' ');
+                b.append('\n').append(i < rr.counts.length ? rr.counts[i] : 0).append("x  ").append(head(one, 36));
+            }
+            if (more > 0) b.append("\n+").append(more).append(" more rules");
+            return b.toString();
+        } catch (Throwable e) { return ""; }
     }
 }

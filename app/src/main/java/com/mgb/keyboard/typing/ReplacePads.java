@@ -66,4 +66,62 @@ public final class ReplacePads {
         int k = Character.isLowSurrogate(cur.charAt(n - 1)) && n >= 2 && Character.isHighSurrogate(cur.charAt(n - 2)) ? 2 : 1;
         return cur.substring(0, n - k);
     }
+
+    // ---- v0.29.0: caret inside Find / With (surrogate-safe, never throws)
+
+    public static int clampCaret(String cur, int caret) {
+        int n = cur == null ? 0 : cur.length();
+        int c = caret < 0 ? 0 : Math.min(caret, n);
+        if (c > 0 && c < n && Character.isLowSurrogate(cur.charAt(c)) && Character.isHighSurrogate(cur.charAt(c - 1))) c--;
+        return c;
+    }
+
+    public static int left(String cur, int caret) {
+        int c = clampCaret(cur, caret);
+        if (c <= 0) return 0;
+        return clampCaret(cur, c - 1);
+    }
+
+    public static int right(String cur, int caret) {
+        int n = cur == null ? 0 : cur.length();
+        int c = clampCaret(cur, caret);
+        if (c >= n) return n;
+        int k = Character.isHighSurrogate(cur.charAt(c)) && c + 1 < n && Character.isLowSurrogate(cur.charAt(c + 1)) ? 2 : 1;
+        return c + k;
+    }
+
+    /** Inserts add at the caret, never beyond FIELD_MAX (then cur is returned unchanged). */
+    public static String insertAt(String cur, int caret, String add) {
+        String c0 = cur == null ? "" : cur;
+        if (add == null || add.length() == 0) return c0;
+        if (c0.length() + add.length() > FIELD_MAX) return c0;
+        int c = clampCaret(c0, caret);
+        return c0.substring(0, c) + add + c0.substring(c);
+    }
+
+    /** Removes the character before the caret (a whole surrogate pair counts as one). */
+    public static String backspaceAt(String cur, int caret) {
+        String c0 = cur == null ? "" : cur;
+        int c = clampCaret(c0, caret);
+        if (c <= 0) return c0;
+        int from = left(c0, c);
+        return c0.substring(0, from) + c0.substring(c);
+    }
+
+    /** Text for the one-line display: caret mark (U+258F) at the caret; long text = a window of about max characters around the caret with ellipsis marks. */
+    public static String view(String cur, int caret, int max) {
+        String c0 = cur == null ? "" : cur;
+        int c = clampCaret(c0, caret);
+        int from = 0, to = c0.length();
+        if (c0.length() > max) {
+            from = Math.max(0, c - max / 2);
+            to = Math.min(c0.length(), from + max);
+            from = Math.max(0, to - max);
+            if (from > 0 && from < c0.length() && Character.isLowSurrogate(c0.charAt(from))) from++;
+            if (to < c0.length() && to > 0 && Character.isHighSurrogate(c0.charAt(to - 1))) to--;
+            if (c < from) c = from;
+            if (c > to) c = to;
+        }
+        return (from > 0 ? "\u2026" : "") + c0.substring(from, c) + "\u258F" + c0.substring(c, to) + (to < c0.length() ? "\u2026" : "");
+    }
 }

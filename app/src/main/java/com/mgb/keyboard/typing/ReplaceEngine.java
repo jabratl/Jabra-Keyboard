@@ -38,10 +38,12 @@ public final class ReplaceEngine {
         public boolean matchCase = false;
         public boolean bangla = true;
         public boolean escapes = false;
+        public boolean list = false;       // v0.31.0: Find holds several texts separated by | (Text / Word only); every one is replaced by With
+        public boolean keepCase = false;   // v0.29.0: the replacement copies the case look of the found text (hello > world, Hello > World, HELLO > WORLD)
 
         public Opt copy() {
             Opt o = new Opt();
-            o.mode = mode; o.matchCase = matchCase; o.bangla = bangla; o.escapes = escapes;
+            o.mode = mode; o.matchCase = matchCase; o.bangla = bangla; o.escapes = escapes; o.keepCase = keepCase; o.list = list;
             return o;
         }
     }
@@ -127,7 +129,7 @@ public final class ReplaceEngine {
                 boolean doIt = idx >= first && idx <= last;
                 String found = text.substring(m.start(), m.end());
                 String rep = null;
-                if (doIt || r.hits.size() < MAX_HITS) rep = o.mode == MODE_REGEX ? expand(with, m) : w;
+                if (doIt || r.hits.size() < MAX_HITS) { rep = o.mode == MODE_REGEX ? expand(with, m) : w; if (o.keepCase) rep = keepCase(found, rep); }
                 if (doIt) {
                     out.append(text, pos, m.start());
                     out.append(rep);
@@ -155,6 +157,40 @@ public final class ReplaceEngine {
         return r;
     }
 
+    /** v0.29.0: copy the case look of found onto rep. ALL CAPS (2+ letters) > UPPER; Capitalized > first letter of each word upper; all small / mixed / no letters > unchanged. Never throws. */
+    public static String keepCase(String found, String rep) {
+        try {
+            if (found == null || rep == null || rep.length() == 0) return rep;
+            int letters = 0, up = 0, low = 0;
+            for (int i = 0; i < found.length(); ) {
+                int cp = found.codePointAt(i); i += Character.charCount(cp);
+                if (!Character.isLetter(cp)) continue;
+                letters++;
+                if (Character.isUpperCase(cp)) up++; else if (Character.isLowerCase(cp)) low++;
+            }
+            if (letters == 0 || up == 0) return rep;
+            if (low == 0 && letters >= 2 && up == letters) return rep.toUpperCase(Locale.ROOT);
+            // Capitalized: every word of found starts with a capital and has no other capital
+            boolean title = true, startWord = true;
+            for (int i = 0; i < found.length(); ) {
+                int cp = found.codePointAt(i); i += Character.charCount(cp);
+                if (!Character.isLetter(cp)) { startWord = true; continue; }
+                if (startWord && !Character.isUpperCase(cp)) { title = false; break; }
+                if (!startWord && Character.isUpperCase(cp)) { title = false; break; }
+                startWord = false;
+            }
+            if (!title) return rep;
+            StringBuilder sb = new StringBuilder(rep.length());
+            boolean sw = true;
+            for (int i = 0; i < rep.length(); ) {
+                int cp = rep.codePointAt(i); i += Character.charCount(cp);
+                if (Character.isLetter(cp)) { sb.appendCodePoint(sw ? Character.toUpperCase(cp) : cp); sw = false; }
+                else { sb.appendCodePoint(cp); sw = true; }
+            }
+            return sb.toString();
+        } catch (RuntimeException e) { return rep; }
+    }
+
     // ------------------------------------------------------------------ pattern
 
     static boolean isZw(int cp) { return cp == 0x200C || cp == 0x200D; }
@@ -166,33 +202,58 @@ public final class ReplaceEngine {
         return s.replace("\u09A1\u09BC", "\u09DC").replace("\u09A2\u09BC", "\u09DD").replace("\u09AF\u09BC", "\u09DF");
     }
 
+    /** v0.31.0: the texts of a list Find: split at |, empty ones dropped, no duplicates, longest first. */
+    public static List<String> listParts(String find, Opt o) {
+        List<String> out = new ArrayList<String>();
+        if (find == null) return out;
+        for (String x : find.split("\\|", -1)) {
+            String f = o != null && o.escapes ? unescape(x) : x;
+            if (f.length() == 0 || out.contains(f)) continue;
+            out.add(f);
+        }
+        java.util.Collections.sort(out, new java.util.Comparator<String>() { public int compare(String a, String b) { return b.length() - a.length(); } });
+        return out;
+    }
+
+    /** v0.31.0: the regex text of ONE plain Find text (Bangla-safe or quoted). */
+    private static String body(String f0, Opt o) {
+        String f = f0;
+        if (!o.bangla) return Pattern.quote(f);
+        StringBuilder sb = new StringBuilder();
+        f = composeBangla(f);
+        int i = 0;
+        boolean first = true;
+        while (i < f.length()) {
+            int cp = f.codePointAt(i);
+            i += Character.charCount(cp);
+            if (isZw(cp)) continue;
+            if (!first) sb.append(ZW);
+            first = false;
+            if (cp == 0x09DC) sb.append("(?:\\u09DC|\\u09A1\\u09BC)");
+            else if (cp == 0x09DD) sb.append("(?:\\u09DD|\\u09A2\\u09BC)");
+            else if (cp == 0x09DF) sb.append("(?:\\u09DF|\\u09AF\\u09BC)");
+            else sb.append(Pattern.quote(new String(Character.toChars(cp))));
+        }
+        if (first) sb.append("(?!)");
+        return sb.toString();
+    }
+
     /** Builds the Pattern of a Find text. Throws PatternSyntaxException (REGEX mode only). */
     static Pattern compile(String find, Opt o) {
         int flags = 0;
         if (!o.matchCase) flags |= Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE;
         if (o.mode == MODE_REGEX) return Pattern.compile(find, flags | Pattern.MULTILINE);
-        String f = o.escapes ? unescape(find) : find;
         StringBuilder sb = new StringBuilder();
         if (o.mode == MODE_WORD) sb.append("(?<![\\p{L}\\p{M}\\p{N}_])");
-        if (!o.bangla) {
-            sb.append(Pattern.quote(f));
-        } else {
-            f = composeBangla(f);
-            int i = 0;
-            boolean first = true;
-            while (i < f.length()) {
-                int cp = f.codePointAt(i);
-                i += Character.charCount(cp);
-                if (isZw(cp)) continue;                 // zero-width chars of the Find are ignored
-                if (!first) sb.append(ZW);              // ... and may sit between the letters of the text
-                first = false;
-                if (cp == 0x09DC) sb.append("(?:\\u09DC|\\u09A1\\u09BC)");
-                else if (cp == 0x09DD) sb.append("(?:\\u09DD|\\u09A2\\u09BC)");
-                else if (cp == 0x09DF) sb.append("(?:\\u09DF|\\u09AF\\u09BC)");
-                else sb.append(Pattern.quote(new String(Character.toChars(cp))));
+        if (o.list) {   // v0.31.0: a | b | c  (longest first, so "category" wins over "cat")
+            List<String> parts = listParts(find, o);
+            if (parts.isEmpty()) sb.append("(?!)");
+            else {
+                sb.append("(?:");
+                for (int i = 0; i < parts.size(); i++) { if (i > 0) sb.append('|'); sb.append(body(parts.get(i), o)); }
+                sb.append(")");
             }
-            if (first) sb.append("(?!)");               // the Find had only zero-width characters: matches nothing
-        }
+        } else sb.append(body(o.escapes ? unescape(find) : find, o));
         if (o.mode == MODE_WORD) sb.append("(?![\\p{L}\\p{M}\\p{N}_])");
         return Pattern.compile(sb.toString(), flags);
     }
@@ -339,7 +400,7 @@ public final class ReplaceEngine {
     public static int pack(Opt o) {
         if (o == null) return pack(new Opt());
         int mode = o.mode < 0 || o.mode > 2 ? 0 : o.mode;
-        return mode | (o.matchCase ? 4 : 0) | (o.bangla ? 8 : 0) | (o.escapes ? 16 : 0);
+        return mode | (o.matchCase ? 4 : 0) | (o.bangla ? 8 : 0) | (o.escapes ? 16 : 0) | (o.keepCase ? 32 : 0) | (o.list ? 64 : 0);
     }
 
     public static Opt unpack(int v) {
@@ -350,6 +411,8 @@ public final class ReplaceEngine {
         o.matchCase = (v & 4) != 0;
         o.bangla = (v & 8) != 0;
         o.escapes = (v & 16) != 0;
+        o.keepCase = (v & 32) != 0;
+        o.list = (v & 64) != 0;
         return o;
     }
 }

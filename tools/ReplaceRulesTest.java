@@ -73,6 +73,23 @@ public class ReplaceRulesTest {
         rr = ReplaceRules.run(big.toString(), ReplaceRules.parse(sb.toString()).rules, opt());
         eq("budget fast", System.currentTimeMillis() - t < 1800, true);
         eq("big out kept", rr.out.length(), 100000);
+        // ---- v0.29.0 word: / keep: per rule
+        {
+            ReplaceRules.Parsed pw = ReplaceRules.parse("word: cat => dog\nkeep: hello => world\nkeep: word: red => blue\nkeep: re: (b)ad => good\nplain => x");
+            eq("word/keep parsed: 5 rules, none bad", pw.rules.size() == 5 && pw.bad.isEmpty() ? 1 : 0, 1);
+            eq("word flag", pw.rules.get(0).word && !pw.rules.get(0).keep ? 1 : 0, 1);
+            eq("keep flag", pw.rules.get(1).keep && !pw.rules.get(1).word ? 1 : 0, 1);
+            eq("both flags", pw.rules.get(2).keep && pw.rules.get(2).word ? 1 : 0, 1);
+            eq("keep before re:", pw.rules.get(3).keep && pw.rules.get(3).kind == ReplaceRules.K_REGEX ? 1 : 0, 1);
+            eq("serialize round trip", ReplaceRules.serialize(ReplaceRules.parse(ReplaceRules.serialize(pw.rules)).rules).equals(ReplaceRules.serialize(pw.rules)) ? 1 : 0, 1);
+            ReplaceEngine.Opt o0 = new ReplaceEngine.Opt(); o0.bangla = false;
+            ReplaceRules.RunResult r1 = ReplaceRules.run("cat concat Cat", ReplaceRules.parse("word: cat => dog").rules, o0);
+            eq("word: only whole words", r1.out.equals("dog concat dog") ? 1 : 0, 1);
+            ReplaceRules.RunResult r2 = ReplaceRules.run("hello Hello HELLO", ReplaceRules.parse("keep: hello => world").rules, o0);
+            eq("keep: case look", r2.out.equals("world World WORLD") ? 1 : 0, 1);
+            ReplaceRules.RunResult r3 = ReplaceRules.run("hello Hello HELLO", ReplaceRules.parse("hello => world").rules, o0);
+            eq("no keep = plain", r3.out.equals("world world world") ? 1 : 0, 1);
+        }
         System.out.println("ReplaceRulesTest: " + ok + " ok, " + bad + " failed");
         if (bad > 0) System.exit(1);
     }

@@ -35,6 +35,20 @@ public class ReplacePadsTest {
         t("backspace", ReplacePads.backspace("abc").equals("ab") && ReplacePads.backspace("").equals("") && ReplacePads.backspace(null).equals(""));
         t("backspace emoji = one", ReplacePads.backspace("a\uD83D\uDE00").equals("a"));
         t("regex helper keys exist", ReplacePads.ROWS[1][3].contains("\\d") && ReplacePads.ROWS[1][3].contains("$1"));
+        // ---- v0.29.0 caret
+        t("insertAt middle", ReplacePads.insertAt("abcd", 2, "X").equals("abXcd"));
+        t("insertAt start / end / clamp", ReplacePads.insertAt("ab", 0, "X").equals("Xab") && ReplacePads.insertAt("ab", 99, "X").equals("abX") && ReplacePads.insertAt("ab", -5, "X").equals("Xab"));
+        t("insertAt max kept", ReplacePads.insertAt(new String(new char[ReplacePads.FIELD_MAX]).replace('\0', 'a'), 3, "X").length() == ReplacePads.FIELD_MAX);
+        t("backspaceAt middle", ReplacePads.backspaceAt("abcd", 2).equals("acd") && ReplacePads.backspaceAt("abcd", 0).equals("abcd"));
+        t("backspaceAt emoji = one", ReplacePads.backspaceAt("a\uD83D\uDE00b", 3).equals("ab"));
+        t("left / right", ReplacePads.left("abc", 2) == 1 && ReplacePads.left("abc", 0) == 0 && ReplacePads.right("abc", 2) == 3 && ReplacePads.right("abc", 3) == 3);
+        t("left / right emoji", ReplacePads.left("a\uD83D\uDE00b", 3) == 1 && ReplacePads.right("a\uD83D\uDE00b", 1) == 3);
+        t("clamp never inside a pair", ReplacePads.clampCaret("a\uD83D\uDE00b", 2) == 1);
+        t("view caret mark", ReplacePads.view("abcd", 2, 60).equals("ab\u258Fcd") && ReplacePads.view("", 0, 60).equals("\u258F"));
+        String longT = new String(new char[200]).replace('\0', 'x');
+        String vw = ReplacePads.view(longT, 100, 60);
+        t("view long = window with caret and ellipsis", vw.contains("\u258F") && vw.startsWith("\u2026") && vw.endsWith("\u2026") && vw.length() <= 64);
+        t("view null safe", ReplacePads.view(null, 5, 60).equals("\u258F") && ReplacePads.insertAt(null, 0, "a").equals("a") && ReplacePads.backspaceAt(null, 0).isEmpty());
         System.out.println("ReplacePadsTest: " + ok + " ok, " + bad + " failed");
         if (bad > 0) System.exit(1);
     }

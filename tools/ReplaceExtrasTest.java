@@ -54,6 +54,25 @@ public class ReplaceExtrasTest {
             if (fr.repCount() + fr.delCount() != fr0.repCount() + fr0.delCount()) allOk = false;
         }
         t("every ready-made set: header does not change what either parser reads", allOk);
+        // ---- v0.29.0 flags dropped for the Formatter
+        {
+            String ft = ReplaceExtras.formatterText("S", "keep: word: a => b\nre: x => y\n# keep: note", false, false);
+            t("formatter text: flags removed", ft.contains("\na => b\n") && !ft.contains("\nkeep: word:") && ft.contains("# Note: word: / keep:"));
+            t("formatter text: plain set has no note", !ReplaceExtras.formatterText("S", "a => b", false, false).contains("# Note:"));
+        }
+        // ---- v0.31.0 set preview
+        {
+            com.mgb.keyboard.typing.ReplaceEngine.Opt po = new com.mgb.keyboard.typing.ReplaceEngine.Opt(); po.bangla = false;
+            String pv = ReplaceExtras.setPreview("Demo", "a => b\n# note\nzzz => y\ndel: q", po, "a a\nq\nx");
+            t("preview: head line", pv.startsWith("Demo: ") && pv.contains("on 7 chars"));
+            t("preview: counts per rule", pv.contains("2x  a => b") && pv.contains("0x  zzz => y") && pv.contains("1x  del: q"));
+            t("preview: comment not listed", !pv.contains("note"));
+            t("preview: no text", ReplaceExtras.setPreview("D", "a => b", po, "").contains("no text"));
+            t("preview: no rules", ReplaceExtras.setPreview("D", "# only", po, "abc").contains("no rules"));
+            StringBuilder many = new StringBuilder(); for (int i = 0; i < 9; i++) many.append("k" + i + " => v\n");
+            t("preview: more rules line", ReplaceExtras.setPreview("D", many.toString(), po, "k1").contains("+3 more rules"));
+            t("preview: null safe", ReplaceExtras.setPreview(null, null, null, null) instanceof String);
+        }
         System.out.println("ReplaceExtrasTest: " + ok + " ok, " + bad + " failed");
         if (bad > 0) System.exit(1);
     }

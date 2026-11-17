@@ -35,9 +35,11 @@ import com.mgb.keyboard.typing.ReplaceRules
  * Saved: ONLY the option switches (pref rp_opt, one number). Find / With texts stay in memory while the keyboard runs (never written to disk).
  * build() returns null on any problem -> the keyboard shows the letters.
  */
-class ReplacePanel(private val ctx: Context, private val host: JabraHost, private val io: FmtIo) {
+class ReplacePanel(private val ctx: Context, private val host: JabraHost, private val ioField: FmtIo) {
 
     private val prefs = JabraPrefs(ctx)
+    private var clipIo: FmtIo? = null   // v0.29.0: set = the Replace works on ONE CLIP (ClipReplaceIo) instead of the field; reset() clears it
+    private val io: FmtIo get() = clipIo ?: ioField
 
     private var opt = ReplaceEngine.Opt()
     private var find = ""
@@ -47,6 +49,12 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
     private var shift = false
     private var src = ""                   // text being worked on
     private var usedSel = false            // true = src is the selection
+    private var part = 0                   // v0.29.0: 0 = whole field, 1 = from the cursor to the end, 2 = from the start to the cursor
+    private var partCut = -1               // cursor position used by part (kept fixed while the panel works, -1 = read it again)
+    private var fullText = ""              // the whole field text when part != 0 (src is only a piece of it)
+    private var setPreviewOn = false      // v0.31.0: Sets view: a tap shows a preview instead of loading
+    private var setPrev: Pair<String, ReplaceStore.Def>? = null
+    private var caretPos = 0               // caret inside Find / With while typing
     private var hasSel = false             // the field has a selection right now
     private var msg = ""
     private var confirmAll = false
@@ -62,9 +70,17 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
     private var step = 0                                      // index of the match shown by [<] [>]
     private var rprAsk = false                                // v0.26.0 (R3): Recent pairs > Clear needs two taps
 
+    /** v0.29.0: open on ONE clip: reset first (clears any old clip), then the clip text is the source. */
+    fun openForClip(cio: FmtIo) {
+        reset()
+        clipIo = cio
+        usedSel = false
+        readSource(false)
+    }
+
     /** Call when the panel is opened from outside: reads the options and the field once. */
     fun reset() {
-        msg = ""; confirmAll = false; undoStack.clear(); helpPage = 0; typing = 0; padPage = 0; shift = false; step = 0; rprAsk = false
+        setPreviewOn = false; setPrev = null; part = 0; partCut = -1; clipIo = null; msg = ""; confirmAll = false; undoStack.clear(); helpPage = 0; typing = 0; padPage = 0; shift = false; step = 0; rprAsk = false
         try { opt = ReplaceEngine.unpack(prefs.int("rp_opt", ReplaceEngine.pack(ReplaceEngine.Opt()))) } catch (_: Throwable) { opt = ReplaceEngine.Opt() }
         readSource(true)
     }
@@ -79,6 +95,13 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
             hasSel = !sel.isNullOrEmpty()
             if (pickSel) usedSel = hasSel else if (!hasSel) usedSel = false
             src = if (usedSel && hasSel && sel != null) sel else (io.wholeText() ?: "")
+            fullText = src   // v0.29.0: From / To cursor = only a piece of the field is src
+            if (usedSel) { part = 0; partCut = -1 }
+            else if (part != 0) {
+                if (partCut < 0) partCut = io.cursorPos()
+                if (partCut < 0 || partCut > fullText.length) { part = 0; partCut = -1; msg = "Cursor position is not available here (select text or use Field)" }
+                else src = if (part == 1) fullText.substring(partCut) else fullText.substring(0, partCut)
+            }
         } catch (_: Throwable) { src = ""; usedSel = false; hasSel = false }
     }
 
@@ -186,7 +209,9 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
             r3.addView(btn((if (opt.mode == i) "\u2713 " else "") + ReplaceEngine.MODE_NAMES[i], 1f, 32) { opt.mode = i; optChanged() })
         }
         r3.addView(btn((if (opt.matchCase) "\u2713 " else "") + "Aa", 0.8f, 32) { opt.matchCase = !opt.matchCase; optChanged() })
+        r3.addView(btn((if (opt.keepCase) "\u2713 " else "") + "Keep", 0.9f, 32) { opt.keepCase = !opt.keepCase; if (opt.keepCase) opt.matchCase = false; optChanged() })   // v0.29.0: keep the case look
         if (opt.mode != ReplaceEngine.MODE_REGEX) {
+            r3.addView(btn((if (opt.list) "\u2713 " else "") + "List", 0.9f, 32) { opt.list = !opt.list; optChanged() })   // v0.31.0: Find = a | b | c
             r3.addView(btn((if (opt.bangla) "\u2713 " else "") + "\u09AC\u09BE\u0982", 0.9f, 32) { opt.bangla = !opt.bangla; optChanged() })
             r3.addView(btn((if (opt.escapes) "\u2713 " else "") + "\\n", 0.8f, 32) { opt.escapes = !opt.escapes; optChanged() })
         }
@@ -202,8 +227,9 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
             step = step.coerceIn(0, nHits - 1)
             r4.addView(btn("<", 0.6f, 32) { step = if (step <= 0) nHits - 1 else step - 1; showStep(res) })
             r4.addView(btn((step + 1).toString() + "/" + res.count, 1f, 32) { showStep(res) })
-            r4.addView(btn(">", 0.6f, 32) { step = if (step >= nHits - 1) 0 else step + 1; showStep(res) })
-            r4.addView(btn("Replace this", 1.4f, 32) { onReplace(ReplaceEngine.replaceNth(src, find, repl, opt, step + 1), true) })
+            r4.addView(btn("Skip", 0.8f, 32) { step = if (step >= nHits - 1) 0 else step + 1; showStep(res) })   // v0.29.0: Skip = next match, nothing replaced
+            r4.addView(btn("Replace this", 1.3f, 32) { onReplace(ReplaceEngine.replaceNth(src, find, repl, opt, step + 1), true) })   // the next match moves into this place = replace + next
+            r4.addView(btn("Rest", 0.8f, 32) { onReplace(ReplaceEngine.run(src, find, repl, opt, step + 1, Int.MAX_VALUE), true) })   // v0.29.0: this match and all after it
         }
         root.addView(r4)
         }   // end of: no set active
@@ -212,8 +238,8 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
         val info = TextView(ctx)
         var line = ReplaceEngine.info(res)
         if (src.isEmpty() && res.err == null) line = "No text: select text or type some first"
-        else if (setRules != null) { val rr = setRun; if (rr != null) line = ReplaceRules.info(rr, setRules?.count { it.kind != ReplaceRules.K_COMMENT } ?: 0) + "  \u00B7  " + (if (usedSel) "selection " else "whole field ") + src.length }
-        else if (res.err == null) line += "  \u00B7  " + (if (usedSel) "selection " else "whole field ") + src.length
+        else if (setRules != null) { val rr = setRun; if (rr != null) line = ReplaceRules.info(rr, setRules?.count { it.kind != ReplaceRules.K_COMMENT } ?: 0) + "  \u00B7  " + scopeWord() + src.length }
+        else if (res.err == null) line += "  \u00B7  " + scopeWord() + src.length
         info.text = if (shown.isNotEmpty()) shown else line
         info.textSize = 12f
         info.setTextColor(dim())
@@ -238,7 +264,7 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
         val allLabel = if (ask) "Sure? Replace all" else if (res.err == null && res.count > 0) "Replace all (" + res.count + ")" else "Replace all"
         act.addView(btn(allLabel, 1.5f, 40) { onReplace(res, false) })
         if (setRules == null) act.addView(btn("1st", 0.6f, 40) { onReplace(ReplaceEngine.replaceFirst(src, find, repl, opt), true) })
-        act.addView(btn(if (usedSel) "In: Selection" else "In: Field", 1.1f, 40) { toggleScope() })
+        act.addView(btn(scopeLabel(), 1.1f, 40) { toggleScope() })
         if (undoStack.canUndo()) act.addView(btn("\u21B6 " + ReplaceExtras.undoLabel(undoStack.size()), 0.9f, 40) { undo() })
         else act.addView(btn("Copy", 0.9f, 40) { copyResult(res) })
         root.addView(act)
@@ -287,7 +313,7 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
     }
 
     private fun startTyping(which: Int) {
-        typing = which; padPage = 0; shift = false; confirmAll = false
+        typing = which; padPage = 0; shift = false; confirmAll = false; caretPos = cur().length
         refresh()
     }
 
@@ -309,9 +335,23 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
 
     private fun toggleScope() {
         readSource(false)
-        if (hasSel) { usedSel = !usedSel; readSource(false) } else msg = "Select text in the field first to use Selection"
-        confirmAll = false
+        // v0.29.0: Field > Selection (only with a selection) > From cursor > To cursor > Field
+        if (usedSel) { usedSel = false; part = 1; partCut = -1 }
+        else if (part == 0) { if (hasSel) usedSel = true else { part = 1; partCut = -1 } }
+        else if (part == 1) { part = 2; partCut = -1 }
+        else { part = 0; partCut = -1 }
+        readSource(false)
+        confirmAll = false; step = 0
         refresh()
+    }
+
+    private fun scopeLabel(): String = if (usedSel) "In: Selection" else if (part == 1) "In: From cursor" else if (part == 2) "In: To cursor" else "In: Field"
+    private fun scopeWord(): String = if (usedSel) "selection " else if (part == 1) "from cursor " else if (part == 2) "to cursor " else "whole field "
+
+    /** v0.29.0: the whole field text after a From / To cursor replace (src was only a piece). */
+    private fun composeFull(out: String): String {
+        val c = partCut.coerceIn(0, fullText.length)
+        return when (part) { 1 -> fullText.substring(0, c) + out; 2 -> out + fullText.substring(c); else -> out }
     }
 
     private fun onReplace(r: ReplaceEngine.Result, first: Boolean) {
@@ -327,16 +367,20 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
 
     private fun doReplace(r: ReplaceEngine.Result) {
         val before = src
-        val ok = try { if (usedSel) io.replaceSelection(r.out) else io.replaceAll(r.out) } catch (_: Throwable) { false }
+        val partial = part != 0 && !usedSel
+        val fullBefore = fullText
+        val fullAfter = if (partial) composeFull(r.out) else r.out
+        val ok = try { if (usedSel) io.replaceSelection(r.out) else io.replaceAll(fullAfter) } catch (_: Throwable) { false }
         confirmAll = false
-        if (ok) { undoStack.push(r.out, before); msg = "Replaced " + r.changed; recordPair(); readSource(false) } else msg = "Could not replace in this app (use Copy)"   // v0.26.0 (R3): recordPair = only when Recent pairs is ON
+        if (ok && partial && part == 2) partCut = r.out.length   // the piece before the cursor now has the new length
+        if (ok) { undoStack.push(if (usedSel) r.out else fullAfter, if (usedSel) before else fullBefore); msg = "Replaced " + r.changed; recordPair(); readSource(false) } else msg = "Could not replace in this app (use Copy)"   // v0.26.0 (R3): recordPair = only when Recent pairs is ON
         refresh()
     }
 
     private fun undo() {
         val st = undoStack.peek()
         if (st != null && io.undoReplace(st.res, st.orig)) {   // v0.28.0 (R3b): newest step first; a failed step (text changed) clears the stack
-            undoStack.drop()
+            undoStack.drop(); if (part != 0) { part = 0; partCut = -1 }   // v0.29.0: after Undo the scope is the whole field again
             msg = if (undoStack.canUndo()) "Undone (" + undoStack.size() + " more)" else "Undone"
         } else { undoStack.clear(); msg = "Cannot undo (text changed)" }
         readSource(false)
@@ -354,7 +398,7 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
         confirmAll = false
         try {
             val h = res.hits.getOrNull(step)
-            if (h != null && !usedSel && io.selectRange(h.start, h.end)) msg = "Match " + (step + 1) + " selected in the field"
+            if (h != null && !usedSel && io.selectRange(h.start + (if (part == 1) partCut else 0), h.end + (if (part == 1) partCut else 0))) msg = "Match " + (step + 1) + " selected in the field"
         } catch (_: Throwable) { }
         refresh()
     }
@@ -368,16 +412,18 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
         root.setPadding(dp(2), dp(4), dp(2), dp(4))
         val head = row()
         head.addView(btn("\u2190 Back", 1f, 34) { typing = 0; refresh() })
+        head.addView(btn((if (setPreviewOn) "\u2713 " else "") + "Preview", 1.2f, 34) { setPreviewOn = !setPreviewOn; setPrev = null; refresh() })   // v0.31.0
         val hint = TextView(ctx)
-        hint.text = "Pick a set. Edit: app > Tools & Panels"
+        hint.text = if (setPreviewOn) "Tap a set to preview it" else "Pick a set. Edit: app > Tools & Panels"
         hint.textSize = 12f
         hint.setTextColor(dim())
         hint.gravity = android.view.Gravity.CENTER_VERTICAL
-        hint.layoutParams = LinearLayout.LayoutParams(0, dp(34), 3f)
+        hint.layoutParams = LinearLayout.LayoutParams(0, dp(34), 2f)
         head.addView(hint)
         root.addView(head)
+        previewBox()?.let { root.addView(it) }
         val sv = ScrollView(ctx)
-        sv.layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(170))
+        sv.layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(if (setPrev != null) 100 else 170))
         val col = LinearLayout(ctx)
         col.orientation = LinearLayout.VERTICAL
         sv.addView(col)
@@ -390,7 +436,7 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
             for (j in 0..1) {
                 val e = all.getOrNull(i + j)
                 if (e == null) { val sp = View(ctx); sp.layoutParams = LinearLayout.LayoutParams(0, dp(36), 1f); r.addView(sp); continue }
-                r.addView(btn(e.first, 1f, 36) { pickSet(e.first.removePrefix("\u2605 "), e.second) })
+                r.addView(btn(e.first, 1f, 36) { tapSet(e.first.removePrefix("\u2605 "), e.second) })
             }
             col.addView(r)
             i += 2
@@ -399,10 +445,30 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
         return root
     }
 
+    /** v0.31.0: tap on a set: Preview ON = show what it would do on the current text (nothing loaded), else load it as before. */
+    private fun tapSet(name: String, d: ReplaceStore.Def) { if (setPreviewOn) { setPrev = Pair(name, d); refresh() } else pickSet(name, d) }
+
+    private fun previewBox(): View? {
+        val sp = setPrev ?: return null
+        val box = LinearLayout(ctx)
+        box.orientation = LinearLayout.VERTICAL
+        val tv = TextView(ctx)
+        tv.textSize = 12f
+        tv.setTextColor(ink())
+        tv.setPadding(dp(8), dp(2), dp(8), dp(2))
+        tv.text = ReplaceExtras.setPreview(sp.first, sp.second.rules, sp.second.opt(), src)
+        box.addView(tv)
+        val r = row()
+        r.addView(btn("Use this set", 1.3f, 34) { pickSet(sp.first, sp.second) })
+        r.addView(btn("Close", 0.8f, 34) { setPrev = null; refresh() })
+        box.addView(r)
+        return box
+    }
+
     private fun pickSet(name: String, d: ReplaceStore.Def) {
         val p = ReplaceRules.parse(d.rules)
         if (p.active() == 0) { msg = "That set has no rules"; typing = 0; refresh(); return }
-        setRules = p.rules; setOpt = d.opt(); setName = name; setRun = null
+        setRules = p.rules; setOpt = d.opt(); setName = name; setRun = null; setPrev = null
         typing = 0; confirmAll = false; step = 0
         msg = "Set loaded: " + name + (if (p.bad.isNotEmpty()) " (" + p.bad.size + " unreadable lines skipped)" else "")
         readSource(false)
@@ -597,7 +663,9 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
             // option chips
             val oc = row()
             oc.addView(UiKit.chip(ctx, prefs, "Aa", opt.matchCase, 36, { v -> host.feedback(v) }) { opt.matchCase = !opt.matchCase; optChanged() })
+            oc.addView(UiKit.chip(ctx, prefs, "Keep", opt.keepCase, 36, { v -> host.feedback(v) }) { opt.keepCase = !opt.keepCase; if (opt.keepCase) opt.matchCase = false; optChanged() })   // v0.29.0
             if (opt.mode != ReplaceEngine.MODE_REGEX) {
+                oc.addView(UiKit.chip(ctx, prefs, "List", opt.list, 36, { v -> host.feedback(v) }) { opt.list = !opt.list; optChanged() })   // v0.31.0
                 oc.addView(UiKit.chip(ctx, prefs, "\u09AC\u09BE\u0982", opt.bangla, 36, { v -> host.feedback(v) }) { opt.bangla = !opt.bangla; optChanged() })
                 oc.addView(UiKit.chip(ctx, prefs, "\\n", opt.escapes, 36, { v -> host.feedback(v) }) { opt.escapes = !opt.escapes; optChanged() })
             }
@@ -618,8 +686,9 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
             sr.gravity = Gravity.CENTER_VERTICAL
             sr.addView(small("<", 36) { step = if (step <= 0) nHits - 1 else step - 1; showStep(res) })
             sr.addView(small((step + 1).toString() + "/" + res.count, 36) { showStep(res) })
-            sr.addView(small(">", 36) { step = if (step >= nHits - 1) 0 else step + 1; showStep(res) })
+            sr.addView(small("Skip", 36) { step = if (step >= nHits - 1) 0 else step + 1; showStep(res) })   // v0.29.0
             sr.addView(btn("Replace this", 1f, 36) { onReplace(ReplaceEngine.replaceNth(src, find, repl, opt, step + 1), true) })
+            sr.addView(btn("Rest", 0.8f, 36) { onReplace(ReplaceEngine.run(src, find, repl, opt, step + 1, Int.MAX_VALUE), true) })   // v0.29.0
             root.addView(sr)
         }
 
@@ -638,7 +707,7 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
         pv.text = pt
         sv.addView(pv)
         root.addView(sv)
-        root.addView(UiKit.noteText(ctx, prefs, (if (usedSel) "selection " else "whole field ") + src.length))
+        root.addView(UiKit.noteText(ctx, prefs, scopeWord() + src.length))
 
         // actions
         val act = row()
@@ -650,7 +719,7 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
         all.alpha = if (canGo) 1f else 0.6f
         act.addView(all)
         if (setRules == null) act.addView(btn("1st", 0.7f, 44) { onReplace(ReplaceEngine.replaceFirst(src, find, repl, opt), true) })
-        act.addView(btn(if (usedSel) "In: Selection" else "In: Field", 1.3f, 44) { toggleScope() })
+        act.addView(btn(scopeLabel(), 1.3f, 44) { toggleScope() })
         if (undoStack.canUndo()) act.addView(btn("\u21B6 " + ReplaceExtras.undoLabel(undoStack.size()), 1f, 44) { undo() })
         else act.addView(btn("Copy", 1f, 44) { copyResult(res) })
         root.addView(act)
@@ -663,12 +732,16 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
         paintBg(root)
         root.setPadding(dp(2), dp(4), dp(2), dp(4))
         root.addView(PanelKit.header(ctx, prefs, host, "Sets", "<", emptyList()) { typing = 0; refresh() })
-        root.addView(UiKit.noteText(ctx, prefs, "Pick a set. Edit: app > Tools & Panels"))
+        root.addView(UiKit.noteText(ctx, prefs, if (setPreviewOn) "Tap a set to preview it" else "Pick a set. Edit: app > Tools & Panels"))
+        val pr = row()
+        pr.addView(UiKit.chip(ctx, prefs, "Preview", setPreviewOn, 36, { v -> host.feedback(v) }) { setPreviewOn = !setPreviewOn; setPrev = null; refresh() })   // v0.31.0
+        root.addView(pr)
+        previewBox()?.let { root.addView(it) }
         val sv = ScrollView(ctx)
-        sv.layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(170))
+        sv.layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(if (setPrev != null) 100 else 170))
         val tiles = ArrayList<PanelKit.Tile>()
-        try { for ((n, d) in ReplaceStore.load(prefs)) tiles.add(PanelKit.Tile("\u2605 " + n, "saved", n == setName) { pickSet(n, d) }) } catch (_: Throwable) { }
-        try { for ((n, d) in ReplaceStore.ready()) tiles.add(PanelKit.Tile(n, "ready-made", n == setName) { pickSet(n, d) }) } catch (_: Throwable) { }
+        try { for ((n, d) in ReplaceStore.load(prefs)) tiles.add(PanelKit.Tile("\u2605 " + n, "saved", n == setName) { tapSet(n, d) }) } catch (_: Throwable) { }
+        try { for ((n, d) in ReplaceStore.ready()) tiles.add(PanelKit.Tile(n, "ready-made", n == setName) { tapSet(n, d) }) } catch (_: Throwable) { }
         sv.addView(PanelKit.tileGrid(ctx, prefs, host, 2, tiles))
         root.addView(sv)
         return root
@@ -825,11 +898,22 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
 
     private fun showValue() {
         val v = cur()
-        val s = if (v.length > 60) "\u2026" + ReplaceExtras.tail(v, 60) else v   // v0.28.0: surrogate-safe cut
-        valueTv?.text = (if (typing == 1) "Find: " else "With: ") + s + "\u258F"
+        valueTv?.text = (if (typing == 1) "Find: " else "With: ") + ReplacePads.view(v, caretPos, 60)   // v0.29.0: caret can move (surrogate-safe window)
     }
 
-    private fun typeText(s: String) { setCur(ReplacePads.append(cur(), s)); showValue() }
+    private fun typeText(s: String) {
+        val c = ReplacePads.clampCaret(cur(), caretPos)
+        val n = ReplacePads.insertAt(cur(), c, s)
+        if (n != cur()) { setCur(n); caretPos = c + s.length }
+        showValue()
+    }
+
+    private fun backKey() {
+        val c = ReplacePads.clampCaret(cur(), caretPos)
+        val n = ReplacePads.backspaceAt(cur(), c)
+        caretPos = c - (cur().length - n.length)
+        setCur(n); showValue()
+    }
 
     private fun typeTok(tok: String) {
         var v = ReplacePads.value(tok)
@@ -856,8 +940,8 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
         tv.layoutParams = lp
         head.addView(tv)
         valueTv = tv
-        head.addView(btn("Clear", 1f, 34) { setCur(""); showValue() })
-        head.addView(btn(if (typing == 1) "Next: With" else "Next: Find", 1.4f, 34) { typing = if (typing == 1) 2 else 1; padPage = 0; shift = false; refresh() })
+        head.addView(btn("Clear", 1f, 34) { setCur(""); caretPos = 0; showValue() })
+        head.addView(btn(if (typing == 1) "Next: With" else "Next: Find", 1.4f, 34) { typing = if (typing == 1) 2 else 1; padPage = 0; shift = false; caretPos = cur().length; refresh() })
         root.addView(head)
         showValue()
 
@@ -883,8 +967,10 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
         }
         val bot = row()
         bot.addView(btn(ReplacePads.PAGE_NAMES[ReplacePads.next(padPage)], 1.3f, 34) { padPage = ReplacePads.next(padPage); shift = false; fillKeys() })
-        bot.addView(btn("\u2423", 3f, 34) { typeText(" ") })
-        bot.addView(btn("\u232B", 1.3f, 34) { setCur(ReplacePads.backspace(cur())); showValue() })
+        bot.addView(btn("\u25C0", 0.8f, 34) { caretPos = ReplacePads.left(cur(), caretPos); showValue() })   // v0.29.0: caret left / right
+        bot.addView(btn("\u25B6", 0.8f, 34) { caretPos = ReplacePads.right(cur(), caretPos); showValue() })
+        bot.addView(btn("\u2423", 2.2f, 34) { typeText(" ") })
+        bot.addView(btn("\u232B", 1.3f, 34) { backKey() })
         bot.addView(btn("\u2713 Done", 1.4f, 34) { typing = 0; valueTv = null; keysBox = null; readSource(false); refresh() })
         box.addView(bot)
     }

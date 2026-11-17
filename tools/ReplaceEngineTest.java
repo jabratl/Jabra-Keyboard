@@ -146,6 +146,40 @@ public class ReplaceEngineTest {
             t("parts: null safe", n.length == 4 && n[0].isEmpty() && n[3].isEmpty());
         }
 
+        // ---- v0.29.0 keep case
+        {
+            Opt k = new Opt(); k.keepCase = true; k.bangla = false;
+            t("keep: all caps", ReplaceEngine.replaceAll("say HELLO now", "hello", "world", k).out.equals("say WORLD now"));
+            t("keep: capitalized", ReplaceEngine.replaceAll("Hello there", "hello", "world", k).out.equals("World there"));
+            t("keep: small", ReplaceEngine.replaceAll("hello", "hello", "world", k).out.equals("world"));
+            t("keep: mixed unchanged", ReplaceEngine.replaceAll("hELLo", "hello", "world", k).out.equals("world"));
+            t("keep: title words", ReplaceEngine.replaceAll("Hello World", "hello world", "good day", k).out.equals("Good Day"));
+            t("keep: single capital letter", ReplaceEngine.replaceAll("A b", "a", "x", k).out.equals("X b"));
+            t("keep: Russian caps", ReplaceEngine.replaceAll("\u041F\u0420\u0418\u0412\u0415\u0422", "\u043F\u0440\u0438\u0432\u0435\u0442", "\u0434\u0430", k).out.equals("\u0414\u0410"));
+            t("keep: off = plain", ReplaceEngine.replaceAll("HELLO", "hello", "world", new Opt()).out.equals("world"));
+            t("keep: null safe", "x".equals(ReplaceEngine.keepCase(null, "x")) && "".equals(ReplaceEngine.keepCase("A", "")));
+            Opt pk = ReplaceEngine.unpack(ReplaceEngine.pack(k));
+            t("keep: pack round trip", pk.keepCase && ReplaceEngine.pack(new Opt()) == 8);
+        }
+
+        // ---- v0.31.0 list mode
+        {
+            Opt l = new Opt(); l.list = true; l.bangla = false;
+            t("list: three texts", ReplaceEngine.replaceAll("a b c d", "a|b|c", "x", l).out.equals("x x x d"));
+            t("list: longest first", ReplaceEngine.replaceAll("category cat", "cat|category", "Z", l).out.equals("Z Z"));
+            t("list: empty parts and duplicates ignored", ReplaceEngine.replaceAll("a b", "a||a|", "x", l).out.equals("x b"));
+            t("list: only separators = no match", ReplaceEngine.replaceAll("a|b", "|", "x", l).count == 0);
+            t("list: regex chars are plain", ReplaceEngine.replaceAll("1+1 (x)", "1+1|(x)", "_", l).out.equals("_ _"));
+            Opt lw = l.copy(); lw.mode = ReplaceEngine.MODE_WORD;
+            t("list: whole words", ReplaceEngine.replaceAll("cat category dog", "cat|dog", "pet", lw).out.equals("pet category pet"));
+            Opt lk = l.copy(); lk.keepCase = true;
+            t("list + keep case", ReplaceEngine.replaceAll("Cat DOG", "cat|dog", "pet", lk).out.equals("Pet PET"));
+            Opt lb = new Opt(); lb.list = true;   // Bangla-safe ON
+            t("list with Bangla-safe on", ReplaceEngine.replaceAll("ab cd", "ab|cd", "x", lb).out.equals("x x"));
+            Opt ls = ReplaceEngine.unpack(ReplaceEngine.pack(l));
+            t("list: pack round trip, default unchanged", ls.list && !ReplaceEngine.unpack(8).list && ReplaceEngine.pack(new Opt()) == 8);
+            t("list: off = bar is plain text", ReplaceEngine.replaceAll("a|b", "a|b", "x", new Opt()).out.equals("x"));
+        }
         System.out.println("ReplaceEngineTest: " + ok + " ok, " + bad + " failed");
         if (bad > 0) System.exit(1);
     }
