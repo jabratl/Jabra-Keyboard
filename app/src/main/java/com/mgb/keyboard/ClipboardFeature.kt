@@ -3,6 +3,7 @@ package com.mgb.keyboard
 import android.content.Context
 import android.graphics.Color
 import android.text.TextUtils
+import android.os.SystemClock   // v0.35.1 (CC3-B)
 import android.view.Gravity
 import android.view.View
 import android.widget.Button
@@ -10,6 +11,7 @@ import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
 import com.mgb.keyboard.clip.ClipList
+import com.mgb.keyboard.typing.ClipPop   // v0.35.1 (CC3-B)
 import com.mgb.keyboard.clip.ClipMeta
 import com.mgb.keyboard.clip.ClipExport   // v0.17.57 (C2)
 import com.mgb.keyboard.clip.ClipName   // v0.17.63 (R3)
@@ -196,7 +198,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
         refresh()
     }
 
-    fun reset() { editing = null; confirmSave = false; undoBuf = emptyList(); searching = false; query = ""; confirmClear = false; msg = ""; sel.leave(); confirmDel = false; keepY = -1; fromRefresh = false; fChip = 0; moreOpen = false; pasteMenu = false; ovOpen = false; exporting = false; expMsg = ""; renaming = false; expName = ""; trashOpen = false; trashSure = false; trashMsg = ""; undoSteps = 0 }   // v0.18.4: Recently deleted closed, Undo steps start fresh; v0.17.63 (R3): rename closed + name cleared; v0.16.1 (X1); v0.17.57 (C2): export screen closed; v0.16.9 (X9): chip + More tray start fresh
+    fun reset() { try { ClipPopover.dismiss() } catch (_: Throwable) { }; editing = null; confirmSave = false; undoBuf = emptyList(); searching = false; query = ""; confirmClear = false; msg = ""; sel.leave(); confirmDel = false; keepY = -1; fromRefresh = false; fChip = 0; moreOpen = false; pasteMenu = false; ovOpen = false; exporting = false; expMsg = ""; renaming = false; expName = ""; trashOpen = false; trashSure = false; trashMsg = ""; undoSteps = 0 }   // v0.18.4: Recently deleted closed, Undo steps start fresh; v0.17.63 (R3): rename closed + name cleared; v0.16.1 (X1); v0.17.57 (C2): export screen closed; v0.16.9 (X9): chip + More tray start fresh
 
     private fun dp(v: Int): Int = (v * ctx.resources.displayMetrics.density).toInt()
 
@@ -254,10 +256,11 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
     private var keepY = -1
     private var fromRefresh = false
     private fun refresh() {
+        try { ClipPopover.dismiss() } catch (_: Throwable) { }   // v0.35.1 (CC3-B)
         try { if (editing == null) keepY = curSv?.scrollY ?: -1; fromRefresh = true } catch (_: Throwable) { keepY = -1; fromRefresh = false }
         host.showPanel("clipboard")
     }
-    private fun refreshTop() { keepY = -1; fromRefresh = false; host.showPanel("clipboard") }
+    private fun refreshTop() { try { ClipPopover.dismiss() } catch (_: Throwable) { }; keepY = -1; fromRefresh = false; host.showPanel("clipboard") }
 
     // v0.17.37 (M4): ONE place for "after a paste". clip_stay (default ON) = stay in the clipboard, OFF = old way (back to letters).
     private var pasteToast: android.widget.Toast? = null
@@ -304,7 +307,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
     }
 
     /** Returns null on any problem -> keyboard shows normal letters. */
-    fun build(): View? = try { withImages(make()) } catch (_: Throwable) { null }
+    fun build(): View? = try { try { ClipPopover.dismiss() } catch (_: Throwable) { }; withImages(make()) } catch (_: Throwable) { null }
     /** v0.18.1: copied images / screenshots on top of the panel (not on the edit / export screens; pref clip_img OFF = nothing added). */
     private fun withImages(v: View): View = try { if (editing != null || exporting || trashOpen) v else ClipImages.wrap(ctx, v, JabraPrefs(ctx)) } catch (_: Throwable) { v }
 
@@ -492,6 +495,81 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
     private fun compactOn(): Boolean = try { nl() && JabraPrefs(ctx).bool("clip_compact", true) } catch (_: Throwable) { false }   // v0.33.0 (CC1): pref clip_compact (default ON, needs the new look) = lower top row + smaller padding; OFF = exactly v0.32.0
     private fun slimBarOn(): Boolean = try { compactOn() && JabraPrefs(ctx).bool("clip_slimbar", true) } catch (_: Throwable) { false }   // v0.35.0 (CC3-A): pref clip_slimbar (default ON, needs the new look) = 34 dp select bar, icon + one word, count in Done; OFF = exactly v0.34.0
     private fun doneLbl(): String = try { if (slimBarOn()) ClipCompact.doneLabel(sel.count(), true) else "Done" } catch (_: Throwable) { "Done" }
+
+    // ---- v0.35.1 (CC3-B): floating popover for select-mode More + the 3-dot menu (pref clip_pop, default ON, needs the new look). OFF or ANY failure = the old trays, exactly as v0.35.0. ----
+    private var barAnchor: View? = null
+    private var hdrAnchor: View? = null
+    private var popVisible: List<ClipList.Item> = emptyList()
+    private fun popOn(): Boolean = try { nl() && JabraPrefs(ctx).bool("clip_pop", true) } catch (_: Throwable) { false }
+    private fun popGuardOk(): Boolean = ClipPop.reopenGuard(SystemClock.uptimeMillis(), ClipPopover.lastDismiss())   // the tap that just closed it must not re-open it
+
+    /** The More button: popover when possible, else the old tray toggle. */
+    private fun moreToggle() {
+        if (popOn() && popMore()) return
+        moreOpen = !moreOpen; pasteMenu = false; confirmDel = false; refresh()
+    }
+
+    /** true = handled (opened / closed / ignored guard tap). false = could not show -> caller opens the old tray. */
+    private fun popMore(): Boolean {
+        try {
+            if (ClipPopover.isOpen()) { ClipPopover.dismiss(); return true }
+            if (!popGuardOk()) return true
+            val a = barAnchor ?: return false
+            moreOpen = false
+            return ClipPopover.show(a, pf, host, ClipPop.moreItems(toVault != null), true) { picked -> popPick(picked.id) }
+        } catch (_: Throwable) { return false }
+    }
+
+    private fun popHeader(a: View, reopen: Boolean): Boolean {
+        try {
+            if (!reopen) {
+                if (ClipPopover.isOpen()) { ClipPopover.dismiss(); return true }
+                if (!popGuardOk()) return true
+            }
+            hdrAnchor = a
+            val sortLv = try { JabraPrefs(ctx).int("clip_sort", 0).coerceIn(0, 3) } catch (_: Throwable) { 0 }
+            val cardsOn = try { JabraPrefs(ctx).int("clip_view", 0) == 1 } catch (_: Throwable) { false }
+            val pillNow = nl() && !simple() && try { pf.bool("ui_pill", true) } catch (_: Throwable) { true }
+            val lim = try { trash.limit() } catch (_: Throwable) { com.mgb.keyboard.clip.ClipTrash.DEFAULT_LIMIT }
+            val delN = try { trash.count() } catch (_: Throwable) { 0 }
+            ovOpen = false; confirmClear = false
+            return ClipPopover.show(a, pf, host, ClipPop.headerItems(sortLv, cardsOn, pillNow, lim, delN), false) { picked -> popPick(picked.id) }
+        } catch (_: Throwable) { return false }
+    }
+
+    /** Undo-limit row: next value, menu stays open with the new value (no refresh, so the popover is not closed). */
+    private fun popUndo() {
+        try {
+            val cur = try { trash.limit() } catch (_: Throwable) { com.mgb.keyboard.clip.ClipTrash.DEFAULT_LIMIT }
+            JabraPrefs(ctx).setInt("clip_undo_n", ClipPop.nextUndo(cur, com.mgb.keyboard.clip.ClipTrash.QUICK))
+            try { trash.count() } catch (_: Throwable) { }
+            val a = hdrAnchor
+            if (a != null) { ClipPopover.dismiss(); popHeader(a, true) }
+        } catch (_: Throwable) { }
+    }
+
+    /** Every popover row runs the SAME handler code as the old tray pill. */
+    private fun popPick(id: String) {
+        when (id) {
+            "all" -> { sel.selectAll(popVisible); confirmDel = false; refresh() }
+            "none" -> { sel.clear(); confirmDel = false; refresh() }
+            "edit" -> actEdit()
+            "replace" -> actReplaceIn()
+            "merge" -> actMerge()
+            "unpin" -> actPin(false)
+            "paste1" -> actPaste(true)
+            "vault" -> actToVault()
+            "export" -> actExport()
+            "sort0", "sort1", "sort2", "sort3" -> { try { JabraPrefs(ctx).setInt("clip_sort", id.substring(4).toInt()) } catch (_: Throwable) { }; refreshTop() }
+            "view0" -> { try { JabraPrefs(ctx).setInt("clip_view", 0) } catch (_: Throwable) { }; refreshTop() }
+            "view1" -> { try { JabraPrefs(ctx).setInt("clip_view", 1) } catch (_: Throwable) { }; refreshTop() }
+            "manage" -> { ovOpen = false; sel.enter(); confirmClear = false; confirmDel = false; refresh() }
+            "deleted" -> { ovOpen = false; trashOpen = true; trashSure = false; trashMsg = ""; confirmClear = false; refreshTop() }
+            "exportall" -> { ovOpen = false; expSel = emptyList(); expScope = 1; expMsg = ""; expName = ""; renaming = false; exporting = true; moreOpen = false; confirmDel = false; refresh() }
+            "undo" -> popUndo()
+            "clear" -> { ovOpen = false; confirmClear = true; refresh() }
+        }
+    }
     private fun compact2On(): Boolean = try { compactOn() && JabraPrefs(ctx).bool("clip_compact2", true) } catch (_: Throwable) { false }   // v0.34.0 (CC2): pref clip_compact2 (default ON, needs the new look) = Undo is a small icon at the end of the filter row, no count line; OFF = exactly v0.33.0 (the Undo line + count line)
     /** v0.34.0 (CC2): small "undo arrow" icon button for the end of the filter row. Any problem = null (the Undo then stays in the info line). */
     private fun undoIconBtn(hDp: Int): View? = try {
@@ -561,7 +639,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
         top.addView(searchBtn)
         if (!selOn) { val addB = btn("Add", 1.0f, tTop) { addFromField() }; top.addView(if (nlOn) ClipBar.on(ctx, pf, addB) else addB) }   // v0.17.58 (C3): Add = the one filled (primary) button
         val manageNew = btn(if (selOn) doneLbl() else if (slim) (if (ovOpen) "\u25B4" else "\u22EF") else "Manage", ClipCompact.weight(ClipCompact.DONE, cp, slim), tTop) {
-            if (slim) { ovOpen = !ovOpen; confirmClear = false; refresh(); return@btn }   // v0.17.58 (C3): \u22EF = overflow tray
+            if (slim) { if (popOn() && popHeader(it, false)) return@btn; ovOpen = !ovOpen; confirmClear = false; refresh(); return@btn }   // v0.35.1 (CC3-B): popover first, old tray = fallback   // v0.17.58 (C3): \u22EF = overflow tray
             if (selOn) { sel.leave(); moreOpen = false } else sel.enter()
             confirmClear = false
             confirmDel = false
@@ -919,12 +997,13 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
                 split.addView(if (pasteMenu) ClipBar.on(ctx, pf, chev) else chev)
                 r.addView(split)
             } else r.addView(ClipSlimBar.btn(ctx, pf, "Paste", "paste", 1.1f, h, fb) { actPaste(false) })
-            r.addView(ClipSlimBar.btn(ctx, pf, if (moreOpen) "Less" else "More", "more", 1.1f, h, fb) { moreOpen = !moreOpen; pasteMenu = false; confirmDel = false; refresh() })
+            r.addView(ClipSlimBar.btn(ctx, pf, if (moreOpen) "Less" else "More", "more", 1.1f, h, fb) { moreToggle() })
             return r
         } catch (_: Throwable) { return null }
     }
 
     private fun selectBarNew(visible: List<ClipList.Item>, pillOn: Boolean = false): View {
+        popVisible = visible   // v0.35.1 (CC3-B)
         val t40 = PanelLayout.MIN_TOUCH   // btn() scales it (v0.17.32 UI8)
         val all = LinearLayout(ctx)
         all.orientation = LinearLayout.VERTICAL
@@ -970,14 +1049,14 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
             (if (allPinned) "Unpin" else "Pin") to { actPin(!allPinned) },
             (if (confirmDel) "Sure? delete $n" else "Delete") to { actDelete() },
             "Paste" to { actPaste(false) },
-            (if (moreOpen) "Less \u25B4" else "More \u25BE") to { moreOpen = !moreOpen; confirmDel = false; refresh() }),
+            (if (moreOpen) "Less \u25B4" else "More \u25BE") to { moreToggle() }),
             listOf(1f, if (confirmDel) 3f else 1.2f, 1.1f, 1.1f))
         else {
             // v0.19.2 (S3): Pin | Delete | [Paste | v] (split button) | More. Tap Paste = paste at once; the chevron opens Paste 1 line / To Vault / Export.
             val m = PanelKit.stickyBar(ctx, pf, host, listOf<Pair<String, () -> Unit>>(
                 (if (allPinned) "Unpin" else "Pin") to { actPin(!allPinned) },
                 (if (confirmDel) "Sure? delete $n" else "Delete") to { actDelete() },
-                (if (moreOpen) "Less \u25B4" else "More \u25BE") to { moreOpen = !moreOpen; pasteMenu = false; confirmDel = false; refresh() }),
+                (if (moreOpen) "Less \u25B4" else "More \u25BE") to { moreToggle() }),
                 listOf(1f, if (confirmDel) 3f else 1.2f, 1.1f))
             try {
                 val split = LinearLayout(ctx)
@@ -1008,6 +1087,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
             c.layoutParams = LinearLayout.LayoutParams(0, dp(sz(t40)), 1.4f)
             main.addView(c, 0)
         }
+        barAnchor = main   // v0.35.1 (CC3-B): the popover opens from the bar
         all.addView(main)
         return all
     }

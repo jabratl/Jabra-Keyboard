@@ -755,6 +755,7 @@ object SettingsGroups {
             toggle(g, "Compact clipboard header", "clip_compact", true)   // v0.33.0 (CC1): lower top row (ABC / Search / Done), smaller padding; OFF = exactly v0.32.0 (needs Clipboard new look)
             toggle(g, "Compact clipboard filter row", "clip_compact2", true)   // v0.34.0 (CC2): Undo = small icon at the end of the filter row, no count line; OFF = exactly v0.33.0
             toggle(g, "Slim select bar", "clip_slimbar", true)   // v0.35.0 (CC3-A): 34 dp bottom bar, icon + one word, count in Done; OFF = exactly v0.34.0
+            toggle(g, "Popup menus (More / 3-dot)", "clip_pop", true)   // v0.35.1 (CC3-B): floating menu for select-mode More + the 3-dot menu; OFF = old trays
             toggle(g, "Clipboard new look", "clip_new_look", true)   // v0.17.58 (C3): OFF = exactly the old clipboard panel (panel_ui decides)
             toggle(g, "Clipboard follows keyboard height", "clip_fit", true)   // v0.15.1 (N1): OFF = old fixed clipboard size
             level(g, "Panel style", "panel_ui", 0, com.mgb.keyboard.typing.PanelLayout.STYLE_NAMES)   // v0.16.9 (X9): 0 Classic = today's clipboard (default in the first build), 1 New

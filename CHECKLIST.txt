@@ -1227,3 +1227,15 @@ FIND & REPLACE PART 1 (v0.24.0) - phone test
 6. Button size 70% / 140%: the bar is never under 28 dp, nothing cut.
 7. Icons OFF: words only, same actions.
 8. Slim select bar OFF: exactly v0.34.0 (40 dp, "N selected" in the bar). Clipboard new look OFF: old panel.
+
+=== CLIPBOARD v0.35.1 - phone checks (POPUP MENUS More / 3-dot) ===
+ [ ] Select 2 clips > More: a floating menu opens above the bar; the clip list does not move.
+ [ ] Tap Merge in it: it closes and merges (same message as before).
+ [ ] Tap outside: it closes. Tap More twice: opens, then closes (does not re-open at once).
+ [ ] Every old More action is in the menu: All, None, Edit, Replace, Merge, Unpin, Paste 1 line, To Vault (if vault), Export.
+ [ ] 3-dot menu: Manage, Deleted n, Export all, Undo kept, Clear (red, last) all work.
+ [ ] Dropdown pills OFF: Sort and View rows show, a tick on the chosen one; tapping changes the list.
+ [ ] Undo kept: tap cycles Off / 10 / 30 / 50 / 100, menu stays open, Settings > Undo limit really changes.
+ [ ] Big font / button size 140%: rows readable, the menu scrolls when too tall.
+ [ ] Settings > "Popup menus (More / 3-dot)" OFF: old trays exactly as v0.35.0.
+ [ ] If the menu does not show at all (like a missing Peek card): the old tray opens instead, nothing lost. Tell me.
