@@ -1,0 +1,11 @@
+HANDOFF Jabra-Keyboard v0.36.4 - updater fix
+
+Rules of work: HANDOFF.txt section 0 (Banglish, patch do not rewrite, ONLY changed files in the zip + handoff, max 1 question, grep only needed files). Check a NEW file name against the repo first (v0.36.2 overwrote EditPlan.java).
+
+1. STATE
+- Repo = v0.36.4. Updater.kt: lastError, viaApi (User-Agent), viaPage fallback (github.com releases/latest redirect, apk = Jabra-Keyboard-<tag>.apk). SettingsActivity.kt shows the reason.
+- Since v0.33.0 (CC1 - CC4, popover, shift case, replace keeps format, updater) NOTHING is compiled here or tested on a phone.
+
+2. FIRST THINGS NEXT CHAT
+- Build green? Install v0.36.4 by hand once, then Settings > Check for updates: what exact text does it show? (the new text names the reason)
+- Phone checks: CHECKLIST sections v0.33.0 - v0.36.2.

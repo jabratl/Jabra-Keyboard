@@ -429,7 +429,7 @@ class SettingsActivity : Activity() {
             runOnUiThread {
                 try {
                     if (info == null) {
-                        status.text = "Could not check (offline, or the GitHub repo is private)."
+                        status.text = "Could not check: " + (Updater.lastError.ifEmpty { "no answer" }) + ". (HTTP 403 = GitHub limit on this network: try Wi-Fi / other network; 404 = no release / private repo.)"   // v0.36.4: real reason
                     } else if (Updater.isNewer(info)) {
                         pending = info
                         status.text = "New version: ${info.tag}\n${info.notes}"

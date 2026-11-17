@@ -1,3 +1,10 @@
+v0.36.4 - FIX: "Check for updates" says "Could not check" although internet is fine and the repo is public
+- SEEN/WHY: the check only knew one answer (null) for every problem and printed a guess ("offline or private"). Most likely cause on a mobile network: GitHub's API allows only 60 requests / hour per IP for apps without a login, and many phones share one carrier IP (HTTP 403). Not proven - the app never showed the real reason.
+- WHAT: (1) the real reason is kept (Updater.lastError) and shown: "Could not check: API HTTP 403; ..." (2) User-Agent header added to the API call (GitHub asks for one). (3) NEW fallback: if the API fails, github.com/<repo>/releases/latest is read (a redirect to the newest tag, not rate-limited like the API); the apk name is Jabra-Keyboard-<tag>.apk, the same rule as the workflow. In this fallback there are no release notes and no SHA hash (no hash = update allowed, like old releases).
+- WHAT BROKE: nothing known. No new permission (INTERNET already there), nothing stored. NOT tested: Kotlin NOT compiled, phone NOT tested.
+- Files: PATCH Updater.kt, SettingsActivity.kt (message), app/build.gradle.kts (0.36.4), CHANGELOG, HANDOFF_Jabra-Keyboard_v0.36.4.txt (NEW).
+- NOTE: an installed OLD version keeps the old check. This fix works only after you install v0.36.4 by hand once (download the APK from GitHub Releases).
+
 v0.36.3 - FIX BUILD: v0.36.2 overwrote an EXISTING class
 - SEEN: Kotlin build error "Unresolved reference: undoText / doneText / parseValue" in SettingsGroups.kt. My v0.36.2 zip carried a NEW typing/EditPlan.java + tools/EditPlanTest.java, but the repo ALREADY had files with these names (used by SettingsGroups, LayoutEditorPage ...) - they were overwritten.
 - FIX: original typing/EditPlan.java + tools/EditPlanTest.java put back unchanged (taken from the repo zip). My match-by-match helper is renamed typing/ReplaceEdits.java + tools/ReplaceEditsTest.java; FormatterFeature.kt uses ReplaceEdits. Nothing else changed. I now check a new file name against the repo before adding it.
