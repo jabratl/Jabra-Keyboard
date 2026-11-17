@@ -1160,12 +1160,3 @@ FIND & REPLACE PART 1 (v0.24.0) - phone test
 10. Emoji / rare character test: Find = a long text of 30 emoji; the Find button label and the preview line show whole emoji (no broken box at the end). Recent pairs list (switch ON) the same.
 11. One-hand mode, landscape, big system font, Borderless theme: Rp main view, [?] help, Sets, Recent: any cut-off button? (note which one)
 12. Speed: paste a very long text (about 100000 characters, e.g. a book chapter) into a field: Rp > Find "the" > the preview appears without a freeze; Replace all works or says "too long" at more than 100000.
-
-=== FIND & REPLACE v0.29.0 - phone checks ===
-1. Rp: tap [Keep] (Aa turns off). Field "Hello HELLO hello", Find hello, With world, Replace all = "World WORLD world".
-2. Keep ON, Regex mode, Find (\w+) With $1x on "Ab CD" = case kept per match.
-3. Close + open Rp again: Keep still ON (saved).
-4. Clipboard: select ONE clip > More > Replace: Rp opens on the clip text; Replace all (2 taps) = clip text changed in the clipboard list; field untouched.
-5. Undo in that view = old clip text back.
-6. Select 2 clips > More > Replace = message "Select ONE clip to replace in".
-7. After step 4 press the Rp toolbar key: it works on the field again (not the clip).
