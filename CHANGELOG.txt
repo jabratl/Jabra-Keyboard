@@ -1,5 +1,3 @@
-v0.31.1 - FIX (Kotlin compile error of v0.29.0): MgbIme.kt openReplaceInClip used ClipList without the import (it lives in com.mgb.keyboard.clip): now written with the full name. Nothing else changed.
-
 v0.31.0 - NEW: Find & Replace LIST mode (a | b | c) + PREVIEW of a set before loading
 - SEEN/WHY: owner asked for items 5 and 10 of my idea list, in one zip together with v0.30.0 (this zip = v0.30.0 + v0.31.0; v0.29.0 is already on GitHub).
 - LIST: new chip "List" in Rp (Text / Word modes, both looks, saved in rp_opt bit 64). With List ON, Find can hold several texts separated by | (type a | b | c with the #+= page of the small keyboard): every one of them is replaced by the same With text. Longest first (cat | category = "category" is not cut), empty parts and duplicates ignored, plain text (. * ( ) mean nothing), works with Word, Keep case and Bangla-safe, \n option applies to each part. Find with only | = no match. List OFF = | is a normal character as before. Not in Regex mode (use a|b there) and not in rule sets yet.

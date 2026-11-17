@@ -4,8 +4,6 @@ Owner may ask for ONE zip that holds the unreleased parts + the new part. DONE: 
 Owner work limits (2026-11-17): no hard testing, only the tests that are needed; time-boxed chats (~12 min): deliver what is done + a handoff for what is left.
 OWNER DECISION 2026-11-17: NO BANGLA in this feature's plan from now on. The owner works with Korean / Japanese / Chinese / Russian / Arabic (also Persian). New work, sets, help texts, examples use those.
 
- FIX v0.31.1: GitHub Actions showed "MgbIme.kt line 1479: Unresolved reference: ClipList" (v0.29.0 build red): fixed with the full name com.mgb.keyboard.clip.ClipList.Item. Owner said v0.31.0 builds were coming green; check the Actions result of v0.31.1 first. Zip name of this fix: Jabra-Keyboard_v0_31_1.zip (MgbIme.kt, build.gradle.kts, CHANGELOG.txt only).
-
 === v0.31.0 (this chat, 2026-11-17, time-boxed) - WHAT EXISTS ===
  OWNER ASK: items 5 (list mode) and 10 (preview a set) of my idea list + one zip with v0.30.0 too. DONE:
  LIST: ReplaceEngine.Opt.list (pack bit 64). compile(): Text / Word only; listParts(find, opt) = split at "|", empty + duplicate dropped, \n escapes applied per part, longest first; body(f, opt) = regex of ONE text (the old Bangla-safe / quote code moved there unchanged); parts joined as (?:p1|p2|..), Word look-around outside. No parts = "(?!)" (no match). Chip "List" next to Bangla-safe in both looks (classic row r3 now has up to 8 buttons: check a narrow phone). NOT done: "list:" prefix for rule sets (would be like word: / keep: in ReplaceRules); a visible hint that | is the separator (the chip label is just "List").
