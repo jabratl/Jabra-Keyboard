@@ -401,9 +401,7 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
         val partial = part != 0 && !usedSel
         val fullBefore = fullText
         val fullAfter = if (partial) composeFull(r.out) else r.out
-        val base = if (part == 1) partCut.coerceIn(0, fullText.length) else 0   // v0.36.2: where the worked-on piece starts in the field
-        val keep = !usedSel && r.edits.isNotEmpty() && r.edits.size == r.changed && try { io.replaceEdits(base, fullBefore, fullAfter, r.edits) } catch (_: Throwable) { false }   // v0.36.2: only the matches change, the rest of the field keeps its format; false = old whole-text replace below
-        val ok = keep || try { if (usedSel) io.replaceSelection(r.out) else io.replaceAll(fullAfter) } catch (_: Throwable) { false }
+        val ok = try { if (usedSel) io.replaceSelection(r.out) else io.replaceAll(fullAfter) } catch (_: Throwable) { false }
         confirmAll = false
         if (ok && partial && part == 2) partCut = r.out.length   // the piece before the cursor now has the new length
         if (ok) { undoStack.push(if (usedSel) r.out else fullAfter, if (usedSel) before else fullBefore); msg = "Replaced " + r.changed; recordPair(); readSource(false) } else msg = "Could not replace in this app (use Copy)"   // v0.26.0 (R3): recordPair = only when Recent pairs is ON
