@@ -401,10 +401,14 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
         val partial = part != 0 && !usedSel
         val fullBefore = fullText
         val fullAfter = if (partial) composeFull(r.out) else r.out
-        val ok = try { if (usedSel) io.replaceSelection(r.out) else io.replaceAll(fullAfter) } catch (_: Throwable) { false }
+        var ok = false
+        if (!usedSel && r.edits.isNotEmpty()) {   // v0.37.1: match by match first (the text between the matches is never rewritten = its format stays; also works in apps that cannot "select all")
+            try { ok = io.replaceEdits(0, fullBefore, fullAfter, if (part == 1) com.mgb.keyboard.typing.ReplaceEdits.shift(r.edits, partCut.coerceIn(0, fullText.length)) else r.edits) } catch (_: Throwable) { ok = false }
+        }
+        if (!ok) ok = try { if (usedSel) io.replaceSelection(r.out) else io.replaceAll(fullAfter) } catch (_: Throwable) { false }
         confirmAll = false
         if (ok && partial && part == 2) partCut = r.out.length   // the piece before the cursor now has the new length
-        if (ok) { undoStack.push(if (usedSel) r.out else fullAfter, if (usedSel) before else fullBefore); msg = "Replaced " + r.changed; recordPair(); readSource(false) } else msg = "Could not replace in this app (use Copy)"   // v0.26.0 (R3): recordPair = only when Recent pairs is ON
+        if (ok) { undoStack.push(if (usedSel) r.out else fullAfter, if (usedSel) before else fullBefore); msg = "Replaced " + r.changed; recordPair(); readSource(false) } else msg = "Could not replace in this app. Use Copy, then paste"   // v0.26.0 (R3): recordPair = only when Recent pairs is ON
         refresh()
     }
 
@@ -418,8 +422,27 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
         refresh()
     }
 
+    /** v0.37.1: HTML of the result with the styles of the original text. null = not possible (no styles from the app, From / To cursor scope, text changed) -> plain copy. */
+    private fun richHtml(res: ReplaceEngine.Result): String? {
+        if (part != 0 || res.edits.isEmpty()) return null
+        val rt = io.richText(usedSel) ?: return null
+        if (rt.toString() != src) return null
+        val sb = SpannableStringBuilder(rt)
+        if (sb.getSpans(0, sb.length, Any::class.java).none { it is android.text.style.CharacterStyle || it is android.text.style.ParagraphStyle }) return null   // the app gave plain text only
+        for (h in res.edits.sortedByDescending { it.start }) sb.replace(h.start, h.end, h.repl)   // spans outside a match stay
+        if (sb.toString() != res.out) return null
+        return android.text.Html.toHtml(sb, android.text.Html.TO_HTML_PARAGRAPH_LINES_CONSECUTIVE)
+    }
+
     private fun copyResult(res: ReplaceEngine.Result) {
-        msg = if (res.err == null && !res.blank && res.count > 0 && io.setClip(res.out, null)) "Result copied" else "Nothing to copy"
+        var how = ""
+        var ok = false
+        if (res.err == null && !res.blank && res.count > 0) {
+            val html = try { richHtml(res) } catch (_: Throwable) { null }   // v0.37.1: keep the bold / italic / links of the rest of the text when the app gives them
+            ok = io.setClip(res.out, html)
+            how = if (html != null) " (with format)" else " (plain text: this app gives no format)"
+        }
+        msg = if (ok) "Result copied" + how else "Nothing to copy"
         confirmAll = false
         refresh()
     }

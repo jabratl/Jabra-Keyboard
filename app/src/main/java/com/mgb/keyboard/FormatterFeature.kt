@@ -41,6 +41,8 @@ interface FmtIo {
     fun selectRange(start: Int, end: Int): Boolean = false   // v0.25.0 (R2): select a match in the field (default: not supported)
     /** v0.36.2: change the field MATCH BY MATCH (base = where the edited piece starts in the field). false = not possible here -> the caller uses replaceAll(after). Default: not supported. */
     fun replaceEdits(base: Int, before: String, after: String, edits: List<com.mgb.keyboard.typing.ReplaceEngine.Hit>): Boolean = false
+    /** v0.37.1: the field text WITH its styles (bold / italic / links) when the app gives them, else null. selection = only the selected text. */
+    fun richText(selection: Boolean): CharSequence? = null
     fun cursorPos(): Int = -1   // v0.29.0: caret position in wholeText() (-1 = unknown; used by Find & Replace "From / To cursor")
 }
 
@@ -63,6 +65,21 @@ class ImeFmtIo(private val svc: InputMethodService, private val isPwd: () -> Boo
     } catch (_: Throwable) { false }
 
     override fun selected(): String? = try { ic()?.getSelectedText(0)?.toString() } catch (_: Throwable) { null }
+
+    override fun richText(selection: Boolean): CharSequence? = try {
+        val c = ic()
+        val st = android.view.inputmethod.InputConnection.GET_TEXT_WITH_STYLES
+        if (c == null) null
+        else if (selection) c.getSelectedText(st)
+        else {
+            val sb = android.text.SpannableStringBuilder()
+            val bf = c.getTextBeforeCursor(100000, st); val sl = c.getSelectedText(st); val af = c.getTextAfterCursor(100000, st)
+            if (bf != null) sb.append(bf)
+            if (sl != null) sb.append(sl)
+            if (af != null) sb.append(af)
+            sb
+        }
+    } catch (_: Throwable) { null }
 
     // ---- v0.36.2: match-by-match replace (the text between the matches is never rewritten, so its bold / italic / links stay) ----
     private class EditRec(val res: String, val orig: String, val inv: List<com.mgb.keyboard.typing.ReplaceEngine.Hit>, val base: Int)

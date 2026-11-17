@@ -30,6 +30,8 @@ public class ReplaceEditsTest {
         ReplaceEngine.Result err = ReplaceEngine.replaceAll("abc", "(", "y", rx);
         t("error = no edits", err.err != null && err.edits.isEmpty());
         t("matches rejects wrong after", !ReplaceEdits.matches("one one", "1 one", ReplaceEngine.replaceAll("one one", "one", "1", o).edits));
+        ReplaceEngine.Result sh = ReplaceEngine.replaceAll("one two", "two", "2", o);
+        t("shift", ReplaceEdits.apply("XX one two", ReplaceEdits.shift(sh.edits, 3)).equals("XX one 2"));
         System.out.println("ReplaceEditsTest " + ok + "/" + (ok + bad));
         if (bad > 0) System.exit(1);
     }

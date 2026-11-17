@@ -34,6 +34,13 @@ public final class ReplaceEdits {
         return inv;
     }
 
+    /** v0.37.1: the same edits moved by [by] characters (the edited piece starts at [by] inside the whole field). */
+    public static List<ReplaceEngine.Hit> shift(List<ReplaceEngine.Hit> edits, int by) {
+        List<ReplaceEngine.Hit> r = new ArrayList<ReplaceEngine.Hit>(edits.size());
+        for (ReplaceEngine.Hit h : edits) r.add(new ReplaceEngine.Hit(h.start + by, h.end + by, h.found, h.repl));
+        return r;
+    }
+
     /** Safe to use: the edits really turn before into after (else the caller uses the old whole-text replace). */
     public static boolean matches(String before, String after, List<ReplaceEngine.Hit> edits) {
         try { return !edits.isEmpty() && apply(before, edits).equals(after); } catch (RuntimeException e) { return false; }

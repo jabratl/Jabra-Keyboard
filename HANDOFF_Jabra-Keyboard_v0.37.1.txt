@@ -1,0 +1,4 @@
+HANDOFF Jabra-Keyboard v0.37.1 - Replace keeps format
+
+1. STATE: repo = v0.37.1 (includes v0.36.5 smaller popover, v0.37.0 floating select bar). The v0.36.2 match-by-match Replace is now REALLY wired (ReplaceEngine.Result.edits, ReplacePanel.doReplace -> io.replaceEdits). Check against the repo that no other v0.36.x piece is missing (the zip had lost the ReplaceEngine + ReplacePanel parts of v0.36.2).
+2. NEXT: build log, then phone test: Replace in a field with bold text (an app that gives styles, e.g. Notes / Docs), then Copy + paste.
