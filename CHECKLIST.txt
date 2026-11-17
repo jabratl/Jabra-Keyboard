@@ -1255,3 +1255,14 @@ FIND & REPLACE PART 1 (v0.24.0) - phone test
  [ ] No selection: Shift works as before (one tap shift, double tap caps lock).
  [ ] Select Bangla text, tap Shift: nothing changes, normal shift state.
  [ ] Try Gmail / Notes / a browser field: the text stays selected after the tap.
+
+
+=== CLIPBOARD v0.37.0 - phone checks (FLOATING SELECT BAR) ===
+1. Open Clipboard, select nothing: NO bottom bar, the list is full height.
+2. Long-press a clip (select mode): a rounded pill with Pin | Delete | Paste | More slides up over the bottom of the list. Tap more clips: the pill stays still (no flicker).
+3. Scroll the list to the very end: the last clip can be lifted fully above the pill.
+4. Tap More: the small menu opens ABOVE the pill (All, None, Edit, Replace, Merge, Unpin, Paste 1 line, To Vault, Export all there).
+5. Select 3+ clips, tap Delete: pill shows red "Sure? delete N"; tap it = deleted + Undo.
+6. Tap Done / deselect all: the pill disappears.
+7. Settings > Clipboard > "Floating select bar" OFF: the old slim bar is back, exactly as v0.36.5.
+8. Dark and light theme: pill text + icons readable, pill not see-through.

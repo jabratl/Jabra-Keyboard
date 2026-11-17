@@ -16,6 +16,16 @@ public final class ClipPop {
     public static final String CLEAR = "clear";
     public static final int GUARD_MS = 250;
 
+    // v0.36.5: smaller popover (was width 200 / row 40 / text 14 / icon 18 = the 3-dot menu was ~470 dp tall, nearly the whole screen).
+    public static final int WIDTH_DP = 168;
+    public static final int ROW_DP = 34;
+    public static final int TEXT_SP = 13;
+    public static final int VALUE_SP = 12;
+    public static final int ICON_DP = 16;
+    public static final int PAD_V_DP = 3;
+    public static final int PAD_L_DP = 12;
+    public static final int PAD_R_DP = 10;
+
     public static final class Item {
         public final String id, label, icon, value;
         public final int group;

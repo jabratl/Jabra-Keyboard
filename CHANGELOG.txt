@@ -1,3 +1,19 @@
+v0.37.0 - NEW: FLOATING SELECT BAR (idea from the owner's Gemini design image)
+- SEEN/WHY: in select mode a bar (Pin / Delete / Paste / More) sat in the layout under the list and took height from the few clips on screen. Design idea: a minimal pill that floats and shows ONLY while clips are selected.
+- WHAT: the bar is now a rounded pill (icon + one word: Pin | Delete | Paste | More) that floats over the bottom of the list, 8 dp above the bottom edge, with shadow and an opaque card colour. It takes NO layout height (pulled over the list with a negative top margin) and the list gets the same height as bottom padding, so the last clip can always be scrolled above the pill. It slides in (140 ms) only the first time after you select a clip, not on every tap (no flicker). More opens the v0.36.5 popover upward from the pill. Delete with 3+ clips: the pill shows a wide red "Sure? delete N" like before.
+- FALLBACK: pref clip_float (Settings > Clipboard > "Floating select bar", default ON, needs the new look). OFF, searching, an old tray open, or ANY problem = exactly the v0.36.5 slim bar.
+- NOT in the pill (still reachable): the small chevron of the Paste split button. Its 3 actions (Paste 1 line / To Vault / Export) are all in the More popover.
+- WHAT BROKE: nothing known. No permission, nothing stored.
+- NOT tested: Kotlin NOT compiled, phone NOT tested. Java tests: ClipFloatTest + ClipPopTest green (run alone; the full run_tests.sh already showed a ReplaceEditsTest compile error in the v0.36.4 zip before this change).
+- Files: NEW ClipFloatBar.kt, typing/ClipFloat.java, tools/ClipFloatTest.java, HANDOFF_Jabra-Keyboard_v0.37.0.txt; PATCH ClipboardFeature.kt (3 small hooks), SettingsGroups.kt (toggle), app/build.gradle.kts (0.37.0), CHANGELOG, CHECKLIST. (v0.36.5 files ClipPop.java, ClipPopover.kt, ClipPopTest.java, HANDOFF_Jabra-Keyboard_v0.36.5.txt are in the same zip.)
+
+v0.36.5 - CHANGE: SMALLER CLIPBOARD POPOVER (More menu + 3-dot menu)
+- SEEN/WHY: owner screenshots: the popover was too big. Width 200 dp, rows 40 dp, text 14 sp: the 3-dot menu (11 rows) was ~470 dp tall = more than half of the phone screen, it covered the app above the keyboard.
+- WHAT: width 200 -> 168 dp, row 40 -> 34 dp, text 14 -> 13 sp (Undo value 12 sp), icon 18 -> 16 dp, side padding a bit smaller, divider gaps 2 -> 1 dp. 3-dot menu now ~330 dp, More menu ~ 275 dp. Numbers live in typing/ClipPop.java (WIDTH_DP, ROW_DP ...), so one place to tune. Row still 34 dp = easy finger target.
+- WHAT BROKE: nothing known. No new pref, no permission, no stored data. Items, order, handlers unchanged.
+- NOT tested: Kotlin NOT compiled, phone NOT tested.
+- Files: PATCH typing/ClipPop.java, ClipPopover.kt, tools/ClipPopTest.java, app/build.gradle.kts (0.36.5), CHANGELOG.txt, HANDOFF_Jabra-Keyboard_v0.36.5.txt (NEW).
+
 v0.36.4 - FIX: "Check for updates" says "Could not check" although internet is fine and the repo is public
 - SEEN/WHY: the check only knew one answer (null) for every problem and printed a guess ("offline or private"). Most likely cause on a mobile network: GitHub's API allows only 60 requests / hour per IP for apps without a login, and many phones share one carrier IP (HTTP 403). Not proven - the app never showed the real reason.
 - WHAT: (1) the real reason is kept (Updater.lastError) and shown: "Could not check: API HTTP 403; ..." (2) User-Agent header added to the API call (GitHub asks for one). (3) NEW fallback: if the API fails, github.com/<repo>/releases/latest is read (a redirect to the newest tag, not rate-limited like the API); the apk name is Jabra-Keyboard-<tag>.apk, the same rule as the workflow. In this fallback there are no release notes and no SHA hash (no hash = update allowed, like old releases).

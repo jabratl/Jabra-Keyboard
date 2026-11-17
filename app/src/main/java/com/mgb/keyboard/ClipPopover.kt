@@ -19,7 +19,7 @@ import android.widget.TextView
 import com.mgb.keyboard.typing.ClipPop
 
 /**
- * v0.35.1 (CC3-B): the floating menu of the clipboard (select-mode More + the 3-dot header menu).
+ * v0.35.1 (CC3-B; v0.36.5: smaller sizes from ClipPop.*_DP): the floating menu of the clipboard (select-mode More + the 3-dot header menu).
  * A TOUCHABLE PopupWindow (not focusable), same window pattern as PeekPopup (screen coordinates + ToolTip.inScreen).
  * Rows come from the pure model ClipPop; the caller maps each id to the SAME old handler.
  * show() returns false on ANY problem (no window token, BadTokenException ...): the caller then opens the OLD tray (fallback).
@@ -49,19 +49,19 @@ object ClipPopover {
             val dm = ctx.resources.displayMetrics
             val sw = dm.widthPixels
             val margin = JabraTokens.dp(ctx, 6)
-            val w = JabraTokens.dp(ctx, 200).coerceAtMost(sw - 2 * margin)
+            val w = JabraTokens.dp(ctx, ClipPop.WIDTH_DP).coerceAtMost(sw - 2 * margin)
             val ink = JabraTokens.cardText(p)
             val iconOn = try { p.bool("icons_on", true) } catch (_: Throwable) { true }
-            val rowPx = JabraTokens.dp(ctx, 40)
+            val rowPx = JabraTokens.dp(ctx, ClipPop.ROW_DP)
             val col = LinearLayout(ctx)
             col.orientation = LinearLayout.VERTICAL
-            col.setPadding(0, JabraTokens.dp(ctx, 4), 0, JabraTokens.dp(ctx, 4))
+            col.setPadding(0, JabraTokens.dp(ctx, ClipPop.PAD_V_DP), 0, JabraTokens.dp(ctx, ClipPop.PAD_V_DP))
             var lastGroup = items[0].group
             for (it in items) {
                 if (it.group != lastGroup) {   // thin divider between groups
                     val d = View(ctx)
                     d.setBackgroundColor(JabraTokens.withAlpha(ink, 0x33))
-                    d.layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, JabraTokens.dp(ctx, 1).coerceAtLeast(1)).also { lp -> lp.setMargins(JabraTokens.dp(ctx, 10), JabraTokens.dp(ctx, 2), JabraTokens.dp(ctx, 10), JabraTokens.dp(ctx, 2)) }
+                    d.layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, JabraTokens.dp(ctx, 1).coerceAtLeast(1)).also { lp -> lp.setMargins(JabraTokens.dp(ctx, 10), JabraTokens.dp(ctx, 1), JabraTokens.dp(ctx, 10), JabraTokens.dp(ctx, 1)) }
                     col.addView(d)
                     lastGroup = it.group
                 }
@@ -90,7 +90,7 @@ object ClipPopover {
             val up = if (preferUp) true else (below < contentH && above > below)
             val space = if (up) above else below
             val dpPx = JabraTokens.dp(ctx, 1).coerceAtLeast(1)
-            val h = ClipPop.maxHeightDp(space / dpPx, contentH / dpPx, 40) * dpPx
+            val h = ClipPop.maxHeightDp(space / dpPx, contentH / dpPx, ClipPop.ROW_DP) * dpPx
             val y = if (up) loc[1] - h - gap else loc[1] + anchor.height + gap
             val x = (loc[0] + anchor.width - w).coerceIn(margin, (sw - w - margin).coerceAtLeast(margin))
             box.alpha = 0f
@@ -118,11 +118,11 @@ object ClipPopover {
         val r = LinearLayout(ctx)
         r.orientation = LinearLayout.HORIZONTAL
         r.gravity = Gravity.CENTER_VERTICAL
-        r.setPadding(JabraTokens.dp(ctx, 14), 0, JabraTokens.dp(ctx, 12), 0)
+        r.setPadding(JabraTokens.dp(ctx, ClipPop.PAD_L_DP), 0, JabraTokens.dp(ctx, ClipPop.PAD_R_DP), 0)
         r.layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, rowPx)
         val t = TextView(ctx)
         t.text = it.label
-        t.textSize = 14f
+        t.textSize = ClipPop.TEXT_SP.toFloat()
         t.maxLines = 1
         t.ellipsize = TextUtils.TruncateAt.END
         t.setTextColor(if (it.danger) JabraTokens.DANGER else ink)
@@ -132,7 +132,7 @@ object ClipPopover {
         if (it.value.isNotEmpty()) {   // Undo row: the value sits on the right
             val v = TextView(ctx)
             v.text = it.value
-            v.textSize = 13f
+            v.textSize = ClipPop.VALUE_SP.toFloat()
             v.setTypeface(v.typeface, Typeface.BOLD)
             v.setTextColor(ink)
             v.setPadding(0, 0, JabraTokens.dp(ctx, 6), 0)
@@ -144,7 +144,7 @@ object ClipPopover {
                 val c = if (it.danger) JabraTokens.DANGER else try { JabraThemes.iconColor(p) } catch (_: Throwable) { ink }
                 val iv = ImageView(ctx)
                 iv.setImageDrawable(JabraIcons.IconDrawable(name, c))
-                val s = JabraTokens.dp(ctx, 18)
+                val s = JabraTokens.dp(ctx, ClipPop.ICON_DP)
                 iv.layoutParams = LinearLayout.LayoutParams(s, s)
                 r.addView(iv)
             }

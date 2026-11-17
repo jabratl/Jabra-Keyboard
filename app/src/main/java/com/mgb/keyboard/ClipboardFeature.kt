@@ -1,5 +1,6 @@
 package com.mgb.keyboard
 
+import com.mgb.keyboard.typing.ClipFloat
 import android.content.Context
 import android.graphics.Color
 import android.text.TextUtils
@@ -503,6 +504,27 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
     private fun popOn(): Boolean = try { nl() && JabraPrefs(ctx).bool("clip_pop", true) } catch (_: Throwable) { false }
     private fun popGuardOk(): Boolean = ClipPop.reopenGuard(SystemClock.uptimeMillis(), ClipPopover.lastDismiss())   // the tap that just closed it must not re-open it
 
+    // ---- v0.37.0: FLOATING select bar (pref clip_float, default ON, needs the new look). OFF or ANY failure = the slim bar of v0.36.5. ----
+    private var floatShown = false
+    private fun floatBarOn(): Boolean = try { nl() && ClipFloat.wants(sel.isOn, JabraPrefs(ctx).bool("clip_float", true), searching, moreOpen || pasteMenu) } catch (_: Throwable) { false }
+    private fun floatBarV(visible: List<ClipList.Item>): View? {
+        try {
+            popVisible = visible
+            val n = sel.count()
+            val allPinned = n > 0 && sel.pinnedCount() == n
+            val acts = ArrayList<ClipFloatBar.Act>()
+            acts.add(ClipFloatBar.Act(if (allPinned) "Unpin" else "Pin", "pin", 1f, false) { actPin(!allPinned) })
+            if (confirmDel) acts.add(ClipFloatBar.Act("Sure? delete " + n, null, 2.6f, true) { actDelete() })   // destructive step: wide, red, text only
+            else acts.add(ClipFloatBar.Act("Delete", "trash", 1.1f, false) { actDelete() })
+            acts.add(ClipFloatBar.Act("Paste", "paste", 1f, false) { actPaste(false) })
+            acts.add(ClipFloatBar.Act("More", "more", 1f, false) { moreToggle() })
+            val b = ClipFloatBar.build(ctx, pf, acts, sz(ClipCompact.barDp(PanelLayout.MIN_TOUCH, true)), ClipFloat.animate(floatShown)) { v -> try { host.feedback(v) } catch (_: Throwable) { } } ?: return null
+            barAnchor = b.pill   // the More popover opens upward from the pill
+            floatShown = true
+            return b.wrap
+        } catch (_: Throwable) { return null }
+    }
+
     /** The More button: popover when possible, else the old tray toggle. */
     private fun moreToggle() {
         if (popOn() && popMore()) return
@@ -872,6 +894,9 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
             }
         }
         sv.addView(col)
+        val floatV: View? = if (floatBarOn()) floatBarV(visible) else null   // v0.37.0
+        if (!selOn) floatShown = false
+        if (floatV != null) { try { sv.clipToPadding = false; sv.setPadding(0, 0, 0, dp(ClipFloat.listPadDp(ClipCompact.barDp(PanelLayout.MIN_TOUCH, true)))) } catch (_: Throwable) { } }   // last clip can scroll above the pill
         root.addView(sv)
         try {   // same scroll keeping as X1
             curSv = sv
@@ -890,7 +915,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
         } catch (_: Throwable) { }
 
         // ---- bottom summary bar (select mode)
-        if (selOn) root.addView(selectBarNew(visible, pillOn))
+        if (selOn) root.addView(floatV ?: selectBarNew(visible, pillOn))   // v0.37.0: floating pill, else the slim bar
 
         // ---- tiny search keyboard (Latin letters only), same as the classic panel
         if (searching) {
