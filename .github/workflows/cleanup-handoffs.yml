@@ -1,0 +1,38 @@
+name: Cleanup old handoffs
+# Keeps only the newest 5 files named HANDOFF_Jabra-Keyboard_v*.txt in the repo root (newest = highest version number).
+# HANDOFF.txt, HANDOFF_CLIP_V2.txt, HANDOFF_RIDMIK.txt (no "Jabra-Keyboard_v") are never touched. Old content stays in git history.
+# Separate from build.yml (build flow untouched). Runs after every "Build APK" run, or by hand: Actions > Cleanup old handoffs > Run workflow.
+# Rollback: delete this file.
+on:
+  workflow_dispatch:
+  workflow_run:
+    workflows: ["Build APK"]
+    types: [completed]
+permissions:
+  contents: write
+concurrency:
+  group: cleanup-handoffs
+  cancel-in-progress: false
+jobs:
+  clean:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: main
+      - name: Keep newest 5 handoffs
+        run: |
+          KEEP=5
+          mapfile -t FILES < <(find . -maxdepth 1 -name 'HANDOFF_Jabra-Keyboard_v*.txt' -printf '%f\n' | sort -V)
+          N=${#FILES[@]}
+          echo "Found $N handoff files, keeping the newest $KEEP"
+          if [ "$N" -le "$KEEP" ]; then echo "Nothing to delete"; exit 0; fi
+          for ((i=0; i<N-KEEP; i++)); do
+            echo "Deleting: ${FILES[$i]}"
+            git rm -q -- "${FILES[$i]}"
+          done
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Cleanup: keep only the newest $KEEP handoff files [skip ci]"
+          git pull --rebase origin main
+          git push origin HEAD:main
