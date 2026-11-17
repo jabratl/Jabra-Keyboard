@@ -16,7 +16,8 @@ STEP CC2 (v0.34.0) DONE (Kotlin not compiled, phone not tested) - filter row + U
   Pref: clip_compact2 (default ON). OFF = v0.33.0 layout.
   Saves one full row (about 34 dp).
 
-STEP CC3 (v0.35.0) NEXT - slim bottom select bar + popover "More" (idea 1 + 2)
+STEP CC3-A (v0.35.0) DONE (untested on phone) - slim bottom select bar. STEP CC3-B (v0.35.1) NEXT = popover for More + 3-dot menu, pref clip_pop (see PLAN_CLIP_COMPACT_CC3_two_parts.docx).
+  Original CC3 text (kept):
   Today: the bottom bar (selectBarNew) = "N selected" + Pin | Delete | Paste | More, 40 dp, plus a More tray (moreOpen) that pushes the list.
   Do: bar height 34 dp, each button = small icon + ONE short word (Pin, Delete, Paste), the count goes into the Done button ("3 - Done") or a dim text; "More" opens a floating pill POPOVER above the bar (width about 200 dp, 40 dp rows, label left + icon right, thin divider between groups: [All, Unpin, Merge, Edit] [Paste in 1 line, To Vault, Export]) instead of a tray inside the layout. The popover is a PopupWindow like PeekPopup.kt (same pattern, but touchable); fallback = the old More tray when the popover cannot be shown. Same for the header menu (the 3-dot tray: Manage / Sort / View / Export all / Clear): tick on the chosen Sort / View, Clear in red at the end.
   Pref: clip_pop (default ON). OFF = old trays. Every old action stays reachable.

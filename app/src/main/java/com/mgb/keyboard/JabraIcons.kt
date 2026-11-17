@@ -24,7 +24,7 @@ object JabraIcons {
         "pin", "pinned", "gear", "shift", "back", "enter", "space", "fmt", "globe", "mic", "emoji", "mode_phone", "mode_pc", "numpad", "sym", "theme", "onehand", "size", "pad", "vault", "tt", "profiles", "keymap",
         "selword", "selline", "delword", "delline", "linestart", "lineend", "dupline", "selnone",   // v0.16.13 (X13): 8 edit items
         "tab",   // v0.17.7 (K5b)
-        "warn", "tick", "undo", "sort", "checkon", "checkoff", "dot", "prev", "next", "caret", "edit", "more", "up", "info"   // v0.17.68 (S1): own signs for Clipboard / Vault / Text tools options (were cheap emoji)
+        "warn", "tick", "undo", "sort", "checkon", "checkoff", "dot", "prev", "next", "caret", "edit", "more", "up", "info", "trash"   // v0.35.0 (CC3-A): trash // v0.17.68 (S1): own signs for Clipboard / Vault / Text tools options (were cheap emoji)
         // v0.16.5: keymap; v0.5.1: profiles; v0.4.6: tt; v0.4.4: vault; v0.1.2; v0.2.2: 5 names; v0.2.3: pad
     )
 
@@ -391,6 +391,15 @@ object JabraIcons {
                     c.drawCircle(0.5f * s, 0.5f * s, 0.4f * s, p)
                     c.drawCircle(0.5f * s, 0.3f * s, 0.05f * s, f)
                     line(c, s, 0.5f, 0.44f, 0.5f, 0.72f)
+                }
+                "trash" -> {   // v0.35.0 (CC3-A): lid + handle + body
+                    line(c, s, 0.2f, 0.28f, 0.8f, 0.28f)
+                    line(c, s, 0.4f, 0.28f, 0.4f, 0.16f)
+                    line(c, s, 0.4f, 0.16f, 0.6f, 0.16f)
+                    line(c, s, 0.6f, 0.16f, 0.6f, 0.28f)
+                    line(c, s, 0.27f, 0.28f, 0.32f, 0.86f)
+                    line(c, s, 0.32f, 0.86f, 0.68f, 0.86f)
+                    line(c, s, 0.68f, 0.86f, 0.73f, 0.28f)
                 }
                 "more" -> {   // v0.17.68 (S1)
                     c.drawCircle(0.16f * s, 0.5f * s, 0.1f * s, f)

@@ -195,6 +195,7 @@ public final class SettingsIndex {
             case "clip_count": return "Shows the number of characters (and paste count) on each clip.";
             case "clip_expire": return "Deletes unpinned clips after this time. Pinned clips are never deleted.";
             case "clip_new_look": return "Neater clipboard: title + count, one filled Add button, a \u22EF menu for Manage / Sort / View / Export all / Clear, clearer empty texts, 1-2 clips delete with Undo. OFF = old panel.";   // v0.17.58 (C3)
+            case "clip_slimbar": return "Clipboard select mode: slim bottom bar (Pin, Delete, Paste, More with a small icon and one word) and the selected count shown in Done. OFF = old bar. Needs the new look and the compact header.";   // v0.35.0 (CC3-A)
             case "clip_compact2": return "Clipboard: Undo becomes a small arrow at the end of the filter row and the count line is dropped, so more clips show. OFF = old two rows. Needs the new look.";   // v0.34.0 (CC2)
             case "clip_compact": return "Clipboard top row (ABC, Search, Done) is lower and the padding smaller, so more of the copied text shows. OFF = old header. Needs Clipboard new look.";   // v0.33.0 (CC1)
             case "clip_fit": return "Clipboard opens as tall as the keyboard (no shrink). OFF = old fixed size.";   // v0.15.1

@@ -84,6 +84,13 @@ public class ClipCompactTest {
         t("CC2 ON message / confirm never lost (all combos)", cc2MsgReachable());
         t("CC2 rowCount", ClipCompact.rowCount(F | I) == 2 && ClipCompact.rowCount(F) == 1 && ClipCompact.rowCount(0) == 0 && ClipCompact.rowCount(I | U) == 1);
         t("CC2 helpers", ClipCompact.hasInfo(I) && !ClipCompact.hasInfo(F) && ClipCompact.hasFilter(F) && !ClipCompact.hasFilter(I) && ClipCompact.undoInFilter(U));
+        t("CC3A barDp OFF = old", ClipCompact.barDp(40, false) == 40 && ClipCompact.barDp(10, false) == 10);
+        t("CC3A barDp ON 40 -> 34", ClipCompact.barDp(40, true) == 34);
+        t("CC3A barDp never above old", ClipCompact.barDp(30, true) == 30 && ClipCompact.barDp(20, true) == 20);
+        t("CC3A barDp floor 28 (unless old lower)", ClipCompact.barDp(28, true) == 28 && ClipCompact.barDp(40, true) >= 28 && ClipCompact.barDp(0, true) == 0);
+        t("CC3A done 0 / -1 / OFF", ClipCompact.doneLabel(0, true).equals("Done") && ClipCompact.doneLabel(-1, true).equals("Done") && ClipCompact.doneLabel(5, false).equals("Done"));
+        t("CC3A done 1 / 99 / 100", ClipCompact.doneLabel(1, true).equals("1 \u00B7 Done") && ClipCompact.doneLabel(99, true).equals("99 \u00B7 Done") && ClipCompact.doneLabel(100, true).equals("99+ \u00B7 Done"));
+        t("CC3A count in bar: OFF yes, ON never, confirm never", ClipCompact.showCountInBar(false, false) && !ClipCompact.showCountInBar(true, false) && !ClipCompact.showCountInBar(false, true) && !ClipCompact.showCountInBar(true, true));
         System.out.println("ClipCompactTest " + ok + "/" + (ok + bad));
         if (bad > 0) System.exit(1);
     }

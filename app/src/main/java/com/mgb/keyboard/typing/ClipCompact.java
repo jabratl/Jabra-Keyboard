@@ -69,6 +69,26 @@ public final class ClipCompact {
     public static boolean hasFilter(int plan) { return (plan & FILTER_ROW) != 0; }
     public static boolean undoInFilter(int plan) { return (plan & UNDO_IN_FILTER) != 0; }
 
+    // ---- v0.35.0 (CC3-A): slim bottom select bar ----
+    public static final int BAR_SLIM_DP = 34, BAR_FLOOR_DP = 28;
+
+    /** Select-bar button height in dp (before the clip_btn_pct scaling). slim OFF = old. slim ON = 34, never above old, never below 28 (unless old was already lower). */
+    public static int barDp(int oldDp, boolean slim) {
+        if (!slim || oldDp <= 0) return oldDp;
+        int h = Math.min(oldDp, BAR_SLIM_DP);
+        int floor = Math.min(oldDp, BAR_FLOOR_DP);
+        return h < floor ? floor : h;
+    }
+
+    /** Text of the Done button. slim OFF or nothing selected = "Done". Else "3 \u00B7 Done", "99+ \u00B7 Done" above 99. */
+    public static String doneLabel(int n, boolean slim) {
+        if (!slim || n <= 0) return "Done";
+        return (n > 99 ? "99+" : String.valueOf(n)) + " \u00B7 Done";
+    }
+
+    /** The old "N selected" text inside the bar: only the old bar, and not in the delete confirm. */
+    public static boolean showCountInBar(boolean slim, boolean confirm) { return !slim && !confirm; }
+
     /** Rows that exist under the top row (0, 1 or 2). */
     public static int rowCount(int plan) { return (hasInfo(plan) ? 1 : 0) + (hasFilter(plan) ? 1 : 0); }
 }

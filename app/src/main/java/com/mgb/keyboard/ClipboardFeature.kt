@@ -490,6 +490,8 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
     private fun nl(): Boolean = try { ClipLook.newLook(pf) } catch (_: Throwable) { false }   // v0.17.58 (C3): pref clip_new_look (default ON)
     private fun simple(): Boolean = try { nl() && JabraPrefs(ctx).bool("clip_simple", true) } catch (_: Throwable) { false }   // v0.19.8: pref clip_simple (default ON) = flat text filter row + flat list rows with the pin on the right; OFF = exactly v0.19.7
     private fun compactOn(): Boolean = try { nl() && JabraPrefs(ctx).bool("clip_compact", true) } catch (_: Throwable) { false }   // v0.33.0 (CC1): pref clip_compact (default ON, needs the new look) = lower top row + smaller padding; OFF = exactly v0.32.0
+    private fun slimBarOn(): Boolean = try { compactOn() && JabraPrefs(ctx).bool("clip_slimbar", true) } catch (_: Throwable) { false }   // v0.35.0 (CC3-A): pref clip_slimbar (default ON, needs the new look) = 34 dp select bar, icon + one word, count in Done; OFF = exactly v0.34.0
+    private fun doneLbl(): String = try { if (slimBarOn()) ClipCompact.doneLabel(sel.count(), true) else "Done" } catch (_: Throwable) { "Done" }
     private fun compact2On(): Boolean = try { compactOn() && JabraPrefs(ctx).bool("clip_compact2", true) } catch (_: Throwable) { false }   // v0.34.0 (CC2): pref clip_compact2 (default ON, needs the new look) = Undo is a small icon at the end of the filter row, no count line; OFF = exactly v0.33.0 (the Undo line + count line)
     /** v0.34.0 (CC2): small "undo arrow" icon button for the end of the filter row. Any problem = null (the Undo then stays in the info line). */
     private fun undoIconBtn(hDp: Int): View? = try {
@@ -558,7 +560,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
         if (slim) JabraIcons.putThemed(ctx, searchBtn, "search")   // v0.18.7: only the icon-only (slim) button; with words (select mode / searching) Glyphs.dress already drew the icon, a 2nd one doubled it and hid "Search"
         top.addView(searchBtn)
         if (!selOn) { val addB = btn("Add", 1.0f, tTop) { addFromField() }; top.addView(if (nlOn) ClipBar.on(ctx, pf, addB) else addB) }   // v0.17.58 (C3): Add = the one filled (primary) button
-        val manageNew = btn(if (selOn) "Done" else if (slim) (if (ovOpen) "\u25B4" else "\u22EF") else "Manage", ClipCompact.weight(ClipCompact.DONE, cp, slim), tTop) {
+        val manageNew = btn(if (selOn) doneLbl() else if (slim) (if (ovOpen) "\u25B4" else "\u22EF") else "Manage", ClipCompact.weight(ClipCompact.DONE, cp, slim), tTop) {
             if (slim) { ovOpen = !ovOpen; confirmClear = false; refresh(); return@btn }   // v0.17.58 (C3): \u22EF = overflow tray
             if (selOn) { sel.leave(); moreOpen = false } else sel.enter()
             confirmClear = false
@@ -896,6 +898,32 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
     }
 
     /** v0.16.9 (X9): bottom bar of the NEW panel in select mode: "N selected" + Pin | Delete | Paste | More; the More tray holds All / Unpin / Merge / Edit / Paste in 1 line / To Vault (every classic action stays reachable). */
+    /** v0.35.0 (CC3-A): slim bottom bar = Pin | Delete | [Paste | v] | More, icon + ONE word, 34 dp (via sz). Same actions as the old bar. Any problem = null (old bar). */
+    private fun slimMain(n: Int, allPinned: Boolean, pillOn: Boolean): LinearLayout? {
+        try {
+            val h = sz(ClipCompact.barDp(PanelLayout.MIN_TOUCH, true))
+            val fb: (View) -> Unit = { v -> try { host.feedback(v) } catch (_: Throwable) { } }
+            val r = UiKit.row(ctx)
+            r.addView(ClipSlimBar.btn(ctx, pf, if (allPinned) "Unpin" else "Pin", "pin", 1f, h, fb) { actPin(!allPinned) })
+            if (confirmDel) r.addView(ClipSlimBar.btn(ctx, pf, "Sure? delete $n", null, 3f, h, fb) { actDelete() })   // destructive step: wide, text only
+            else r.addView(ClipSlimBar.btn(ctx, pf, "Delete", "trash", 1.2f, h, fb) { actDelete() })
+            if (pillOn) {
+                val split = LinearLayout(ctx)
+                split.orientation = LinearLayout.HORIZONTAL
+                split.gravity = Gravity.CENTER_VERTICAL
+                split.layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1.5f)
+                split.addView(ClipSlimBar.btn(ctx, pf, "Paste", "paste", 1f, h, fb) { actPaste(false) })
+                val chev = btn("\u25BE", 0f, ClipCompact.barDp(PanelLayout.MIN_TOUCH, true)) { pasteMenu = !pasteMenu; moreOpen = false; confirmDel = false; refresh() }
+                chev.layoutParams = LinearLayout.LayoutParams(dp(30), dp(h)).also { it.setMargins(dp(2), dp(2), dp(2), dp(2)) }
+                chev.contentDescription = "More paste options"
+                split.addView(if (pasteMenu) ClipBar.on(ctx, pf, chev) else chev)
+                r.addView(split)
+            } else r.addView(ClipSlimBar.btn(ctx, pf, "Paste", "paste", 1.1f, h, fb) { actPaste(false) })
+            r.addView(ClipSlimBar.btn(ctx, pf, if (moreOpen) "Less" else "More", "more", 1.1f, h, fb) { moreOpen = !moreOpen; pasteMenu = false; confirmDel = false; refresh() })
+            return r
+        } catch (_: Throwable) { return null }
+    }
+
     private fun selectBarNew(visible: List<ClipList.Item>, pillOn: Boolean = false): View {
         val t40 = PanelLayout.MIN_TOUCH   // btn() scales it (v0.17.32 UI8)
         val all = LinearLayout(ctx)
@@ -937,7 +965,8 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
             menu.addView(menuRow("", 3, *send.toTypedArray()))
             all.addView(menu)
         }
-        val main = if (!pillOn) PanelKit.stickyBar(ctx, pf, host, listOf<Pair<String, () -> Unit>>(
+        val slimMainV = if (slimBarOn()) slimMain(n, allPinned, pillOn) else null   // v0.35.0 (CC3-A); null = old bar
+        val main = slimMainV ?: if (!pillOn) PanelKit.stickyBar(ctx, pf, host, listOf<Pair<String, () -> Unit>>(
             (if (allPinned) "Unpin" else "Pin") to { actPin(!allPinned) },
             (if (confirmDel) "Sure? delete $n" else "Delete") to { actDelete() },
             "Paste" to { actPaste(false) },
@@ -966,7 +995,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
             }
             m
         }
-        if (!confirmDel) {
+        if (!confirmDel && slimMainV == null) {
             val c = TextView(ctx)
             c.text = ClipFilter.selectedText(n)
             c.textSize = fs(12f)

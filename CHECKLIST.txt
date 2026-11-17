@@ -1217,3 +1217,13 @@ FIND & REPLACE PART 1 (v0.24.0) - phone test
 8. Clipboard button size 70% / 140%: arrow stays tappable (never under 28 dp high).
 9. Settings > Clipboard & tools > "Compact clipboard filter row" OFF: exactly v0.33.0 (count line + "Undo" pill in the second line). ON again = compact.
 10. Clipboard new look OFF: old panel as before (the switch does nothing there).
+
+=== CLIPBOARD v0.35.0 - phone checks (SLIM SELECT BAR) ===
+1. Select mode: the bottom bar is lower and shows icon + word: Pin, Delete, Paste, More.
+2. Select 3 clips: the top button reads "3 \u00B7 Done"; the bar has no count text.
+3. Select 0: the top button reads "Done".
+4. Tap Delete: "Sure? delete N" shows wide and as text; second tap deletes; Undo arrow appears.
+5. More still opens the old tray; every old action is still there.
+6. Button size 70% / 140%: the bar is never under 28 dp, nothing cut.
+7. Icons OFF: words only, same actions.
+8. Slim select bar OFF: exactly v0.34.0 (40 dp, "N selected" in the bar). Clipboard new look OFF: old panel.

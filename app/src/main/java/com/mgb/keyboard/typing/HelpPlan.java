@@ -94,6 +94,7 @@ public final class HelpPlan {
             case "key_press_anim": return "The key shrinks a little while pressed and springs back.";
             case "hold_edit": return "Hold c = copy, v = paste, x = cut. Your own Long-press override for that letter wins.";
             case "clip_undo_n": return "How many deleted clips Undo keeps (Deleted in the \u22EF menu). 0 = off.";   // v0.18.4
+            case "clip_slimbar": return "Select mode: lower bottom bar with icon + one word; the count moves into Done. OFF = old bar.";   // v0.35.0 (CC3-A)
             case "clip_compact2": return "Undo is a small arrow at the end of the filter row; no count line. OFF = old two rows.";   // v0.34.0 (CC2)
             case "clip_compact": return "Lower clipboard top row, more room for clips. OFF = old header.";   // v0.33.0 (CC1)
             case "clip_tidy": return "Clipboard rows as cards: pin on the left, x on the right. OFF = old rows.";   // v0.18.4
