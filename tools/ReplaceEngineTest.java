@@ -146,6 +146,22 @@ public class ReplaceEngineTest {
             t("parts: null safe", n.length == 4 && n[0].isEmpty() && n[3].isEmpty());
         }
 
+        // ---- v0.29.0 keep case
+        {
+            Opt k = new Opt(); k.keepCase = true; k.bangla = false;
+            t("keep: all caps", ReplaceEngine.replaceAll("say HELLO now", "hello", "world", k).out.equals("say WORLD now"));
+            t("keep: capitalized", ReplaceEngine.replaceAll("Hello there", "hello", "world", k).out.equals("World there"));
+            t("keep: small", ReplaceEngine.replaceAll("hello", "hello", "world", k).out.equals("world"));
+            t("keep: mixed unchanged", ReplaceEngine.replaceAll("hELLo", "hello", "world", k).out.equals("world"));
+            t("keep: title words", ReplaceEngine.replaceAll("Hello World", "hello world", "good day", k).out.equals("Good Day"));
+            t("keep: single capital letter", ReplaceEngine.replaceAll("A b", "a", "x", k).out.equals("X b"));
+            t("keep: Russian caps", ReplaceEngine.replaceAll("\u041F\u0420\u0418\u0412\u0415\u0422", "\u043F\u0440\u0438\u0432\u0435\u0442", "\u0434\u0430", k).out.equals("\u0414\u0410"));
+            t("keep: off = plain", ReplaceEngine.replaceAll("HELLO", "hello", "world", new Opt()).out.equals("world"));
+            t("keep: null safe", "x".equals(ReplaceEngine.keepCase(null, "x")) && "".equals(ReplaceEngine.keepCase("A", "")));
+            Opt pk = ReplaceEngine.unpack(ReplaceEngine.pack(k));
+            t("keep: pack round trip", pk.keepCase && ReplaceEngine.pack(new Opt()) == 8);
+        }
+
         System.out.println("ReplaceEngineTest: " + ok + " ok, " + bad + " failed");
         if (bad > 0) System.exit(1);
     }

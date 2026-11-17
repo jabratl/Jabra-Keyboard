@@ -884,6 +884,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
                 menuPill("All") { sel.selectAll(visible); confirmDel = false; refresh() },
                 menuPill("None") { sel.clear(); confirmDel = false; refresh() },
                 menuPill("Edit") { actEdit() },
+                menuPill("Replace") { actReplaceIn() },   // v0.29.0
                 menuPill("Merge") { actMerge() },
                 menuPill("Unpin") { actPin(false) })
             val per = if (bpct() > 110) 3 else 5
@@ -898,6 +899,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
             send.add(menuPill("Paste 1 line") { actPaste(true) })
             if (toVault != null) send.add(menuPill("To Vault") { actToVault() })
             send.add(menuPill("Export") { actExport() })   // v0.17.57 (C2)
+            send.add(menuPill("Replace") { actReplaceIn() })   // v0.29.0: Find & Replace inside ONE clip
             menu.addView(menuRow("Send", 3, *send.toTypedArray()))
             all.addView(menu)
         }
@@ -1010,6 +1012,15 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
         }
         confirmDel = false
         refresh()
+    }
+
+    /** v0.29.0: Find & Replace inside ONE selected clip (hook = toReplace, set by MgbIme). */
+    var toReplace: ((ClipList.Item) -> Unit)? = null
+    private fun actReplaceIn() {
+        val chosen = sel.selection()
+        if (chosen.size != 1) { msg = "Select ONE clip to replace in"; confirmDel = false; refresh(); return }
+        moreOpen = false; confirmDel = false
+        try { toReplace?.invoke(chosen[0]) } catch (_: Throwable) { msg = "Could not open Replace"; refresh() }
     }
 
     private fun actEdit() {

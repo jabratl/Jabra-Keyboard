@@ -35,9 +35,11 @@ import com.mgb.keyboard.typing.ReplaceRules
  * Saved: ONLY the option switches (pref rp_opt, one number). Find / With texts stay in memory while the keyboard runs (never written to disk).
  * build() returns null on any problem -> the keyboard shows the letters.
  */
-class ReplacePanel(private val ctx: Context, private val host: JabraHost, private val io: FmtIo) {
+class ReplacePanel(private val ctx: Context, private val host: JabraHost, private val ioField: FmtIo) {
 
     private val prefs = JabraPrefs(ctx)
+    private var clipIo: FmtIo? = null   // v0.29.0: set = the Replace works on ONE CLIP (ClipReplaceIo) instead of the field; reset() clears it
+    private val io: FmtIo get() = clipIo ?: ioField
 
     private var opt = ReplaceEngine.Opt()
     private var find = ""
@@ -62,9 +64,17 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
     private var step = 0                                      // index of the match shown by [<] [>]
     private var rprAsk = false                                // v0.26.0 (R3): Recent pairs > Clear needs two taps
 
+    /** v0.29.0: open on ONE clip: reset first (clears any old clip), then the clip text is the source. */
+    fun openForClip(cio: FmtIo) {
+        reset()
+        clipIo = cio
+        usedSel = false
+        readSource(false)
+    }
+
     /** Call when the panel is opened from outside: reads the options and the field once. */
     fun reset() {
-        msg = ""; confirmAll = false; undoStack.clear(); helpPage = 0; typing = 0; padPage = 0; shift = false; step = 0; rprAsk = false
+        clipIo = null; msg = ""; confirmAll = false; undoStack.clear(); helpPage = 0; typing = 0; padPage = 0; shift = false; step = 0; rprAsk = false
         try { opt = ReplaceEngine.unpack(prefs.int("rp_opt", ReplaceEngine.pack(ReplaceEngine.Opt()))) } catch (_: Throwable) { opt = ReplaceEngine.Opt() }
         readSource(true)
     }
@@ -186,6 +196,7 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
             r3.addView(btn((if (opt.mode == i) "\u2713 " else "") + ReplaceEngine.MODE_NAMES[i], 1f, 32) { opt.mode = i; optChanged() })
         }
         r3.addView(btn((if (opt.matchCase) "\u2713 " else "") + "Aa", 0.8f, 32) { opt.matchCase = !opt.matchCase; optChanged() })
+        r3.addView(btn((if (opt.keepCase) "\u2713 " else "") + "Keep", 0.9f, 32) { opt.keepCase = !opt.keepCase; if (opt.keepCase) opt.matchCase = false; optChanged() })   // v0.29.0: keep the case look
         if (opt.mode != ReplaceEngine.MODE_REGEX) {
             r3.addView(btn((if (opt.bangla) "\u2713 " else "") + "\u09AC\u09BE\u0982", 0.9f, 32) { opt.bangla = !opt.bangla; optChanged() })
             r3.addView(btn((if (opt.escapes) "\u2713 " else "") + "\\n", 0.8f, 32) { opt.escapes = !opt.escapes; optChanged() })
@@ -597,6 +608,7 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
             // option chips
             val oc = row()
             oc.addView(UiKit.chip(ctx, prefs, "Aa", opt.matchCase, 36, { v -> host.feedback(v) }) { opt.matchCase = !opt.matchCase; optChanged() })
+            oc.addView(UiKit.chip(ctx, prefs, "Keep", opt.keepCase, 36, { v -> host.feedback(v) }) { opt.keepCase = !opt.keepCase; if (opt.keepCase) opt.matchCase = false; optChanged() })   // v0.29.0
             if (opt.mode != ReplaceEngine.MODE_REGEX) {
                 oc.addView(UiKit.chip(ctx, prefs, "\u09AC\u09BE\u0982", opt.bangla, 36, { v -> host.feedback(v) }) { opt.bangla = !opt.bangla; optChanged() })
                 oc.addView(UiKit.chip(ctx, prefs, "\\n", opt.escapes, 36, { v -> host.feedback(v) }) { opt.escapes = !opt.escapes; optChanged() })

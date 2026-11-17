@@ -38,10 +38,11 @@ public final class ReplaceEngine {
         public boolean matchCase = false;
         public boolean bangla = true;
         public boolean escapes = false;
+        public boolean keepCase = false;   // v0.29.0: the replacement copies the case look of the found text (hello > world, Hello > World, HELLO > WORLD)
 
         public Opt copy() {
             Opt o = new Opt();
-            o.mode = mode; o.matchCase = matchCase; o.bangla = bangla; o.escapes = escapes;
+            o.mode = mode; o.matchCase = matchCase; o.bangla = bangla; o.escapes = escapes; o.keepCase = keepCase;
             return o;
         }
     }
@@ -127,7 +128,7 @@ public final class ReplaceEngine {
                 boolean doIt = idx >= first && idx <= last;
                 String found = text.substring(m.start(), m.end());
                 String rep = null;
-                if (doIt || r.hits.size() < MAX_HITS) rep = o.mode == MODE_REGEX ? expand(with, m) : w;
+                if (doIt || r.hits.size() < MAX_HITS) { rep = o.mode == MODE_REGEX ? expand(with, m) : w; if (o.keepCase) rep = keepCase(found, rep); }
                 if (doIt) {
                     out.append(text, pos, m.start());
                     out.append(rep);
@@ -153,6 +154,40 @@ public final class ReplaceEngine {
             r.out = text; r.count = 0; r.changed = 0; r.hits.clear();
         }
         return r;
+    }
+
+    /** v0.29.0: copy the case look of found onto rep. ALL CAPS (2+ letters) > UPPER; Capitalized > first letter of each word upper; all small / mixed / no letters > unchanged. Never throws. */
+    public static String keepCase(String found, String rep) {
+        try {
+            if (found == null || rep == null || rep.length() == 0) return rep;
+            int letters = 0, up = 0, low = 0;
+            for (int i = 0; i < found.length(); ) {
+                int cp = found.codePointAt(i); i += Character.charCount(cp);
+                if (!Character.isLetter(cp)) continue;
+                letters++;
+                if (Character.isUpperCase(cp)) up++; else if (Character.isLowerCase(cp)) low++;
+            }
+            if (letters == 0 || up == 0) return rep;
+            if (low == 0 && letters >= 2 && up == letters) return rep.toUpperCase(Locale.ROOT);
+            // Capitalized: every word of found starts with a capital and has no other capital
+            boolean title = true, startWord = true;
+            for (int i = 0; i < found.length(); ) {
+                int cp = found.codePointAt(i); i += Character.charCount(cp);
+                if (!Character.isLetter(cp)) { startWord = true; continue; }
+                if (startWord && !Character.isUpperCase(cp)) { title = false; break; }
+                if (!startWord && Character.isUpperCase(cp)) { title = false; break; }
+                startWord = false;
+            }
+            if (!title) return rep;
+            StringBuilder sb = new StringBuilder(rep.length());
+            boolean sw = true;
+            for (int i = 0; i < rep.length(); ) {
+                int cp = rep.codePointAt(i); i += Character.charCount(cp);
+                if (Character.isLetter(cp)) { sb.appendCodePoint(sw ? Character.toUpperCase(cp) : cp); sw = false; }
+                else { sb.appendCodePoint(cp); sw = true; }
+            }
+            return sb.toString();
+        } catch (RuntimeException e) { return rep; }
     }
 
     // ------------------------------------------------------------------ pattern
@@ -339,7 +374,7 @@ public final class ReplaceEngine {
     public static int pack(Opt o) {
         if (o == null) return pack(new Opt());
         int mode = o.mode < 0 || o.mode > 2 ? 0 : o.mode;
-        return mode | (o.matchCase ? 4 : 0) | (o.bangla ? 8 : 0) | (o.escapes ? 16 : 0);
+        return mode | (o.matchCase ? 4 : 0) | (o.bangla ? 8 : 0) | (o.escapes ? 16 : 0) | (o.keepCase ? 32 : 0);
     }
 
     public static Opt unpack(int v) {
@@ -350,6 +385,7 @@ public final class ReplaceEngine {
         o.matchCase = (v & 4) != 0;
         o.bangla = (v & 8) != 0;
         o.escapes = (v & 16) != 0;
+        o.keepCase = (v & 32) != 0;
         return o;
     }
 }
