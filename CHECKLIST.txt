@@ -1205,3 +1205,15 @@ FIND & REPLACE PART 1 (v0.24.0) - phone test
 5. Clipboard button size (70% / 140%): the row follows it, never smaller than a finger can hit (28 dp).
 6. Dark + light theme, portrait + landscape: no text cut inside the 3 buttons (ABC / Search / Done, also with big system font).
 7. Clipboard new look OFF: the old panel appears as before (the compact switch does nothing there).
+
+=== CLIPBOARD v0.34.0 - phone checks (FILTER ROW + UNDO IN ONE ROW) ===
+1. Open the clipboard (new look), nothing deleted yet: under the top row there is ONLY the filter row (no "N clips" line below it). The count is in the title.
+2. Delete a clip (long-press > select > Delete, or the delete action): a small undo arrow appears at the END of the filter row. Tap it: the clip comes back, the arrow disappears.
+3. Select mode: filter row only, with the undo arrow at the end when there is something to undo. No extra empty line above the list.
+4. Message line: do an action that shows a message (e.g. Add with empty field / paste notice): the message shows on its own line, then goes away on the next refresh.
+5. Header menu > Clear (or "Delete all unpinned?"): the confirm line with Cancel / Yes, clear shows on its own line. The undo arrow is not duplicated there.
+6. Select mode > More tray open (filter row hidden): Undo (if any) still shows as "Undo" in a line (fallback), nothing is lost.
+7. Simple look (flat chips) AND dropdown-pill look: the arrow fits at the end; chips / pills are not cut (360 dp phone, big system font).
+8. Clipboard button size 70% / 140%: arrow stays tappable (never under 28 dp high).
+9. Settings > Clipboard & tools > "Compact clipboard filter row" OFF: exactly v0.33.0 (count line + "Undo" pill in the second line). ON again = compact.
+10. Clipboard new look OFF: old panel as before (the switch does nothing there).

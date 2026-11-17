@@ -3,6 +3,34 @@ import com.mgb.keyboard.typing.ClipCompact;
 public class ClipCompactTest {
     static int ok = 0, bad = 0;
     static void t(String n, boolean c) { if (c) ok++; else { bad++; System.out.println("FAIL: " + n); } }
+
+    static boolean cc2NeverMore() {
+        for (int m = 0; m < 32; m++) {
+            boolean f = (m & 1) != 0, sel = (m & 2) != 0, u = (m & 4) != 0, msg = (m & 8) != 0, cf = (m & 16) != 0;
+            for (int se = 0; se < 2; se++) {
+                int off = ClipCompact.rowCount(ClipCompact.rowPlan(false, f, sel, u, msg, cf, se == 1));
+                int on = ClipCompact.rowCount(ClipCompact.rowPlan(true, f, sel, u, msg, cf, se == 1));
+                if (on > off) return false;
+            }
+        }
+        return true;
+    }
+    static boolean cc2UndoReachable() {
+        for (int m = 0; m < 16; m++) {
+            boolean f = (m & 1) != 0, sel = (m & 2) != 0, msg = (m & 4) != 0, cf = (m & 8) != 0;
+            int p = ClipCompact.rowPlan(true, f, sel, true, msg, cf, false);
+            if (!(ClipCompact.undoInFilter(p) || ClipCompact.hasInfo(p))) return false;
+        }
+        return true;
+    }
+    static boolean cc2MsgReachable() {
+        for (int m = 0; m < 8; m++) {
+            boolean f = (m & 1) != 0, sel = (m & 2) != 0, u = (m & 4) != 0;
+            if (!ClipCompact.hasInfo(ClipCompact.rowPlan(true, f, sel, u, true, false, false))) return false;
+            if (!ClipCompact.hasInfo(ClipCompact.rowPlan(true, f, sel, u, false, true, false))) return false;
+        }
+        return true;
+    }
     public static void main(String[] a) {
         t("OFF = old height 40", ClipCompact.rowDp(40, false) == 40);
         t("ON 40 -> 34", ClipCompact.rowDp(40, true) == 34);
@@ -29,6 +57,33 @@ public class ClipCompactTest {
         // touch floor with the user size % (ClipBtn): compact row at 70 % must not go under 28 dp
         t("compact + size 70% floor", com.mgb.keyboard.typing.ClipBtn.heightDp(ClipCompact.rowDp(40, true), 70) >= 28);
         t("compact + size 100% = 34", com.mgb.keyboard.typing.ClipBtn.heightDp(ClipCompact.rowDp(40, true), 100) == 34);
+        // ---- v0.34.0 (CC2): rowPlan(compact2, filterShown, selOn, undo, hasMsg, confirm, searching)
+        int F = ClipCompact.FILTER_ROW, I = ClipCompact.INFO_ROW, U = ClipCompact.UNDO_IN_FILTER;
+        // OFF = v0.33.0 behaviour
+        t("CC2 OFF normal = filter + info", ClipCompact.rowPlan(false, true, false, false, false, false, false) == (F | I));
+        t("CC2 OFF normal + undo = filter + info (undo stays in the info line)", ClipCompact.rowPlan(false, true, false, true, false, false, false) == (F | I));
+        t("CC2 OFF select idle = filter only (old idleSel)", ClipCompact.rowPlan(false, true, true, false, false, false, false) == F);
+        t("CC2 OFF select + undo = filter + info", ClipCompact.rowPlan(false, true, true, true, false, false, false) == (F | I));
+        t("CC2 OFF select + msg = filter + info", ClipCompact.rowPlan(false, true, true, false, true, false, false) == (F | I));
+        t("CC2 OFF select + confirm = filter + info", ClipCompact.rowPlan(false, true, true, false, false, true, false) == (F | I));
+        t("CC2 OFF searching = no info", ClipCompact.rowPlan(false, true, false, true, true, true, true) == F);
+        t("CC2 OFF never UNDO_IN_FILTER", !ClipCompact.undoInFilter(ClipCompact.rowPlan(false, true, false, true, false, false, false)));
+        // ON
+        t("CC2 ON normal, nothing to say = filter only (count line gone)", ClipCompact.rowPlan(true, true, false, false, false, false, false) == F);
+        t("CC2 ON normal + undo = filter row only, undo in it", ClipCompact.rowPlan(true, true, false, true, false, false, false) == (F | U));
+        t("CC2 ON select + undo = filter row only, undo in it", ClipCompact.rowPlan(true, true, true, true, false, false, false) == (F | U));
+        t("CC2 ON message keeps its own line", ClipCompact.rowPlan(true, true, false, false, true, false, false) == (F | I));
+        t("CC2 ON message + undo = undo in filter, message line", ClipCompact.rowPlan(true, true, false, true, true, false, false) == (F | I | U));
+        t("CC2 ON confirm keeps its own line, undo not in filter", ClipCompact.rowPlan(true, true, false, true, false, true, false) == (F | I));
+        t("CC2 ON filter row hidden (More tray) + undo = info line fallback", ClipCompact.rowPlan(true, false, true, true, false, false, false) == I);
+        t("CC2 ON filter row hidden, nothing to say = no rows", ClipCompact.rowPlan(true, false, true, false, false, false, false) == 0);
+        t("CC2 ON searching = no info, no undo in filter", ClipCompact.rowPlan(true, true, false, true, true, true, true) == F);
+        t("CC2 ON searching + filter hidden = 0", ClipCompact.rowPlan(true, false, false, true, true, true, true) == 0);
+        t("CC2 ON never more rows than OFF (all combos)", cc2NeverMore());
+        t("CC2 ON undo never lost (shown in filter or info) (all combos)", cc2UndoReachable());
+        t("CC2 ON message / confirm never lost (all combos)", cc2MsgReachable());
+        t("CC2 rowCount", ClipCompact.rowCount(F | I) == 2 && ClipCompact.rowCount(F) == 1 && ClipCompact.rowCount(0) == 0 && ClipCompact.rowCount(I | U) == 1);
+        t("CC2 helpers", ClipCompact.hasInfo(I) && !ClipCompact.hasInfo(F) && ClipCompact.hasFilter(F) && !ClipCompact.hasFilter(I) && ClipCompact.undoInFilter(U));
         System.out.println("ClipCompactTest " + ok + "/" + (ok + bad));
         if (bad > 0) System.exit(1);
     }

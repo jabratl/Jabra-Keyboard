@@ -41,4 +41,34 @@ public final class ClipCompact {
 
     /** Height the compact header gives back to the list, in dp (old row - new row, after the padding change). Used by the checklist text. */
     public static int savedDp(int oldDp) { return (oldDp - rowDp(oldDp, true)) + 2 * (PAD_V_OLD - PAD_V_NEW); }
+
+    // ---- v0.34.0 (CC2): filter row + Undo in ONE row (step 2 of PLAN_CLIP_COMPACT.txt) ----
+    public static final int FILTER_ROW = 1, INFO_ROW = 2, UNDO_IN_FILTER = 4;
+
+    /**
+     * Which of the two header rows under the top row exist, as bit flags.
+     * compact2 OFF = EXACTLY the v0.33.0 rows: the info line exists unless it is select mode with nothing to say (old "idleSel"), never while searching.
+     * compact2 ON  = Undo moves to the end of the filter row (only when that row is shown, not while confirming, not while searching);
+     *   the info line then exists only for a message, the "Delete all unpinned?" confirm, or an Undo that has no filter row to live in.
+     * The clip count is not an info line any more in compact2 (the title of the top row already shows it).
+     */
+    public static int rowPlan(boolean compact2, boolean filterShown, boolean selOn, boolean undo, boolean hasMsg, boolean confirm, boolean searching) {
+        int r = filterShown ? FILTER_ROW : 0;
+        if (searching) return r;
+        if (!compact2) {
+            boolean idleSel = selOn && !hasMsg && !confirm && !undo;
+            return idleSel ? r : (r | INFO_ROW);
+        }
+        boolean undoIn = undo && filterShown && !confirm;
+        if (undoIn) r |= UNDO_IN_FILTER;
+        if (hasMsg || confirm || (undo && !undoIn)) r |= INFO_ROW;
+        return r;
+    }
+
+    public static boolean hasInfo(int plan) { return (plan & INFO_ROW) != 0; }
+    public static boolean hasFilter(int plan) { return (plan & FILTER_ROW) != 0; }
+    public static boolean undoInFilter(int plan) { return (plan & UNDO_IN_FILTER) != 0; }
+
+    /** Rows that exist under the top row (0, 1 or 2). */
+    public static int rowCount(int plan) { return (hasInfo(plan) ? 1 : 0) + (hasFilter(plan) ? 1 : 0); }
 }

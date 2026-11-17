@@ -490,6 +490,17 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
     private fun nl(): Boolean = try { ClipLook.newLook(pf) } catch (_: Throwable) { false }   // v0.17.58 (C3): pref clip_new_look (default ON)
     private fun simple(): Boolean = try { nl() && JabraPrefs(ctx).bool("clip_simple", true) } catch (_: Throwable) { false }   // v0.19.8: pref clip_simple (default ON) = flat text filter row + flat list rows with the pin on the right; OFF = exactly v0.19.7
     private fun compactOn(): Boolean = try { nl() && JabraPrefs(ctx).bool("clip_compact", true) } catch (_: Throwable) { false }   // v0.33.0 (CC1): pref clip_compact (default ON, needs the new look) = lower top row + smaller padding; OFF = exactly v0.32.0
+    private fun compact2On(): Boolean = try { compactOn() && JabraPrefs(ctx).bool("clip_compact2", true) } catch (_: Throwable) { false }   // v0.34.0 (CC2): pref clip_compact2 (default ON, needs the new look) = Undo is a small icon at the end of the filter row, no count line; OFF = exactly v0.33.0 (the Undo line + count line)
+    /** v0.34.0 (CC2): small "undo arrow" icon button for the end of the filter row. Any problem = null (the Undo then stays in the info line). */
+    private fun undoIconBtn(hDp: Int): View? = try {
+        val b = btn("\u21B6", 0f, hDp) { doUndo() }
+        try { JabraIcons.putThemed(ctx, b, "undo") } catch (_: Throwable) { }
+        try { b.contentDescription = "Undo" } catch (_: Throwable) { }
+        val lp = LinearLayout.LayoutParams(dp(sz(40)), dp(sz(hDp)))
+        lp.setMargins(dp(2), dp(2), dp(2), dp(2))
+        b.layoutParams = lp
+        ClipBar.pill(pf, b)
+    } catch (_: Throwable) { null }
     /** v0.19.8: a flat row + a thin divider line under it. Any problem = the row itself. */
     private fun flatLine(v: View): View = try {
         val w = LinearLayout(ctx)
@@ -560,6 +571,11 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
 
         // ---- v0.19.1 (dropdown plan S2): pref ui_pill (default ON) = filter / sort / view are 3 dropdown pills in ONE row (instead of the 5 chips + Sort / View rows in the tray); OFF = the old chips
         val pillOn = nlOn && !simple() && try { pf.bool("ui_pill", true) } catch (_: Throwable) { true }   // v0.19.8: simple look = one flat chip row instead of the 3 dropdown pills
+        // v0.34.0 (CC2): which header rows exist + does Undo live in the filter row (pref clip_compact2; OFF = the v0.33.0 rows)
+        val c2 = compact2On()
+        val filterShown = !(selOn && moreOpen) && (pillOn || !(ovOpen && nlOn))
+        val rowPlan = ClipCompact.rowPlan(c2, filterShown, selOn, undoAvail(), msg.isNotEmpty(), confirmClear, searching)
+        val undoIn = ClipCompact.undoInFilter(rowPlan)
         if (pillOn && !(selOn && moreOpen)) {
             val prow = row()
             try {
@@ -590,6 +606,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
                     })
                 }
             } catch (_: Throwable) { }
+            if (undoIn) undoIconBtn(t40)?.let { prow.addView(it) }   // v0.34.0 (CC2)
             root.addView(prow)
         }
         // ---- filter chips (hidden while the More tray is open: the space goes to the list)
@@ -612,6 +629,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
                 ch.layoutParams = LinearLayout.LayoutParams(0, dp(sz(t40)), 1f).also { it.setMargins(dp(2), dp(2), dp(2), dp(2)) }
                 chips.addView(ch)
             }
+            if (undoIn) undoIconBtn(t40)?.let { chips.addView(it) }   // v0.34.0 (CC2)
             root.addView(chips)
         }
 
@@ -623,10 +641,10 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
             msg = ""
             val head = row()
             head.gravity = Gravity.CENTER_VERTICAL
-            val idleSel = selOn && shownMsg.isEmpty() && !confirmClear && !undoAvail()   // v0.18.7: select mode with nothing to say = no empty band (~38 dp) above the list
-            if (tidy() && !idleSel) head.minimumHeight = dp(sz(34) + 4)   // v0.18.4: the line keeps its height with or without Undo, so the list never jumps
+            val idleSel = if (c2) !ClipCompact.hasInfo(rowPlan) else selOn && shownMsg.isEmpty() && !confirmClear && !undoAvail()   // v0.18.7: select mode with nothing to say = no empty band (~38 dp) above the list; v0.34.0 (CC2): the plan decides when the pref is ON
+            if (tidy() && !idleSel && !c2) head.minimumHeight = dp(sz(34) + 4)   // v0.18.4: the line keeps its height with or without Undo, so the list never jumps
             val m = TextView(ctx)
-            m.text = if (confirmClear) "Delete all unpinned clips?" else if (shownMsg.isEmpty() && nlOn && !selOn) ClipCopy.countLine(store.pinnedView("").size + store.recentView("").size, store.pinnedCount()) else shownMsg   // v0.17.58 (C3): quiet count line
+            m.text = if (confirmClear) "Delete all unpinned clips?" else if (shownMsg.isEmpty() && nlOn && !selOn && !c2) ClipCopy.countLine(store.pinnedView("").size + store.recentView("").size, store.pinnedCount()) else shownMsg   // v0.17.58 (C3): quiet count line
             m.textSize = 12f
             m.setTextColor(dim())
             m.setPadding(dp(8), 0, dp(4), 0)
@@ -644,7 +662,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
                 head.addView(small("Cancel") { confirmClear = false; refresh() })
                 head.addView(ClipBar.danger(pf, small("Yes, clear") { keepUndo(store.recentView("")); store.clearUnpinned(); try { ClipImages.clear(ctx) } catch (_: Throwable) { }; confirmClear = false; refresh() }))   // v0.17.30 (UI6)
             } else {
-                if (undoAvail()) head.addView(small("↶ Undo") { doUndo() })   // v0.18.4
+                if (undoAvail() && !undoIn) head.addView(small("↶ Undo") { doUndo() })   // v0.18.4; v0.34.0 (CC2): not when the icon in the filter row has it
                 if (!selOn && !nlOn) {   // v0.17.58 (C3): new look moves Sort / View / Clear into the overflow tray
                     head.addView(small("\u2195 " + arrayOf("Newest", "Oldest", "A-Z", "Used")[sortLv]) {
                         try { JabraPrefs(ctx).setInt("clip_sort", (sortLv + 1) % 4) } catch (_: Throwable) { }

@@ -9,14 +9,14 @@ STEP CC1 (v0.33.0) DONE (Kotlin not compiled, phone not tested)
   Top row lower (34 dp), ABC / Done narrower, Search wider, panel padding 2 dp. Pref clip_compact (default ON, needs new look). Pure numbers in typing/ClipCompact.java (+ test).
   Result: about 10 dp more list height, no change of any action.
 
-STEP CC2 (v0.34.0) NEXT - filter row + Undo in ONE row (horizontal chip bar idea)
+STEP CC2 (v0.34.0) DONE (Kotlin not compiled, phone not tested) - filter row + Undo in ONE row (horizontal chip bar idea)
   Today: the filter row (pill dropdown or flat chips) and the info / Undo line are 2 rows.
   Do: Undo becomes a small icon button "undo arrow" at the END of the filter row (only when undoAvail()); the separate info line is not added in select mode (idleSel already skips it) and, in normal mode, the count moves into the title of the top row (title already shows count) so the count line can go. Messages (msg) and the "Delete all unpinned?" confirm keep their own line (they are rare and must be read).
   Where: ClipboardFeature.makeNew (the 'info line' block + the chips / pill row), new pure helper typing/ClipCompact.java: rowPlan(selOn, undo, msg, confirm) = which of the 2 rows exist (tested).
   Pref: clip_compact2 (default ON). OFF = v0.33.0 layout.
   Saves one full row (about 34 dp).
 
-STEP CC3 (v0.35.0) - slim bottom select bar + popover "More" (idea 1 + 2)
+STEP CC3 (v0.35.0) NEXT - slim bottom select bar + popover "More" (idea 1 + 2)
   Today: the bottom bar (selectBarNew) = "N selected" + Pin | Delete | Paste | More, 40 dp, plus a More tray (moreOpen) that pushes the list.
   Do: bar height 34 dp, each button = small icon + ONE short word (Pin, Delete, Paste), the count goes into the Done button ("3 - Done") or a dim text; "More" opens a floating pill POPOVER above the bar (width about 200 dp, 40 dp rows, label left + icon right, thin divider between groups: [All, Unpin, Merge, Edit] [Paste in 1 line, To Vault, Export]) instead of a tray inside the layout. The popover is a PopupWindow like PeekPopup.kt (same pattern, but touchable); fallback = the old More tray when the popover cannot be shown. Same for the header menu (the 3-dot tray: Manage / Sort / View / Export all / Clear): tick on the chosen Sort / View, Clear in red at the end.
   Pref: clip_pop (default ON). OFF = old trays. Every old action stays reachable.
