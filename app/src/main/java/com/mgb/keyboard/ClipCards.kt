@@ -50,6 +50,7 @@ object ClipCards {
         val lv = lines.coerceIn(0, 2)
         val col = LinearLayout(ctx)
         col.orientation = LinearLayout.VERTICAL
+        if (tightOn(ctx)) col.setPadding(0, dp(ctx, 4), 0, dp(ctx, 4))   // v0.36.0 (CC4): the first / last card is never half hidden at rest
         val secs = if (recentFirst) listOf(Pair("Recent", recent), Pair("Pinned", pinned)) else listOf(Pair("Pinned", pinned), Pair("Recent", recent))   // v0.15.2
         var firstHdr = true
         for (sec in secs) {
@@ -64,7 +65,8 @@ object ClipCards {
 
     /** v0.17.33 (UI9): clip card size % (pref clip_card_pct, 70..140, 100 = old). Any problem = 100. */
     private fun cardPct(ctx: Context): Int = try { com.mgb.keyboard.typing.ClipCardSize.sanitize(JabraPrefs(ctx).int("clip_card_pct", com.mgb.keyboard.typing.ClipCardSize.DEF)) } catch (_: Throwable) { 100 }
-    private fun cardMinDp(ctx: Context): Int = try { com.mgb.keyboard.typing.ClipCardSize.minHeightDp(72, cardPct(ctx)) } catch (_: Throwable) { 72 }
+    private fun tightOn(ctx: Context): Boolean = try { ClipLook.tight(JabraPrefs(ctx)) } catch (_: Throwable) { false }   // v0.36.0 (CC4)
+    private fun cardMinDp(ctx: Context): Int = try { com.mgb.keyboard.typing.ClipCardSize.tightDp(com.mgb.keyboard.typing.ClipCardSize.minHeightDp(72, cardPct(ctx)), tightOn(ctx)) } catch (_: Throwable) { 72 }   // v0.36.0 (CC4): tight = 5/6 of the height
     private fun cardSp(ctx: Context, sp: Float): Float = try { com.mgb.keyboard.typing.ClipCardSize.textSize(sp, cardPct(ctx)) } catch (_: Throwable) { sp }
 
     private fun header(ctx: Context, label: String, onTap: (() -> Unit)? = null, arrow: Boolean = false): View {   // v0.15.2: onTap = swap Pinned / Recent order; arrow only on the first header
@@ -118,7 +120,9 @@ object ClipCards {
         if (flat && !picked) { try { box.background = flatBg(ctx, pf!!) } catch (_: Throwable) { } }   // v0.19.9: soft fill, no border, no pinned border (the pin icon says it)
         else if (item.pinned && !picked) { try { box.background = pinnedBg(ctx, pf!!) } catch (_: Throwable) { } }   // v0.9.10.5: pinned card is clearly visible (tint + 2dp border)
         val lp = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 1f)   // equal width, same height as the other card in the row
-        lp.setMargins(dp(ctx, 3), dp(ctx, 3), dp(ctx, 3), dp(ctx, 3))
+        val tt = tightOn(ctx)   // v0.36.0 (CC4)
+        val mg = if (tt) 2 else 3
+        lp.setMargins(dp(ctx, mg), dp(ctx, mg), dp(ctx, mg), dp(ctx, mg))
         box.layoutParams = lp
         val linkCard = try { com.mgb.keyboard.typing.ClipFilter.isLink(item.text) } catch (_: Throwable) { false }   // v0.18.11: one-line URL clip = compact card, middle ellipsis
         box.minimumHeight = if (linkCard) dp(ctx, cardMinDp(ctx) * 7 / 10) else dp(ctx, cardMinDp(ctx))   // v0.18.11: link card is lower; v0.17.33 (UI9): scaled by clip_card_pct (100 = 72 as before); v0.10.5: a card can never collapse to zero height (normal cards are taller than this, so no visible change)
@@ -130,13 +134,13 @@ object ClipCards {
         t.setTextColor(try { JabraTokens.cardText(pf!!) } catch (_: Throwable) { Color.BLACK })
         t.maxLines = 2 + 2 * lv
         t.ellipsize = TextUtils.TruncateAt.END
-        t.minLines = 2
+        t.minLines = if (tt) 1 else 2   // v0.36.0 (CC4): a short clip does not get an empty second line
         val linkShort: (Boolean) -> Unit = { open ->   // v0.18.11: closed = ONE line, "start...end" (middle ellipsis keeps the chapter number visible); open = wrapped like any text
             if (open) { t.setSingleLine(false); t.minLines = 1; t.maxLines = 12; t.ellipsize = TextUtils.TruncateAt.END }
             else { t.setSingleLine(true); t.maxLines = 1; t.minLines = 1; t.ellipsize = TextUtils.TruncateAt.MIDDLE }
         }
         if (linkCard) { try { linkShort(false) } catch (_: Throwable) { } }
-        t.setPadding(dp(ctx, 8), dp(ctx, 6), dp(ctx, 8), dp(ctx, 2))
+        if (tt) t.setPadding(dp(ctx, 8), dp(ctx, 4), dp(ctx, 8), 0) else t.setPadding(dp(ctx, 8), dp(ctx, 6), dp(ctx, 8), dp(ctx, 2))   // v0.36.0 (CC4)
         // v0.18.6: the WHOLE card is the tap target (text, meta line, empty space); the text view itself is no longer clickable
         try {   // v0.18: soft tint while the card is pressed (v0.18.6: on the whole card, all corners rounded)
             val pr = GradientDrawable()
@@ -237,6 +241,7 @@ object ClipCards {
                     tg.layoutParams = tlp
                     line.addView(tg)
                 }
+                if (ft != null && tt) { try { ft.textSize = 9f } catch (_: Throwable) { } }   // v0.36.0 (CC4): smaller Aa tag
                 if (ft != null) {   // v0.17.40 (M7): Aa = paste with the OTHER choice
                     val flp = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT)
                     flp.setMargins(dp(ctx, 8), 0, 0, 0)
@@ -246,9 +251,9 @@ object ClipCards {
                 if (inf.isNotEmpty()) {
                     val ct = TextView(ctx)
                     ct.text = inf
-                    ct.textSize = 10f
+                    ct.textSize = if (tt) 11f else 10f   // v0.36.0 (CC4): one dim 11 sp meta line
                     ct.setTextColor(try { JabraTokens.cardNote(pf!!) } catch (_: Throwable) { Color.GRAY })
-                    ct.setPadding(dp(ctx, 8), 0, dp(ctx, 8), 0)
+                    ct.setPadding(dp(ctx, if (tt) 6 else 8), 0, dp(ctx, if (tt) 6 else 8), 0)
                     line.addView(ct)
                 }
                 if (flat && !sm.on) flatMeta = line else box.addView(line)   // v0.19.9
@@ -262,11 +267,11 @@ object ClipCards {
         if (sm.on) {   // v0.2.5.3: check box + visible "Pinned" tag, no pin / x while selecting
             val ck = TextView(ctx)
             ck.text = if (picked) "☑" else "☐"
-            ck.textSize = 18f
+            ck.textSize = if (tt) 15f else 18f   // v0.36.0 (CC4): smaller check box (select mode only, as before)
             ck.setTextColor(try { if (picked) JabraTokens.cardStroke(pf!!, true, false) else JabraTokens.onCardDim(pf!!) } catch (_: Throwable) { if (picked) Color.parseColor("#2F6FD0") else Color.DKGRAY })
             Glyphs.dress(ck)   // v0.17.68 (S1): own drawn check box instead of the text sign
             ck.setPadding(dp(ctx, 8), 0, 0, 0)
-            ck.layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, dp(ctx, 30))
+            ck.layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, dp(ctx, if (tt) 24 else 30))
             ck.gravity = Gravity.CENTER_VERTICAL
             bar.addView(ck)
             val tickAct: () -> Unit = { try { host.feedback(bar) } catch (_: Throwable) { }; try { sm.onToggle(item) } catch (_: Throwable) { } }   // v0.16.16 (E2): the tick box (and the whole bottom bar) toggles; before it was a plain TextView with no click

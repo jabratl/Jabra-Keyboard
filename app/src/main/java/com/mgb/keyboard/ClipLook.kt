@@ -18,6 +18,9 @@ object ClipLook {
     /** v0.17.58 (C3): clipboard new look ON (pref clip_new_look, default ON). OFF = every look below is exactly as before. */
     fun newLook(p: JabraPrefs?): Boolean = try { p?.bool("clip_new_look", true) ?: true } catch (_: Throwable) { true }
 
+    /** v0.36.0 (CC4): pref clip_tight (default ON, needs the new look) = tighter cards / rows (smaller padding, lower minimum height, small check box). OFF = exactly v0.35.1. */
+    fun tight(p: JabraPrefs?): Boolean = try { newLook(p) && (p?.bool("clip_tight", true) ?: true) } catch (_: Throwable) { false }
+
     /** v0.18.4: tidy clipboard (pref clip_tidy, default ON; needs the new look): list rows become cards with pin LEFT and x RIGHT, no repeated "Pinned" word on cards, the status line keeps its height. OFF = exactly v0.18.3. */
     fun tidy(p: JabraPrefs?): Boolean = try { newLook(p) && (p?.bool("clip_tidy", true) ?: true) } catch (_: Throwable) { false }
 

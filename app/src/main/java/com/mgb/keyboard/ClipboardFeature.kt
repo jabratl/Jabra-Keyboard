@@ -1740,6 +1740,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
         val selOn = sel.isOn
         val flat = simple()   // v0.19.8
         val picked = selOn && sel.isSelected(item)
+        val tt = try { ClipLook.tight(pf) } catch (_: Throwable) { false }   // v0.36.0 (CC4)
         val iconsOn = try { JabraPrefs(ctx).bool("icons_on", true) } catch (_: Throwable) { true }
         val box = LinearLayout(ctx)
         box.orientation = LinearLayout.HORIZONTAL
@@ -1748,23 +1749,24 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
         if (item.pinned && !picked) { try { box.background = ClipCards.pinnedBg(ctx, pf) } catch (_: Throwable) { } }
         if (flat && !picked) box.background = null   // v0.19.8: flat row (a picked row keeps its card so the selection stays visible)
         val blp = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
-        blp.setMargins(dp(3), dp(3), dp(3), dp(3))
+        val bm = if (tt) 2 else 3
+        blp.setMargins(dp(3), dp(bm), dp(3), dp(bm))   // v0.36.0 (CC4): tight = 2 dp above / below
         box.layoutParams = blp
-        box.minimumHeight = dp(sz(52 + 14 * lv))
+        box.minimumHeight = dp(sz(if (tt) 44 + 12 * lv else 52 + 14 * lv))
 
         // left: pin (or the check box in select mode)
         if (selOn) {
             val ck = TextView(ctx)
             ck.text = if (picked) "\u2611" else "\u2610"
-            ck.textSize = 18f
+            ck.textSize = if (tt) 15f else 18f   // v0.36.0 (CC4)
             ck.setTextColor(try { if (picked) JabraTokens.cardStroke(pf, true, false) else JabraTokens.onCardDim(pf) } catch (_: Throwable) { if (picked) Color.parseColor("#2F6FD0") else Color.DKGRAY })
             Glyphs.dress(ck)
             ck.gravity = Gravity.CENTER
             try {   // v0.18.7: a drawn check box sticks to the left edge of its view (touched the card border) - centre it with left padding
                 val gw = ck.compoundDrawablesRelative[0]?.intrinsicWidth ?: 0
-                if (gw > 0) ck.setPadding(((dp(44) - gw) / 2).coerceAtLeast(dp(6)), 0, 0, 0)
+                if (gw > 0) ck.setPadding(((dp(if (tt) 36 else 44) - gw) / 2).coerceAtLeast(dp(6)), 0, 0, 0)
             } catch (_: Throwable) { }
-            ck.layoutParams = LinearLayout.LayoutParams(dp(44), dp(36))
+            ck.layoutParams = LinearLayout.LayoutParams(dp(if (tt) 36 else 44), dp(if (tt) 28 else 36))
             box.addView(ck)
         } else if (!flat) {   // v0.19.8: flat row has the pin on the RIGHT
             box.addView(ClipCards.small(ctx, host, if (item.pinned) "\u2605" else "\u2606", if (item.pinned) "pinned" else "pin", iconsOn) { store.togglePin(item); refresh() })
@@ -1780,7 +1782,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
         t.setTextColor(if (flat && !picked) ink() else try { JabraTokens.cardText(pf) } catch (_: Throwable) { Color.BLACK })   // v0.19.8: flat row sits on the panel colour
         t.maxLines = 2 + 2 * lv
         t.ellipsize = TextUtils.TruncateAt.END
-        t.setPadding(dp(if (flat && !selOn) 10 else 4), dp(6), dp(4), dp(2))
+        t.setPadding(dp(if (flat && !selOn) 10 else 4), dp(if (tt) 4 else 6), dp(4), dp(if (tt) 0 else 2))   // v0.36.0 (CC4)
         // v0.18.6: the WHOLE row is the tap target (text, meta line, check box, empty space); the text view itself is no longer clickable
         try {   // soft tint while pressed (same as the cards), now on the whole row
             val pr = android.graphics.drawable.GradientDrawable()
@@ -1806,6 +1808,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
                 line.gravity = Gravity.CENTER_VERTICAL
                 line.setPadding(dp(4), 0, dp(4), dp(4))
                 if (tg != null) { tg.setPadding(dp(5), dp(1), dp(5), dp(1)); line.addView(tg) }
+                if (ft != null && tt) { try { ft.textSize = 9f } catch (_: Throwable) { } }   // v0.36.0 (CC4)
                 if (ft != null) {
                     ft.setOnClickListener { try { host.feedback(ft) } catch (_: Throwable) { }; pasteItem(item, true) }
                     val flp = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT)
@@ -1816,7 +1819,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
                 if (inf.isNotEmpty()) {
                     val ct = TextView(ctx)
                     ct.text = inf
-                    ct.textSize = 10f
+                    ct.textSize = if (tt) 11f else 10f   // v0.36.0 (CC4): one dim 11 sp meta line
                     ct.setTextColor(hush())
                     ct.setPadding(dp(4), 0, dp(4), 0)
                     line.addView(ct)

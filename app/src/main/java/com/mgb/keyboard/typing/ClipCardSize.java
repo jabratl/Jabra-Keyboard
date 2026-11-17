@@ -29,6 +29,15 @@ public final class ClipCardSize {
         return h < floor ? floor : h;
     }
 
+    /** v0.36.0 (CC4): tight cards (pref clip_tight). Card minimum height shrinks to 5/6 (72 -> 60 dp) but never below TIGHT_FLOOR_DP; OFF = unchanged. */
+    public static final int TIGHT_FLOOR_DP = 44;
+    public static int tightDp(int dp, boolean tight) {
+        if (!tight || dp <= 0) return dp;
+        int h = Math.round(dp * 5 / 6f);
+        int floor = Math.min(dp, TIGHT_FLOOR_DP);
+        return h < floor ? floor : h;
+    }
+
     /** Clip text size scaled by the percent. 100 = unchanged. Never below MIN_SP (unless the old size was already lower). */
     public static float textSize(float old, int pct) {
         int p = sanitize(pct);

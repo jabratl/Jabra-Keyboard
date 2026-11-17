@@ -1,0 +1,22 @@
+HANDOFF Jabra-Keyboard v0.36.0 - CC4 done (tight clip cards)
+
+Rules of work: HANDOFF.txt section 0 (Banglish, patch do not rewrite, ONLY changed files in the zip + handoff, max 1 question, grep only needed files).
+
+1. STATE
+- Repo = v0.36.0 = v0.35.1 (CC3-B popover) + CC4. Pref clip_tight (default ON, needs clip_new_look). OFF = exactly v0.35.1.
+- CC1 - CC4 are all DONE in code but NOT compiled here and NOT tested on a phone. Tests: bash tools/run_tests.sh all green at v0.36.0 (ClipCardSizeTest +4, ClipPopTest 32).
+
+2. WHAT CHANGED (CC4)
+- ClipLook.tight(p). ClipCardSize.tightDp(dp, tight) (72 -> 60, floor 44).
+- ClipCards.kt: tightOn(ctx), build() list padding 4 dp, cardMinDp tight, card(): margins 2 dp, minLines 1, text padding, info 11 sp, Aa 9 sp, check box 15 sp / 24 dp.
+- ClipboardFeature.kt itemRowTidy: tt flag: min height 44 + 12 * lv, margins 2 dp, check box 36 x 28 dp, info 11 sp, Aa 9 sp.
+- Settings: "Tight clip cards" after "Slim select bar" (5 plan files).
+
+3. FIRST THINGS NEXT CHAT
+- Is the GitHub Actions build of v0.36.0 green? If Kotlin errors, paste the build log first (CC3-B v0.35.1 was also never compiled: ClipPopover.kt "it" loop variable, setTouchInterceptor, popPick when).
+- Phone test CC1 - CC4 together (CHECKLIST sections v0.33.0 - v0.36.0) + screenshots: clipboard normal, select mode, More popover, 3-dot popover, Cards view.
+- Does the popover show on the phone at all (same window pattern as the Peek card)?
+
+4. Known assumptions: info line stays in the meta line (not moved to a separate bottom-right slot); link cards and flat look unchanged; popover Undo row refreshes the panel at the next action.
+
+5. After the phone test: fix by build log / screenshots, one bug = one fix version. Ideas NOT planned: inline accordion for Sort / View, icon-only top row, swipe to delete.

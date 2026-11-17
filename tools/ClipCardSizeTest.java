@@ -26,6 +26,10 @@ public class ClipCardSizeTest {
         t("small old text stays", ClipCardSize.textSize(8f, 70) == 8f);
         t("monotonic height", ClipCardSize.minHeightDp(72, 90) <= ClipCardSize.minHeightDp(72, 100) && ClipCardSize.minHeightDp(72, 100) <= ClipCardSize.minHeightDp(72, 120));
         t("monotonic text", ClipCardSize.textSize(12.5f, 90) <= ClipCardSize.textSize(12.5f, 100) && ClipCardSize.textSize(12.5f, 100) <= ClipCardSize.textSize(12.5f, 120));
+        t("tight 72 -> 60", ClipCardSize.tightDp(72, true) == 60);
+        t("tight OFF = old", ClipCardSize.tightDp(72, false) == 72);
+        t("tight floor 44", ClipCardSize.tightDp(48, true) == 44 && ClipCardSize.tightDp(40, true) == 40);
+        t("tight never above old", ClipCardSize.tightDp(56, true) <= 56 && ClipCardSize.tightDp(0, true) == 0);
         System.out.println("ClipCardSizeTest " + ok + "/" + (ok + bad));
         if (bad > 0) System.exit(1);
     }
