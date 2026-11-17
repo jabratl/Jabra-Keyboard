@@ -22,6 +22,7 @@ import com.mgb.keyboard.typing.ReplaceEngine
 import com.mgb.keyboard.typing.ReplaceExtras
 import com.mgb.keyboard.typing.ReplaceHelp
 import com.mgb.keyboard.typing.ReplacePads
+import com.mgb.keyboard.typing.ReplacePeek
 import com.mgb.keyboard.typing.ReplaceRules
 
 /*
@@ -80,6 +81,7 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
 
     /** Call when the panel is opened from outside: reads the options and the field once. */
     fun reset() {
+        PeekPopup.dismiss()   // v0.32.0
         setPreviewOn = false; setPrev = null; part = 0; partCut = -1; clipIo = null; msg = ""; confirmAll = false; undoStack.clear(); helpPage = 0; typing = 0; padPage = 0; shift = false; step = 0; rprAsk = false
         try { opt = ReplaceEngine.unpack(prefs.int("rp_opt", ReplaceEngine.pack(ReplaceEngine.Opt()))) } catch (_: Throwable) { opt = ReplaceEngine.Opt() }
         readSource(true)
@@ -107,6 +109,33 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
 
     private fun dp(v: Int): Int = (v * ctx.resources.displayMetrics.density).toInt()
     private fun refresh() { host.showPanel("replace") }
+
+    // ------------------------------------------------------------------ v0.32.0 (PEEK): long-press card (PeekPopup.kt); a short tap works as before, a long press never loads / replaces anything
+
+    /** Card of [Replace all]: first matches (or what the active set would change). Password field = one line. */
+    private fun peekResult(res: ReplaceEngine.Result): ReplacePeek.Peek {
+        if (io.blocked()) return ReplacePeek.message("Replace all", "Not available in password fields.")
+        val rl = setRules
+        if (rl != null) { val pk = ReplacePeek.forSet(setName, ReplaceRules.serialize(rl), setOpt, src); pk.hint = "Release to close"; return pk }
+        return ReplacePeek.forResult(src, res, 3, 24)
+    }
+
+    /** Card of a set (Sets view). */
+    private fun peekSet(name: String, d: ReplaceStore.Def): ReplacePeek.Peek =
+        if (io.blocked()) ReplacePeek.message(name, "Not available in password fields.") else ReplacePeek.forSet(name, d.rules, d.opt(), src)
+
+    /** Long press on a set: card above; when no card can be shown = FALLBACK = the v0.31.0 inline preview box. */
+    private fun peekSetAt(a: View, name: String, d: ReplaceStore.Def) {
+        try { if (!PeekPopup.show(a, prefs, peekSet(name, d), host)) { setPrev = Pair(name, d); refresh() } } catch (_: Throwable) { }
+    }
+
+    /** Long click + release listener on a button. Long click is consumed (true) = no click after a long press. */
+    private fun peekOn(v: View, make: () -> ReplacePeek.Peek) {
+        try {
+            v.setOnLongClickListener { a -> try { PeekPopup.show(a, prefs, make(), host) } catch (_: Throwable) { }; true }
+            PeekPopup.watchRelease(v)
+        } catch (_: Throwable) { }
+    }
 
     private fun btn(label: String, weight: Float, hDp: Int, onClick: (Button) -> Unit): Button {
         try { return UiKit.btn(ctx, prefs, label, weight, hDp, 12f, { v -> host.feedback(v) }, onClick) } catch (_: Throwable) { }
@@ -155,7 +184,7 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
         return try { ReplaceEngine.replaceAll(src, find, repl, opt) } catch (_: Throwable) { ReplaceEngine.Result() }
     }
 
-    fun build(): View? = try { if (typing == 3) setsViewPick() else if (typing == 4) recentView() else if (typing == 5) helpView() else if (typing != 0) typeView() else mainViewPick() } catch (_: Throwable) { null }   // v0.26.0 (R3): 4 = Recent pairs; Pick = new look when panel_ui = New, else the classic view
+    fun build(): View? = try { PeekPopup.dismiss(); if (typing == 3) setsViewPick() else if (typing == 4) recentView() else if (typing == 5) helpView() else if (typing != 0) typeView() else mainViewPick() } catch (_: Throwable) { null }   // v0.26.0 (R3): 4 = Recent pairs; Pick = new look when panel_ui = New, else the classic view
 
     // ------------------------------------------------------------------ main view
 
@@ -262,7 +291,9 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
         val act = row()
         val ask = confirmAll && !usedSel
         val allLabel = if (ask) "Sure? Replace all" else if (res.err == null && res.count > 0) "Replace all (" + res.count + ")" else "Replace all"
-        act.addView(btn(allLabel, 1.5f, 40) { onReplace(res, false) })
+        val allB = btn(allLabel, 1.5f, 40) { onReplace(res, false) }
+        peekOn(allB) { peekResult(res) }   // v0.32.0
+        act.addView(allB)
         if (setRules == null) act.addView(btn("1st", 0.6f, 40) { onReplace(ReplaceEngine.replaceFirst(src, find, repl, opt), true) })
         act.addView(btn(scopeLabel(), 1.1f, 40) { toggleScope() })
         if (undoStack.canUndo()) act.addView(btn("\u21B6 " + ReplaceExtras.undoLabel(undoStack.size()), 0.9f, 40) { undo() })
@@ -436,7 +467,9 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
             for (j in 0..1) {
                 val e = all.getOrNull(i + j)
                 if (e == null) { val sp = View(ctx); sp.layoutParams = LinearLayout.LayoutParams(0, dp(36), 1f); r.addView(sp); continue }
-                r.addView(btn(e.first, 1f, 36) { tapSet(e.first.removePrefix("\u2605 "), e.second) })
+                val sb = btn(e.first, 1f, 36) { tapSet(e.first.removePrefix("\u2605 "), e.second) }
+                try { sb.setOnLongClickListener { a -> peekSetAt(a, e.first.removePrefix("\u2605 "), e.second); true }; PeekPopup.watchRelease(sb) } catch (_: Throwable) { }   // v0.32.0
+                r.addView(sb)
             }
             col.addView(r)
             i += 2
@@ -716,6 +749,7 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
         val allLabel = if (ask) "Sure? Replace all" else if (res.err == null && res.count > 0) "Replace all (" + res.count + ")" else "Replace all"
         val all = btn(allLabel, 2f, 44) { onReplace(res, false) }
         accentButton(all, if (ask) JabraTokens.WARN else JabraTokens.ACCENT)
+        peekOn(all) { peekResult(res) }   // v0.32.0
         all.alpha = if (canGo) 1f else 0.6f
         act.addView(all)
         if (setRules == null) act.addView(btn("1st", 0.7f, 44) { onReplace(ReplaceEngine.replaceFirst(src, find, repl, opt), true) })
@@ -740,8 +774,8 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
         val sv = ScrollView(ctx)
         sv.layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(if (setPrev != null) 100 else 170))
         val tiles = ArrayList<PanelKit.Tile>()
-        try { for ((n, d) in ReplaceStore.load(prefs)) tiles.add(PanelKit.Tile("\u2605 " + n, "saved", n == setName) { tapSet(n, d) }) } catch (_: Throwable) { }
-        try { for ((n, d) in ReplaceStore.ready()) tiles.add(PanelKit.Tile(n, "ready-made", n == setName) { tapSet(n, d) }) } catch (_: Throwable) { }
+        try { for ((n, d) in ReplaceStore.load(prefs)) tiles.add(PanelKit.Tile("\u2605 " + n, "saved", n == setName) { tapSet(n, d) }.also { t -> t.onLong = { a -> peekSetAt(a, n, d) } }) } catch (_: Throwable) { }
+        try { for ((n, d) in ReplaceStore.ready()) tiles.add(PanelKit.Tile(n, "ready-made", n == setName) { tapSet(n, d) }.also { t -> t.onLong = { a -> peekSetAt(a, n, d) } }) } catch (_: Throwable) { }
         sv.addView(PanelKit.tileGrid(ctx, prefs, host, 2, tiles))
         root.addView(sv)
         return root

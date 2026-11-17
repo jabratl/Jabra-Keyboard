@@ -20,7 +20,10 @@ import com.mgb.keyboard.typing.PanelLayout
 object PanelKit {
 
     /** One tile: [label] (+ optional small [sub] line), tap = [onClick]. [selected] = soft blue like a picked card. */
-    class Tile(val label: String, val sub: String = "", val selected: Boolean = false, val onClick: () -> Unit)
+    class Tile(val label: String, val sub: String = "", val selected: Boolean = false, val onClick: () -> Unit) {
+        /** v0.32.0 (PEEK): optional long-press action (gets the tile button as anchor). null = no long press (every old caller). A long press consumes the touch = no click. */
+        var onLong: ((Button) -> Unit)? = null
+    }
 
     private fun dp(ctx: Context, v: Int): Int = JabraTokens.dp(ctx, v)
     private fun fb(host: JabraHost?): ((View) -> Unit)? = if (host == null) null else { v -> try { host.feedback(v) } catch (_: Throwable) { } }
@@ -102,6 +105,8 @@ object PanelKit {
             b.background = g
             b.contentDescription = if (t.sub.isEmpty()) t.label else t.label + ". " + t.sub
             b.setOnClickListener { try { host?.feedback(b) } catch (_: Throwable) { }; try { t.onClick() } catch (_: Throwable) { } }
+            val ol = t.onLong   // v0.32.0
+            if (ol != null) { b.setOnLongClickListener { try { ol(b) } catch (_: Throwable) { }; true }; PeekPopup.watchRelease(b) }
         } catch (_: Throwable) { }
         return b
     }

@@ -1186,3 +1186,13 @@ FIND & REPLACE PART 1 (v0.24.0) - phone test
 4. List OFF again: Find a|b matches the text "a|b" only.
 5. Sets > [Preview] ON > tap "Clean text": preview text + [Use this set]; the Find / With rows did NOT change. [Use this set] loads it. [Close] hides the preview.
 6. Close Rp, open again: Preview switch is OFF, a tap on a set loads it.
+
+=== FIND & REPLACE v0.32.0 - phone checks (PEEK) ===
+1. Rp > Sets: HOLD a ready-made set (e.g. "Clean text"): a card appears ABOVE the keyboard (Before: red part / After: green part, rules with counts). Lift the finger = card closes, NOTHING was loaded.
+2. Sets: a short TAP on the same set = loads it as before.
+3. Rp main view with text in the field and Find / With filled: HOLD [Replace all (N)]: card shows the first matches (Before / After). Lift = closes, the field text did NOT change, the button did not turn into "Sure?".
+4. Repeat 1 and 3 in a dark theme, in the new look and in the classic look.
+5. Landscape and one-hand mode: the card stays on screen (if it is over the keyboard top instead of above, that is OK).
+6. Password field: hold [Replace all] / a set: card says "Not available in password fields." (or no card).
+7. Field with 100000 characters: the card appears fast (no freeze).
+8. If NO card appears on a set: the old inline Preview box shows instead (fallback) = tell me, it means PopupWindow does not work in the IME window on this phone.
