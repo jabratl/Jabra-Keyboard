@@ -1,0 +1,13 @@
+HANDOFF Jabra-Keyboard v0.36.1 - Shift on selected text cycles case
+
+Rules of work: HANDOFF.txt section 0 (Banglish, patch do not rewrite, ONLY changed files in the zip + handoff, max 1 question, grep only needed files).
+
+1. STATE
+- Repo = v0.36.1 = v0.36.0 (CC4 tight cards, pref clip_tight) + shift-case on selection. CC1 - CC4 + v0.35.1 popover + v0.36.1 all NOT compiled here, NOT tested on a phone.
+- NEW typing/SelCase.java (next(): ALL BIG -> small; First Big -> ALL BIG; else First Big) + tools/SelCaseTest.java. MgbIme.kt: shiftCaseSel() + hooks at the 3 shift taps (custom shift key, classic row 3 shift, "@caps"). No pref (owner asked for a hard default).
+
+2. FIRST THINGS NEXT CHAT
+- GitHub Actions build of v0.36.1 green? If Kotlin errors, paste the log (suspects: ClipPopover.kt, shiftCaseSel ExtractedTextRequest).
+- Phone: CHECKLIST sections v0.33.0 - v0.36.1 + screenshots (clipboard, select mode, More / 3-dot popover, Cards view).
+
+3. Assumption: "first letter" = first letter of every word of the selection.

@@ -1,3 +1,10 @@
+v0.36.1 - NEW: SHIFT ON SELECTED TEXT CHANGES THE CASE
+- SEEN/WHY: owner: select a text / word that is all small letters, tap Shift: first letter big; tap again: all big; tap again: all small. Wanted as a hard default (no setting).
+- WHAT: Shift tap (letters keyboard, custom shift key, "@caps" key) with a selection cycles small -> First Letter Of Each Word Big -> ALL BIG -> all small -> ...; the selection stays, so the next tap goes on. No selection (or nothing with case, e.g. Bangla / digits) = the normal Shift tap (shift / caps lock), exactly as before.
+- ASSUMPTION: "first letter" = first letter of EACH word in the selection (a word starts after a space / new line). Tell me if only the very first letter should be big.
+- WHAT BROKE: nothing known. No pref, no permission, nothing stored. NOT tested: Kotlin NOT compiled, phone NOT tested (some apps may not report the selection position; then the text changes but is no longer selected).
+- Files: NEW typing/SelCase.java, tools/SelCaseTest.java; PATCH MgbIme.kt (shiftCaseSel + 3 shift hooks), app/build.gradle.kts (0.36.1), CHANGELOG, CHECKLIST, HANDOFF_Jabra-Keyboard_v0.36.1.txt.
+
 v0.36.0 - NEW: TIGHT CLIP CARDS (step CC4 of PLAN_CLIP_COMPACT.txt)
 - SEEN/WHY: after CC1 - CC3 the clip cards / rows were still airy (padding, empty second line, big check box). Owner wants more clips on screen.
 - WHAT: Cards view: card minimum height 72 -> 60 dp (5/6, floor 44, clip_card_pct still scales first), margins 3 -> 2 dp, text padding smaller, a short clip no longer reserves an empty 2nd line (minLines 1), info line (chars - age) 11 sp dim, Aa tag smaller (9 sp), select-mode check box 18 -> 15 sp and 24 dp high, list top / bottom padding 4 dp so the first / last card is never half hidden. List (tidy) rows: min height 52 + 14 per line level -> 44 + 12, 2 dp above / below, smaller check box (36 x 28 dp), same info line + Aa tag. clip_lines clamp + the existing More / Less tap stay as they were.

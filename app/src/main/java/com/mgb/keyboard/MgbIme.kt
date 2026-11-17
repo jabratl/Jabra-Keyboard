@@ -801,7 +801,7 @@ class MgbIme : InputMethodService() {
             }
             val b: Button = when (k.action) {
                 "shift" -> {
-                    val sb = JabraIcons.putThemed(this@MgbIme, key("\u21E7", k.weight) { shiftSt.tap(android.os.SystemClock.uptimeMillis()); refreshLetters() }, "shift")
+                    val sb = JabraIcons.putThemed(this@MgbIme, key("\u21E7", k.weight) { if (!shiftCaseSel()) { shiftSt.tap(android.os.SystemClock.uptimeMillis()); refreshLetters() } }, "shift")
                     customShiftBtns.add(sb); sb
                 }
                 "backspace" -> {
@@ -857,10 +857,28 @@ class MgbIme : InputMethodService() {
                 "@emoji" -> { try { emojiPanel.reset() } catch (_: Throwable) { }; showPanel("emoji") }   // v0.17.6: same as the classic "," long-press
                 "@clip" -> showPanel("clipboard")
                 "@lang" -> toggleLang()
-                "@caps" -> { shiftSt.tap(android.os.SystemClock.uptimeMillis()); refreshLetters() }
+                "@caps" -> { if (!shiftCaseSel()) { shiftSt.tap(android.os.SystemClock.uptimeMillis()); refreshLetters() } }
                 else -> { }
             }
         } catch (_: Throwable) { }
+    }
+
+    /** v0.36.1: Shift tap with SELECTED text = cycle the case (small -> First Big -> ALL BIG -> small), the selection stays. true = handled; false (no selection / nothing to change / any problem) = the normal Shift tap. */
+    private fun shiftCaseSel(): Boolean {
+        try {
+            val ic = currentInputConnection ?: return false
+            val sel = ic.getSelectedText(0)?.toString() ?: return false
+            if (sel.isEmpty()) return false
+            val out = com.mgb.keyboard.typing.SelCase.next(sel)
+            if (out == sel) return false
+            val et = ic.getExtractedText(android.view.inputmethod.ExtractedTextRequest(), 0)
+            val start = if (et != null) minOf(et.selectionStart, et.selectionEnd) + et.startOffset else -1
+            ic.beginBatchEdit()
+            ic.commitText(out, 1)
+            if (start >= 0) ic.setSelection(start, start + out.length)   // keep it selected so the next tap goes on
+            ic.endBatchEdit()
+            return true
+        } catch (_: Throwable) { return false }
     }
 
     private fun relabelLetters() {
@@ -1791,7 +1809,7 @@ class MgbIme : InputMethodService() {
         root.addView(r2)
 
         val r3 = row()
-        val shb = JabraIcons.putThemed(this, key("⇧", 1.5f) { shiftSt.tap(android.os.SystemClock.uptimeMillis()); refreshLetters() }, "shift")   // v0.0.7 + v0.0.9 (double tap = caps lock)
+        val shb = JabraIcons.putThemed(this, key("⇧", 1.5f) { if (!shiftCaseSel()) { shiftSt.tap(android.os.SystemClock.uptimeMillis()); refreshLetters() } }, "shift")   // v0.0.7 + v0.0.9 (double tap = caps lock)
         shiftBtn = shb
         fn(shb)   // v0.1.5
         r3.addView(shb)
