@@ -1,3 +1,16 @@
+v0.36.3 - FIX BUILD: v0.36.2 overwrote an EXISTING class
+- SEEN: Kotlin build error "Unresolved reference: undoText / doneText / parseValue" in SettingsGroups.kt. My v0.36.2 zip carried a NEW typing/EditPlan.java + tools/EditPlanTest.java, but the repo ALREADY had files with these names (used by SettingsGroups, LayoutEditorPage ...) - they were overwritten.
+- FIX: original typing/EditPlan.java + tools/EditPlanTest.java put back unchanged (taken from the repo zip). My match-by-match helper is renamed typing/ReplaceEdits.java + tools/ReplaceEditsTest.java; FormatterFeature.kt uses ReplaceEdits. Nothing else changed. I now check a new file name against the repo before adding it.
+- Files: restored typing/EditPlan.java, tools/EditPlanTest.java; NEW typing/ReplaceEdits.java, tools/ReplaceEditsTest.java; PATCH FormatterFeature.kt, app/build.gradle.kts (0.36.3), CHANGELOG, HANDOFF_Jabra-Keyboard_v0.36.2.txt (name stays, text updated).
+- Tests (computer): bash tools/run_tests.sh 165/165 green. Kotlin still NOT compiled here.
+
+v0.36.2 - FIX: FIND & REPLACE KEEPS THE FORMAT OF THE REST OF THE FIELD
+- SEEN/WHY: Replace (one or all) rewrote the WHOLE field text (select all + commit), so bold / italic / links / spans of text that was NOT replaced were lost.
+- WHAT: the engine now returns every replaced match (Result.edits). The field is changed match by match through the input connection (last match first: select that range, check the selected text is really the found text, commit the replacement). The text between the matches is never touched. Works for Replace one, Replace all, From / To cursor. Undo is done match by match too (ImeFmtIo keeps the inverse edits of the last 10 replaces).
+- SAFETY: before and after the edit the whole field text is compared with the expected text; anything unexpected (app does not report the selection, text changed, more than 2000 matches) = the old whole-text replace runs, so the TEXT result is always right, only the format is lost in that case. Selection scope (In: Selection) and the clip Replace are NOT changed (still replace the selection / clip as one piece).
+- WHAT BROKE: nothing known. No pref (it is the new default), no permission, nothing stored. NOT tested: Kotlin NOT compiled, phone NOT tested. Apps that ignore setSelection may fall back to the old way (format lost, same as before).
+- Files: PATCH typing/ReplaceEngine.java (Result.edits, public Hit), NEW typing/ReplaceEdits.java, tools/ReplaceEditsTest.java; PATCH FormatterFeature.kt (FmtIo.replaceEdits + ImeFmtIo edit / undo), ReplacePanel.kt (doReplace), app/build.gradle.kts (0.36.2), CHANGELOG, CHECKLIST, HANDOFF_Jabra-Keyboard_v0.36.2.txt.
+
 v0.36.1 - NEW: SHIFT ON SELECTED TEXT CHANGES THE CASE
 - SEEN/WHY: owner: select a text / word that is all small letters, tap Shift: first letter big; tap again: all big; tap again: all small. Wanted as a hard default (no setting).
 - WHAT: Shift tap (letters keyboard, custom shift key, "@caps" key) with a selection cycles small -> First Letter Of Each Word Big -> ALL BIG -> all small -> ...; the selection stays, so the next tap goes on. No selection (or nothing with case, e.g. Bangla / digits) = the normal Shift tap (shift / caps lock), exactly as before.
