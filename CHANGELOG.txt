@@ -1,3 +1,10 @@
+v0.37.3 - CHANGE: EVEN COMPACTER + SMOOTHER CLIPBOARD POPOVER
+- SEEN/WHY: owner screenshot of v0.36.5: the 3-dot menu was still ~390 dp tall (11 rows), a third of the screen.
+- WHAT: (1) Sort (Newest / Oldest / A-Z / Used) = 2 x 2 small chips, View (List / Cards) = one chip row, chosen chip = soft fill + bold. In the select-mode More menu: All | None, Edit | Replace, Merge | Unpin are chip pairs. 3-dot menu ~390 -> ~285 dp, More menu ~310 -> ~210 dp. Full rows stay for Manage / Deleted / Export all / Undo kept / Clear and Paste 1 line / To Vault / Export. (2) Smoother: opens as scale 92% -> 100% + fade from the corner next to the button (140 ms); rows and chips have a pressed ripple; the Undo-kept row re-shows the menu WITHOUT fade (no blink). (3) typing/ClipPop.java: Item.cols, rows(), heightDp() (tested).
+- Every id / handler / order unchanged. WHAT BROKE: nothing known. No pref, no permission.
+- NOT tested: Kotlin NOT compiled, phone NOT tested.
+- Files: PATCH typing/ClipPop.java, ClipPopover.kt, ClipboardFeature.kt (1 line), tools/ClipPopTest.java, app/build.gradle.kts (0.37.3), CHANGELOG, HANDOFF_Jabra-Keyboard_v0.37.3.txt (NEW).
+
 v0.37.2 - NEW: Replace "Copy then Paste" in one tap + floating pill follows the scroll and shows the count
 - SEEN/WHY: (1) when Replace cannot change the field, the owner had to Copy, leave, and paste with the app's own menu. (2) the pill covers the bottom of a short list; the owner could not see how many clips were selected.
 - WHAT: (1) Replace: after a successful Copy the Copy button becomes "Paste" (while the result is unchanged). Tap it = the result is inserted at once, with format when the copy had format (host.pasteFormatted), else plain. Flow: Copy, in the app select all, tap Paste. The message tells this. (2) Pill: a round count badge (number of selected clips, 99+ max) at its left; the pill slides away while the list scrolls down and comes back when it scrolls up or reaches the end of the list. A scroll position restored after a rebuild never hides it (only a real touch arms it).

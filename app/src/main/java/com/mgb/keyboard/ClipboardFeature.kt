@@ -555,7 +555,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
             val lim = try { trash.limit() } catch (_: Throwable) { com.mgb.keyboard.clip.ClipTrash.DEFAULT_LIMIT }
             val delN = try { trash.count() } catch (_: Throwable) { 0 }
             ovOpen = false; confirmClear = false
-            return ClipPopover.show(a, pf, host, ClipPop.headerItems(sortLv, cardsOn, pillNow, lim, delN), false) { picked -> popPick(picked.id) }
+            return ClipPopover.show(a, pf, host, ClipPop.headerItems(sortLv, cardsOn, pillNow, lim, delN), false, !reopen) { picked -> popPick(picked.id) }   // v0.37.3: the Undo re-show (reopen) has no fade = no blink
         } catch (_: Throwable) { return false }
     }
 

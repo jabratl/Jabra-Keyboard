@@ -34,9 +34,13 @@ public class ClipPopTest {
         ok(ClipPop.maxHeightDp(100, 400, 40) == 92, "clamped to space - 8");
         ok(ClipPop.maxHeightDp(10, 400, 40) == 40, "never below one row");
         // v0.36.5: popover stays small: the longest menu (3-dot, pills OFF) must be well under 400 dp
-        int rows = ClipPop.headerItems(0, false, false, 30, 14).size();
-        int est = rows * ClipPop.ROW_DP + 2 * ClipPop.PAD_V_DP + 5 * 3;
-        ok(est <= 400, "3-dot menu height " + est + " dp <= 400");
+        int est = ClipPop.heightDp(ClipPop.headerItems(0, false, false, 30, 14));
+        ok(est <= 300, "3-dot menu height " + est + " dp <= 300");
+        int estMore = ClipPop.heightDp(ClipPop.moreItems(true));
+        ok(estMore <= 230, "More menu height " + estMore + " dp <= 230");
+        ok(ClipPop.rows(ClipPop.headerItems(0, false, false, 30, 14)).size() == 8, "3-dot: 2 sort chip rows + 1 view chip row + 5 single rows = 8 visual rows");
+        ok(ClipPop.rows(ClipPop.moreItems(false)).size() == 5, "More: 3 chip rows + Paste 1 line + Export (no vault) = 5 visual rows");
+        for (java.util.List<ClipPop.Item> r : ClipPop.rows(ClipPop.headerItems(0, false, false, 30, 14))) ok(r.size() <= 2, "max 2 per row");
         ok(ClipPop.ROW_DP >= 32, "row not below 32 dp (finger target)");
         ok(ClipPop.WIDTH_DP <= 180 && ClipPop.WIDTH_DP >= 150, "width 150..180 dp");
         ok(!ClipPop.reopenGuard(1100, 1000) && ClipPop.reopenGuard(1300, 1000) && ClipPop.reopenGuard(50, 0), "reopen guard");

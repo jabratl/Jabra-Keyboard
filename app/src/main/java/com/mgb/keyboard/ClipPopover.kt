@@ -1,9 +1,11 @@
 package com.mgb.keyboard
 
+import android.content.res.ColorStateList
 import android.graphics.Color
 import android.graphics.Typeface
 import android.graphics.drawable.ColorDrawable
 import android.graphics.drawable.GradientDrawable
+import android.graphics.drawable.RippleDrawable
 import android.os.SystemClock
 import android.text.TextUtils
 import android.view.Gravity
@@ -40,7 +42,7 @@ object ClipPopover {
     }
 
     /** Shows the menu at the right edge of [anchor]. preferUp = open upward (bottom bar); else downward when it fits. onPick runs AFTER the menu closed (except the Undo row, which keeps it open). */
-    fun show(anchor: View, p: JabraPrefs, host: JabraHost?, items: List<ClipPop.Item>, preferUp: Boolean, onPick: (ClipPop.Item) -> Unit): Boolean {
+    fun show(anchor: View, p: JabraPrefs, host: JabraHost?, items: List<ClipPop.Item>, preferUp: Boolean, animate: Boolean = true, onPick: (ClipPop.Item) -> Unit): Boolean {
         dismiss()
         try {
             val ctx = anchor.context
@@ -57,15 +59,17 @@ object ClipPopover {
             col.orientation = LinearLayout.VERTICAL
             col.setPadding(0, JabraTokens.dp(ctx, ClipPop.PAD_V_DP), 0, JabraTokens.dp(ctx, ClipPop.PAD_V_DP))
             var lastGroup = items[0].group
-            for (it in items) {
-                if (it.group != lastGroup) {   // thin divider between groups
+            for (r in ClipPop.rows(items)) {
+                val first = r[0]
+                if (first.group != lastGroup) {   // thin divider between groups
                     val d = View(ctx)
                     d.setBackgroundColor(JabraTokens.withAlpha(ink, 0x33))
                     d.layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, JabraTokens.dp(ctx, 1).coerceAtLeast(1)).also { lp -> lp.setMargins(JabraTokens.dp(ctx, 10), JabraTokens.dp(ctx, 1), JabraTokens.dp(ctx, 10), JabraTokens.dp(ctx, 1)) }
                     col.addView(d)
-                    lastGroup = it.group
+                    lastGroup = first.group
                 }
-                col.addView(row(ctx, p, host, it, ink, iconOn, rowPx, onPick))
+                if (first.cols > 1) col.addView(chipRow(ctx, host, r, ink, onPick))
+                else col.addView(row(ctx, p, host, first, ink, iconOn, rowPx, onPick))
             }
             val sv = ScrollView(ctx)
             sv.isVerticalScrollBarEnabled = false
@@ -93,8 +97,11 @@ object ClipPopover {
             val h = ClipPop.maxHeightDp(space / dpPx, contentH / dpPx, ClipPop.ROW_DP) * dpPx
             val y = if (up) loc[1] - h - gap else loc[1] + anchor.height + gap
             val x = (loc[0] + anchor.width - w).coerceIn(margin, (sw - w - margin).coerceAtLeast(margin))
-            box.alpha = 0f
-            box.translationY = (if (up) 6 else -6) * dpPx.toFloat()
+            if (animate) {   // v0.37.3: grows out of the corner next to the button (scale + fade); the Undo re-show passes animate = false = no blink
+                box.alpha = 0f
+                box.scaleX = 0.92f; box.scaleY = 0.92f
+                box.pivotX = w.toFloat(); box.pivotY = if (up) h.toFloat() else 0f
+            }
             val win = PopupWindow(box, w, h, false)
             win.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
             win.isTouchable = true
@@ -106,12 +113,46 @@ object ClipPopover {
             ToolTip.inScreen(win)
             win.showAtLocation(anchor, Gravity.NO_GRAVITY, x, y)
             pw = win
-            try { box.animate().alpha(1f).translationY(0f).setDuration(120).setInterpolator(DecelerateInterpolator()).start() } catch (_: Throwable) { box.alpha = 1f; box.translationY = 0f }
+            if (animate) { try { box.animate().alpha(1f).scaleX(1f).scaleY(1f).setDuration(140).setInterpolator(DecelerateInterpolator()).start() } catch (_: Throwable) { box.alpha = 1f; box.scaleX = 1f; box.scaleY = 1f } }
             return true
         } catch (_: Throwable) {
             dismiss()
             return false
         }
+    }
+
+    /** v0.37.3: small chips, two per row (Sort / View / select actions). Chosen chip = soft fill + bold text (not colour only). */
+    private fun chipRow(ctx: android.content.Context, host: JabraHost?, items: List<ClipPop.Item>, ink: Int, onPick: (ClipPop.Item) -> Unit): View {
+        val r = LinearLayout(ctx)
+        r.orientation = LinearLayout.HORIZONTAL
+        r.setPadding(JabraTokens.dp(ctx, 8), JabraTokens.dp(ctx, 1), JabraTokens.dp(ctx, 8), JabraTokens.dp(ctx, 1))
+        r.layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, JabraTokens.dp(ctx, ClipPop.CHIP_DP))
+        for (it in items) {
+            val t = TextView(ctx)
+            t.text = it.label
+            t.textSize = ClipPop.TEXT_SP.toFloat()
+            t.gravity = Gravity.CENTER
+            t.maxLines = 1
+            t.ellipsize = TextUtils.TruncateAt.END
+            t.setTextColor(ink)
+            if (it.ticked) t.setTypeface(t.typeface, Typeface.BOLD)
+            try {
+                val mk = GradientDrawable(); mk.setColor(Color.WHITE); mk.cornerRadius = JabraTokens.dp(ctx, 8).toFloat()
+                val fill = GradientDrawable(); fill.cornerRadius = JabraTokens.dp(ctx, 8).toFloat()
+                fill.setColor(if (it.ticked) JabraTokens.withAlpha(ink, 0x2E) else Color.TRANSPARENT)
+                t.background = RippleDrawable(ColorStateList.valueOf(JabraTokens.withAlpha(ink, 0x28)), fill, mk)
+            } catch (_: Throwable) { }
+            t.layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, 1f).also { lp -> lp.setMargins(JabraTokens.dp(ctx, 2), 0, JabraTokens.dp(ctx, 2), 0) }
+            try { t.contentDescription = it.label + (if (it.ticked) ", selected" else "") } catch (_: Throwable) { }
+            t.isClickable = true
+            t.setOnClickListener { v ->
+                try { host?.feedback(v) } catch (_: Throwable) { }
+                dismiss()
+                try { onPick(it) } catch (_: Throwable) { }
+            }
+            r.addView(t)
+        }
+        return r
     }
 
     private fun row(ctx: android.content.Context, p: JabraPrefs, host: JabraHost?, it: ClipPop.Item, ink: Int, iconOn: Boolean, rowPx: Int, onPick: (ClipPop.Item) -> Unit): View {
@@ -150,6 +191,10 @@ object ClipPopover {
             }
         } catch (_: Throwable) { }
         try { r.contentDescription = it.label + (if (it.value.isNotEmpty()) " " + it.value else "") } catch (_: Throwable) { }
+        try {   // pressed feedback (ripple)
+            val mk = GradientDrawable(); mk.setColor(Color.WHITE)
+            r.background = RippleDrawable(ColorStateList.valueOf(JabraTokens.withAlpha(ink, 0x28)), ColorDrawable(Color.TRANSPARENT), mk)
+        } catch (_: Throwable) { }
         r.isClickable = true
         r.setOnClickListener { v ->
             try { host?.feedback(v) } catch (_: Throwable) { }

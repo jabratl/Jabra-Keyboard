@@ -1,0 +1,4 @@
+HANDOFF Jabra-Keyboard v0.37.3 - compact + smooth popover
+
+STATE: repo = v0.37.3. ClipPop.Item.cols (2 = chip pairs), ClipPop.rows / heightDp, ClipPopover.chipRow, show(..., animate = true, onPick). Sizes: ROW_DP 34, CHIP_DP 32, WIDTH_DP 168.
+NEXT: phone check 3-dot menu + More menu (look, tap targets, no blink on "Undo kept"). If chips feel too small: CHIP_DP 34.
