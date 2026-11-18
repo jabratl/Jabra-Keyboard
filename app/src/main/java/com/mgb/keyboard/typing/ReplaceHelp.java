@@ -74,6 +74,9 @@ public final class ReplaceHelp {
         } catch (RuntimeException ex) { /* list stays short */ }
         b.append("\nVARIANTS: one line, many wrong spellings: Xiaoyan | Xiao Yan | Siao Yan => Xiao Yan (separate with space-bar-space). Works with word: and keep:.\n");
         b.append("PAIR LIST: type Find and With, tap +Pair (top bar), type the next one ... then Replace all runs them all. Tap a pair to edit it, x removes it. Check shows duplicates, chains (a => b, then b => c) and short words; Whole word fixes the short ones. Save as Set keeps the list.\n");
+        b.append("PASTE PAIRS: copy many lines (cat => dog, a | b => c, or two columns from a sheet), tap Paste pairs: they all go into the pair list at once.\n");
+        b.append("SMART: smart: a => b (or the Smart chip in Options) also finds a space, hyphen, apostrophe, accent or long-vowel difference: Xiao Yan = XiaoYan = Xiao-Yan.\n");
+        b.append("NEVER CHANGE: Options > Never change: names / words that Replace skips, even when a rule matches only a part of them.\n");
         b.append("\nRECENT PAIRS: ").append(RecentPairs.switchHelp());
         return b.toString();
     }

@@ -13,6 +13,7 @@ import java.util.List;
  *   # comment           kept, never run
  *   word: find => with  (v0.29.0) this rule only matches whole words;  keep: find => with  the replacement copies the case look (hello > world, Hello > World, HELLO > WORLD);
  *   both can be combined (keep: word: ...) and keep: also works before re:
+ *   smart: find => with    (v0.41.0) smart matching for this rule: a space, hyphen, apostrophe, accent, full-width form or long vowel in the TEXT still matches (typing/ReplaceSmart.java); plain-text rules only, any order with word: / keep:
  *   a | b | c => correct   (v0.40.0) VARIANTS: one line, many wrong spellings, one correct word. Plain-text rules only (not re:). The separator is " | " (space, pipe, space).
  *   Works with word: / keep: / the set's Word mode. Longest variant wins ("Xiao Yan Wei" before "Xiao Yan"). Run through the ReplaceEngine "list" option, nothing new in the engine.
  * The SET carries the flags (Opt: mode Text/Word, match case, escapes). Rules run top to bottom, each on the result of the one before.
@@ -31,8 +32,10 @@ public final class ReplaceRules {
         public final int kind;
         public final String find, with;
         public final boolean word, keep;   // v0.29.0: per-rule "word:" (whole word, plain rules) and "keep:" (keep the case look)
-        public Rule(int kind, String find, String with) { this(kind, find, with, false, false); }
-        public Rule(int kind, String find, String with, boolean word, boolean keep) { this.kind = kind; this.find = find; this.with = with; this.word = word; this.keep = keep; }
+        public final boolean smart;        // v0.41.0: per-rule "smart:" (smart matching, plain rules only)
+        public Rule(int kind, String find, String with) { this(kind, find, with, false, false, false); }
+        public Rule(int kind, String find, String with, boolean word, boolean keep) { this(kind, find, with, word, keep, false); }
+        public Rule(int kind, String find, String with, boolean word, boolean keep, boolean smart) { this.kind = kind; this.find = find; this.with = with; this.word = word; this.keep = keep; this.smart = smart && kind == K_TEXT; }
     }
 
     public static final class Parsed {
@@ -47,6 +50,7 @@ public final class ReplaceRules {
         public int[] counts = new int[0];     // per rule (same index as rules; comments = 0)
         public int changed = 0;               // total replacements
         public int errors = 0;                // rules skipped because of an error
+        public int skipped = 0;               // v0.41.0: matches left alone because of the never-change list
         public String err = null;             // first error, "Rule N: ..."
     }
 
@@ -94,10 +98,11 @@ public final class ReplaceRules {
             int k = line.indexOf("=>");
             if (k < 0) { p.bad.add(i + 1); continue; }
             String f = trim(line.substring(0, k));
-            boolean wd = false, kp = false;   // v0.29.0: leading "word:" / "keep:" in any order, before an optional "re:"
+            boolean wd = false, kp = false, sm = false;   // v0.29.0: leading "word:" / "keep:" (v0.41.0: "smart:") in any order, before an optional "re:"
             while (true) {
                 if (f.startsWith("word:")) { wd = true; f = trim(f.substring(5)); }
                 else if (f.startsWith("keep:")) { kp = true; f = trim(f.substring(5)); }
+                else if (f.startsWith("smart:")) { sm = true; f = trim(f.substring(6)); }
                 else break;
             }
             String to = line.substring(k + 2);
@@ -106,7 +111,7 @@ public final class ReplaceRules {
             int kind = K_TEXT;
             if (f.startsWith("re:")) { kind = K_REGEX; f = trim(f.substring(3)); }
             if (f.isEmpty()) { p.bad.add(i + 1); continue; }
-            p.rules.add(new Rule(kind, f, to, wd, kp));
+            p.rules.add(new Rule(kind, f, to, wd, kp, sm));
         }
         return p;
     }
@@ -120,7 +125,7 @@ public final class ReplaceRules {
                 case K_DEL: sb.append("del: ").append(r.find); break;
                 case K_DELRE: sb.append("del-re: ").append(r.find); break;
                 case K_REGEX: sb.append(r.keep ? "keep: " : "").append("re: ").append(r.find).append(" => ").append(r.with); break;
-                default: sb.append(r.keep ? "keep: " : "").append(r.word ? "word: " : "").append(r.find).append(" => ").append(r.with); break;
+                default: sb.append(r.keep ? "keep: " : "").append(r.word ? "word: " : "").append(r.smart ? "smart: " : "").append(r.find).append(" => ").append(r.with); break;
             }
         }
         return sb.toString();
@@ -145,6 +150,7 @@ public final class ReplaceRules {
                 String find = r.find, with = r.with;
                 if (r.keep && (r.kind == K_TEXT || r.kind == K_REGEX)) { oo.keepCase = true; oo.matchCase = false; }   // v0.29.0
                 if (r.word && r.kind == K_TEXT) oo.mode = ReplaceEngine.MODE_WORD;
+                if (r.smart && r.kind == K_TEXT) oo.smart = true;   // v0.41.0
                 if (r.kind == K_TEXT) {   // v0.40.0: a | b | c => x  (variants) = the engine's list mode with the trimmed parts
                     List<String> vs = variants(r.find);
                     if (vs.size() > 1) {
@@ -161,6 +167,7 @@ public final class ReplaceRules {
                 if (res.blank) continue;
                 rr.counts[i] = res.changed;
                 rr.changed += res.changed;
+                rr.skipped += res.skipped;   // v0.41.0
                 cur = res.out;
             }
         } catch (Throwable t) {
@@ -178,8 +185,9 @@ public final class ReplaceRules {
 
     /** One line of text for the panel: "3 rules, 5 changes" / "Rule 2: ..." */
     public static String info(RunResult rr, int activeRules) {
-        if (rr.err != null) return rr.err + (rr.changed > 0 ? "  ·  " + rr.changed + " changes" : "");
-        if (rr.changed == 0) return "No match  ·  " + activeRules + " rules";
-        return rr.changed + (rr.changed == 1 ? " change" : " changes") + "  ·  " + activeRules + " rules";
+        String kept = rr.skipped > 0 ? "  ·  " + rr.skipped + " kept (never change)" : "";   // v0.41.0
+        if (rr.err != null) return rr.err + (rr.changed > 0 ? "  ·  " + rr.changed + " changes" : "") + kept;
+        if (rr.changed == 0) return "No match  ·  " + activeRules + " rules" + kept;
+        return rr.changed + (rr.changed == 1 ? " change" : " changes") + "  ·  " + activeRules + " rules" + kept;
     }
 }

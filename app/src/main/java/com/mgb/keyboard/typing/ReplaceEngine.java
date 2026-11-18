@@ -40,10 +40,12 @@ public final class ReplaceEngine {
         public boolean escapes = false;
         public boolean list = false;       // v0.31.0: Find holds several texts separated by | (Text / Word only); every one is replaced by With
         public boolean keepCase = false;   // v0.29.0: the replacement copies the case look of the found text (hello > world, Hello > World, HELLO > WORLD)
+        public boolean smart = false;      // v0.41.0: smart matching (Text / Word only): a space, hyphen, apostrophe, accent, full-width form or long vowel in the text still matches (typing/ReplaceSmart.java)
+        public List<String> protect = null; // v0.41.0: never-change terms (typing/ReplaceProtect.java): a match that overlaps one of them is skipped. NOT packed into rp_opt (the panel keeps its own list)
 
         public Opt copy() {
             Opt o = new Opt();
-            o.mode = mode; o.matchCase = matchCase; o.bangla = bangla; o.escapes = escapes; o.keepCase = keepCase; o.list = list;
+            o.mode = mode; o.matchCase = matchCase; o.bangla = bangla; o.escapes = escapes; o.keepCase = keepCase; o.list = list; o.smart = smart; o.protect = protect;
             return o;
         }
     }
@@ -59,6 +61,7 @@ public final class ReplaceEngine {
         public String out = "";       // text after the replacement (= input when nothing changed or on error)
         public int count = 0;         // matches found
         public int changed = 0;       // matches replaced
+        public int skipped = 0;       // v0.41.0: matches left alone because they touch a never-change term
         public boolean blank = false; // Find is empty
         public String err = null;     // null = ok
         public List<Hit> hits = new ArrayList<Hit>();   // first MAX_HITS matches (found + replacement) for the preview
@@ -120,11 +123,15 @@ public final class ReplaceEngine {
                 return r;
             }
             String w = (o.mode != MODE_REGEX && o.escapes) ? unescape(with) : with;
+            java.util.List<int[]> prot = (o.protect == null || o.protect.isEmpty()) ? null : ReplaceProtect.ranges(text, o.protect, o.matchCase);   // v0.41.0
+            if (prot != null && prot.isEmpty()) prot = null;
+            int skipped = 0;
             long end = System.nanoTime() + BUDGET_MS * 1000000L;
             Matcher m = p.matcher(new Guard(text, end));
             StringBuilder out = new StringBuilder(text.length() + 16);
             int pos = 0, idx = 0, changed = 0;
             while (m.find()) {
+                if (prot != null && ReplaceProtect.overlaps(prot, m.start(), m.end())) { skipped++; continue; }   // v0.41.0: never-change term: not counted, not replaced
                 idx++;
                 if (idx > MAX_MATCHES) { r.err = "Too many matches (more than " + MAX_MATCHES + "). Make Find more exact"; r.out = text; r.count = 0; r.changed = 0; r.hits.clear(); r.edits.clear(); return r; }
                 boolean doIt = idx >= first && idx <= last;
@@ -144,6 +151,7 @@ public final class ReplaceEngine {
             out.append(text, pos, text.length());
             r.count = idx;
             r.changed = changed;
+            r.skipped = skipped;
             if (out.length() > MAX_OUT) { r.err = "Result would be too long"; r.out = text; r.changed = 0; r.edits.clear(); return r; }
             r.out = changed == 0 ? text : out.toString();
         } catch (Timeout t) {
@@ -220,6 +228,7 @@ public final class ReplaceEngine {
     /** v0.31.0: the regex text of ONE plain Find text (Bangla-safe or quoted). */
     private static String body(String f0, Opt o) {
         String f = f0;
+        if (o.smart) { String sp = ReplaceSmart.pattern(f0, o.bangla); if (sp != null) return sp; }   // v0.41.0: smart matching (null = not usable, the normal pattern below)
         if (!o.bangla) return Pattern.quote(f);
         StringBuilder sb = new StringBuilder();
         f = composeBangla(f);
@@ -393,8 +402,9 @@ public final class ReplaceEngine {
         if (r == null) return "";
         if (r.err != null) return r.err;
         if (r.blank) return "Type what to find";
-        if (r.count == 0) return "No match";
-        return r.count == 1 ? "1 match" : r.count + " matches";
+        String kept = r.skipped > 0 ? "  \u00B7  " + r.skipped + " kept (never change)" : "";   // v0.41.0
+        if (r.count == 0) return "No match" + kept;
+        return (r.count == 1 ? "1 match" : r.count + " matches") + kept;
     }
 
     // ------------------------------------------------------------------ options <-> one number (pref rp_opt)
@@ -402,7 +412,7 @@ public final class ReplaceEngine {
     public static int pack(Opt o) {
         if (o == null) return pack(new Opt());
         int mode = o.mode < 0 || o.mode > 2 ? 0 : o.mode;
-        return mode | (o.matchCase ? 4 : 0) | (o.bangla ? 8 : 0) | (o.escapes ? 16 : 0) | (o.keepCase ? 32 : 0) | (o.list ? 64 : 0);
+        return mode | (o.matchCase ? 4 : 0) | (o.bangla ? 8 : 0) | (o.escapes ? 16 : 0) | (o.keepCase ? 32 : 0) | (o.list ? 64 : 0) | (o.smart ? 128 : 0);
     }
 
     public static Opt unpack(int v) {
@@ -415,6 +425,7 @@ public final class ReplaceEngine {
         o.escapes = (v & 16) != 0;
         o.keepCase = (v & 32) != 0;
         o.list = (v & 64) != 0;
+        o.smart = (v & 128) != 0;
         return o;
     }
 }

@@ -27,7 +27,9 @@ import com.mgb.keyboard.typing.ReplaceFloat   // v0.39.1 (FLOAT F2)
 import com.mgb.keyboard.typing.ReplaceHelp
 import com.mgb.keyboard.typing.ReplacePads
 import com.mgb.keyboard.typing.ReplacePairList   // v0.40.0
+import com.mgb.keyboard.typing.ReplacePaste   // v0.41.0
 import com.mgb.keyboard.typing.ReplacePeek
+import com.mgb.keyboard.typing.ReplaceProtect   // v0.41.0
 import com.mgb.keyboard.typing.ReplaceRules
 
 /*
@@ -83,6 +85,9 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
     private var checkAck = false                              // the user saw the Check warnings of this list (a tap on Replace all then runs it)
     private var checkWarn: List<ReplaceCheck.Warn>? = null
     private var clearAsk = false                              // Clear needs two taps
+    // v0.41.0: NEVER-CHANGE list (typing/ReplaceProtect.java). Pref rp_protect = one term per line (the user's own list, written only when the user adds / removes a term). typing == 7 = its view.
+    private val protectList = ArrayList<String>()
+    private var protectAsk = false                            // Clear needs two taps
     // v0.38.0 (P1): paste keys in the typing view. typing == 6 = the paste list (Recent / Pinned); pasteBack = the field (1 Find / 2 With) to return to
     var clipList: (() -> List<ClipList.Item>)? = null          // set by MgbIme: the clipboard history (null = the list shows only the latest copy)
     private var pasteBack = 1
@@ -104,6 +109,7 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
         optsOpen = false   // v0.38.1 (P2)
         setPreviewOn = false; setPrev = null; part = 0; partCut = -1; clipIo = null; msg = ""; confirmAll = false; undoStack.clear(); helpPage = 0; typing = 0; padPage = 0; shift = false; step = 0; rprAsk = false
         try { opt = ReplaceEngine.unpack(prefs.int("rp_opt", ReplaceEngine.pack(ReplaceEngine.Opt()))) } catch (_: Throwable) { opt = ReplaceEngine.Opt() }
+        loadProtect()   // v0.41.0
         readSource(true)
     }
 
@@ -142,7 +148,7 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
 
     /** Card of a set (Sets view). */
     private fun peekSet(name: String, d: ReplaceStore.Def): ReplacePeek.Peek =
-        if (io.blocked()) ReplacePeek.message(name, "Not available in password fields.") else ReplacePeek.forSet(name, d.rules, d.opt(), src)
+        if (io.blocked()) ReplacePeek.message(name, "Not available in password fields.") else ReplacePeek.forSet(name, d.rules, dOpt(d), src)
 
     /** Long press on a set: card above; when no card can be shown = FALLBACK = the v0.31.0 inline preview box. */
     private fun peekSetAt(a: View, name: String, d: ReplaceStore.Def) {
@@ -191,20 +197,21 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
     }
 
     private fun calc(): ReplaceEngine.Result {
+        applyProtect()   // v0.41.0: the never-change list reaches opt / setOpt (also after a set was loaded or a pair list started)
         val rules = setRules
         if (rules != null) {   // v0.25.0 (R2): a set is active
             val r = ReplaceEngine.Result()
             try {
                 val rr = ReplaceRules.run(src, rules, setOpt)
                 setRun = rr
-                r.out = rr.out; r.count = rr.changed; r.changed = rr.changed
+                r.out = rr.out; r.count = rr.changed; r.changed = rr.changed; r.skipped = rr.skipped
             } catch (_: Throwable) { setRun = null }
             return r
         }
         return try { ReplaceEngine.replaceAll(src, find, repl, opt) } catch (_: Throwable) { ReplaceEngine.Result() }
     }
 
-    fun build(): View? = try { PeekPopup.dismiss(); if (typing != 0) { try { fwin?.hide() } catch (_: Throwable) { } }; if (typing == 3) setsViewPick() else if (typing == 4) recentView() else if (typing == 5) helpView() else if (typing == 6) replacePicker() else if (typing != 0) typeView() else mainViewPick() } catch (_: Throwable) { null }   // v0.26.0 (R3): 4 = Recent pairs; Pick = new look when panel_ui = New, else the classic view
+    fun build(): View? = try { PeekPopup.dismiss(); if (typing != 0) { try { fwin?.hide() } catch (_: Throwable) { } }; if (typing == 3) setsViewPick() else if (typing == 4) recentView() else if (typing == 5) helpView() else if (typing == 6) replacePicker() else if (typing == 7) protectView() else if (typing != 0) typeView() else mainViewPick() } catch (_: Throwable) { null }   // v0.26.0 (R3): 4 = Recent pairs; Pick = new look when panel_ui = New, else the classic view
 
     // ------------------------------------------------------------------ main view
 
@@ -261,6 +268,7 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
         r3.addView(btn((if (opt.keepCase) "\u2713 " else "") + "Keep", 0.9f, 32) { opt.keepCase = !opt.keepCase; if (opt.keepCase) opt.matchCase = false; optChanged() })   // v0.29.0: keep the case look
         if (opt.mode != ReplaceEngine.MODE_REGEX) {
             r3.addView(btn((if (opt.list) "\u2713 " else "") + "List", 0.9f, 32) { opt.list = !opt.list; optChanged() })   // v0.31.0: Find = a | b | c
+            r3.addView(btn((if (opt.smart) "\u2713 " else "") + "Smart", 0.9f, 32) { opt.smart = !opt.smart; optChanged() })   // v0.41.0
             r3.addView(btn((if (opt.bangla) "\u2713 " else "") + "\u09AC\u09BE\u0982", 0.9f, 32) { opt.bangla = !opt.bangla; optChanged() })
             r3.addView(btn((if (opt.escapes) "\u2713 " else "") + "\\n", 0.8f, 32) { opt.escapes = !opt.escapes; optChanged() })
         }
@@ -270,6 +278,7 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
         val r4 = row()
         r4.addView(btn("Sets", 1f, 32) { typing = 3; confirmAll = false; refresh() })
         r4.addView(btn("Recent", 1f, 32) { typing = 4; confirmAll = false; rprAsk = false; refresh() })   // v0.26.0 (R3)
+        r4.addView(btn("Never", 1f, 32) { openProtect() })   // v0.41.0: never-change list
         r4.addView(btn("?", 0.5f, 32) { typing = 5; helpPage = 0; confirmAll = false; refresh() })   // v0.28.0 (R3b): help
         val nHits = res.hits.size
         if (nHits > 0 && res.err == null) {
@@ -412,7 +421,7 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
         if (setRules == null && find.isEmpty()) { msg = "Type what to find first"; refresh(); return }
         val e = r.err
         if (e != null) { msg = e; refresh(); return }
-        if (r.count == 0) { msg = "No match"; refresh(); return }
+        if (r.count == 0) { msg = if (r.skipped > 0) "Nothing to change: " + r.skipped + " kept (never change)" else "No match"; refresh(); return }   // v0.41.0
         if (r.changed == 0 || r.out == src) { msg = "No change"; refresh(); return }
         if (setRules != null && !checkAck) {   // v0.40.0: Check pairs BEFORE the first run of a list: warnings = shown once, the next tap runs it anyway
             val w = try { ReplaceCheck.check(setRules ?: ArrayList(), setOpt) } catch (_: Throwable) { ArrayList<ReplaceCheck.Warn>() }
@@ -435,7 +444,7 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
         if (!ok) ok = try { if (usedSel) io.replaceSelection(r.out) else io.replaceAll(fullAfter) } catch (_: Throwable) { false }
         confirmAll = false
         if (ok && partial && part == 2) partCut = r.out.length   // the piece before the cursor now has the new length
-        if (ok) { undoStack.push(if (usedSel) r.out else fullAfter, if (usedSel) before else fullBefore); msg = "Replaced " + r.changed; recordPair(); readSource(false) } else msg = "Could not replace in this app. Use Copy, then paste"   // v0.26.0 (R3): recordPair = only when Recent pairs is ON
+        if (ok) { undoStack.push(if (usedSel) r.out else fullAfter, if (usedSel) before else fullBefore); msg = "Replaced " + r.changed + (if (r.skipped > 0) "  \u00B7  " + r.skipped + " kept (never change)" else ""); recordPair(); readSource(false) } else msg = "Could not replace in this app. Use Copy, then paste"   // v0.26.0 (R3): recordPair = only when Recent pairs is ON
         refresh()
     }
 
@@ -557,7 +566,7 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
         tv.textSize = 12f
         tv.setTextColor(ink())
         tv.setPadding(dp(8), dp(2), dp(8), dp(2))
-        tv.text = ReplaceExtras.setPreview(sp.first, sp.second.rules, sp.second.opt(), src)
+        tv.text = ReplaceExtras.setPreview(sp.first, sp.second.rules, dOpt(sp.second), src)
         box.addView(tv)
         val r = row()
         r.addView(btn("Use this set", 1.3f, 34) { pickSet(sp.first, sp.second) })
@@ -571,7 +580,7 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
         if (p.active() == 0) { msg = "That set has no rules"; typing = 0; refresh(); return }
         val hadPairs = pairMode && pairRules.isNotEmpty()
         pairMode = false; pairRules.clear(); checkAck = false; checkWarn = null; clearAsk = false   // v0.40.0: loading a set replaces the pair list
-        setRules = p.rules; setOpt = d.opt(); setName = name; setRun = null; setPrev = null
+        setRules = p.rules; setOpt = dOpt(d); setName = name; setRun = null; setPrev = null
         typing = 0; confirmAll = false; step = 0
         msg = "Set loaded: " + name + (if (p.bad.isNotEmpty()) " (" + p.bad.size + " unreadable lines skipped)" else "") + (if (hadPairs) "  \u00B7  pair list replaced" else "")
         readSource(false)
@@ -748,6 +757,7 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
         top.addView(small("Sets", 40) { typing = 3; confirmAll = false; refresh() })
         top.addView(small("Recent", 40) { typing = 4; confirmAll = false; rprAsk = false; refresh() })
         top.addView(small("?", 40) { typing = 5; helpPage = 0; confirmAll = false; refresh() })   // v0.28.0 (R3b): help
+        top.addView(small("Never", 40) { openProtect() })   // v0.41.0: never-change list
         val sp = View(ctx)
         sp.layoutParams = LinearLayout.LayoutParams(0, 1, 1f)
         top.addView(sp)
@@ -773,6 +783,7 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
             oc.addView(UiKit.chip(ctx, prefs, "Keep", opt.keepCase, 36, { v -> host.feedback(v) }) { opt.keepCase = !opt.keepCase; if (opt.keepCase) opt.matchCase = false; optChanged() })   // v0.29.0
             if (opt.mode != ReplaceEngine.MODE_REGEX) {
                 oc.addView(UiKit.chip(ctx, prefs, "List", opt.list, 36, { v -> host.feedback(v) }) { opt.list = !opt.list; optChanged() })   // v0.31.0
+                oc.addView(UiKit.chip(ctx, prefs, "Smart", opt.smart, 36, { v -> host.feedback(v) }) { opt.smart = !opt.smart; optChanged() })   // v0.41.0
                 oc.addView(UiKit.chip(ctx, prefs, "\u09AC\u09BE\u0982", opt.bangla, 36, { v -> host.feedback(v) }) { opt.bangla = !opt.bangla; optChanged() })
                 oc.addView(UiKit.chip(ctx, prefs, "\\n", opt.escapes, 36, { v -> host.feedback(v) }) { opt.escapes = !opt.escapes; optChanged() })
             }
@@ -970,6 +981,7 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
         top.addView(small("Recent", 38) { typing = 4; confirmAll = false; rprAsk = false; refresh() })
         top.addView(small("?", 38) { typing = 5; helpPage = 0; confirmAll = false; refresh() })
         if (pairMode || (setRules == null && find.isNotEmpty())) top.addView(small("+Pair", 38) { addPair(false) })   // v0.40.0
+        else if (setRules == null) top.addView(small("+Paste", 38) { pastePairs() })   // v0.41.0: Find is empty and no list yet: paste many pairs at once
         val sp = View(ctx)
         sp.layoutParams = LinearLayout.LayoutParams(0, 1, 1f)
         top.addView(sp)
@@ -1007,6 +1019,10 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
                     orow.addView(UiKit.chip(ctx, prefs, "\\n", opt.escapes, 34, { v -> host.feedback(v) }) { opt.escapes = !opt.escapes; optChanged() })
                 }
                 root.addView(orow)
+                val orow2 = row()   // v0.41.0: Smart matching + the never-change list
+                if (opt.mode != ReplaceEngine.MODE_REGEX) orow2.addView(UiKit.chip(ctx, prefs, "Smart", opt.smart, 34, { v -> host.feedback(v) }) { opt.smart = !opt.smart; optChanged() })
+                orow2.addView(UiKit.chip(ctx, prefs, if (protectList.isEmpty()) "Never change" else "Never change (" + protectList.size + ")", protectList.isNotEmpty(), 34, { v -> host.feedback(v) }) { openProtect() })
+                root.addView(orow2)
             }
         }
 
@@ -1017,7 +1033,7 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
         try { card.background = UiKit.cardBackground(ctx, prefs, false, false) } catch (_: Throwable) { }
         if (setRules != null && !pairMode) {
             card.addView(miniLine("Set", (setName ?: "") + " (" + nRules + ")", { typing = 3; refresh() },
-                listOf(Pair("\u2715 Set") { dropSet(); refresh() }, Pair("Check") { checkNow() }, Pair("Fmt") { copyForFormatter() })))
+                listOf(Pair("\u2715 Set") { dropSet(); refresh() }, Pair("Check") { checkNow() }, Pair("Never") { openProtect() }, Pair("Fmt") { copyForFormatter() })))   // v0.41.0: Never = the never-change list
         } else {
             card.addView(miniLine("Find", find, { startTyping(1) },
                 listOf(Pair("Sel") { take(true, io.selected(), "Nothing is selected") }, Pair("Clip") { take(true, io.clipText(), "Clipboard is empty") })))
@@ -1037,6 +1053,7 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
                 val pr = row()
                 pr.gravity = Gravity.CENTER_VERTICAL
                 if (pairMode) pr.addView(btn("Check", 0.8f, 34) { checkNow() })
+                if (pairMode) pr.addView(btn("Paste", 0.8f, 34) { pastePairs() })   // v0.41.0: add many pairs from the clipboard
                 if (nShort > 0) pr.addView(btn("Whole word (" + nShort + ")", 1.5f, 34) { fixShort() })
                 if (pairMode) {
                     pr.addView(btn("Save as Set", 1.2f, 34) { savePairs() })
@@ -1146,12 +1163,12 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
         confirmAll = false
         if (io.blocked()) { msg = "Not available in password fields."; refresh(); return }
         if (setRules != null && !pairMode) { msg = "A set is loaded. Tap \u2715 Set first, then make a pair list"; refresh(); return }
-        val m = ReplacePairList.make(find, repl, opt.mode, opt.keepCase, opt.list)
+        val m = ReplacePairList.make(find, repl, opt.mode, opt.keepCase, opt.list, opt.smart)
         val r = m.rule
         if (r == null) { msg = m.error ?: "Could not add this pair"; refresh(); return }
         var note = ""
         if (!pairMode) {
-            val o = opt.copy(); o.mode = ReplaceEngine.MODE_TEXT; o.list = false; o.keepCase = false   // the mode / keep of each pair are in the pair itself (word: / re: / keep:)
+            val o = opt.copy(); o.mode = ReplaceEngine.MODE_TEXT; o.list = false; o.keepCase = false; o.smart = false   // the mode / keep / smart of each pair are in the pair itself (word: / re: / keep: / smart:)
             setOpt = o
         } else if (opt.matchCase != setOpt.matchCase || opt.bangla != setOpt.bangla || opt.escapes != setOpt.escapes) {
             note = "  \u00B7  the list keeps the Aa / \u09AC\u09BE\u0982 / \\n settings of its first pair"
@@ -1178,7 +1195,7 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
         find = r.find.take(ReplacePads.FIELD_MAX)
         repl = r.with.take(ReplacePads.FIELD_MAX)
         opt.mode = if (r.kind == ReplaceRules.K_REGEX) ReplaceEngine.MODE_REGEX else if (r.word) ReplaceEngine.MODE_WORD else ReplaceEngine.MODE_TEXT
-        opt.keepCase = r.keep; opt.list = false
+        opt.keepCase = r.keep; opt.list = false; opt.smart = r.smart   // v0.41.0: smart
         saveOpt()
         pairRules.removeAt(i)
         if (pairRules.isEmpty()) dropSet() else syncPairs()
@@ -1260,6 +1277,149 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
         }
         sv.addView(col)
         return sv
+    }
+
+    // ------------------------------------------------------------------ v0.41.0: PASTE PAIRS, never-change list
+    // Logic = typing/ReplacePaste.java + typing/ReplaceProtect.java (pure Java, tested). Smart matching = typing/ReplaceSmart.java (Opt.smart / "smart:" per pair).
+
+    /** "+Paste" / "Paste": reads many pairs from the clipboard (one per line) and adds them to the pair list in one tap. Nothing is changed in the text yet. */
+    private fun pastePairs() {
+        try {
+            confirmAll = false
+            if (io.blocked()) { msg = "Not available in password fields."; refresh(); return }
+            if (setRules != null && !pairMode) { msg = "A set is loaded. Tap \u2715 Set first, then paste pairs"; refresh(); return }
+            val res = ReplacePaste.parse(io.clipText() ?: "", pairRules, ReplacePairList.MAX)
+            if (res.changed() == 0) { msg = res.summary(); refresh(); return }
+            if (!pairMode) {
+                val o = opt.copy(); o.mode = ReplaceEngine.MODE_TEXT; o.list = false; o.keepCase = false; o.smart = false
+                setOpt = o
+            }
+            pairRules.clear(); pairRules.addAll(res.rules)
+            pairMode = true
+            syncPairs()
+            msg = res.summary()
+        } catch (_: Throwable) { msg = "Could not paste pairs" }
+        refresh()
+    }
+
+    private fun loadProtect() {
+        try {
+            protectList.clear()
+            protectList.addAll(ReplaceProtect.parse(prefs.str("rp_protect", "")))
+        } catch (_: Throwable) { protectList.clear() }
+        protectAsk = false
+        applyProtect()
+    }
+
+    private fun saveProtect() { try { prefs.setStr("rp_protect", ReplaceProtect.text(protectList)) } catch (_: Throwable) { } }
+
+    /** opt and setOpt read the list itself (the same object): a term added later is used at once. */
+    private fun applyProtect() { try { opt.protect = protectList; setOpt.protect = protectList } catch (_: Throwable) { } }
+
+    /** A saved set's options + the never-change list. */
+    private fun dOpt(d: ReplaceStore.Def): ReplaceEngine.Opt { val o = d.opt(); o.protect = protectList; return o }
+
+    private fun openProtect() { typing = 7; protectAsk = false; confirmAll = false; refresh() }
+
+    /** The list changed: save it, and the running list / set must be checked and counted again. */
+    private fun protectChanged() {
+        protectAsk = false
+        saveProtect(); applyProtect()
+        setRun = null; confirmAll = false; checkAck = false; checkWarn = null; step = 0
+    }
+
+    private fun protectAdd(term: String?, emptyMsg: String) {
+        try {
+            val r = ReplaceProtect.add(protectList, term ?: "")
+            if (r == ReplaceProtect.ADDED) { protectChanged(); msg = "Added. Replace will not change it" }
+            else if (r == ReplaceProtect.DUPLICATE) msg = "Already on the list"
+            else if (r == ReplaceProtect.FULL) msg = "The list is full (" + ReplaceProtect.MAX_TERMS + ")"
+            else msg = emptyMsg
+        } catch (_: Throwable) { msg = "Could not add" }
+        refresh()
+    }
+
+    private fun protectAddLines(text: String?) {
+        try {
+            if (text.isNullOrBlank()) { msg = "Clipboard is empty"; refresh(); return }
+            val n = ReplaceProtect.addAll(protectList, text)
+            if (n[0] > 0) protectChanged()
+            msg = (if (n[0] > 0) "Added " + n[0] else "Nothing new") + (if (n[1] > 0) "  \u00B7  " + n[1] + " already there" else "") + (if (n[2] > 0) "  \u00B7  " + n[2] + " not added: the list is full" else "")
+        } catch (_: Throwable) { msg = "Could not add" }
+        refresh()
+    }
+
+    private fun protectRemove(i: Int) {
+        if (i in protectList.indices) { protectList.removeAt(i); protectChanged(); msg = "Removed" }
+        refresh()
+    }
+
+    private fun protectClear() {
+        if (protectList.size >= 2 && !protectAsk) { protectAsk = true; msg = "Tap again to clear all " + protectList.size + " words"; refresh(); return }
+        protectList.clear(); protectChanged(); msg = "List cleared"
+        refresh()
+    }
+
+    /** typing == 7: the never-change list. Add from Find / the selection / the clipboard (one word or name per line), x removes one. */
+    private fun protectView(): View {
+        val root = LinearLayout(ctx)
+        root.orientation = LinearLayout.VERTICAL
+        paintBg(root)
+        root.setPadding(dp(2), dp(4), dp(2), dp(4))
+        val shown = msg
+        msg = ""
+        val back: () -> Unit = { typing = 0; protectAsk = false; refresh() }
+        val title = ReplaceProtect.label(protectList.size)
+        val clearLabel = if (protectAsk) "Sure? Clear" else "Clear"
+        val acts: List<Pair<String, () -> Unit>> = if (protectList.isEmpty()) emptyList() else listOf(Pair(clearLabel) { protectClear() })
+        var newHead: View? = null
+        if (newLook()) { try { newHead = PanelKit.header(ctx, prefs, host, title, "<", acts) { back() } } catch (_: Throwable) { newHead = null } }
+        val headView: View = newHead ?: run {
+            val h = row()
+            h.addView(btn("\u2190 Back", 1f, 34) { back() })
+            val hint = TextView(ctx)
+            hint.text = title
+            hint.textSize = 12f
+            hint.setTextColor(dim())
+            hint.gravity = Gravity.CENTER_VERTICAL
+            hint.layoutParams = LinearLayout.LayoutParams(0, dp(34), 2f)
+            h.addView(hint)
+            if (protectList.isNotEmpty()) h.addView(btn(clearLabel, 1.2f, 34) { protectClear() })
+            h
+        }
+        root.addView(headView)
+        val ar = row()
+        ar.addView(btn("+ Find", 1f, 38) { protectAdd(find, "Find is empty: type the word in Find first") })
+        ar.addView(btn("+ Selection", 1.2f, 38) { protectAdd(try { io.selected() } catch (_: Throwable) { null }, "Nothing is selected") })
+        ar.addView(btn("+ Clipboard", 1.3f, 38) { protectAddLines(try { io.clipText() } catch (_: Throwable) { null }) })
+        root.addView(ar)
+        root.addView(UiKit.noteText(ctx, prefs, if (shown.isNotEmpty()) shown else "Replace skips these words, even inside a longer match. Clipboard: one word per line."))
+        if (protectList.isEmpty()) return root
+        val sv = ScrollView(ctx)
+        sv.layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(128))
+        try { sv.background = UiKit.cardBackground(ctx, prefs, false, false) } catch (_: Throwable) { }
+        val col = LinearLayout(ctx)
+        col.orientation = LinearLayout.VERTICAL
+        for ((i, t0) in protectList.withIndex()) {
+            val line = LinearLayout(ctx)
+            line.orientation = LinearLayout.HORIZONTAL
+            line.gravity = Gravity.CENTER_VERTICAL
+            val t = TextView(ctx)
+            t.text = t0
+            t.textSize = 13f
+            t.maxLines = 1
+            t.ellipsize = android.text.TextUtils.TruncateAt.END
+            t.gravity = Gravity.CENTER_VERTICAL
+            t.setTextColor(try { JabraTokens.cardText(prefs) } catch (_: Throwable) { Color.BLACK })
+            t.setPadding(dp(10), 0, dp(4), 0)
+            t.layoutParams = LinearLayout.LayoutParams(0, dp(30), 1f)
+            line.addView(t)
+            line.addView(small("\u2715", 30) { protectRemove(i) })
+            col.addView(line)
+        }
+        sv.addView(col)
+        root.addView(sv)
+        return root
     }
 
     // ------------------------------------------------------------------ v0.28.0 (R3b): Formatter bridge + help view

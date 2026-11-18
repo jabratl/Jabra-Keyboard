@@ -194,7 +194,7 @@ object ReplaceSetsPage {
 
             val rulesBox = EditText(ctx)
             rulesBox.setText(def.rules)
-            rulesBox.hint = "one rule per line:\nfind => with\na | b | c => with   (variants)\nre: find => with\ndel: text\ndel-re: pattern\n# comment"
+            rulesBox.hint = "one rule per line:\nfind => with\na | b | c => with   (variants)\nsmart: find => with   (space / hyphen / accent ok)\nre: find => with\ndel: text\ndel-re: pattern\n# comment"
             rulesBox.setTextColor(text)
             rulesBox.typeface = Typeface.MONOSPACE
             rulesBox.textSize = 14f

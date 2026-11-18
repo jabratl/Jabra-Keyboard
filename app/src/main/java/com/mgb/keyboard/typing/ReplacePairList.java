@@ -26,11 +26,14 @@ public final class ReplacePairList {
         Made(ReplaceRules.Rule rule, String error) { this.rule = rule; this.error = error; }
     }
 
-    private static final String[] RESERVED = { "re:", "del:", "del-re:", "word:", "keep:", "#" };
+    private static final String[] RESERVED = { "re:", "del:", "del-re:", "word:", "keep:", "smart:", "#" };
 
     private static Made err(String e) { return new Made(null, e); }
 
-    public static Made make(String find0, String with0, int mode, boolean keep, boolean list) {
+    public static Made make(String find0, String with0, int mode, boolean keep, boolean list) { return make(find0, with0, mode, keep, list, false); }
+
+    /** v0.41.0: smart = the pair gets "smart:" (smart matching; plain-text pairs only, ignored for Regex). */
+    public static Made make(String find0, String with0, int mode, boolean keep, boolean list, boolean smart) {
         try {
             String find = find0 == null ? "" : find0.trim();
             String with = with0 == null ? "" : with0;
@@ -56,7 +59,7 @@ public final class ReplacePairList {
             }
             String low = find.toLowerCase(java.util.Locale.ROOT);
             for (String k : RESERVED) if (low.startsWith(k)) return err("Find cannot start with \"" + k + "\"");
-            return new Made(new ReplaceRules.Rule(ReplaceRules.K_TEXT, find, with, mode == ReplaceEngine.MODE_WORD, keep), null);
+            return new Made(new ReplaceRules.Rule(ReplaceRules.K_TEXT, find, with, mode == ReplaceEngine.MODE_WORD, keep, smart), null);
         } catch (Throwable t) { return err("Could not make this pair"); }
     }
 
@@ -75,6 +78,7 @@ public final class ReplacePairList {
         if (r.kind == ReplaceRules.K_REGEX) sb.append("(re) ");
         else if (r.word) sb.append("(word) ");
         if (r.keep) sb.append("(keep) ");
+        if (r.smart) sb.append("(smart) ");
         sb.append(r.find.replace('\n', ' ')).append(" → ").append(r.with.length() == 0 ? "(delete)" : r.with.replace('\n', ' '));
         String s = sb.toString();
         if (max > 3 && s.length() > max) {

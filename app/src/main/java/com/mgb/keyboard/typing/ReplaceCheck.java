@@ -15,6 +15,7 @@ import java.util.regex.PatternSyntaxException;
  *  - DUPLICATE   the same Find is in two rules (another With = the later rule never finds it, same With = it is only a repeat)
  *  - CHAIN       a rule makes a text that a LATER rule changes again ("a => b" then "b => c"); in Word mode only a whole word counts
  *  - SHORT       a short (3 letters or less) or very common word that is NOT whole-word: "cat" would also hit "category". Fix = withWholeWord() adds "word:" to those rules
+ *  - NEVER-CHANGE (v0.41.0)  a Find that is on the Never-change list (Opt.protect): the rule can never replace it
  *  - EMPTY WITH  the rule deletes the text;  SAME       both sides are the same;  PATTERN  a re: / del-re: pattern that does not compile
  * Rule numbers are 1-based and count only active rules (comments are skipped), the same numbers as ReplaceRules.info() ("Rule 3: ...").
  * At most MAX_WARN warnings are returned (the last entry then says how many more).
@@ -109,6 +110,9 @@ public final class ReplaceCheck {
                     String first = clip(al.get(0), 20);
                     if (r.with.length() == 0) w.add(new Warn(n, "Rule " + n + ": \"" + first + "\" will be deleted (empty With).", false, true));
                     else if (!isVar && r.find.equals(r.with)) w.add(new Warn(n, "Rule " + n + ": both sides are the same, nothing changes.", false, true));
+                    if (o != null && o.protect != null && !o.protect.isEmpty()) {   // v0.41.0: a Find that is on the never-change list is never replaced
+                        for (String a : al) if (ReplaceProtect.contains(o.protect, a)) { w.add(new Warn(n, "Rule " + n + ": \"" + clip(a, 20) + "\" is on the Never-change list, so it is never replaced.", false, false)); break; }
+                    }
                     if (riskyRule(r, o)) w.add(new Warn(n, "Rule " + n + ": \"" + first + "\" is short or a common word, it can also hit inside longer words. Use word:", true, false));
                     for (String a : al) {
                         String key = norm(a, mc);
@@ -159,7 +163,7 @@ public final class ReplaceCheck {
         List<ReplaceRules.Rule> out = new ArrayList<ReplaceRules.Rule>();
         if (rules == null) return out;
         for (ReplaceRules.Rule r : rules) {
-            if (r != null && riskyRule(r, o)) out.add(new ReplaceRules.Rule(r.kind, r.find, r.with, true, r.keep));
+            if (r != null && riskyRule(r, o)) out.add(new ReplaceRules.Rule(r.kind, r.find, r.with, true, r.keep, r.smart));
             else out.add(r);
         }
         return out;

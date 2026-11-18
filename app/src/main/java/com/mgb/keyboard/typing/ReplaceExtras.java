@@ -77,6 +77,7 @@ public final class ReplaceExtras {
             while (true) {
                 if (f.startsWith("word:")) { pre += "word: "; f = f.substring(5).trim(); }
                 else if (f.startsWith("keep:")) { pre += "keep: "; f = f.substring(5).trim(); }
+                else if (f.startsWith("smart:")) { pre += "smart: "; f = f.substring(6).trim(); }   // v0.41.0
                 else break;
             }
             if (f.startsWith("re:")) return line;
@@ -104,7 +105,7 @@ public final class ReplaceExtras {
             String t = l.trim();
             if (!t.startsWith("#")) {
                 String x = t;
-                while (x.startsWith("word:") || x.startsWith("keep:")) { x = x.substring(5).trim(); lost = true; }
+                while (x.startsWith("word:") || x.startsWith("keep:") || x.startsWith("smart:")) { x = x.substring(x.startsWith("smart:") ? 6 : 5).trim(); lost = true; }   // v0.41.0: smart: is dropped too
                 if (!x.equals(t)) l = x;
             }
             // v0.40.0: the Formatter does not know variants "a | b => c": one line per variant (same result)
