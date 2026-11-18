@@ -65,6 +65,30 @@ public final class ReplaceExtras {
      * The set as Formatter rules text. Header = 2 comment lines (the Formatter and the sets both skip # lines).
      * The Formatter has its own switches, so the header says which flags the set used. Empty / null rules = "" (nothing to copy).
      */
+    /** v0.40.0: "a | b | c => x" becomes three lines "a => x" ... (plain-text rules only; re: / del: / # lines and lines without variants come back unchanged). */
+    static String expandVariants(String line) {
+        try {
+            String t = line.trim();
+            if (t.isEmpty() || t.startsWith("#") || t.startsWith("del:") || t.startsWith("del-re:") || t.startsWith("re:") || t.startsWith("keep: re:") || t.startsWith("word: re:")) return line;
+            int k = line.indexOf("=>");
+            if (k < 0) return line;
+            String f = line.substring(0, k).trim();
+            String pre = "";
+            while (true) {
+                if (f.startsWith("word:")) { pre += "word: "; f = f.substring(5).trim(); }
+                else if (f.startsWith("keep:")) { pre += "keep: "; f = f.substring(5).trim(); }
+                else break;
+            }
+            if (f.startsWith("re:")) return line;
+            java.util.List<String> vs = ReplaceRules.variants(f);
+            if (vs.size() < 2) return line;
+            String to = line.substring(k);
+            StringBuilder sb = new StringBuilder();
+            for (String v : vs) { if (sb.length() > 0) sb.append('\n'); sb.append(pre).append(v).append(' ').append(to); }
+            return sb.toString();
+        } catch (RuntimeException e) { return line; }
+    }
+
     public static String formatterText(String name, String rulesText, boolean matchCase, boolean word) {
         if (rulesText == null || rulesText.trim().isEmpty()) return "";
         String n = name == null ? "" : name.replace('\n', ' ').replace('\r', ' ').trim();
@@ -73,7 +97,7 @@ public final class ReplaceExtras {
         b.append("# Set options: match case ").append(matchCase ? "ON" : "OFF").append(", whole word ").append(word ? "ON" : "OFF").append('\n');
         // v0.29.0: the Formatter does not know "word:" / "keep:" in front of a rule: they are removed (the rule stays, only the flag is lost)
         String[] ls = rulesText.split("\n", -1);
-        boolean lost = false;
+        boolean lost = false, vexp = false;
         StringBuilder body = new StringBuilder();
         for (int i = 0; i < ls.length; i++) {
             String l = ls[i];
@@ -83,9 +107,13 @@ public final class ReplaceExtras {
                 while (x.startsWith("word:") || x.startsWith("keep:")) { x = x.substring(5).trim(); lost = true; }
                 if (!x.equals(t)) l = x;
             }
+            // v0.40.0: the Formatter does not know variants "a | b => c": one line per variant (same result)
+            String xl = expandVariants(l);
+            if (!xl.equals(l)) { l = xl; vexp = true; }
             body.append(l);
             if (i < ls.length - 1) body.append('\n');
         }
+        if (vexp) b.append("# Note: lines with variants (a | b => c) were split into one line per variant\n");
         if (lost) b.append("# Note: word: / keep: flags of single rules were dropped (the Formatter has no such flags)\n");
         String bs = body.toString();
         b.append(bs.endsWith("\n") ? bs : bs + "\n");

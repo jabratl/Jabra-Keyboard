@@ -72,6 +72,8 @@ public final class ReplaceHelp {
         try {
             for (ReplaceSets.Def d : ReplaceSets.all()) b.append("- ").append(d.name).append('\n');
         } catch (RuntimeException ex) { /* list stays short */ }
+        b.append("\nVARIANTS: one line, many wrong spellings: Xiaoyan | Xiao Yan | Siao Yan => Xiao Yan (separate with space-bar-space). Works with word: and keep:.\n");
+        b.append("PAIR LIST: type Find and With, tap +Pair (top bar), type the next one ... then Replace all runs them all. Tap a pair to edit it, x removes it. Check shows duplicates, chains (a => b, then b => c) and short words; Whole word fixes the short ones. Save as Set keeps the list.\n");
         b.append("\nRECENT PAIRS: ").append(RecentPairs.switchHelp());
         return b.toString();
     }

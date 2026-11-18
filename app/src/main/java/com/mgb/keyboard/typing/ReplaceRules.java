@@ -13,6 +13,8 @@ import java.util.List;
  *   # comment           kept, never run
  *   word: find => with  (v0.29.0) this rule only matches whole words;  keep: find => with  the replacement copies the case look (hello > world, Hello > World, HELLO > WORLD);
  *   both can be combined (keep: word: ...) and keep: also works before re:
+ *   a | b | c => correct   (v0.40.0) VARIANTS: one line, many wrong spellings, one correct word. Plain-text rules only (not re:). The separator is " | " (space, pipe, space).
+ *   Works with word: / keep: / the set's Word mode. Longest variant wins ("Xiao Yan Wei" before "Xiao Yan"). Run through the ReplaceEngine "list" option, nothing new in the engine.
  * The SET carries the flags (Opt: mode Text/Word, match case, escapes). Rules run top to bottom, each on the result of the one before.
  * A rule with an error is skipped and reported; the rest still run. Limits: 50 rules, 1 s for the whole run.
  * The regex work is done by ReplaceEngine.run (nothing is copied here).
@@ -49,6 +51,20 @@ public final class ReplaceRules {
     }
 
     private static String trim(String s) { return s.trim(); }
+
+    /** v0.40.0: the variants of a plain-text Find ("a | b | c" -> [a, b, c], trimmed, empty ones and repeats dropped). Fewer than 2 = not a variants rule (the list is then empty). Never throws. */
+    public static List<String> variants(String find) {
+        List<String> out = new ArrayList<String>();
+        try {
+            if (find == null || find.indexOf(" | ") < 0) return out;
+            for (String x : find.split("\\s+\\|\\s+", -1)) {
+                String v = x.trim();
+                if (v.length() > 0 && !out.contains(v)) out.add(v);
+            }
+            if (out.size() < 2) out.clear();
+        } catch (RuntimeException e) { out.clear(); }
+        return out;
+    }
 
     private static String trimEnd(String s) {
         int e = s.length();
@@ -129,6 +145,14 @@ public final class ReplaceRules {
                 String find = r.find, with = r.with;
                 if (r.keep && (r.kind == K_TEXT || r.kind == K_REGEX)) { oo.keepCase = true; oo.matchCase = false; }   // v0.29.0
                 if (r.word && r.kind == K_TEXT) oo.mode = ReplaceEngine.MODE_WORD;
+                if (r.kind == K_TEXT) {   // v0.40.0: a | b | c => x  (variants) = the engine's list mode with the trimmed parts
+                    List<String> vs = variants(r.find);
+                    if (vs.size() > 1) {
+                        StringBuilder jb = new StringBuilder();
+                        for (String v : vs) { if (jb.length() > 0) jb.append('|'); jb.append(v); }
+                        find = jb.toString(); oo.list = true;
+                    }
+                }
                 if (r.kind == K_REGEX) { oo.mode = ReplaceEngine.MODE_REGEX; }
                 else if (r.kind == K_DEL) { oo.mode = ReplaceEngine.MODE_REGEX; find = "^[^\\n]*" + java.util.regex.Pattern.quote(r.find) + "[^\\n]*(\\n|$)"; with = ""; }
                 else if (r.kind == K_DELRE) { oo.mode = ReplaceEngine.MODE_REGEX; find = "^[^\\n]*(?:" + r.find + ")[^\\n]*(\\n|$)"; with = ""; }

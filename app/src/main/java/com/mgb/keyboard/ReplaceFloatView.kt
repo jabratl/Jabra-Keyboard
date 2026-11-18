@@ -187,7 +187,7 @@ class ReplaceFloatView(private val ctx: Context, private val prefs: JabraPrefs, 
     }
 
     private fun body(snap: ReplaceFloat.Snap, tab: Int, simple: Boolean = false, onPick: ((Int) -> Unit)? = null): View {
-        val maxRows = if (simple) 2 else ReplaceFloat.MAX_ROWS
+        val maxRows = if (simple) (if (snap.setMode && snap.setLines.size > 2) minOf(snap.setLines.size, 4) else 2) else ReplaceFloat.MAX_ROWS   // v0.40.0: a pair list (3-4 pairs) shows one line per pair
         val box = LinearLayout(ctx)
         box.orientation = LinearLayout.VERTICAL
         box.setPadding(dp(8), dp(2), dp(8), dp(2))

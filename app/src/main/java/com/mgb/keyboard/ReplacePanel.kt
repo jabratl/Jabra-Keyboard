@@ -20,11 +20,13 @@ import com.mgb.keyboard.typing.LookColors
 import com.mgb.keyboard.typing.PanelLayout
 import com.mgb.keyboard.typing.QuickPaste   // v0.38.0 (P1)
 import com.mgb.keyboard.typing.RecentPairs
+import com.mgb.keyboard.typing.ReplaceCheck   // v0.40.0
 import com.mgb.keyboard.typing.ReplaceEngine
 import com.mgb.keyboard.typing.ReplaceExtras
 import com.mgb.keyboard.typing.ReplaceFloat   // v0.39.1 (FLOAT F2)
 import com.mgb.keyboard.typing.ReplaceHelp
 import com.mgb.keyboard.typing.ReplacePads
+import com.mgb.keyboard.typing.ReplacePairList   // v0.40.0
 import com.mgb.keyboard.typing.ReplacePeek
 import com.mgb.keyboard.typing.ReplaceRules
 
@@ -75,6 +77,12 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
     private var setRun: ReplaceRules.RunResult? = null
     private var step = 0                                      // index of the match shown by [<] [>]
     private var rprAsk = false                                // v0.26.0 (R3): Recent pairs > Clear needs two taps
+    // v0.40.0: PAIR LIST ("+Pair") = a rule list kept in MEMORY only (typing/ReplacePairList.java); it runs through the same set code (setRules), pairMode = true
+    private var pairMode = false
+    private val pairRules = ArrayList<ReplaceRules.Rule>()
+    private var checkAck = false                              // the user saw the Check warnings of this list (a tap on Replace all then runs it)
+    private var checkWarn: List<ReplaceCheck.Warn>? = null
+    private var clearAsk = false                              // Clear needs two taps
     // v0.38.0 (P1): paste keys in the typing view. typing == 6 = the paste list (Recent / Pinned); pasteBack = the field (1 Find / 2 With) to return to
     var clipList: (() -> List<ClipList.Item>)? = null          // set by MgbIme: the clipboard history (null = the list shows only the latest copy)
     private var pasteBack = 1
@@ -224,7 +232,7 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
             val rs = row()
             rs.addView(btn("ABC", 0.7f, 36) { host.showLetters() })
             rs.addView(btn("Set: " + (setName ?: "") + " (" + (setRules?.count { it.kind != ReplaceRules.K_COMMENT } ?: 0) + ")", 3f, 36) { typing = 3; refresh() })
-            rs.addView(btn("\u2715 Set", 1f, 36) { setRules = null; setName = null; setRun = null; confirmAll = false; refresh() })
+            rs.addView(btn("\u2715 Set", 1f, 36) { dropSet(); refresh() })
             rs.addView(btn("Fmt", 0.8f, 36) { copyForFormatter() })   // v0.28.0 (R3b): Formatter bridge
             root.addView(rs)
         } else {
@@ -400,11 +408,17 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
 
     private fun onReplace(r: ReplaceEngine.Result, first: Boolean) {
         if (io.blocked()) { msg = "Not available in password fields."; refresh(); return }
+        if (pairMode && find.isNotEmpty()) { addPair(true); return }   // v0.40.0: Find has text that is not in the list yet: add it first, the next tap runs the list
         if (setRules == null && find.isEmpty()) { msg = "Type what to find first"; refresh(); return }
         val e = r.err
         if (e != null) { msg = e; refresh(); return }
         if (r.count == 0) { msg = "No match"; refresh(); return }
         if (r.changed == 0 || r.out == src) { msg = "No change"; refresh(); return }
+        if (setRules != null && !checkAck) {   // v0.40.0: Check pairs BEFORE the first run of a list: warnings = shown once, the next tap runs it anyway
+            val w = try { ReplaceCheck.check(setRules ?: ArrayList(), setOpt) } catch (_: Throwable) { ArrayList<ReplaceCheck.Warn>() }
+            checkAck = true
+            if (ReplaceCheck.serious(w) > 0) { checkWarn = w; confirmAll = false; msg = ReplaceCheck.line(w) + "  \u00B7  tap Replace all again to run anyway"; refresh(); return }
+        }
         if (!usedSel && !first && !confirmAll) { confirmAll = true; refresh(); return }
         doReplace(r)
     }
@@ -555,9 +569,11 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
     private fun pickSet(name: String, d: ReplaceStore.Def) {
         val p = ReplaceRules.parse(d.rules)
         if (p.active() == 0) { msg = "That set has no rules"; typing = 0; refresh(); return }
+        val hadPairs = pairMode && pairRules.isNotEmpty()
+        pairMode = false; pairRules.clear(); checkAck = false; checkWarn = null; clearAsk = false   // v0.40.0: loading a set replaces the pair list
         setRules = p.rules; setOpt = d.opt(); setName = name; setRun = null; setPrev = null
         typing = 0; confirmAll = false; step = 0
-        msg = "Set loaded: " + name + (if (p.bad.isNotEmpty()) " (" + p.bad.size + " unreadable lines skipped)" else "")
+        msg = "Set loaded: " + name + (if (p.bad.isNotEmpty()) " (" + p.bad.size + " unreadable lines skipped)" else "") + (if (hadPairs) "  \u00B7  pair list replaced" else "")
         readSource(false)
         refresh()
     }
@@ -747,7 +763,7 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
 
         if (setRules != null) {
             root.addView(fieldCard("Set", (setName ?: "") + " (" + nRules + ")", { typing = 3; refresh() },
-                listOf(Pair("\u2715 Set") { setRules = null; setName = null; setRun = null; confirmAll = false; refresh() }, Pair("To Formatter") { copyForFormatter() })))   // v0.28.0 (R3b): Formatter bridge
+                listOf(Pair("\u2715 Set") { dropSet(); refresh() }, Pair("To Formatter") { copyForFormatter() })))   // v0.28.0 (R3b): Formatter bridge
         } else {
             // Text | Word | Regex
             root.addView(PanelKit.segmented(ctx, prefs, host, ReplaceEngine.MODE_NAMES.toList(), opt.mode) { i -> opt.mode = i; optChanged() })
@@ -831,6 +847,10 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
 
     private fun floatLines(res: ReplaceEngine.Result): List<String>? {
         val setMode = setRules != null
+        if (pairMode && pairRules.isNotEmpty()) {   // v0.40.0: one line per pair ("3x  cat -> dog"), also the ones that found nothing
+            val cs = setRun?.counts
+            return pairRules.mapIndexed { i, r -> ReplacePairList.label(r, if (cs != null && i < cs.size) cs[i] else 0, 34) }
+        }
         return if (setMode && res.changed > 0) previewText(res).split("\n") else if (setMode) ArrayList<String>() else null
     }
 
@@ -949,6 +969,7 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
         top.addView(small("Sets", 38) { typing = 3; confirmAll = false; refresh() })
         top.addView(small("Recent", 38) { typing = 4; confirmAll = false; rprAsk = false; refresh() })
         top.addView(small("?", 38) { typing = 5; helpPage = 0; confirmAll = false; refresh() })
+        if (pairMode || (setRules == null && find.isNotEmpty())) top.addView(small("+Pair", 38) { addPair(false) })   // v0.40.0
         val sp = View(ctx)
         sp.layoutParams = LinearLayout.LayoutParams(0, 1, 1f)
         top.addView(sp)
@@ -964,7 +985,7 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
         root.addView(top)
 
         // 2) mode row (Text | Word | Regex | Options) + the folded option chips
-        if (setRules == null) {
+        if (setRules == null || pairMode) {   // v0.40.0: also while a pair list is being made
             val mr = row()
             mr.gravity = Gravity.CENTER_VERTICAL
             for (i in 0..2) {
@@ -994,9 +1015,9 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
         card.orientation = LinearLayout.VERTICAL
         card.setPadding(dp(10), dp(2), dp(4), dp(2))
         try { card.background = UiKit.cardBackground(ctx, prefs, false, false) } catch (_: Throwable) { }
-        if (setRules != null) {
+        if (setRules != null && !pairMode) {
             card.addView(miniLine("Set", (setName ?: "") + " (" + nRules + ")", { typing = 3; refresh() },
-                listOf(Pair("\u2715 Set") { setRules = null; setName = null; setRun = null; confirmAll = false; refresh() }, Pair("Fmt") { copyForFormatter() })))
+                listOf(Pair("\u2715 Set") { dropSet(); refresh() }, Pair("Check") { checkNow() }, Pair("Fmt") { copyForFormatter() })))
         } else {
             card.addView(miniLine("Find", find, { startTyping(1) },
                 listOf(Pair("Sel") { take(true, io.selected(), "Nothing is selected") }, Pair("Clip") { take(true, io.clipText(), "Clipboard is empty") })))
@@ -1008,6 +1029,22 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
         cardLp.setMargins(dp(2), dp(4), dp(2), dp(2))
         card.layoutParams = cardLp
         root.addView(card)
+
+        // 3b) v0.40.0: pair list buttons (only while a pair list exists) + "Whole word (N)" after a Check found short words
+        if (setRules != null) {
+            val nShort = ReplaceCheck.shortCount(checkWarn)
+            if (pairMode || nShort > 0) {
+                val pr = row()
+                pr.gravity = Gravity.CENTER_VERTICAL
+                if (pairMode) pr.addView(btn("Check", 0.8f, 34) { checkNow() })
+                if (nShort > 0) pr.addView(btn("Whole word (" + nShort + ")", 1.5f, 34) { fixShort() })
+                if (pairMode) {
+                    pr.addView(btn("Save as Set", 1.2f, 34) { savePairs() })
+                    pr.addView(btn(if (clearAsk) "Sure? Clear" else "Clear", 1f, 34) { clearPairs() })
+                }
+                root.addView(pr)
+            }
+        }
 
         // 4) step row (only when there are matches)
         val nHits = res.hits.size
@@ -1024,7 +1061,8 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
         }
 
         // 5) preview card + ONE note line (the message if there is one, else the scope)
-        if (fcard != null) root.addView(fcard) else if (!wOn) {
+        if (fcard != null) root.addView(fcard) else if (!wOn && pairMode) root.addView(pairListView())   // v0.40.0: the pair list takes the place of the preview card
+        else if (!wOn) {
             val sv = ScrollView(ctx)
             val svLp = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(56))
             svLp.setMargins(dp(2), dp(2), dp(2), dp(0))
@@ -1088,6 +1126,142 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
         return root
     }
 
+    // ------------------------------------------------------------------ v0.40.0: PAIR LIST ("+Pair"), Check pairs, Save as Set
+    // The list lives in MEMORY (pairRules) and is run through the set code (setRules / setOpt / ReplaceRules.run). Logic = typing/ReplacePairList.java + ReplaceCheck.java (tested).
+    // "Save as Set" is the only thing written to disk (a normal set, auto name "Pairs 1"...). Everything is in try / catch by the callers (button handlers).
+
+    /** Forgets the active set / pair list (the old "x Set" code, now in one place). */
+    private fun dropSet() {
+        setRules = null; setName = null; setRun = null
+        pairMode = false; pairRules.clear(); checkAck = false; checkWarn = null; clearAsk = false; confirmAll = false
+    }
+
+    /** pairRules changed: the set code gets a fresh copy, the old check result is gone. */
+    private fun syncPairs() {
+        setRules = ArrayList(pairRules); setName = "Pairs"; setRun = null
+        confirmAll = false; checkAck = false; checkWarn = null; clearAsk = false; step = 0
+    }
+
+    private fun addPair(fromReplace: Boolean) {
+        confirmAll = false
+        if (io.blocked()) { msg = "Not available in password fields."; refresh(); return }
+        if (setRules != null && !pairMode) { msg = "A set is loaded. Tap \u2715 Set first, then make a pair list"; refresh(); return }
+        val m = ReplacePairList.make(find, repl, opt.mode, opt.keepCase, opt.list)
+        val r = m.rule
+        if (r == null) { msg = m.error ?: "Could not add this pair"; refresh(); return }
+        var note = ""
+        if (!pairMode) {
+            val o = opt.copy(); o.mode = ReplaceEngine.MODE_TEXT; o.list = false; o.keepCase = false   // the mode / keep of each pair are in the pair itself (word: / re: / keep:)
+            setOpt = o
+        } else if (opt.matchCase != setOpt.matchCase || opt.bangla != setOpt.bangla || opt.escapes != setOpt.escapes) {
+            note = "  \u00B7  the list keeps the Aa / \u09AC\u09BE\u0982 / \\n settings of its first pair"
+        }
+        val idx = ReplacePairList.indexOf(pairRules, r)
+        if (idx < 0 && pairRules.size >= ReplacePairList.MAX) { msg = "The list is full (" + ReplacePairList.MAX + " pairs)"; refresh(); return }
+        if (idx >= 0) pairRules[idx] = r else pairRules.add(r)
+        pairMode = true
+        syncPairs()
+        find = ""; repl = ""; caretPos = 0
+        msg = (if (idx >= 0) "Pair updated" else "Pair " + pairRules.size + " added") + (if (fromReplace) ". Tap Replace all to run the list" else "") + note
+        refresh()
+    }
+
+    private fun removePair(i: Int) {
+        if (i in pairRules.indices) pairRules.removeAt(i)
+        if (pairRules.isEmpty()) { dropSet(); msg = "Pair list is empty" } else { syncPairs(); msg = "Pair removed" }
+        refresh()
+    }
+
+    /** Tap on a pair: it goes back into Find / With (with its mode) and leaves the list; "+Pair" puts it back. */
+    private fun editPair(i: Int) {
+        val r = pairRules.getOrNull(i) ?: return
+        find = r.find.take(ReplacePads.FIELD_MAX)
+        repl = r.with.take(ReplacePads.FIELD_MAX)
+        opt.mode = if (r.kind == ReplaceRules.K_REGEX) ReplaceEngine.MODE_REGEX else if (r.word) ReplaceEngine.MODE_WORD else ReplaceEngine.MODE_TEXT
+        opt.keepCase = r.keep; opt.list = false
+        saveOpt()
+        pairRules.removeAt(i)
+        if (pairRules.isEmpty()) dropSet() else syncPairs()
+        msg = "Pair is in Find / With: change it, then tap +Pair"
+        refresh()
+    }
+
+    private fun clearPairs() {
+        if (pairRules.size >= 2 && !clearAsk) { clearAsk = true; msg = "Tap again to clear all " + pairRules.size + " pairs"; refresh(); return }
+        dropSet()
+        msg = "Pair list cleared"
+        refresh()
+    }
+
+    private fun checkNow() {
+        val rl = setRules
+        if (rl == null) { msg = "Make a pair list or load a set first"; refresh(); return }
+        val w = try { ReplaceCheck.check(rl, setOpt) } catch (_: Throwable) { ArrayList<ReplaceCheck.Warn>() }
+        checkWarn = w; checkAck = true; confirmAll = false
+        msg = ReplaceCheck.line(w)
+        refresh()
+    }
+
+    /** "Whole word (N)": adds word: to the short / common words the Check found. A loaded set is changed for this run only (the saved set stays as it is). */
+    private fun fixShort() {
+        val rl = setRules ?: return
+        val fixed = ReplaceCheck.withWholeWord(rl, setOpt)
+        setRules = fixed
+        if (pairMode) { pairRules.clear(); pairRules.addAll(fixed) }
+        setRun = null; confirmAll = false; checkAck = true
+        checkWarn = try { ReplaceCheck.check(fixed, setOpt) } catch (_: Throwable) { null }
+        msg = "Short words are now whole-word" + (if (pairMode) "" else " (this run only, the saved set is not changed)")
+        refresh()
+    }
+
+    private fun savePairs() {
+        try {
+            if (pairRules.isEmpty()) { msg = "The list is empty"; refresh(); return }
+            val all = ReplaceStore.load(prefs)
+            if (all.size >= ReplaceStore.MAX) { msg = "Sets are full (" + ReplaceStore.MAX + "). Delete one in app > Tools & Panels"; refresh(); return }
+            val name = ReplacePairList.nextName(all.keys)
+            all[name] = ReplaceStore.Def(ReplacePairList.text(pairRules), setOpt.matchCase, false)
+            ReplaceStore.save(prefs, all)
+            msg = "Saved as set \"" + name + "\" (Sets > \u2605). Rename it in app > Tools & Panels" + (if (setOpt.bangla || setOpt.escapes) "  \u00B7  the \u09AC\u09BE\u0982 / \\n switches are not kept in sets" else "")
+        } catch (_: Throwable) { msg = "Could not save the set" }
+        refresh()
+    }
+
+    /** The pair list inside the panel: one line per pair ("3x cat -> dog", a warning mark after a Check), tap = edit, x = remove. */
+    private fun pairListView(): View {
+        val sv = ScrollView(ctx)
+        val lp = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(78))
+        lp.setMargins(dp(2), dp(2), dp(2), dp(0))
+        sv.layoutParams = lp
+        try { sv.background = UiKit.cardBackground(ctx, prefs, false, false) } catch (_: Throwable) { }
+        val col = LinearLayout(ctx)
+        col.orientation = LinearLayout.VERTICAL
+        val cs = setRun?.counts
+        val ws = checkWarn
+        for ((i, r) in pairRules.withIndex()) {
+            val line = LinearLayout(ctx)
+            line.orientation = LinearLayout.HORIZONTAL
+            line.gravity = Gravity.CENTER_VERTICAL
+            val t = TextView(ctx)
+            val warned = ws != null && ws.any { it.rule == i + 1 }
+            t.text = (if (warned) "\u26A0 " else "") + ReplacePairList.label(r, if (cs != null && i < cs.size) cs[i] else 0, 60)
+            t.textSize = 13f
+            t.maxLines = 1
+            t.ellipsize = android.text.TextUtils.TruncateAt.END
+            t.gravity = Gravity.CENTER_VERTICAL
+            t.setTextColor(try { JabraTokens.cardText(prefs) } catch (_: Throwable) { Color.BLACK })
+            t.setPadding(dp(10), 0, dp(4), 0)
+            t.layoutParams = LinearLayout.LayoutParams(0, dp(30), 1f)
+            t.isClickable = true
+            t.setOnClickListener { try { host.feedback(t) } catch (_: Throwable) { }; try { editPair(i) } catch (_: Throwable) { } }
+            line.addView(t)
+            line.addView(small("\u2715", 30) { removePair(i) })
+            col.addView(line)
+        }
+        sv.addView(col)
+        return sv
+    }
+
     // ------------------------------------------------------------------ v0.28.0 (R3b): Formatter bridge + help view
 
     /** Copies the active set as Formatter rules text. In the Formatter: Rules > Rules from clipboard. Nothing is written to the Formatter itself. */
@@ -1108,7 +1282,7 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
         repl = e.with.take(ReplacePads.FIELD_MAX)
         opt.mode = e.mode
         opt.matchCase = e.matchCase
-        setRules = null; setName = null; setRun = null
+        if (!pairMode) dropSet()   // v0.40.0: a pair list stays while an example is only put into Find / With
         usedSel = false; typing = 0; confirmAll = false; step = 0
         msg = "Example loaded"
         readSource(false)
@@ -1191,7 +1365,7 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
     private fun usePair(p: RecentPairs.Pair) {
         find = p.find.take(ReplacePads.FIELD_MAX)
         repl = p.with.take(ReplacePads.FIELD_MAX)
-        setRules = null; setName = null; setRun = null
+        if (!pairMode) dropSet()   // v0.40.0: a pair list stays while a recent pair is only put into Find / With
         usedSel = false; typing = 0; confirmAll = false; rprAsk = false; step = 0
         msg = "Pair loaded"
         readSource(false)
