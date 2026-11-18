@@ -875,11 +875,12 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
 
     private fun floatSync(anchor: View, snap: ReplaceFloat.Snap, tab: Int, a: ReplaceFloatView.Actions) {
         try {
-            val w = fwin ?: ReplaceFloatWin(ctx, prefs) { v -> host.feedback(v) }.also { it.onChange = { refresh() }; fwin = it }
+            val w = fwin ?: ReplaceFloatWin(ctx, prefs) { v -> host.feedback(v) }.also { it.onChange = { refresh() }; it.onFail = { r -> fwinFail = true; try { fwin?.hide() } catch (_: Throwable) { }; msg = "Float window failed: " + r.take(70); refresh() }; fwin = it }
             if (!winShows()) { w.hide(); return }
-            if (!w.show(anchor, snap, tab, a)) { fwinFail = true; w.hide(); refresh() }
-        } catch (_: Throwable) {
+            if (!w.show(anchor, snap, tab, a)) { fwinFail = true; w.hide(); msg = "Float window failed: " + w.lastError.take(70); refresh() }   // v0.39.4: the reason is shown in the note line
+        } catch (e: Throwable) {
             fwinFail = true
+            msg = "Float window failed: " + (e.javaClass.simpleName)
             try { fwin?.hide() } catch (_: Throwable) { }
             refresh()
         }

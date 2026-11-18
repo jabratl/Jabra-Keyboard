@@ -1,3 +1,10 @@
+v0.39.4 - FIX (probable): floating Replace window did not appear after "Floating preview window" ON
+- SEEN/WHY: owner: after turning Float on, no floating window. Not proven; most likely cause: the popup uses another coordinate system than assumed (relative to the keyboard window, not the screen), so it was placed off screen.
+- WHAT: ReplaceFloatWin measures the real screen place after showing (getLocationOnScreen), remembers the difference (offX / offY) and moves the window to the wanted place; the same offset is used while dragging. 150 ms later a second check: still wrong = the window is hidden, the old inline preview comes back and the note line says "Float window failed: <reason>" (an exception name or "off screen (want x,y got x,y)"). Any show error now also gives its reason there.
+- WHAT BROKE: nothing known. Switch OFF = old screen. No new pref, no permission.
+- NOT tested: Kotlin NOT compiled, phone NOT tested.
+- Files: PATCH ReplaceFloatWin.kt, ReplacePanel.kt (2 lines), app/build.gradle.kts (0.39.4), CHANGELOG.txt.
+
 v0.39.3 - NEW: FLOATING PREVIEW WINDOW for Find & Replace, hooked in (step F4 of PLAN_RP_FLOAT.txt; delivered together with v0.39.2 = F3)
 - SEEN/WHY: owner wants the Replace preview as a small window that floats, can be dragged, shrunk to a bubble, closed and opened again.
 - WHAT (F3, v0.39.2): new ReplaceFloatWin.kt = a PopupWindow of the keyboard (NO new permission, "draw over other apps" is NOT used). Touchable, NOT focusable (the app's field keeps the focus). Content = ReplaceFloatView.window(). Drag by the header only (a short tap is not a drag); minimize = round bubble with the count (tap = open, drag = move); close = closed. Every refresh of the panel SWAPS the content inside the same window (no re-create, no flicker); a new window is made only when the state changes. Position kept on screen by ReplaceFloat.clamp / place (rotation, other phone = fallback place); first place = just above the keyboard.

@@ -27,6 +27,12 @@ class ReplaceFloatWin(private val ctx: Context, private val prefs: JabraPrefs, p
     /** Called after a state change (minimize / close / open): the panel redraws itself. */
     var onChange: (() -> Unit)? = null
 
+    /** v0.39.4: called when the window cannot be shown or ends up off screen (reason = short text). The panel then shows the reason + the old inline preview. */
+    var onFail: ((String) -> Unit)? = null
+    var lastError: String = ""
+    private var offX = 0   // v0.39.4: measured difference between the place we ask for and the place the system really uses (coordinate system of the popup)
+    private var offY = 0
+
     private var pw: PopupWindow? = null
     private var box: FrameLayout? = null
     private var shownState = -1
@@ -83,7 +89,7 @@ class ReplaceFloatWin(private val ctx: Context, private val prefs: JabraPrefs, p
         val h = box?.height?.takeIf { it > 0 } ?: winH
         val c = ReplaceFloat.clamp(x, y, winW, h, b[0], b[1], b[2], b[3], dp(6))
         curX = c[0]; curY = c[1]
-        try { pw?.update(curX, curY, -1, -1) } catch (_: Throwable) { }
+        try { pw?.update(curX - offX, curY - offY, -1, -1) } catch (_: Throwable) { }
     }
 
     /** Drag on [target]; a short touch (under the touch slop) is a tap. */
@@ -167,13 +173,43 @@ class ReplaceFloatWin(private val ctx: Context, private val prefs: JabraPrefs, p
             try { p.inputMethodMode = PopupWindow.INPUT_METHOD_NOT_NEEDED } catch (_: Throwable) { }
             try { p.elevation = 0f } catch (_: Throwable) { }   // no shadow: the 1 dp border does the separation
             ToolTip.inScreen(p)
+            offX = 0; offY = 0
             p.showAtLocation(anchor, Gravity.NO_GRAVITY, curX, curY)
             pw = p; box = f; shownState = st
             wire(c, st)
+            f.post { calibrate(f) }
             return true
-        } catch (_: Throwable) {
+        } catch (e: Throwable) {
+            lastError = e.javaClass.simpleName + (if (e.message != null) ": " + e.message else "")
             hide()
             return false
         }
+    }
+
+    /**
+     * v0.39.4: the popup may use another coordinate system than we assumed (relative to the keyboard window instead of the screen), which put it OFF screen.
+     * After showing, the real screen place is measured; the difference is remembered (offX / offY) and the window is moved to the wanted place.
+     * A second look 150 ms later: still not where wanted = onFail with the numbers (shown in the Replace note line).
+     */
+    private fun calibrate(f: View) {
+        try {
+            if (pw == null) return
+            val l = IntArray(2); f.getLocationOnScreen(l)
+            val dx = l[0] - curX
+            val dy = l[1] - curY
+            if (Math.abs(dx) > 2 || Math.abs(dy) > 2) {
+                offX += dx; offY += dy
+                try { pw?.update(curX - offX, curY - offY, -1, -1) } catch (_: Throwable) { }
+            }
+            f.postDelayed({
+                try {
+                    if (pw == null) return@postDelayed
+                    val l2 = IntArray(2); f.getLocationOnScreen(l2)
+                    val b = bounds()
+                    val bad = Math.abs(l2[0] - curX) > dp(12) || Math.abs(l2[1] - curY) > dp(12) || l2[1] > b[3] - dp(10) || l2[1] + dp(10) < 0
+                    if (bad) { lastError = "off screen (want " + curX + "," + curY + " got " + l2[0] + "," + l2[1] + ")"; onFail?.invoke(lastError) }
+                } catch (_: Throwable) { }
+            }, 150)
+        } catch (_: Throwable) { }
     }
 }
