@@ -1,4 +1,0 @@
-HANDOFF Jabra-Keyboard v0.37.2 - Replace Paste + pill scroll / count
-
-1. STATE: repo = v0.37.2 (0.36.5 popover, 0.37.0 floating pill, 0.37.1 Replace keeps format, 0.37.2 this). ReplacePanel: copiedOut / copiedHtml + pasteCopied(). ClipFloatBar: count badge + followScroll(). ClipFloat: scrollAction, countText.
-2. NEXT: build log, then CHECKLIST v0.37.0 - v0.37.2. Open idea: verify every file listed in CHANGELOG "Files:" really exists in the repo (v0.36.2 had lost 2 files).
