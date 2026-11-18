@@ -1,5 +1,8 @@
 package com.mgb.keyboard
 
+import android.animation.Animator
+import android.animation.AnimatorListenerAdapter
+import android.animation.ValueAnimator
 import android.content.Context
 import android.view.Gravity
 import android.view.MotionEvent
@@ -64,7 +67,7 @@ class ReplaceFloatWin(private val ctx: Context, private val prefs: JabraPrefs, p
     }
 
     private fun actionsFor(a: ReplaceFloatView.Actions): ReplaceFloatView.Actions =
-        ReplaceFloatView.Actions(a.onTab, a.onPrev, a.onNext, a.onReplace, a.onUndo, { setState(ReplaceFloat.MINI) }, { setState(ReplaceFloat.CLOSED) }, a.notice)
+        ReplaceFloatView.Actions(a.onTab, a.onPrev, a.onNext, a.onReplace, a.onUndo, { setState(ReplaceFloat.MINI) }, null, a.notice, a.onPick)   // v0.39.6: no close button (the Float chip closes / opens)
 
     private fun content(snap: ReplaceFloat.Snap, tab: Int, a: ReplaceFloatView.Actions, st: Int, w: Int): View {
         val v = ReplaceFloatView(ctx, prefs, feedback)
@@ -107,20 +110,38 @@ class ReplaceFloatWin(private val ctx: Context, private val prefs: JabraPrefs, p
                     MotionEvent.ACTION_MOVE -> {
                         val dx = e.rawX - downX
                         val dy = e.rawY - downY
-                        if (!moved && (dx * dx + dy * dy) > slop * slop) moved = true
+                        if (!moved && (dx * dx + dy * dy) > slop * slop) { moved = true; box?.alpha = 0.85f }   // v0.39.6: a little see-through while dragging
                         if (moved) moveTo(startX + dx.toInt(), startY + dy.toInt())
                         true
                     }
                     MotionEvent.ACTION_UP -> {
-                        if (moved) { prefs.setInt("rp_float_x", curX); prefs.setInt("rp_float_y", curY) }
+                        box?.alpha = 1f
+                        if (moved && shownState == ReplaceFloat.MINI) snapToEdge()   // v0.39.6: the bubble slides to the nearest side
+                        else if (moved) { prefs.setInt("rp_float_x", curX); prefs.setInt("rp_float_y", curY) }
                         else { try { feedback(target) } catch (_: Throwable) { }; onTap?.invoke() }
                         true
                     }
-                    MotionEvent.ACTION_CANCEL -> true
+                    MotionEvent.ACTION_CANCEL -> { box?.alpha = 1f; true }
                     else -> false
                 }
             } catch (_: Throwable) { false }
         }
+    }
+
+    /** v0.39.6: after the bubble is released it slides (180 ms) to the left or right edge, whichever is nearer, and the place is saved. */
+    private fun snapToEdge() {
+        try {
+            val b = bounds()
+            val m = dp(10)
+            val tx = if (curX + winW / 2 < (b[0] + b[2]) / 2) b[0] + m else b[2] - winW - m
+            val va = ValueAnimator.ofInt(curX, tx)
+            va.duration = 180
+            va.addUpdateListener { try { moveTo(it.animatedValue as Int, curY) } catch (_: Throwable) { } }
+            va.addListener(object : AnimatorListenerAdapter() {
+                override fun onAnimationEnd(animation: Animator) { try { prefs.setInt("rp_float_x", curX); prefs.setInt("rp_float_y", curY) } catch (_: Throwable) { } }
+            })
+            va.start()
+        } catch (_: Throwable) { try { prefs.setInt("rp_float_x", curX); prefs.setInt("rp_float_y", curY) } catch (_: Throwable) { } }
     }
 
     private fun wire(c: View, st: Int) {
@@ -177,6 +198,11 @@ class ReplaceFloatWin(private val ctx: Context, private val prefs: JabraPrefs, p
             p.showAtLocation(anchor, Gravity.NO_GRAVITY, curX, curY)
             pw = p; box = f; shownState = st
             wire(c, st)
+            try {   // v0.39.6: soft open (fade + small zoom from the top-left corner, so the measured place does not change)
+                f.pivotX = 0f; f.pivotY = 0f
+                f.alpha = 0f; f.scaleX = 0.96f; f.scaleY = 0.96f
+                f.animate().alpha(1f).scaleX(1f).scaleY(1f).setDuration(140).start()
+            } catch (_: Throwable) { f.alpha = 1f; f.scaleX = 1f; f.scaleY = 1f }
             f.post { calibrate(f) }
             return true
         } catch (e: Throwable) {

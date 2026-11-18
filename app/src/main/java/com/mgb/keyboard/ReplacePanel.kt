@@ -843,7 +843,8 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
             onNext = { step = ReplaceFloat.step(step, nHits, 1); showStep(res) },
             onReplace = { onReplace(ReplaceEngine.replaceNth(src, find, repl, opt, step + 1), true) },
             onUndo = if (replaced && undoStack.canUndo()) ({ undo() }) else null,
-            notice = if (replaced) shown else ""
+            notice = if (replaced) shown else "",
+            onPick = { i -> step = i.coerceIn(0, (nHits - 1).coerceAtLeast(0)); showStep(res) }   // v0.39.6: tap a row = that match
         )
     }
 
