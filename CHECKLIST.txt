@@ -1274,3 +1274,16 @@ FIND & REPLACE PART 1 (v0.24.0) - phone test
 3. Tap a clip (select / unselect): the count changes, the pill is visible.
 4. Replace panel, in an app where "Could not replace": tap Copy, message says "Copied (...). In the app: select all, then tap Paste". Now the button reads "Paste". In the app select all, tap Paste: the text is replaced (with format in apps that take it).
 5. Change Find / With: the button is "Copy" again.
+
+v0.38.0 - PASTE KEYS (clip Edit + Find & Replace typing)
+ [ ] Copy a long text in any app (e.g. a Bangla sentence). Clipboard > select a clip > More > Edit. Row under the text box: Paste | v | Clear | .com | www. | https:// | @gmail.com.
+ [ ] Tap Paste = the copied text appears at the caret, message line says "Pasted N". Tap on the text first to move the caret: it pastes THERE.
+ [ ] Hold Paste (or tap v) = list with Recent | Pinned. Top of Recent = the latest copy. Tap one = it is pasted at the caret and the Edit screen is back. Back = no change.
+ [ ] Pinned tab shows your pinned clips; with none it says "No pinned clips yet".
+ [ ] Hold the text box about 0.6 s = pasted where you hold. A short tap only moves the caret. Dragging still scrolls a long text.
+ [ ] Clear empties the text; Cancel brings the old clip back; chips (.com ...) type at the caret.
+ [ ] Paste a text longer than the room left = "(cut to fit)". Save works as before (two taps).
+ [ ] Find & Replace > tap Find: row Paste | v | Sel above the keys. Paste puts the latest copy at the cursor; hold Paste / v = list, a tap puts it in and you are back in the SAME field (Find or With).
+ [ ] Select text in the app, open Replace > Find: Sel puts the selected text at the cursor. Nothing selected = a short toast.
+ [ ] Hold the "Find: ..." line = paste. Bangla pages of the mini keyboard still type; pasted Bangla shows in the line.
+ [ ] Empty clipboard = "Clipboard is empty" (toast in Replace, message line in Edit). Old behaviour of every other key unchanged.

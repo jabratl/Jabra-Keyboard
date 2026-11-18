@@ -17,6 +17,7 @@ import com.mgb.keyboard.clip.ClipMeta
 import com.mgb.keyboard.clip.ClipExport   // v0.17.57 (C2)
 import com.mgb.keyboard.clip.ClipName   // v0.17.63 (R3)
 import com.mgb.keyboard.typing.ClipCaret   // v0.17.56 (C1)
+import com.mgb.keyboard.typing.QuickPaste   // v0.38.0 (P1)
 import com.mgb.keyboard.typing.ClipSelect
 import com.mgb.keyboard.typing.ClipOrder   // v0.15.2 (N2)
 import com.mgb.keyboard.typing.ClipSensitive   // v0.10.10 (W4)
@@ -150,6 +151,8 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
     private var editText = ""
     private var editCaps = false
     private var editPos = 0   // v0.17.56 (C1): caret position inside editText (was: always the end)
+    private var pasteOpen = false   // v0.38.0 (P1): the paste list (Recent / Pinned) of the Edit screen is open
+    private var pasteTab = 0         // 0 = Recent, 1 = Pinned
     private var exporting = false   // v0.17.57 (C2): export screen is open
     private var expScope = 0        // 0 = selected clips, 1 = all clips, 2 = pinned clips
     private var expSel: List<ClipList.Item> = emptyList()   // the selection at the moment Export was tapped
@@ -316,6 +319,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
         val restoreY = if (fromRefresh) keepY else -1   // v0.16.1 (X1)
         fromRefresh = false
         if (restoreY < 0 && editing == null) keepY = -1   // fresh open = start at the top
+        if (editing == null) pasteOpen = false   // v0.38.0 (P1)
         if (exporting && renaming) { try { return fitEdit(makeRename()) } catch (_: Throwable) { renaming = false } }   // v0.17.63 (R3)
         if (exporting) { try { return fitEdit(makeExport()) } catch (_: Throwable) { exporting = false } }   // v0.17.57 (C2)
         if (trashOpen) { try { return makeTrash() } catch (_: Throwable) { trashOpen = false } }   // v0.18.4: Recently deleted screen
@@ -1506,6 +1510,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
     /** v0.4.3.1: edit screen for ONE clip: Cancel | Use field text | Save (two taps), text box, mini keys (Latin). Bangla = type it in the field, then "Use field text". */
     private fun makeEdit(): View {
         val item = editing ?: return make()
+        if (pasteOpen) { try { return editPicker() } catch (_: Throwable) { pasteOpen = false } }   // v0.38.0 (P1)
         val root = LinearLayout(ctx)
         root.orientation = LinearLayout.VERTICAL
         paintBg(root)   // v0.8.7
@@ -1538,7 +1543,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
         root.addView(top)
 
         val info = TextView(ctx)
-        info.text = (if (msg.isEmpty()) "Edit clip" else msg) + "   " + editText.length + "/" + ClipList.MAX_LEN
+        info.text = (if (msg.isEmpty()) "Edit clip \u00B7 hold text = paste" else msg) + "   " + editText.length + "/" + ClipList.MAX_LEN
         msg = ""
         info.textSize = 12f
         info.setTextColor(dim())
@@ -1557,9 +1562,10 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
         tv.setPadding(dp(8), dp(2), dp(8), dp(2))
         if (nl()) { try { sv.background = UiKit.cardBackground(ctx, pf) } catch (_: Throwable) { }; tv.setPadding(dp(12), dp(6), dp(12), dp(6)) }   // v0.17.58 (C4): text box = card
         sv.addView(tv)
-        try {   // v0.17.56 (C1): tap on the text = put the caret there (nearest gap); a drag still scrolls
+        try {   // v0.17.56 (C1): tap on the text = put the caret there (nearest gap); a drag still scrolls. v0.38.0 (P1): hold (0.6 s) = caret there + paste the latest copy
             tv.setOnTouchListener { v, ev ->
-                if (ev.action == android.view.MotionEvent.ACTION_UP && ev.eventTime - ev.downTime < 400L) {
+                val heldMs = ev.eventTime - ev.downTime
+                if (ev.action == android.view.MotionEvent.ACTION_UP && (heldMs < 400L || heldMs >= 600L)) {
                     try {
                         val t = v as TextView
                         val lay = t.layout
@@ -1568,6 +1574,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
                             val line = lay.getLineForVertical(y)
                             val off = lay.getOffsetForHorizontal(line, ev.x - t.totalPaddingLeft)
                             editPos = ClipCaret.posFromDisplay(editText, shownPos, off)
+                            if (heldMs >= 600L) { try { host.feedback(v) } catch (_: Throwable) { }; pasteEdit(PasteKit.systemClip(ctx)) }
                             confirmSave = false
                             refresh()
                         }
@@ -1577,6 +1584,18 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
             }
         } catch (_: Throwable) { }
         root.addView(sv)
+
+        // v0.38.0 (P1): paste keys. Paste = latest copy at the caret; hold Paste or tap the arrow = pick from Recent / Pinned; chips = words that are slow to type
+        try {
+            val pr = row()
+            val pasteBtn = btn("Paste", 1.5f, 34) { touched { pasteEdit(PasteKit.systemClip(ctx)) } }
+            PasteKit.onHold(pasteBtn, { v -> host.feedback(v) }) { pasteOpen = true; pasteTab = 0; confirmSave = false; refresh() }
+            pr.addView(pasteBtn)
+            pr.addView(btn("\u25BE", 0.7f, 34) { pasteOpen = true; pasteTab = 0; confirmSave = false; refresh() })
+            pr.addView(btn("Clear", 0.9f, 34) { touched { editText = ""; editPos = 0; msg = "Cleared (Cancel brings the old text back)" } })
+            for (q in QuickPaste.QUICK) pr.addView(btn(q, if (q.length > 8) 2.1f else if (q.length > 6) 2f else 1f, 34) { touched { insEdit(q) } })
+            root.addView(pr)
+        } catch (_: Throwable) { }
 
         // v0.17.56 (C1): caret keys
         val nav = row()
@@ -1604,6 +1623,38 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
         last.addView(btn("\u23CE", 1.2f, 34) { touched { ins("\n") } })
         root.addView(last)
         return root
+    }
+
+    /** v0.38.0 (P1): puts [raw] (a copied text) at the caret of the Edit screen. Cut to the room that is left (max ClipList.MAX_LEN); sets the one-line message. */
+    private fun pasteEdit(raw: String) {
+        val room = ClipList.MAX_LEN - editText.length
+        val t = QuickPaste.fit(raw, room)
+        if (t.isEmpty()) { msg = QuickPaste.noneText(raw, room); return }
+        val np = ClipCaret.afterInsert(editText, editPos, t)
+        editText = ClipCaret.insert(editText, editPos, t)
+        editPos = np
+        msg = QuickPaste.doneText(t.length, QuickPaste.wasCut(raw, room))
+    }
+
+    /** v0.38.0 (P1): a quick chip (.com, https:// ...) at the caret. */
+    private fun insEdit(s: String) {
+        val room = ClipList.MAX_LEN - editText.length
+        val t = QuickPaste.fit(s, room)
+        if (t.isEmpty()) { msg = "Too long (max " + ClipList.MAX_LEN + ")"; return }
+        val np = ClipCaret.afterInsert(editText, editPos, t)
+        editText = ClipCaret.insert(editText, editPos, t)
+        editPos = np
+    }
+
+    /** v0.38.0 (P1): the paste list of the Edit screen (Recent / Pinned). A tap puts the text at the caret and goes back to the Edit screen. */
+    private fun editPicker(): View {
+        val all: List<ClipList.Item> = try { store.view("") } catch (_: Throwable) { emptyList<ClipList.Item>() }
+        val latest = PasteKit.systemClip(ctx)
+        return PasteKit.picker(ctx, pf, pasteTab, PasteKit.recentTexts(all, latest), PasteKit.pinnedTexts(all),
+            { l, w, h, c -> btn(l, w, h, c) }, { v -> paintBg(v) },
+            { t -> pasteTab = t; refresh() },
+            { t -> pasteOpen = false; pasteEdit(t); confirmSave = false; refresh() },
+            { pasteOpen = false; refresh() })
     }
 
     /** v0.2.5.1: tap on Add = save selected text (or the whole field) as a new clip. */

@@ -15,8 +15,10 @@ import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
+import com.mgb.keyboard.clip.ClipList   // v0.38.0 (P1)
 import com.mgb.keyboard.typing.LookColors
 import com.mgb.keyboard.typing.PanelLayout
+import com.mgb.keyboard.typing.QuickPaste   // v0.38.0 (P1)
 import com.mgb.keyboard.typing.RecentPairs
 import com.mgb.keyboard.typing.ReplaceEngine
 import com.mgb.keyboard.typing.ReplaceExtras
@@ -72,6 +74,10 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
     private var setRun: ReplaceRules.RunResult? = null
     private var step = 0                                      // index of the match shown by [<] [>]
     private var rprAsk = false                                // v0.26.0 (R3): Recent pairs > Clear needs two taps
+    // v0.38.0 (P1): paste keys in the typing view. typing == 6 = the paste list (Recent / Pinned); pasteBack = the field (1 Find / 2 With) to return to
+    var clipList: (() -> List<ClipList.Item>)? = null          // set by MgbIme: the clipboard history (null = the list shows only the latest copy)
+    private var pasteBack = 1
+    private var pasteTab = 0
 
     /** v0.29.0: open on ONE clip: reset first (clears any old clip), then the clip text is the source. */
     fun openForClip(cio: FmtIo) {
@@ -186,7 +192,7 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
         return try { ReplaceEngine.replaceAll(src, find, repl, opt) } catch (_: Throwable) { ReplaceEngine.Result() }
     }
 
-    fun build(): View? = try { PeekPopup.dismiss(); if (typing == 3) setsViewPick() else if (typing == 4) recentView() else if (typing == 5) helpView() else if (typing != 0) typeView() else mainViewPick() } catch (_: Throwable) { null }   // v0.26.0 (R3): 4 = Recent pairs; Pick = new look when panel_ui = New, else the classic view
+    fun build(): View? = try { PeekPopup.dismiss(); if (typing == 3) setsViewPick() else if (typing == 4) recentView() else if (typing == 5) helpView() else if (typing == 6) replacePicker() else if (typing != 0) typeView() else mainViewPick() } catch (_: Throwable) { null }   // v0.26.0 (R3): 4 = Recent pairs; Pick = new look when panel_ui = New, else the classic view
 
     // ------------------------------------------------------------------ main view
 
@@ -1024,12 +1030,57 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
         root.addView(head)
         showValue()
 
+        // v0.38.0 (P1): paste keys. Paste = latest copy at the cursor; hold Paste or tap the arrow = pick from Recent / Pinned; Sel = the selected text of the field; hold on the Find / With line = paste
+        try {
+            val pr = row()
+            val pb = btn("Paste", 1.6f, 32) { pasteCur(latestCopy()) }
+            try { pb.setOnLongClickListener { v -> try { host.feedback(v) } catch (_: Throwable) { }; openPicker(); true } } catch (_: Throwable) { }
+            pr.addView(pb)
+            pr.addView(btn("\u25BE", 0.7f, 32) { openPicker() })
+            pr.addView(btn("Sel", 1f, 32) { pasteSel() })
+            root.addView(pr)
+            tv.setOnLongClickListener { v -> try { host.feedback(v) } catch (_: Throwable) { }; pasteCur(latestCopy()); true }
+        } catch (_: Throwable) { }
+
         val box = LinearLayout(ctx)
         box.orientation = LinearLayout.VERTICAL
         root.addView(box)
         keysBox = box
         fillKeys()
         return root
+    }
+
+    // ------------------------------------------------------------------ v0.38.0 (P1): paste into Find / With
+
+    private fun note(s: String) { try { android.widget.Toast.makeText(ctx, s, android.widget.Toast.LENGTH_SHORT).show() } catch (_: Throwable) { } }
+
+    private fun latestCopy(): String = try { io.clipText() ?: "" } catch (_: Throwable) { "" }
+
+    /** Puts [raw] at the cursor of the field that is open (Find / With), cut to the room that is left (FIELD_MAX). The shown line is updated in place. */
+    private fun pasteCur(raw: String) {
+        val room = ReplacePads.FIELD_MAX - cur().length
+        val t = QuickPaste.fit(raw, room)
+        if (t.isEmpty()) { note(QuickPaste.noneText(raw, room)); return }
+        if (QuickPaste.wasCut(raw, room)) note(QuickPaste.doneText(t.length, true))
+        typeText(t)
+    }
+
+    private fun pasteSel() {
+        val s = try { io.selected() } catch (_: Throwable) { null }
+        if (s.isNullOrEmpty()) { note("Nothing is selected in the field"); return }
+        pasteCur(s)
+    }
+
+    private fun openPicker() { pasteBack = if (typing == 2) 2 else 1; pasteTab = 0; typing = 6; refresh() }
+
+    /** The paste list (typing == 6): Recent (latest copy first) / Pinned. A tap puts the text at the cursor and goes back to the typing view. */
+    private fun replacePicker(): View {
+        val all: List<ClipList.Item> = try { clipList?.invoke() ?: emptyList<ClipList.Item>() } catch (_: Throwable) { emptyList<ClipList.Item>() }
+        return PasteKit.picker(ctx, prefs, pasteTab, PasteKit.recentTexts(all, latestCopy()), PasteKit.pinnedTexts(all),
+            { l, w, h, c -> btn(l, w, h, c) }, { v -> paintBg(v) },
+            { t -> pasteTab = t; refresh() },
+            { t -> typing = pasteBack; pasteCur(t); refresh() },
+            { typing = pasteBack; refresh() })
     }
 
     private fun fillKeys() {

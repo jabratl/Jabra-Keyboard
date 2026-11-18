@@ -88,7 +88,7 @@ class MgbIme : InputMethodService() {
     private val vaultPanel by lazy { VaultPanel(this, host, vaultStore) { fieldText() } }   // v0.4.4
     private val studioPanel by lazy { ThemeStudio(this, host) }   // v0.4.8 custom theme studio
     private val ttPanel by lazy { TextToolsPanel(this, host, ImeFmtIo(this) { pwdField }) }   // v0.4.6 text tools
-    private val rpPanel by lazy { ReplacePanel(this, host, ImeFmtIo(this) { pwdField }) }   // v0.24.0 (R1): advanced Find & Replace
+    private val rpPanel by lazy { ReplacePanel(this, host, ImeFmtIo(this) { pwdField }).also { rp -> rp.clipList = { try { clipStore.view("") } catch (_: Throwable) { emptyList<com.mgb.keyboard.clip.ClipList.Item>() } } } }   // v0.24.0 (R1): advanced Find & Replace; v0.38.0 (P1): clipList = the paste list of the typing view
     private val keyMapPanel by lazy { KeyMapPanel(this, host) }   // v0.16.5 (X5) key map cheat sheet (reads no pref)
     private val profilePanel by lazy { ProfilePanel(this, host, ProfileStore(this)) }   // v0.5.1 workspace profiles (file profiles_v1.json, read only when the panel opens)
     private val prefs by lazy { JabraPrefs(this) }
