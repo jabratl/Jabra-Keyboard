@@ -1297,3 +1297,14 @@ v0.38.1 - MINIMAL LOOK of Find & Replace
  [ ] Typing view: typed text in a card, Paste and Done filled. Everything else same.
  [ ] "?" help > first row switches Minimal look <-> Previous look. Check light + dark theme and a 360 dp phone.
 
+v0.39.1 - FLOAT PREVIEW CARD (hidden test, inside the Replace main view)
+ [ ] Replace > "?" help > chip "Float preview, test (tap = on)". Tap it: tick appears. Back to the Replace main view.
+ [ ] Type Find: the card shows header "Preview" + the count pill ("4 matches"), tabs Before | After | Changes, up to 3 rows, footer < n/N > and Replace this. The old preview box and the old step row are gone.
+ [ ] Before: found text amber. After: replacement green. Changes: "found > replacement #n", found struck out. The tab you chose is remembered after leaving the panel.
+ [ ] First row (current match) is bold. Tap > : the next match is first, after the last one it wraps to the first. < goes back.
+ [ ] No match = "No match" in the card, no footer. Wrong regex = "Error" (orange pill) and the error text.
+ [ ] Replace this: that one match is replaced; the pill shows "Replaced 1" and the footer has Undo; Undo brings it back.
+ [ ] Load a set (Sets): the card lists one row per rule that changed something ("3x cat > dog"), no < > buttons. Replace all stays in the action row below.
+ [ ] Light + dark theme, a 360 dp phone: text readable, nothing cut inside a button, the card does not jump while typing.
+ [ ] Switch the chip OFF = exactly the v0.38.1 screen. Any problem = the old preview + step row come back by themselves.
+

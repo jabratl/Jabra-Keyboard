@@ -1,0 +1,114 @@
+PLAN_RP_FLOAT - Floating preview window for Find & Replace (user request 2026-11-18)
+====================================================================================
+Put this file in the repo root (next to PLAN_CLIP_V2.txt) and paste it at the start of the next chat.
+Repo state when this plan was written: v0.38.1 (0.38.0 = paste keys, 0.38.1 = minimal Replace look).
+BEFORE ANY NEW WORK: upload v0.38.0 + v0.38.1 patches, run the GitHub build, and send the build log if it is red (Kotlin was never compiled since v0.33.0).
+
+1) WHAT THE USER WANTS (in simple words)
+   - In Find & Replace the preview (what will change) should be able to FLOAT as a small window, before and after a replace.
+   - The user can drag it, shrink it to a small round bubble, close it, and open it again.
+   - It must be minimal, tidy, good looking. No Bangla in the mock (English sample is fine).
+   - Nothing old may break. Old inline preview stays as the fallback.
+   - Sample design (interactive HTML) was shown in the v0.38.1 chat: header with grip + count pill + minimize + close;
+     3 tabs Before | After | Changes; up to 3 match rows; footer  < n/N >  and [Replace this]; bubble shows the match count.
+
+2) THE DESIGN IN ONE SCREEN
+   Window (about 100% width - 20 dp, about 190 dp tall):
+     Header   : grip icon | "Preview" | pill "4 matches" | [-] minimize | [x] close      (drag by the header only)
+     Tabs     : [Before] [After] [Changes]   (remembered)
+     Body     : 3 rows, one line each, current match first and bold
+                Before  = ...context [found] context...        (found = amber)
+                After   = ...context [replacement] context...  (replacement = green)
+                Changes = found (struck out) -> replacement  #n
+     Footer   : [<]  n/N  [>]            [Undo]  (only right after a replace)   [Replace this]
+   Bubble (minimized): 46 dp round, shows the match count, tap = open, drag = move.
+   Closed: a chip "Float" in the Replace main view (top bar or mode row) opens it again.
+   Colours: only JabraTokens / UiKit (same as the rest of the app). No shadows; a 1 dp stronger border separates it from the text.
+   Rule set active (Sets): the body shows one row per rule that changed something ("3x  cat -> dog"), same data as ReplacePanel.previewText().
+
+3) HOW IT WORKS INSIDE THE APP (best fit, safest)
+   - It is a PopupWindow of the keyboard (same idea as PeekPopup.kt, the long-press card of Replace all). That needs NO new permission
+     ("draw over other apps" is NOT needed and must not be asked for).
+   - Data comes from what ReplacePanel already computes: calc() -> ReplaceEngine.Result (hits, edits, count, out). No second regex run.
+   - ReplaceEngine, ReplaceRules, io.replaceEdits / undo stay untouched. [Replace this] calls the SAME onReplace(replaceNth(...), true).
+   - UNKNOWN to verify first (step F0): how far the popup may go above the keyboard (over the app's text field) and whether it can be dragged there.
+     If Android / the app does not allow it: the window stays inside the keyboard area, just above the letters, and is dragged only inside it.
+     This is acceptable and must be said honestly in the CHANGELOG.
+
+4) STEPS (one step = one version = one topic; each step can be one chat or part of a chat)
+
+   STEP F0 - LOOK FIRST (no code, 20-30 min)
+     Read: PeekPopup.kt (position, show, dismiss, watchRelease), ReplacePeek.java (card data), BubbleOverlay.kt (what it is, maybe reusable idea),
+           ReplacePanel.refresh() / build() (the panel is rebuilt on every tap: the window must NOT be rebuilt, only updated).
+     Decide and write down (5 lines): where the window object lives (a small class owned by ReplacePanel), how it gets new data (update(res)),
+     what happens on rotation, on leaving the Replace panel (dismiss), in password fields (never shown, same as Replace is blocked there).
+
+   STEP F1 - PURE LOGIC (v0.39.0)  typing/ReplaceFloat.java  + tools/ReplaceFloatTest.java
+     - Row model for the 3 tabs from (src, hits, current index, replacement text, tab): context length ~12 chars each side, ellipsis marks,
+       surrogate-safe cuts, line breaks shown as marks, max 3 rows, wrap-around from the current match.
+     - State: open / mini / closed (sanitize, default open). Tab sanitize (0..2).
+     - Position math: clamp (x, y) so the window / bubble always stays on screen; fallback position when the saved one is outside (rotation, other phone).
+     - Count text: "4 matches" / "1 match" / "No match" / "Error".
+     - Tests: no matches, 1 match, many matches, match at the very start / end, Bangla text, emoji pair at a cut, empty replacement, huge text (100k chars) stays fast,
+       clamp on tiny and huge screens, never throws.
+
+   STEP F2 - THE WINDOW VIEW (v0.39.1)  ReplaceFloatView.kt  (view only, no popup yet)
+     - Builds the content view described in section 2 from the F1 rows. Theme + font size follow JabraTokens / UiKit (chip, cardBackground, noteText).
+     - Touch targets >= 36 dp, fonts >= 11 sp, text never cut in the middle of a button.
+     - First shown INSIDE the Replace main view behind a hidden switch (so it can be seen on the phone before the popup exists).
+     - Fallback: any exception = the old inline preview card.
+
+   STEP F3 - THE FLOATING HOST (v0.39.2)  ReplaceFloatWin.kt
+     - PopupWindow that shows the F2 view. Drag by the header (small move threshold so a tap is not a drag), clamped by F1.
+     - Minimize = bubble (same class, second view), bubble tap = open, bubble drag = move. Close = closed state.
+     - Saves ONLY small prefs: rp_float_state, rp_float_tab, rp_float_x, rp_float_y (numbers). No text is ever stored.
+     - Updates in place when ReplacePanel refreshes (no flicker, no re-create). Dismissed when the Replace panel is left, the keyboard hides,
+       or the field is a password field.
+     - If the popup cannot be shown (exception or no window token): the old inline preview stays visible.
+
+   STEP F4 - HOOK INTO REPLACE (v0.39.3)  ReplacePanel.kt (tiny hooks) + MgbIme.kt (only if the window token is needed)
+     - Chip "Float" in the minimal main view (state on / off). On = window opens and the inline preview card is hidden (saves about 60 dp of height).
+     - [Replace this], [<] [>] use the existing code paths (onReplace, showStep). After any replace the window shows "Replaced N" + [Undo]
+       (uses the existing undoStack / undo()).
+     - Replace all stays in the main view (the window never replaces everything by itself).
+     - Pref rp_float (default OFF in the first build, switch in the "?" help page like rp_mini). After the phone test it can become default ON.
+
+   STEP F5 - POLISH + DOCS (v0.39.4)
+     - Phone-test fixes, empty / error texts, CHANGELOG, CHECKLIST (new section), HANDOFF, README line.
+     - Optional ideas only if asked: remember window size, double-tap header = jump to a corner, show the preview also for the Formatter.
+
+5) DO NOT (rules of this project, from HANDOFF.txt section 0)
+   - No new permission, no network, nothing stored except the 4-5 small prefs above.
+   - Do not rename or delete any existing id, handler, pref or file. Patch, do not rewrite. New code in new files + tiny hooks.
+   - ON / OFF switch + automatic fallback to the old behaviour for every new part.
+   - Do not use "Claude Design" for the mock (not supported in the user's browser). HTML sample or a drawing in the chat is fine.
+   - Final reply: <= 10 lines + a Banglish phone checklist; zip with ONLY changed / new files at exact paths; max 1 question.
+
+6) WHAT TO CHECK ON THE PHONE AFTER F3 / F4 (becomes the CHECKLIST section)
+   [ ] Replace > Float on: the window appears; header shows the match count; tabs Before / After / Changes switch.
+   [ ] Drag the header: the window follows the finger and stays on screen; a short tap does not move it.
+   [ ] Minimize: round bubble with the count; tap opens the window; drag moves the bubble.
+   [ ] Close (x) and the Float chip in the main view open / close it; the choice is remembered after leaving the panel.
+   [ ] Type in Find: the window updates at once without flicker. No match = "No match".
+   [ ] [<] [>] and [Replace this] work; after a replace the window shows Replaced N and [Undo]; Undo works.
+   [ ] Leave the Replace panel (ABC): the window is gone. Password field: no window.
+   [ ] Rotate the phone and a small phone: window / bubble stay visible. Light + dark theme readable.
+   [ ] Float off = exactly the v0.38.1 screen. Any problem = old inline preview.
+
+7) HOW TO START THE NEXT CHAT (copy these lines with this file + HANDOFF_Jabra-Keyboard_v0.38.1.txt + the repo zip)
+   "Follow HANDOFF.txt section 0. Do PLAN_RP_FLOAT.txt step F0 and F1 (and F2 if the session allows). Banglish. Zip with only changed files."
+   Then one chat per 1-2 steps: F0+F1+F2, then F3+F4, then F5 (or fixes from the build log / phone test).
+
+8) STATUS (updated v0.39.1)
+   F0 DONE (read-only look, 2026-11-18). RESULT, 5 lines:
+     - Owner of the window: a small class ReplaceFloatWin (F3) held by ReplacePanel; ReplacePanel passes it the new Snap in refresh() (update(snap), no rebuild).
+       ReplacePanel.build() already calls PeekPopup.dismiss() on every rebuild, so the floating window must NOT be created inside build(): it is created once and only updated.
+     - Pattern to copy: PeekPopup.show() (PopupWindow, ToolTip.inScreen(win) = no clipping, showAtLocation with screen coordinates from getLocationOnScreen, try / catch, returns false = fallback).
+       The peek is NOT touchable; the float window MUST be touchable (isTouchable = true, isFocusable = false so the field keeps the focus). BubbleOverlay.kt is only the key-bubble drawing inside the keyboard: not reused.
+     - Data: calc() -> ReplaceEngine.Result -> ReplaceFloat.snap(src, res, step, setMode, setLines). No second regex run. Same for the set lines (previewText).
+     - Rotation / leaving the panel / keyboard hidden / password field: dismiss in reset(), in MgbIme.onFinishInputView / onWindowHidden and when showPanel switches away from "replace"; on rotation re-place with ReplaceFloat.place().
+     - STILL UNKNOWN (needs the phone): how far above the keyboard the popup may go and whether it can be dragged over the app. F3 starts with the safe bounds = the keyboard area (top = keyboard top) and the honest CHANGELOG note.
+   F1 DONE v0.39.0 (typing/ReplaceFloat.java + tools/ReplaceFloatTest.java 60/60).
+   F2 DONE in code v0.39.1 (ReplaceFloatView.kt + hidden test switch on the "?" page; Kotlin NOT compiled, phone NOT tested).
+   NEXT: build log of v0.39.1 + phone look at the card; then F3 (ReplaceFloatWin.kt) + F4 (hooks) in one chat.
+

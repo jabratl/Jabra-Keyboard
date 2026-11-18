@@ -22,6 +22,7 @@ import com.mgb.keyboard.typing.QuickPaste   // v0.38.0 (P1)
 import com.mgb.keyboard.typing.RecentPairs
 import com.mgb.keyboard.typing.ReplaceEngine
 import com.mgb.keyboard.typing.ReplaceExtras
+import com.mgb.keyboard.typing.ReplaceFloat   // v0.39.1 (FLOAT F2)
 import com.mgb.keyboard.typing.ReplaceHelp
 import com.mgb.keyboard.typing.ReplacePads
 import com.mgb.keyboard.typing.ReplacePeek
@@ -821,6 +822,31 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
     // Same buttons, same handlers, same order of work as mainViewNew / mainView. Only the arrangement changes:
     // one row for the mode + an "Options" fold, ONE card for Find + With (label, text, Sel / Clip on one line), one note line (message or scope), one primary button.
 
+    // ------------------------------------------------------------------ v0.39.1 (FLOAT F2): the float preview card INSIDE the main view (hidden test switch rp_float_view, default OFF; "?" help page > Look)
+    // View only (ReplaceFloatView.kt + typing/ReplaceFloat.java). [<] [>] [Replace this] use the SAME code paths as the step row (showStep, onReplace).
+    // Any problem = null = the old preview card + step row are drawn.
+
+    private fun floatOn(): Boolean = try { prefs.bool("rp_float_view", false) } catch (_: Throwable) { false }
+
+    private fun floatCard(res: ReplaceEngine.Result, shown: String): View? {
+        val setMode = setRules != null
+        val lines: List<String>? = if (setMode && res.changed > 0) previewText(res).split("\n") else if (setMode) ArrayList<String>() else null
+        val nHits = res.hits.size
+        if (nHits > 0) step = step.coerceIn(0, nHits - 1)
+        val snap = ReplaceFloat.snap(src, res, step, setMode, lines)
+        val tab = ReplaceFloat.sanitizeTab(prefs.int("rp_float_tab", 0))
+        val replaced = shown.startsWith("Replaced")
+        val a = ReplaceFloatView.Actions(
+            onTab = { t -> prefs.setInt("rp_float_tab", ReplaceFloat.sanitizeTab(t)); refresh() },
+            onPrev = { step = ReplaceFloat.step(step, nHits, -1); showStep(res) },
+            onNext = { step = ReplaceFloat.step(step, nHits, 1); showStep(res) },
+            onReplace = { onReplace(ReplaceEngine.replaceNth(src, find, repl, opt, step + 1), true) },
+            onUndo = if (replaced && undoStack.canUndo()) ({ undo() }) else null,
+            notice = if (replaced) shown else ""
+        )
+        return ReplaceFloatView(ctx, prefs) { v -> host.feedback(v) }.window(snap, tab, a)
+    }
+
     private fun miniOn(): Boolean = try { prefs.bool("rp_mini", true) } catch (_: Throwable) { true }
 
     /** One line of the Find / With card: bold small label, the text (tap = type), small buttons on the right. */
@@ -872,6 +898,8 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
         val shown = msg
         msg = ""
         val nRules = setRules?.count { it.kind != ReplaceRules.K_COMMENT } ?: 0
+
+        val fcard: View? = if (floatOn()) (try { floatCard(res, shown) } catch (_: Throwable) { null }) else null   // v0.39.1 (FLOAT F2): hidden test switch; null = the old preview + step row below
 
         // 1) top bar: [ABC] [Sets] [Recent] [?] ........ pill
         val top = row()
@@ -941,7 +969,7 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
 
         // 4) step row (only when there are matches)
         val nHits = res.hits.size
-        if (setRules == null && nHits > 0 && res.err == null) {
+        if (fcard == null && setRules == null && nHits > 0 && res.err == null) {   // v0.39.1: the float card has its own < n/N > and Replace this
             step = step.coerceIn(0, nHits - 1)
             val sr = row()
             sr.gravity = Gravity.CENTER_VERTICAL
@@ -954,20 +982,22 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
         }
 
         // 5) preview card + ONE note line (the message if there is one, else the scope)
-        val sv = ScrollView(ctx)
-        val svLp = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(56))
-        svLp.setMargins(dp(2), dp(2), dp(2), dp(0))
-        sv.layoutParams = svLp
-        try { sv.background = UiKit.cardBackground(ctx, prefs, false, false) } catch (_: Throwable) { }
-        val pv = TextView(ctx)
-        pv.textSize = 13f
-        pv.setTextColor(try { JabraTokens.cardText(prefs) } catch (_: Throwable) { Color.BLACK })
-        pv.setPadding(dp(10), dp(4), dp(10), dp(4))
-        var pt: CharSequence = try { previewSpan(res) } catch (_: Throwable) { previewText(res) }
-        if (src.isEmpty() && res.err == null) pt = "No text: select text or type some first"
-        pv.text = pt
-        sv.addView(pv)
-        root.addView(sv)
+        if (fcard != null) root.addView(fcard) else {
+            val sv = ScrollView(ctx)
+            val svLp = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(56))
+            svLp.setMargins(dp(2), dp(2), dp(2), dp(0))
+            sv.layoutParams = svLp
+            try { sv.background = UiKit.cardBackground(ctx, prefs, false, false) } catch (_: Throwable) { }
+            val pv = TextView(ctx)
+            pv.textSize = 13f
+            pv.setTextColor(try { JabraTokens.cardText(prefs) } catch (_: Throwable) { Color.BLACK })
+            pv.setPadding(dp(10), dp(4), dp(10), dp(4))
+            var pt: CharSequence = try { previewSpan(res) } catch (_: Throwable) { previewText(res) }
+            if (src.isEmpty() && res.err == null) pt = "No text: select text or type some first"
+            pv.text = pt
+            sv.addView(pv)
+            root.addView(sv)
+        }
         root.addView(UiKit.noteText(ctx, prefs, if (shown.isNotEmpty()) shown else scopeWord().trim() + ": " + src.length + " characters"))
 
         // 6) actions: ONE filled primary button, the rest quiet
@@ -1054,6 +1084,11 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
             val lk = row()
             lk.addView(UiKit.chip(ctx, prefs, if (miniOn()) "\u2713 Minimal look (tap = previous look)" else "Previous look (tap = minimal look)", miniOn(), 34, { v -> host.feedback(v) }) { prefs.setBool("rp_mini", !miniOn()); refresh() })
             root.addView(lk)
+        } catch (_: Throwable) { }
+        try {   // v0.39.1 (FLOAT F2): test switch of the float preview card (pref rp_float_view, default OFF)
+            val fl = row()
+            fl.addView(UiKit.chip(ctx, prefs, if (floatOn()) "\u2713 Float preview, test (tap = off)" else "Float preview, test (tap = on)", floatOn(), 34, { v -> host.feedback(v) }) { prefs.setBool("rp_float_view", !floatOn()); refresh() })
+            root.addView(fl)
         } catch (_: Throwable) { }
         val sv = ScrollView(ctx)
         sv.layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(170))
