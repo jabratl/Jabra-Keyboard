@@ -41,7 +41,8 @@ class ReplaceFloatView(private val ctx: Context, private val prefs: JabraPrefs, 
         val onUndo: (() -> Unit)? = null,
         val onMinimize: (() -> Unit)? = null,
         val onClose: (() -> Unit)? = null,
-        val notice: String = ""          // e.g. "Replaced 3": shown in the pill instead of the count
+        val notice: String = "",         // e.g. "Replaced 3": shown in the pill instead of the count
+        val onPick: ((Int) -> Unit)? = null   // v0.39.6: tap a row = that match (0-based) becomes the current one (simple window only)
     )
 
     private val AMBER: Int = 0xFFF9A825.toInt()
@@ -167,16 +168,36 @@ class ReplaceFloatView(private val ctx: Context, private val prefs: JabraPrefs, 
         return sb
     }
 
-    private fun body(snap: ReplaceFloat.Snap, tab: Int): View {
+    /** v0.39.6 (simple window): ONE line per match: left + found (amber, struck out) + replacement (green) + right. Current row bold. */
+    private fun rowCombined(r: ReplaceFloat.Row): CharSequence {
+        val sb = SpannableStringBuilder()
+        try {
+            sb.append(r.left)
+            val a = sb.length
+            sb.append(r.found)
+            val b = sb.length
+            sb.append(r.repl)
+            val c = sb.length
+            sb.append(r.right)
+            mark(sb, a, b, AMBER, true)
+            mark(sb, b, c, GREEN, false)
+            if (r.current) sb.setSpan(StyleSpan(Typeface.BOLD), 0, sb.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+        } catch (_: Throwable) { }
+        return sb
+    }
+
+    private fun body(snap: ReplaceFloat.Snap, tab: Int, simple: Boolean = false, onPick: ((Int) -> Unit)? = null): View {
+        val maxRows = if (simple) 2 else ReplaceFloat.MAX_ROWS
         val box = LinearLayout(ctx)
         box.orientation = LinearLayout.VERTICAL
         box.setPadding(dp(8), dp(2), dp(8), dp(2))
-        box.layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(ROW_DP * ReplaceFloat.MAX_ROWS + 4))   // fixed height: the window does not jump
+        box.layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(ROW_DP * maxRows + 4))   // fixed height: the window does not jump
         val lines = ArrayList<CharSequence>()
+        val picks = ArrayList<Int>()   // 0-based match of each line, -1 = none
         if (snap.setMode && snap.setLines.isNotEmpty()) {
-            for (l in snap.setLines.take(ReplaceFloat.MAX_ROWS)) lines.add(l)
+            for (l in snap.setLines.take(maxRows)) { lines.add(l); picks.add(-1) }
         } else {
-            for (r in snap.rows) lines.add(rowText(r, tab))
+            for (r in snap.rows.take(maxRows)) { lines.add(if (simple) rowCombined(r) else rowText(r, tab)); picks.add(r.n - 1) }
         }
         if (lines.isEmpty()) {
             val e = tv(12f, dim())
@@ -186,9 +207,14 @@ class ReplaceFloatView(private val ctx: Context, private val prefs: JabraPrefs, 
             box.addView(e)
             return box
         }
-        for (ln in lines) {
+        for ((li, ln) in lines.withIndex()) {
             val t = tv(12f, ink())
             t.text = ln
+            val pk = picks.getOrElse(li) { -1 }
+            if (onPick != null && pk >= 0) {
+                t.isClickable = true
+                t.setOnClickListener { try { feedback(t) } catch (_: Throwable) { }; try { onPick(pk) } catch (_: Throwable) { } }
+            }
             t.gravity = Gravity.CENTER_VERTICAL
             t.layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(ROW_DP))
             box.addView(t)
@@ -260,8 +286,9 @@ class ReplaceFloatView(private val ctx: Context, private val prefs: JabraPrefs, 
         if (cl != null) head.addView(iconBtn("\u2715", "Close") { cl() })
         box.addView(head)
 
-        box.addView(tabs(tab, a))
-        box.addView(body(snap, tab))
+        val simple = mn != null   // v0.39.6: the FLOATING window is the simple one (no tabs, 2 rows, one line per match); the inline test card keeps the tabs
+        if (!simple) box.addView(tabs(tab, a))
+        box.addView(body(snap, tab, simple, a.onPick))
         val f = footer(snap, a)
         if (f != null) box.addView(f)
         return box
