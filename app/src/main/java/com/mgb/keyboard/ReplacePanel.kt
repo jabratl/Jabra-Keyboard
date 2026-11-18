@@ -78,6 +78,7 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
     var clipList: (() -> List<ClipList.Item>)? = null          // set by MgbIme: the clipboard history (null = the list shows only the latest copy)
     private var pasteBack = 1
     private var pasteTab = 0
+    private var optsOpen = false                                // v0.38.1 (P2): mini look: the option chips (Aa, Keep, List ...) are folded away until "Options" is tapped
 
     /** v0.29.0: open on ONE clip: reset first (clears any old clip), then the clip text is the source. */
     fun openForClip(cio: FmtIo) {
@@ -90,6 +91,7 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
     /** Call when the panel is opened from outside: reads the options and the field once. */
     fun reset() {
         PeekPopup.dismiss()   // v0.32.0
+        optsOpen = false   // v0.38.1 (P2)
         setPreviewOn = false; setPrev = null; part = 0; partCut = -1; clipIo = null; msg = ""; confirmAll = false; undoStack.clear(); helpPage = 0; typing = 0; padPage = 0; shift = false; step = 0; rprAsk = false
         try { opt = ReplaceEngine.unpack(prefs.int("rp_opt", ReplaceEngine.pack(ReplaceEngine.Opt()))) } catch (_: Throwable) { opt = ReplaceEngine.Opt() }
         readSource(true)
@@ -564,6 +566,10 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
 
     /** New look when panel_ui = New; any problem = the classic main view (pattern HistCard.buildModern / buildClassic). */
     private fun mainViewPick(): View {
+        if (miniOn()) {   // v0.38.1 (P2): minimal look first (pref rp_mini, default ON); any problem = the look that was used before
+            val keep = msg
+            try { return mainViewMini() } catch (_: Throwable) { msg = keep }
+        }
         if (newLook()) {
             val keep = msg
             try { return mainViewNew() } catch (_: Throwable) { msg = keep }
@@ -811,6 +817,178 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
         return root
     }
 
+    // ------------------------------------------------------------------ v0.38.1 (P2): MINIMAL LOOK of the main view (pref rp_mini, default ON; switch: "?" help page > Look)
+    // Same buttons, same handlers, same order of work as mainViewNew / mainView. Only the arrangement changes:
+    // one row for the mode + an "Options" fold, ONE card for Find + With (label, text, Sel / Clip on one line), one note line (message or scope), one primary button.
+
+    private fun miniOn(): Boolean = try { prefs.bool("rp_mini", true) } catch (_: Throwable) { true }
+
+    /** One line of the Find / With card: bold small label, the text (tap = type), small buttons on the right. */
+    private fun miniLine(label: String, value: String, onTap: () -> Unit, actions: List<Pair<String, () -> Unit>>): View {
+        val r = LinearLayout(ctx)
+        r.orientation = LinearLayout.HORIZONTAL
+        r.gravity = Gravity.CENTER_VERTICAL
+        val noteInk = try { JabraTokens.cardNote(prefs) } catch (_: Throwable) { Color.GRAY }
+        val lb = TextView(ctx)
+        lb.text = label
+        lb.textSize = JabraTokens.T_NOTE
+        lb.setTypeface(lb.typeface, Typeface.BOLD)
+        lb.setTextColor(noteInk)
+        lb.layoutParams = LinearLayout.LayoutParams(dp(38), LinearLayout.LayoutParams.WRAP_CONTENT)
+        r.addView(lb)
+        val vv = TextView(ctx)
+        vv.textSize = JabraTokens.T_BODY
+        vv.maxLines = 1
+        vv.ellipsize = android.text.TextUtils.TruncateAt.END
+        vv.gravity = Gravity.CENTER_VERTICAL
+        if (value.isEmpty()) { vv.text = "tap to type"; vv.setTextColor(noteInk) }
+        else { vv.text = shortVal(value); vv.setTextColor(try { JabraTokens.cardText(prefs) } catch (_: Throwable) { Color.BLACK }) }
+        vv.layoutParams = LinearLayout.LayoutParams(0, dp(36), 1f)
+        vv.isClickable = true
+        vv.setOnClickListener { try { host.feedback(vv) } catch (_: Throwable) { }; try { onTap() } catch (_: Throwable) { } }
+        r.addView(vv)
+        for (a in actions) r.addView(small(a.first, 32) { a.second() })
+        return r
+    }
+
+    private fun miniDivider(): View {
+        val d = View(ctx)
+        d.setBackgroundColor(try { JabraTokens.cardStroke(prefs, false, false) } catch (_: Throwable) { Color.LTGRAY })
+        val lp = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 1)
+        lp.setMargins(dp(4), dp(1), dp(4), dp(1))
+        d.layoutParams = lp
+        return d
+    }
+
+    private fun mainViewMini(): View {
+        val root = LinearLayout(ctx)
+        root.orientation = LinearLayout.VERTICAL
+        paintBg(root)
+        root.setPadding(dp(4), dp(4), dp(4), dp(4))
+        valueTv = null
+        keysBox = null
+
+        val res = calc()
+        val shown = msg
+        msg = ""
+        val nRules = setRules?.count { it.kind != ReplaceRules.K_COMMENT } ?: 0
+
+        // 1) top bar: [ABC] [Sets] [Recent] [?] ........ pill
+        val top = row()
+        top.gravity = Gravity.CENTER_VERTICAL
+        top.addView(small("ABC", 38) { host.showLetters() })
+        top.addView(small("Sets", 38) { typing = 3; confirmAll = false; refresh() })
+        top.addView(small("Recent", 38) { typing = 4; confirmAll = false; rprAsk = false; refresh() })
+        top.addView(small("?", 38) { typing = 5; helpPage = 0; confirmAll = false; refresh() })
+        val sp = View(ctx)
+        sp.layoutParams = LinearLayout.LayoutParams(0, 1, 1f)
+        top.addView(sp)
+        val rr0 = setRun
+        val pillText: String
+        var warn = false
+        if (res.err != null || (setRules != null && rr0 != null && rr0.err != null)) { pillText = "Error"; warn = true }
+        else if (setRules != null) pillText = if (res.changed == 0) "No match" else (res.changed.toString() + (if (res.changed == 1) " change" else " changes"))
+        else if (res.blank) pillText = "Type Find"
+        else pillText = ReplaceEngine.info(res)
+        top.addView(pill(pillText, warn))
+        root.addView(top)
+
+        // 2) mode row (Text | Word | Regex | Options) + the folded option chips
+        if (setRules == null) {
+            val mr = row()
+            mr.gravity = Gravity.CENTER_VERTICAL
+            for (i in 0..2) {
+                val c = UiKit.chip(ctx, prefs, ReplaceEngine.MODE_NAMES[i], opt.mode == i, 34, { v -> host.feedback(v) }) { opt.mode = i; optChanged() }
+                c.layoutParams = LinearLayout.LayoutParams(0, dp(34), 1f).also { it.setMargins(dp(2), dp(2), dp(2), dp(2)) }
+                mr.addView(c)
+            }
+            val oc = UiKit.chip(ctx, prefs, if (optsOpen) "Options \u25B4" else "Options \u25BE", optsOpen, 34, { v -> host.feedback(v) }) { optsOpen = !optsOpen; refresh() }
+            oc.layoutParams = LinearLayout.LayoutParams(0, dp(34), 1.5f).also { it.setMargins(dp(2), dp(2), dp(2), dp(2)) }
+            mr.addView(oc)
+            root.addView(mr)
+            if (optsOpen) {
+                val orow = row()
+                orow.addView(UiKit.chip(ctx, prefs, "Aa", opt.matchCase, 34, { v -> host.feedback(v) }) { opt.matchCase = !opt.matchCase; optChanged() })
+                orow.addView(UiKit.chip(ctx, prefs, "Keep", opt.keepCase, 34, { v -> host.feedback(v) }) { opt.keepCase = !opt.keepCase; if (opt.keepCase) opt.matchCase = false; optChanged() })
+                if (opt.mode != ReplaceEngine.MODE_REGEX) {
+                    orow.addView(UiKit.chip(ctx, prefs, "List", opt.list, 34, { v -> host.feedback(v) }) { opt.list = !opt.list; optChanged() })
+                    orow.addView(UiKit.chip(ctx, prefs, "\u09AC\u09BE\u0982", opt.bangla, 34, { v -> host.feedback(v) }) { opt.bangla = !opt.bangla; optChanged() })
+                    orow.addView(UiKit.chip(ctx, prefs, "\\n", opt.escapes, 34, { v -> host.feedback(v) }) { opt.escapes = !opt.escapes; optChanged() })
+                }
+                root.addView(orow)
+            }
+        }
+
+        // 3) ONE card: Find + With (or the active set)
+        val card = LinearLayout(ctx)
+        card.orientation = LinearLayout.VERTICAL
+        card.setPadding(dp(10), dp(2), dp(4), dp(2))
+        try { card.background = UiKit.cardBackground(ctx, prefs, false, false) } catch (_: Throwable) { }
+        if (setRules != null) {
+            card.addView(miniLine("Set", (setName ?: "") + " (" + nRules + ")", { typing = 3; refresh() },
+                listOf(Pair("\u2715 Set") { setRules = null; setName = null; setRun = null; confirmAll = false; refresh() }, Pair("Fmt") { copyForFormatter() })))
+        } else {
+            card.addView(miniLine("Find", find, { startTyping(1) },
+                listOf(Pair("Sel") { take(true, io.selected(), "Nothing is selected") }, Pair("Clip") { take(true, io.clipText(), "Clipboard is empty") })))
+            card.addView(miniDivider())
+            card.addView(miniLine("With", repl, { startTyping(2) },
+                listOf(Pair("\u21C4") { swap() }, Pair("Sel") { take(false, io.selected(), "Nothing is selected") }, Pair("Clip") { take(false, io.clipText(), "Clipboard is empty") })))
+        }
+        val cardLp = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
+        cardLp.setMargins(dp(2), dp(4), dp(2), dp(2))
+        card.layoutParams = cardLp
+        root.addView(card)
+
+        // 4) step row (only when there are matches)
+        val nHits = res.hits.size
+        if (setRules == null && nHits > 0 && res.err == null) {
+            step = step.coerceIn(0, nHits - 1)
+            val sr = row()
+            sr.gravity = Gravity.CENTER_VERTICAL
+            sr.addView(small("<", 34) { step = if (step <= 0) nHits - 1 else step - 1; showStep(res) })
+            sr.addView(small((step + 1).toString() + "/" + res.count, 34) { showStep(res) })
+            sr.addView(small("Skip", 34) { step = if (step >= nHits - 1) 0 else step + 1; showStep(res) })
+            sr.addView(btn("Replace this", 1f, 34) { onReplace(ReplaceEngine.replaceNth(src, find, repl, opt, step + 1), true) })
+            sr.addView(btn("Rest", 0.8f, 34) { onReplace(ReplaceEngine.run(src, find, repl, opt, step + 1, Int.MAX_VALUE), true) })
+            root.addView(sr)
+        }
+
+        // 5) preview card + ONE note line (the message if there is one, else the scope)
+        val sv = ScrollView(ctx)
+        val svLp = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(56))
+        svLp.setMargins(dp(2), dp(2), dp(2), dp(0))
+        sv.layoutParams = svLp
+        try { sv.background = UiKit.cardBackground(ctx, prefs, false, false) } catch (_: Throwable) { }
+        val pv = TextView(ctx)
+        pv.textSize = 13f
+        pv.setTextColor(try { JabraTokens.cardText(prefs) } catch (_: Throwable) { Color.BLACK })
+        pv.setPadding(dp(10), dp(4), dp(10), dp(4))
+        var pt: CharSequence = try { previewSpan(res) } catch (_: Throwable) { previewText(res) }
+        if (src.isEmpty() && res.err == null) pt = "No text: select text or type some first"
+        pv.text = pt
+        sv.addView(pv)
+        root.addView(sv)
+        root.addView(UiKit.noteText(ctx, prefs, if (shown.isNotEmpty()) shown else scopeWord().trim() + ": " + src.length + " characters"))
+
+        // 6) actions: ONE filled primary button, the rest quiet
+        val act = row()
+        val ask = confirmAll && !usedSel
+        val canGo = res.err == null && res.count > 0 && !res.blank
+        val allLabel = if (ask) "Sure? Replace all" else if (res.err == null && res.count > 0) "Replace all (" + res.count + ")" else "Replace all"
+        val all = btn(allLabel, 2f, 44) { onReplace(res, false) }
+        accentButton(all, if (ask) JabraTokens.WARN else JabraTokens.ACCENT)
+        peekOn(all) { peekResult(res) }
+        all.alpha = if (canGo) 1f else 0.6f
+        act.addView(all)
+        if (setRules == null) act.addView(btn("1st", 0.7f, 44) { onReplace(ReplaceEngine.replaceFirst(src, find, repl, opt), true) })
+        act.addView(btn(scopeLabel(), 1.3f, 44) { toggleScope() })
+        if (undoStack.canUndo()) act.addView(btn("\u21B6 " + ReplaceExtras.undoLabel(undoStack.size()), 1f, 44) { undo() })
+        else if (copiedOut != null && copiedOut == res.out) act.addView(btn("Paste", 1f, 44) { pasteCopied() })
+        else act.addView(btn("Copy", 1f, 44) { copyResult(res) })
+        root.addView(act)
+        return root
+    }
+
     private fun setsViewNew(): View {
         val root = LinearLayout(ctx)
         root.orientation = LinearLayout.VERTICAL
@@ -872,6 +1050,11 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
             h.addView(btn((if (on) "\u2713 " else "") + ReplaceHelp.PAGES[i], 1f, 34) { helpPage = i; refresh() })
         }
         root.addView(h)
+        try {   // v0.38.1 (P2): look switch (pref rp_mini)
+            val lk = row()
+            lk.addView(UiKit.chip(ctx, prefs, if (miniOn()) "\u2713 Minimal look (tap = previous look)" else "Previous look (tap = minimal look)", miniOn(), 34, { v -> host.feedback(v) }) { prefs.setBool("rp_mini", !miniOn()); refresh() })
+            root.addView(lk)
+        } catch (_: Throwable) { }
         val sv = ScrollView(ctx)
         sv.layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(170))
         val col = LinearLayout(ctx)
@@ -1025,6 +1208,7 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
         tv.layoutParams = lp
         head.addView(tv)
         valueTv = tv
+        if (miniOn()) { try { tv.background = UiKit.cardBackground(ctx, prefs, false, false); tv.setPadding(dp(10), 0, dp(6), 0) } catch (_: Throwable) { } }   // v0.38.1 (P2): the typed text sits in a card
         head.addView(btn("Clear", 1f, 34) { setCur(""); caretPos = 0; showValue() })
         head.addView(btn(if (typing == 1) "Next: With" else "Next: Find", 1.4f, 34) { typing = if (typing == 1) 2 else 1; padPage = 0; shift = false; caretPos = cur().length; refresh() })
         root.addView(head)
@@ -1034,6 +1218,7 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
         try {
             val pr = row()
             val pb = btn("Paste", 1.6f, 32) { pasteCur(latestCopy()) }
+            if (miniOn()) accentButton(pb, JabraTokens.ACCENT)   // v0.38.1 (P2): Paste = the one filled key
             try { pb.setOnLongClickListener { v -> try { host.feedback(v) } catch (_: Throwable) { }; openPicker(); true } } catch (_: Throwable) { }
             pr.addView(pb)
             pr.addView(btn("\u25BE", 0.7f, 32) { openPicker() })
@@ -1101,7 +1286,9 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
         bot.addView(btn("\u25B6", 0.8f, 34) { caretPos = ReplacePads.right(cur(), caretPos); showValue() })
         bot.addView(btn("\u2423", 2.2f, 34) { typeText(" ") })
         bot.addView(btn("\u232B", 1.3f, 34) { backKey() })
-        bot.addView(btn("\u2713 Done", 1.4f, 34) { typing = 0; valueTv = null; keysBox = null; readSource(false); refresh() })
+        val doneB = btn("\u2713 Done", 1.4f, 34) { typing = 0; valueTv = null; keysBox = null; readSource(false); refresh() }
+        if (miniOn()) accentButton(doneB, JabraTokens.ACCENT)   // v0.38.1 (P2)
+        bot.addView(doneB)
         box.addView(bot)
     }
 }

@@ -1287,3 +1287,13 @@ v0.38.0 - PASTE KEYS (clip Edit + Find & Replace typing)
  [ ] Select text in the app, open Replace > Find: Sel puts the selected text at the cursor. Nothing selected = a short toast.
  [ ] Hold the "Find: ..." line = paste. Bangla pages of the mini keyboard still type; pasted Bangla shows in the line.
  [ ] Empty clipboard = "Clipboard is empty" (toast in Replace, message line in Edit). Old behaviour of every other key unchanged.
+
+v0.38.1 - MINIMAL LOOK of Find & Replace
+ [ ] Open Replace (toolbar Rp): top bar, then Text | Word | Regex | Options, then ONE card with Find and With lines, a note line, a preview, and a filled "Replace all".
+ [ ] Options v / ^ opens and closes Aa | Keep | List | bangla | \n; the ticks still work and are remembered after closing the panel.
+ [ ] Find / With: tap the text = mini keyboard; Sel and Clip fill the field; the swap key swaps; long texts end with ...
+ [ ] Matches: < n/N Skip | Replace this | Rest appear only when there are matches and work as before. Replace all asks "Sure?" (orange), then works; Undo / Copy / Paste as before. Long-press Replace all = peek card.
+ [ ] Load a set (Sets): the card shows the Set line with x Set and Fmt. x Set returns to Find / With.
+ [ ] Typing view: typed text in a card, Paste and Done filled. Everything else same.
+ [ ] "?" help > first row switches Minimal look <-> Previous look. Check light + dark theme and a 360 dp phone.
+
