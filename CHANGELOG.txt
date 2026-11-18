@@ -1,12 +1,3 @@
-v0.39.6 - CHANGE: SIMPLER + SMOOTHER floating Replace window (user sample "floating_replace_preview_v2")
-- SEEN/WHY: owner: floating window works (v0.39.5); wants it more simple and smooth.
-- WHAT: (1) no tabs in the floating window: ONE line per match = text + found (amber, struck out) + replacement (green) + text; 2 rows instead of 3 (window is shorter). (2) header has only the minimize button; close = the "Float" chip in the top bar (no close x). (3) bubble: after release it slides (180 ms) to the nearest left / right edge and the place is saved; window and bubble are a little see-through while dragging. (4) soft open: fade + small zoom (140 ms) when the window or bubble appears. (5) after [Replace this] the same position shows the NEXT match ("Replaced N" + Undo as before). (6) tap a row = that match becomes the current one (it is also selected in the field).
-- Inline test card (rp_float_view) is unchanged: it keeps the 3 tabs and 3 rows.
-- NOT built: swipe left / right for previous / next match (needs a gesture detector; ask if wanted).
-- WHAT BROKE: nothing known. No new pref, no permission. Float switch OFF = old screen.
-- NOT tested: Kotlin NOT compiled, phone NOT tested. Check: window shows 2 one-line rows without tabs; [-] = bubble; release the bubble = it slides to an edge; tap a row = that match is bold / selected; Replace this = next match shows.
-- Files: PATCH ReplaceFloatView.kt, ReplaceFloatWin.kt, ReplacePanel.kt (1 line), app/build.gradle.kts (0.39.6), CHANGELOG.txt.
-
 v0.39.5 - FIX: Float preview showed INSIDE the keyboard (docked card) instead of a floating, draggable window
 - SEEN/WHY: owner screenshots: "Float" chip is ticked, but the Preview card sits inside the keyboard panel (no minimize / close buttons) and cannot be dragged over the app. ROOT CAUSE (found in code): the old F2 test switch rp_float_view (inline card) was still ON and it WON over the floating window (fcard != null, so floatSync() was never called).
 - WHAT: (1) the inline test card is drawn only while the floating switch rp_float is OFF; with rp_float ON the floating window always owns the preview. (2) Turning "Floating preview window" ON on the "?" page also turns the inline test switch OFF and sets the window state to open. (3) First place of the window = just above the keyboard, drag by the header, minimize = bubble, close = Float chip (all as in v0.39.2 / v0.39.4, unchanged).
