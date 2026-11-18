@@ -95,36 +95,52 @@ class ReplaceFloatWin(private val ctx: Context, private val prefs: JabraPrefs, p
         try { pw?.update(curX - offX, curY - offY, -1, -1) } catch (_: Throwable) { }
     }
 
-    /** Drag on [target]; a short touch (under the touch slop) is a tap. */
-    private fun attachDrag(target: View, onTap: (() -> Unit)?) {
-        val slop = try { ViewConfiguration.get(ctx).scaledTouchSlop } catch (_: Throwable) { dp(8) }
-        var downX = 0f
-        var downY = 0f
-        var startX = 0
-        var startY = 0
-        var moved = false
-        target.setOnTouchListener { _, e ->
+    /**
+     * v0.39.7: the WHOLE window (header, rows, footer, bubble) can be dragged. A touch that moves more than the touch slop is taken over from the child (button / row),
+     * so a tap still works and a drag works from anywhere. alpha 0.85 while dragging. On release: bubble slides to the nearest edge, the place is saved.
+     */
+    private inner class DragFrame : FrameLayout(ctx) {
+        private val slop = try { ViewConfiguration.get(ctx).scaledTouchSlop } catch (_: Throwable) { dp(8) }
+        private var downX = 0f
+        private var downY = 0f
+        private var startX = 0
+        private var startY = 0
+        private var dragging = false
+
+        private fun begin(e: MotionEvent) { downX = e.rawX; downY = e.rawY; startX = curX; startY = curY; dragging = false }
+        private fun far(e: MotionEvent): Boolean { val dx = e.rawX - downX; val dy = e.rawY - downY; return dx * dx + dy * dy > slop * slop }
+        private fun start() { dragging = true; alpha = 0.85f; try { parent?.requestDisallowInterceptTouchEvent(true) } catch (_: Throwable) { } }
+        private fun end() {
+            alpha = 1f
+            if (!dragging) return
+            dragging = false
+            if (shownState == ReplaceFloat.MINI) snapToEdge()
+            else { try { prefs.setInt("rp_float_x", curX); prefs.setInt("rp_float_y", curY) } catch (_: Throwable) { } }
+        }
+
+        override fun onInterceptTouchEvent(e: MotionEvent): Boolean {
             try {
                 when (e.actionMasked) {
-                    MotionEvent.ACTION_DOWN -> { downX = e.rawX; downY = e.rawY; startX = curX; startY = curY; moved = false; true }
-                    MotionEvent.ACTION_MOVE -> {
-                        val dx = e.rawX - downX
-                        val dy = e.rawY - downY
-                        if (!moved && (dx * dx + dy * dy) > slop * slop) { moved = true; box?.alpha = 0.85f }   // v0.39.6: a little see-through while dragging
-                        if (moved) moveTo(startX + dx.toInt(), startY + dy.toInt())
-                        true
-                    }
-                    MotionEvent.ACTION_UP -> {
-                        box?.alpha = 1f
-                        if (moved && shownState == ReplaceFloat.MINI) snapToEdge()   // v0.39.6: the bubble slides to the nearest side
-                        else if (moved) { prefs.setInt("rp_float_x", curX); prefs.setInt("rp_float_y", curY) }
-                        else { try { feedback(target) } catch (_: Throwable) { }; onTap?.invoke() }
-                        true
-                    }
-                    MotionEvent.ACTION_CANCEL -> { box?.alpha = 1f; true }
-                    else -> false
+                    MotionEvent.ACTION_DOWN -> begin(e)
+                    MotionEvent.ACTION_MOVE -> if (!dragging && far(e)) { start(); return true }
+                    MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> end()
                 }
-            } catch (_: Throwable) { false }
+            } catch (_: Throwable) { }
+            return dragging
+        }
+
+        override fun onTouchEvent(e: MotionEvent): Boolean {
+            try {
+                when (e.actionMasked) {
+                    MotionEvent.ACTION_DOWN -> { begin(e); return true }   // touch on an empty part of the window
+                    MotionEvent.ACTION_MOVE -> {
+                        if (!dragging && far(e)) start()
+                        if (dragging) moveTo(startX + (e.rawX - downX).toInt(), startY + (e.rawY - downY).toInt())
+                    }
+                    MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> end()
+                }
+            } catch (_: Throwable) { }
+            return true
         }
     }
 
@@ -145,10 +161,9 @@ class ReplaceFloatWin(private val ctx: Context, private val prefs: JabraPrefs, p
     }
 
     private fun wire(c: View, st: Int) {
-        if (st == ReplaceFloat.MINI) attachDrag(c) { setState(ReplaceFloat.OPEN) }
-        else {
-            val h = c.findViewWithTag<View>("rf_header")
-            if (h != null) attachDrag(h, null)
+        if (st == ReplaceFloat.MINI) {   // bubble: tap = open (drag is done by DragFrame)
+            c.isClickable = true
+            c.setOnClickListener { try { feedback(c) } catch (_: Throwable) { }; setState(ReplaceFloat.OPEN) }
         }
     }
 
@@ -164,7 +179,7 @@ class ReplaceFloatWin(private val ctx: Context, private val prefs: JabraPrefs, p
             live = this
             val b = bounds()
             val margin = dp(10)
-            val w = if (st == ReplaceFloat.MINI) dp(46) else (b[2] - 2 * margin).coerceAtLeast(dp(200))
+            val w = if (st == ReplaceFloat.MINI) dp(46) else (b[2] * 0.84f).toInt().coerceIn(dp(260), dp(340)).coerceAtMost((b[2] - 2 * margin).coerceAtLeast(dp(200)))   // v0.39.7: narrower than the screen, so it can also move left / right
             val c = content(snap, tab, a, st, w)
             val win = pw
             val bx = box
@@ -182,11 +197,11 @@ class ReplaceFloatWin(private val ctx: Context, private val prefs: JabraPrefs, p
             val sx = prefs.int("rp_float_x", -1)
             val sy = prefs.int("rp_float_y", -1)
             val pos: IntArray = if (sx < 0 || sy < 0) {   // first time: just above the keyboard (bubble at the right edge)
-                val x = if (st == ReplaceFloat.MINI) b[2] - w - margin else margin
+                val x = if (st == ReplaceFloat.MINI) b[2] - w - margin else (b[2] - w) / 2
                 ReplaceFloat.clamp(x, rl[1] - h - dp(8), w, h, b[0], b[1], b[2], b[3], dp(6))
             } else ReplaceFloat.place(sx, sy, w, h, b[0], b[1], b[2], b[3], dp(6))
             curX = pos[0]; curY = pos[1]
-            val f = FrameLayout(ctx)
+            val f = DragFrame()   // v0.39.7: drag from anywhere
             f.addView(c)
             val p = PopupWindow(f, w, ViewGroup.LayoutParams.WRAP_CONTENT, false)
             p.isTouchable = true

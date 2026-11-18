@@ -1,3 +1,10 @@
+v0.39.7 - FIX: floating Replace window could not be dragged freely (after v0.39.6)
+- SEEN/WHY: owner: "can not drag freely". Causes found in code: (1) only the header strip was a drag handle (a touch on a row / button / empty part did nothing); (2) the window was almost full screen width, so it could only move up / down.
+- WHAT: (1) new DragFrame inside ReplaceFloatWin.kt: the WHOLE window (and the bubble) can be dragged from anywhere. A tap still works (button, row, bubble tap = open); a move over the touch slop takes the touch over (drag). (2) the window is now 84% of the screen width (min 260 dp, max 340 dp, centred at first), so it can move left / right too. Same clamp, same saved place (rp_float_x / rp_float_y), bubble still slides to the nearest edge.
+- WHAT BROKE: nothing known. No new pref, no permission.
+- NOT tested: Kotlin NOT compiled, phone NOT tested. If the window STOPS at the top of the keyboard (cannot go over the app's text) that is an Android limit of keyboard popups: tell me where it stops.
+- Files: PATCH ReplaceFloatWin.kt, app/build.gradle.kts (0.39.7), CHANGELOG.txt.
+
 v0.39.6 - CHANGE: SIMPLER + SMOOTHER floating Replace window (user sample "floating_replace_preview_v2")
 - SEEN/WHY: owner: floating window works (v0.39.5); wants it more simple and smooth.
 - WHAT: (1) no tabs in the floating window: ONE line per match = text + found (amber, struck out) + replacement (green) + text; 2 rows instead of 3 (window is shorter). (2) header has only the minimize button; close = the "Float" chip in the top bar (no close x). (3) bubble: after release it slides (180 ms) to the nearest left / right edge and the place is saved; window and bubble are a little see-through while dragging. (4) soft open: fade + small zoom (140 ms) when the window or bubble appears. (5) after [Replace this] the same position shows the NEXT match ("Replaced N" + Undo as before). (6) tap a row = that match becomes the current one (it is also selected in the field).
