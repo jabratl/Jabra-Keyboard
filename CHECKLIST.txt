@@ -1308,3 +1308,14 @@ v0.39.1 - FLOAT PREVIEW CARD (hidden test, inside the Replace main view)
  [ ] Light + dark theme, a 360 dp phone: text readable, nothing cut inside a button, the card does not jump while typing.
  [ ] Switch the chip OFF = exactly the v0.38.1 screen. Any problem = the old preview + step row come back by themselves.
 
+v0.39.3 - FLOATING PREVIEW WINDOW (F3 + F4)
+ [ ] Replace > "?" help > chip "Floating preview window (tap = on)". Back to the main view: a "Float" chip is in the top bar; the window appears (header shows the match count; tabs Before / After / Changes switch).
+ [ ] Drag the header: the window follows the finger and stays on screen; a short tap does not move it. Does it go above the keyboard over the app text? (write what you see)
+ [ ] Minimize (-): round bubble with the count; tap opens the window; drag moves the bubble.
+ [ ] Close (x) and the "Float" chip in the top bar close / open it; the choice is remembered after leaving the panel.
+ [ ] Type in Find: the window updates at once without flicker. No match = "No match".
+ [ ] [<] [>] and [Replace this] work; after a replace the window shows "Replaced N" and [Undo]; Undo works. Replace all still in the main view.
+ [ ] Leave the Replace panel (ABC) or hide the keyboard: the window is gone. Open the Find typing screen: window hidden, back after Done.
+ [ ] Rotate the phone and a small phone: window / bubble stay visible. Light + dark theme readable.
+ [ ] Switch OFF in "?" = exactly the v0.38.1 screen. Any problem = old inline preview.
+

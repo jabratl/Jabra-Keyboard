@@ -110,5 +110,6 @@ BEFORE ANY NEW WORK: upload v0.38.0 + v0.38.1 patches, run the GitHub build, and
      - STILL UNKNOWN (needs the phone): how far above the keyboard the popup may go and whether it can be dragged over the app. F3 starts with the safe bounds = the keyboard area (top = keyboard top) and the honest CHANGELOG note.
    F1 DONE v0.39.0 (typing/ReplaceFloat.java + tools/ReplaceFloatTest.java 60/60).
    F2 DONE in code v0.39.1 (ReplaceFloatView.kt + hidden test switch on the "?" page; Kotlin NOT compiled, phone NOT tested).
-   NEXT: build log of v0.39.1 + phone look at the card; then F3 (ReplaceFloatWin.kt) + F4 (hooks) in one chat.
+   F3 DONE in code v0.39.2 (ReplaceFloatWin.kt) + F4 DONE in code v0.39.3 (hooks, Float chip, pref rp_float default OFF). Kotlin NOT compiled, phone NOT tested.
+   NEXT: build log; phone test CHECKLIST v0.39.3 (esp. how far above the keyboard the window can go); then F5 (polish + docs, make rp_float default ON only after the phone test).
 

@@ -542,6 +542,7 @@ class MgbIme : InputMethodService() {
 
     override fun onFinishInputView(finishingInput: Boolean) {
         super.onFinishInputView(finishingInput)
+        try { ReplaceFloatWin.dismissLive() } catch (_: Throwable) { }   // v0.39.3 (FLOAT F4)
         try { UiKit.closeSelect() } catch (_: Throwable) { }   // v0.19.6 (S7): an open dropdown list never stays on screen after the keyboard closes
         try { HistStore.flush() } catch (_: Throwable) { }   // v0.20.0 (H1): save typing history when the keyboard hides
         pcResetMods()   // v0.17.49 (PC1): Ctrl must not stay on after the keyboard closes
@@ -549,6 +550,7 @@ class MgbIme : InputMethodService() {
 
     override fun onWindowHidden() {
         super.onWindowHidden()
+        try { ReplaceFloatWin.dismissLive() } catch (_: Throwable) { }   // v0.39.3 (FLOAT F4)
         try { UiKit.closeSelect() } catch (_: Throwable) { }   // v0.19.6 (S7)
         pcResetMods()   // v0.17.49 (PC1)
     }
@@ -1447,6 +1449,7 @@ class MgbIme : InputMethodService() {
     }
 
     private fun showLetters() {
+        try { ReplaceFloatWin.dismissLive() } catch (_: Throwable) { }   // v0.39.3 (FLOAT F4): the floating Replace window never stays on the letters
         try { UiKit.closeSelect() } catch (_: Throwable) { }   // v0.19.6 (S7): panel switch closes an open dropdown list
         val c = container ?: return
         autoNumpad = false
@@ -1506,6 +1509,7 @@ class MgbIme : InputMethodService() {
     }
 
     private fun showPanel(name: String) {
+        if (name != "replace") { try { ReplaceFloatWin.dismissLive() } catch (_: Throwable) { } }   // v0.39.3 (FLOAT F4)
         try { UiKit.closeSelect() } catch (_: Throwable) { }   // v0.19.6 (S7)
         val c = container ?: return
         commitWord()

@@ -92,6 +92,7 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
     /** Call when the panel is opened from outside: reads the options and the field once. */
     fun reset() {
         PeekPopup.dismiss()   // v0.32.0
+        fwinFail = false   // v0.39.3 (FLOAT F4)
         optsOpen = false   // v0.38.1 (P2)
         setPreviewOn = false; setPrev = null; part = 0; partCut = -1; clipIo = null; msg = ""; confirmAll = false; undoStack.clear(); helpPage = 0; typing = 0; padPage = 0; shift = false; step = 0; rprAsk = false
         try { opt = ReplaceEngine.unpack(prefs.int("rp_opt", ReplaceEngine.pack(ReplaceEngine.Opt()))) } catch (_: Throwable) { opt = ReplaceEngine.Opt() }
@@ -195,7 +196,7 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
         return try { ReplaceEngine.replaceAll(src, find, repl, opt) } catch (_: Throwable) { ReplaceEngine.Result() }
     }
 
-    fun build(): View? = try { PeekPopup.dismiss(); if (typing == 3) setsViewPick() else if (typing == 4) recentView() else if (typing == 5) helpView() else if (typing == 6) replacePicker() else if (typing != 0) typeView() else mainViewPick() } catch (_: Throwable) { null }   // v0.26.0 (R3): 4 = Recent pairs; Pick = new look when panel_ui = New, else the classic view
+    fun build(): View? = try { PeekPopup.dismiss(); if (typing != 0) { try { fwin?.hide() } catch (_: Throwable) { } }; if (typing == 3) setsViewPick() else if (typing == 4) recentView() else if (typing == 5) helpView() else if (typing == 6) replacePicker() else if (typing != 0) typeView() else mainViewPick() } catch (_: Throwable) { null }   // v0.26.0 (R3): 4 = Recent pairs; Pick = new look when panel_ui = New, else the classic view
 
     // ------------------------------------------------------------------ main view
 
@@ -828,15 +829,15 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
 
     private fun floatOn(): Boolean = try { prefs.bool("rp_float_view", false) } catch (_: Throwable) { false }
 
-    private fun floatCard(res: ReplaceEngine.Result, shown: String): View? {
+    private fun floatLines(res: ReplaceEngine.Result): List<String>? {
         val setMode = setRules != null
-        val lines: List<String>? = if (setMode && res.changed > 0) previewText(res).split("\n") else if (setMode) ArrayList<String>() else null
+        return if (setMode && res.changed > 0) previewText(res).split("\n") else if (setMode) ArrayList<String>() else null
+    }
+
+    private fun floatActions(res: ReplaceEngine.Result, shown: String): ReplaceFloatView.Actions {
         val nHits = res.hits.size
-        if (nHits > 0) step = step.coerceIn(0, nHits - 1)
-        val snap = ReplaceFloat.snap(src, res, step, setMode, lines)
-        val tab = ReplaceFloat.sanitizeTab(prefs.int("rp_float_tab", 0))
         val replaced = shown.startsWith("Replaced")
-        val a = ReplaceFloatView.Actions(
+        return ReplaceFloatView.Actions(
             onTab = { t -> prefs.setInt("rp_float_tab", ReplaceFloat.sanitizeTab(t)); refresh() },
             onPrev = { step = ReplaceFloat.step(step, nHits, -1); showStep(res) },
             onNext = { step = ReplaceFloat.step(step, nHits, 1); showStep(res) },
@@ -844,7 +845,44 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
             onUndo = if (replaced && undoStack.canUndo()) ({ undo() }) else null,
             notice = if (replaced) shown else ""
         )
-        return ReplaceFloatView(ctx, prefs) { v -> host.feedback(v) }.window(snap, tab, a)
+    }
+
+    private fun floatCard(res: ReplaceEngine.Result, shown: String): View? {
+        val nHits = res.hits.size
+        if (nHits > 0) step = step.coerceIn(0, nHits - 1)
+        val snap = ReplaceFloat.snap(src, res, step, setRules != null, floatLines(res))
+        val tab = ReplaceFloat.sanitizeTab(prefs.int("rp_float_tab", 0))
+        return ReplaceFloatView(ctx, prefs) { v -> host.feedback(v) }.window(snap, tab, floatActions(res, shown))
+    }
+
+    // ------------------------------------------------------------------ v0.39.3 (FLOAT F4): the FLOATING window (ReplaceFloatWin.kt). Pref rp_float (default OFF, switch on the "?" page).
+    // ON + state not closed = the window shows the preview and the inline preview card is hidden. The window is updated in place on every refresh (floatSync, posted after the view is attached).
+    // Any problem = fwinFail = the old inline preview comes back. Replace all stays in the main view. [<] [>] [Replace this] / Undo use the same code paths as the step row.
+
+    private var fwin: ReplaceFloatWin? = null
+    private var fwinFail = false
+
+    private fun floatSwitch(): Boolean = try { prefs.bool("rp_float", false) } catch (_: Throwable) { false }
+
+    private fun winShows(): Boolean = try { floatSwitch() && !fwinFail && ReplaceFloat.sanitizeState(prefs.int("rp_float_state", ReplaceFloat.OPEN)) != ReplaceFloat.CLOSED } catch (_: Throwable) { false }
+
+    private fun toggleFloat() {
+        val closed = ReplaceFloat.sanitizeState(prefs.int("rp_float_state", ReplaceFloat.OPEN)) == ReplaceFloat.CLOSED || fwinFail
+        fwinFail = false
+        prefs.setInt("rp_float_state", if (closed) ReplaceFloat.OPEN else ReplaceFloat.CLOSED)
+        refresh()
+    }
+
+    private fun floatSync(anchor: View, snap: ReplaceFloat.Snap, tab: Int, a: ReplaceFloatView.Actions) {
+        try {
+            val w = fwin ?: ReplaceFloatWin(ctx, prefs) { v -> host.feedback(v) }.also { it.onChange = { refresh() }; fwin = it }
+            if (!winShows()) { w.hide(); return }
+            if (!w.show(anchor, snap, tab, a)) { fwinFail = true; w.hide(); refresh() }
+        } catch (_: Throwable) {
+            fwinFail = true
+            try { fwin?.hide() } catch (_: Throwable) { }
+            refresh()
+        }
     }
 
     private fun miniOn(): Boolean = try { prefs.bool("rp_mini", true) } catch (_: Throwable) { true }
@@ -899,6 +937,7 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
         msg = ""
         val nRules = setRules?.count { it.kind != ReplaceRules.K_COMMENT } ?: 0
 
+        val wOn = floatOn().not() && winShows()   // v0.39.3: the floating window owns the preview
         val fcard: View? = if (floatOn()) (try { floatCard(res, shown) } catch (_: Throwable) { null }) else null   // v0.39.1 (FLOAT F2): hidden test switch; null = the old preview + step row below
 
         // 1) top bar: [ABC] [Sets] [Recent] [?] ........ pill
@@ -918,7 +957,8 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
         else if (setRules != null) pillText = if (res.changed == 0) "No match" else (res.changed.toString() + (if (res.changed == 1) " change" else " changes"))
         else if (res.blank) pillText = "Type Find"
         else pillText = ReplaceEngine.info(res)
-        top.addView(pill(pillText, warn))
+        if (floatSwitch()) top.addView(small(if (winShows()) "\u2713 Float" else "Float", 38) { toggleFloat() })   // v0.39.3
+        if (!wOn) top.addView(pill(pillText, warn))   // v0.39.3: the window header shows the count
         root.addView(top)
 
         // 2) mode row (Text | Word | Regex | Options) + the folded option chips
@@ -982,7 +1022,7 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
         }
 
         // 5) preview card + ONE note line (the message if there is one, else the scope)
-        if (fcard != null) root.addView(fcard) else {
+        if (fcard != null) root.addView(fcard) else if (!wOn) {
             val sv = ScrollView(ctx)
             val svLp = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(56))
             svLp.setMargins(dp(2), dp(2), dp(2), dp(0))
@@ -1016,6 +1056,12 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
         else if (copiedOut != null && copiedOut == res.out) act.addView(btn("Paste", 1f, 44) { pasteCopied() })
         else act.addView(btn("Copy", 1f, 44) { copyResult(res) })
         root.addView(act)
+        if (floatSwitch() && fcard == null) {   // v0.39.3 (FLOAT F4): show / update the floating window once the view is attached
+            val fSnap = ReplaceFloat.snap(src, res, step, setRules != null, floatLines(res))
+            val fTab = ReplaceFloat.sanitizeTab(prefs.int("rp_float_tab", 0))
+            val fAct = floatActions(res, shown)
+            root.post { floatSync(root, fSnap, fTab, fAct) }
+        }
         return root
     }
 
@@ -1089,6 +1135,15 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
             val fl = row()
             fl.addView(UiKit.chip(ctx, prefs, if (floatOn()) "\u2713 Float preview, test (tap = off)" else "Float preview, test (tap = on)", floatOn(), 34, { v -> host.feedback(v) }) { prefs.setBool("rp_float_view", !floatOn()); refresh() })
             root.addView(fl)
+        } catch (_: Throwable) { }
+        try {   // v0.39.3 (FLOAT F4): switch of the floating preview window (pref rp_float, default OFF)
+            val fw = row()
+            fw.addView(UiKit.chip(ctx, prefs, if (floatSwitch()) "\u2713 Floating preview window (tap = off)" else "Floating preview window (tap = on)", floatSwitch(), 34, { v -> host.feedback(v) }) {
+                prefs.setBool("rp_float", !floatSwitch()); fwinFail = false
+                if (!floatSwitch()) { try { fwin?.hide() } catch (_: Throwable) { } }
+                refresh()
+            })
+            root.addView(fw)
         } catch (_: Throwable) { }
         val sv = ScrollView(ctx)
         sv.layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(170))
