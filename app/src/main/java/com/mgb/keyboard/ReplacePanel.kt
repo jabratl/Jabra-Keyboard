@@ -938,8 +938,8 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
         msg = ""
         val nRules = setRules?.count { it.kind != ReplaceRules.K_COMMENT } ?: 0
 
-        val wOn = floatOn().not() && winShows()   // v0.39.3: the floating window owns the preview
-        val fcard: View? = if (floatOn()) (try { floatCard(res, shown) } catch (_: Throwable) { null }) else null   // v0.39.1 (FLOAT F2): hidden test switch; null = the old preview + step row below
+        val wOn = winShows()   // v0.39.3: the floating window owns the preview (v0.39.5: it now always wins over the inline test card)
+        val fcard: View? = if (floatOn() && !floatSwitch()) (try { floatCard(res, shown) } catch (_: Throwable) { null }) else null   // v0.39.5: inline test card only while the floating switch is OFF   // v0.39.1 (FLOAT F2): hidden test switch; null = the old preview + step row below
 
         // 1) top bar: [ABC] [Sets] [Recent] [?] ........ pill
         val top = row()
@@ -1141,6 +1141,7 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
             val fw = row()
             fw.addView(UiKit.chip(ctx, prefs, if (floatSwitch()) "\u2713 Floating preview window (tap = off)" else "Floating preview window (tap = on)", floatSwitch(), 34, { v -> host.feedback(v) }) {
                 prefs.setBool("rp_float", !floatSwitch()); fwinFail = false
+                if (floatSwitch()) { prefs.setBool("rp_float_view", false); prefs.setInt("rp_float_state", ReplaceFloat.OPEN) }   // v0.39.5: floating ON = inline test card OFF, window opens
                 if (!floatSwitch()) { try { fwin?.hide() } catch (_: Throwable) { } }
                 refresh()
             })
