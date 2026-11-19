@@ -28,6 +28,27 @@ public class ClipSelectTest {
         ok(!s.isOn() && s.count() == 0, "leave resets");
         s.selectAll(all);
         ok(s.count() == 0, "selectAll ignored when off");
+        // v0.41.1: select only pinned / only recent
+        {
+            ClipList c2 = new ClipList();
+            for (String x : new String[]{"p", "q", "r", "t"}) c2.add(x);
+            List<ClipList.Item> v2 = c2.view("");
+            ClipSelect z = new ClipSelect();
+            z.selectOnly(v2, true);
+            ok(z.count() == 0, "selectOnly ignored when off");
+            z.enter();
+            c2.setPinned(java.util.Arrays.asList(v2.get(0), v2.get(2)), true);
+            z.selectOnly(v2, true);
+            ok(z.count() == 2 && z.isSelected(v2.get(0)) && z.isSelected(v2.get(2)) && !z.isSelected(v2.get(1)), "selectOnly pinned = only the 2 pinned");
+            z.selectOnly(v2, false);
+            ok(z.count() == 2 && z.isSelected(v2.get(1)) && z.isSelected(v2.get(3)) && !z.isSelected(v2.get(0)), "selectOnly recent replaces the old selection");
+            z.selectOnly(v2, false);
+            ok(z.count() == 2, "selectOnly twice = no duplicates");
+            z.selectOnly(null, true);
+            ok(z.count() == 2, "null list = unchanged");
+            z.selectOnly(new java.util.ArrayList<ClipList.Item>(), true);
+            ok(z.count() == 0, "empty list = nothing selected");
+        }
         // pin / unpin through the engine
         s.enter(); s.toggle(all.get(0)); s.toggle(all.get(2));
         ok(c.setPinned(s.selection(), true) == 2 && c.pinnedCount() == 2 && s.pinnedCount() == 2, "pin selected");

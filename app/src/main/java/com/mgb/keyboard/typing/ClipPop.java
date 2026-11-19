@@ -37,11 +37,13 @@ public final class ClipPop {
         }
     }
 
-    /** Select-mode More: [All, None] [Edit, Replace, Merge, Unpin] [Paste 1 line, To Vault (only if it exists), Export]. */
+    /** Select-mode More: [All, None] [Recent, Pinned] [Edit, Replace, Merge, Unpin] [Paste 1 line, To Vault (only if it exists), Export]. */
     public static List<Item> moreItems(boolean hasVault) {
         List<Item> l = new ArrayList<>();
         l.add(new Item("all", "All", "all", 0, false, false, "", 2));
         l.add(new Item("none", "None", "selnone", 0, false, false, "", 2));
+        l.add(new Item("selrecent", "Recent", null, 0, false, false, "", 2));   // v0.41.1: select only the not-pinned clips
+        l.add(new Item("selpinned", "Pinned", null, 0, false, false, "", 2));   // v0.41.1: select only the pinned clips
         l.add(new Item("edit", "Edit", "edit", 1, false, false, "", 2));
         l.add(new Item("replace", "Replace", null, 1, false, false, "", 2));
         l.add(new Item("merge", "Merge", null, 1, false, false, "", 2));

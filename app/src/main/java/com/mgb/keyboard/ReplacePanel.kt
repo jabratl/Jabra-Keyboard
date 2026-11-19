@@ -85,6 +85,7 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
     private var checkAck = false                              // the user saw the Check warnings of this list (a tap on Replace all then runs it)
     private var checkWarn: List<ReplaceCheck.Warn>? = null
     private var clearAsk = false                              // Clear needs two taps
+    private var editIdx = -1                                  // v0.41.1: index of the pair being edited IN PLACE (from the Pairs view); -1 = none. typing == 8 = the Pairs view.
     // v0.41.0: NEVER-CHANGE list (typing/ReplaceProtect.java). Pref rp_protect = one term per line (the user's own list, written only when the user adds / removes a term). typing == 7 = its view.
     private val protectList = ArrayList<String>()
     private var protectAsk = false                            // Clear needs two taps
@@ -211,7 +212,7 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
         return try { ReplaceEngine.replaceAll(src, find, repl, opt) } catch (_: Throwable) { ReplaceEngine.Result() }
     }
 
-    fun build(): View? = try { PeekPopup.dismiss(); if (typing != 0) { try { fwin?.hide() } catch (_: Throwable) { } }; if (typing == 3) setsViewPick() else if (typing == 4) recentView() else if (typing == 5) helpView() else if (typing == 6) replacePicker() else if (typing == 7) protectView() else if (typing != 0) typeView() else mainViewPick() } catch (_: Throwable) { null }   // v0.26.0 (R3): 4 = Recent pairs; Pick = new look when panel_ui = New, else the classic view
+    fun build(): View? = try { PeekPopup.dismiss(); if (typing != 0) { try { fwin?.hide() } catch (_: Throwable) { } }; if (typing == 3) setsViewPick() else if (typing == 4) recentView() else if (typing == 5) helpView() else if (typing == 6) replacePicker() else if (typing == 7) protectView() else if (typing == 8) pairsView() else if (typing != 0) typeView() else mainViewPick() } catch (_: Throwable) { null }   // v0.26.0 (R3): 4 = Recent pairs; Pick = new look when panel_ui = New, else the classic view
 
     // ------------------------------------------------------------------ main view
 
@@ -980,7 +981,7 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
         top.addView(small("Sets", 38) { typing = 3; confirmAll = false; refresh() })
         top.addView(small("Recent", 38) { typing = 4; confirmAll = false; rprAsk = false; refresh() })
         top.addView(small("?", 38) { typing = 5; helpPage = 0; confirmAll = false; refresh() })
-        if (pairMode || (setRules == null && find.isNotEmpty())) top.addView(small("+Pair", 38) { addPair(false) })   // v0.40.0
+        if (pairMode || (setRules == null && find.isNotEmpty())) { if (find.isEmpty()) editIdx = -1; top.addView(small(if (editIdx >= 0) "Update" else "+Pair", 38) { addPair(false) }) }   // v0.40.0
         else if (setRules == null) top.addView(small("+Paste", 38) { pastePairs() })   // v0.41.0: Find is empty and no list yet: paste many pairs at once
         val sp = View(ctx)
         sp.layoutParams = LinearLayout.LayoutParams(0, 1, 1f)
@@ -1054,6 +1055,7 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
                 pr.gravity = Gravity.CENTER_VERTICAL
                 if (pairMode) pr.addView(btn("Check", 0.8f, 34) { checkNow() })
                 if (pairMode) pr.addView(btn("Paste", 0.8f, 34) { pastePairs() })   // v0.41.0: add many pairs from the clipboard
+                if (pairMode) pr.addView(btn("List " + pairRules.size, 0.9f, 34) { typing = 8; clearAsk = false; refresh() })   // v0.41.1: view / edit / remove / clear the pairs
                 if (nShort > 0) pr.addView(btn("Whole word (" + nShort + ")", 1.5f, 34) { fixShort() })
                 if (pairMode) {
                     pr.addView(btn("Save as Set", 1.2f, 34) { savePairs() })
@@ -1150,13 +1152,13 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
     /** Forgets the active set / pair list (the old "x Set" code, now in one place). */
     private fun dropSet() {
         setRules = null; setName = null; setRun = null
-        pairMode = false; pairRules.clear(); checkAck = false; checkWarn = null; clearAsk = false; confirmAll = false
+        pairMode = false; pairRules.clear(); checkAck = false; checkWarn = null; clearAsk = false; confirmAll = false; editIdx = -1
     }
 
     /** pairRules changed: the set code gets a fresh copy, the old check result is gone. */
     private fun syncPairs() {
         setRules = ArrayList(pairRules); setName = "Pairs"; setRun = null
-        confirmAll = false; checkAck = false; checkWarn = null; clearAsk = false; step = 0
+        confirmAll = false; checkAck = false; checkWarn = null; clearAsk = false; step = 0; editIdx = -1
     }
 
     private fun addPair(fromReplace: Boolean) {
@@ -1174,12 +1176,21 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
             note = "  \u00B7  the list keeps the Aa / \u09AC\u09BE\u0982 / \\n settings of its first pair"
         }
         val idx = ReplacePairList.indexOf(pairRules, r)
-        if (idx < 0 && pairRules.size >= ReplacePairList.MAX) { msg = "The list is full (" + ReplacePairList.MAX + " pairs)"; refresh(); return }
-        if (idx >= 0) pairRules[idx] = r else pairRules.add(r)
+        val ei = editIdx   // v0.41.1: a pair opened with Edit in the Pairs view is written back to the SAME place
+        var upd = false
+        if (ei in pairRules.indices) {
+            var t = ei
+            if (idx >= 0 && idx != ei) { pairRules.removeAt(idx); if (idx < ei) t = ei - 1 }   // same Find already elsewhere: keep one
+            pairRules[t] = r
+            upd = true
+        } else {
+            if (idx < 0 && pairRules.size >= ReplacePairList.MAX) { msg = "The list is full (" + ReplacePairList.MAX + " pairs)"; refresh(); return }
+            if (idx >= 0) pairRules[idx] = r else pairRules.add(r)
+        }
         pairMode = true
         syncPairs()
         find = ""; repl = ""; caretPos = 0
-        msg = (if (idx >= 0) "Pair updated" else "Pair " + pairRules.size + " added") + (if (fromReplace) ". Tap Replace all to run the list" else "") + note
+        msg = (if (idx >= 0 || upd) "Pair updated" else "Pair " + pairRules.size + " added") + (if (fromReplace) ". Tap Replace all to run the list" else "") + note
         refresh()
     }
 
@@ -1277,6 +1288,97 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
         }
         sv.addView(col)
         return sv
+    }
+
+    // ------------------------------------------------------------------ v0.41.1: PAIRS VIEW (typing == 8): see every pair, edit it in place, remove one, clear all
+    /** Edit: the pair goes into Find / With (with its mode) but STAYS in the list; "Update" writes it back to the same place. */
+    private fun editPairHere(i: Int) {
+        val r = pairRules.getOrNull(i) ?: return
+        find = r.find.take(ReplacePads.FIELD_MAX)
+        repl = r.with.take(ReplacePads.FIELD_MAX)
+        opt.mode = if (r.kind == ReplaceRules.K_REGEX) ReplaceEngine.MODE_REGEX else if (r.word) ReplaceEngine.MODE_WORD else ReplaceEngine.MODE_TEXT
+        opt.keepCase = r.keep; opt.list = false; opt.smart = r.smart
+        saveOpt()
+        caretPos = find.length
+        typing = 0; confirmAll = false; clearAsk = false; step = 0
+        editIdx = i
+        msg = "Editing pair " + (i + 1) + ": change it, then tap Update"
+        refresh()
+    }
+
+    /** Clear all from the Pairs view: 2 or more pairs need a second tap. */
+    private fun pairsClear() {
+        if (pairRules.size >= 2 && !clearAsk) { clearAsk = true; refresh(); return }
+        dropSet()
+        typing = 0
+        msg = "Pair list cleared"
+        refresh()
+    }
+
+    private fun pairsView(): View {
+        val root = LinearLayout(ctx)
+        root.orientation = LinearLayout.VERTICAL
+        paintBg(root)
+        root.setPadding(dp(2), dp(4), dp(2), dp(4))
+        val back: () -> Unit = { typing = 0; clearAsk = false; refresh() }
+        val clearLabel = if (clearAsk) "Sure? Clear" else "Clear"
+        val title = "Pairs (" + pairRules.size + ")"
+        val acts: List<Pair<String, () -> Unit>> = if (pairRules.isEmpty()) emptyList() else listOf(Pair(clearLabel, { pairsClear() }))
+        var newHead: View? = null
+        if (newLook()) { try { newHead = PanelKit.header(ctx, prefs, host, title, "<", acts) { back() } } catch (_: Throwable) { newHead = null } }
+        val headView: View = newHead ?: run {
+            val h = row()
+            h.addView(btn("\u2190 Back", 1f, 34) { back() })
+            val tv = TextView(ctx)
+            tv.text = title
+            tv.textSize = 12f
+            tv.setTextColor(dim())
+            tv.gravity = Gravity.CENTER_VERTICAL
+            tv.layoutParams = LinearLayout.LayoutParams(0, dp(34), 2f)
+            h.addView(tv)
+            if (pairRules.isNotEmpty()) h.addView(btn(clearLabel, 1.2f, 34) { pairsClear() })
+            h
+        }
+        root.addView(headView)
+        if (pairRules.isEmpty()) {
+            val t = TextView(ctx)
+            t.text = "No pairs yet. Type Find / With and tap +Pair."
+            t.textSize = 13f
+            t.setTextColor(dim())
+            t.setPadding(dp(8), dp(8), dp(8), dp(8))
+            root.addView(t)
+            return root
+        }
+        root.addView(UiKit.noteText(ctx, prefs, "Edit = change a pair in Find / With. \u2715 = remove it."))
+        val sv = ScrollView(ctx)
+        sv.layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(170))
+        val col = LinearLayout(ctx)
+        col.orientation = LinearLayout.VERTICAL
+        val cs = setRun?.counts
+        val ws = checkWarn
+        val ink = try { JabraTokens.cardText(prefs) } catch (_: Throwable) { Color.BLACK }
+        for ((i, r) in pairRules.withIndex()) {
+            val line = LinearLayout(ctx)
+            line.orientation = LinearLayout.HORIZONTAL
+            line.gravity = Gravity.CENTER_VERTICAL
+            val t = TextView(ctx)
+            val warned = ws != null && ws.any { it.rule == i + 1 }
+            t.text = (i + 1).toString() + ".  " + (if (warned) "\u26A0 " else "") + ReplacePairList.label(r, if (cs != null && i < cs.size) cs[i] else 0, 140)
+            t.textSize = 13f
+            t.maxLines = 2
+            t.ellipsize = android.text.TextUtils.TruncateAt.END
+            t.gravity = Gravity.CENTER_VERTICAL
+            t.setTextColor(ink)
+            t.setPadding(dp(8), dp(2), dp(4), dp(2))
+            t.layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+            line.addView(t)
+            line.addView(small("Edit", 36) { editPairHere(i) })
+            line.addView(small("\u2715", 36) { removePair(i) })
+            col.addView(line)
+        }
+        sv.addView(col)
+        root.addView(sv)
+        return root
     }
 
     // ------------------------------------------------------------------ v0.41.0: PASTE PAIRS, never-change list

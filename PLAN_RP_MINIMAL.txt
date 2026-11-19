@@ -1,0 +1,65 @@
+PLAN_RP_MINIMAL - Minimal, clipboard-like look for the Find & Replace OPTIONS (user request 2026-11-19)
+===================================================================================================
+Put this file in the repo root (next to PLAN_RP_FLOAT.txt) and paste it at the start of the next chat.
+Repo state when this plan was written: v0.41.1 (build of v0.41.1 not confirmed yet: send the build log first if it is red).
+PLAN ONLY. No code was changed for this plan.
+
+1) WHAT THE USER WANTS
+   - The options of the Replace tool (Text | Word | Regex, Aa, Keep, List, Bangla, \n, Smart, Never change, + pair buttons) should look
+     MINIMAL, SIMPLE and tidy, like the clipboard panel (slim bar, small icon + one word, floating menu for the rest).
+   - NO existing function may be removed or changed. The FLOATING preview window must NOT be damaged.
+
+2) WHAT IS THERE NOW (ReplacePanel.mainViewMini, default look rp_mini = ON)
+   Row 1  top bar : ABC | Sets | Recent | ? | +Pair/Update/+Paste | ..... | pill (count)
+   Row 2  modes   : Text | Word | Regex | Options v        (4 big chips)
+   Row 3  (Options open) Aa | Keep | List | bn | \n        (5 chips)
+   Row 4  (Options open) Smart | Never change (N)         (2 chips)
+   Card   : Find line + With line
+   Row 5  (pair list only) Check | Paste | List N | Save as Set | Clear
+   Row 6  step row: < n/N Skip | Replace this | Rest
+   = up to 6 button rows of equal weight. This is what feels busy.
+
+3) THE DESIGN (same ideas as the clipboard: ClipSlimBar + ClipPopover + ClipPop)
+   a) Mode row stays but becomes ONE slim segmented control: [ Text | Word | Regex ] (same 3 ids, thin selected pill, no big chips)
+      + ONE small "Options" button with a dot/number when something is ON (like the filter chip count in the clipboard).
+   b) Options chips are REMOVED from the main screen. "Options" opens a small floating menu (ClipPopover-style, 168 dp wide, rows 34 dp):
+        Match      : Aa (match case)   [tick]
+                     Smart             [tick]
+        Text       : Keep case         [tick]
+                     List (a|b|c)      [tick]
+                     Bangla            [tick]
+                     \n as new line    [tick]
+        Protect    : Never change (N) >           (opens the same typing == 7 page)
+      Rows with a tick = switches. The menu STAYS OPEN while ticking (like the Undo row in the clipboard menu), closes on tap outside.
+      The same optChanged() runs, so preview, count and the floating window update as today.
+   c) Pair buttons row (Check | Paste | List N | Save as Set | Clear) becomes: [Check] [List N] [More] where More (floating menu) holds
+      Paste, Save as Set, Whole word (N), Clear (danger, last). Same handlers (checkNow, pastePairs, savePairs, fixShort, clearPairs).
+   d) Step row stays, but with the slim button look (icon + one word). Replace this = the only filled button.
+   e) Colours / sizes: JabraTokens + UiKit only (same as everywhere), no shadows, one 1 dp border, buttons >= 34 dp high, text >= 11 sp.
+
+4) HOW IT IS BUILT (safe way, same rules as HANDOFF section 0)
+   - NEW pure model typing/ReplaceOpts.java (tested by tools/ReplaceOptsTest.java): the rows of the Options menu from (Opt, protectCount),
+     dot/number of active options, the pair "More" rows. Same pattern as ClipPop.java.
+   - NEW file ReplaceSlim.kt: builds the segmented control + the slim buttons (like ClipSlimBar.kt).
+   - ClipPopover.kt: ONE small extension = an Item flag "keepOpen" (today only the Undo id stays open). Clipboard behaviour must stay identical (test it).
+   - ReplacePanel.mainViewMini: ONE branch at the top "if pref rp_slim is ON and building works, use the slim rows, else the OLD rows".
+     Pref rp_slim, default ON after the phone test; OFF = exactly v0.41.1. Any exception = old rows (fallback).
+   - NOT touched: ReplaceFloatWin.kt, ReplaceFloatView.kt, floatCard / winShows hooks, ReplaceEngine, ReplaceRules, io.replaceEdits / undo.
+     The floating window only needs count + hits, which still come from calc().
+
+5) STEPS (one step = one version = one topic)
+   M0  LOOK FIRST (no code): read UiKit.chip / btn, ClipSlimBar, ClipPopover.show, ClipPop; decide the popover anchor (Options button),
+       what happens when the menu is open and the panel refreshes (the clipboard dismisses it in refresh(): copy that), password fields.
+   M1  v0.42.0  Options menu: ReplaceOpts.java + test, ClipPopover keepOpen, Options button + floating menu, old chip rows hidden behind rp_slim.
+   M2  v0.42.1  Mode segmented control + slim step row.
+   M3  v0.42.2  Pair buttons: [Check] [List N] [More] menu.
+   M4  v0.42.3  Polish on the phone (spacing, small screens, dark / light themes, Bangla labels fit), docs, CHECKLIST.
+   If the session is short: M1 alone already removes 2 of the 6 rows.
+
+6) RISKS / HONEST NOTES
+   - Kotlin is never compiled in the chat: after every step the owner confirms the GitHub build first.
+   - A popover over the keyboard panel needs a window token (same as the clipboard menu: show() returns false = we fall back to the old chip rows).
+   - Other looks (New / Classic, rp_mini OFF) keep their own rows and are not redesigned in this plan.
+
+7) QUESTION FOR THE USER (only one)
+   Should "Smart" and "Aa" stay visible as 2 tiny always-on toggles next to Options, or fully inside the menu? (default in this plan: fully inside the menu)

@@ -34,6 +34,12 @@ public final class ClipSelect {
         if (!on || all == null) return;
         for (ClipList.Item it : all) if (it != null && indexOf(it) < 0) sel.add(it);
     }
+    /** v0.41.1: select ONLY the pinned (pinned = true) or ONLY the recent = not pinned (pinned = false) items of [all]. The old selection is replaced. Only in select mode. */
+    public void selectOnly(List<ClipList.Item> all, boolean pinned) {
+        if (!on || all == null) return;
+        sel.clear();
+        for (ClipList.Item it : all) if (it != null && it.pinned == pinned && indexOf(it) < 0) sel.add(it);
+    }
     /** Unselect everything but stay in select mode. */
     public void clear() { sel.clear(); }
     /** Copy of the selection (safe to pass to ClipList.setPinned / removeAll). */

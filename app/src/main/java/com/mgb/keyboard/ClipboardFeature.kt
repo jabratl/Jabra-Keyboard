@@ -579,6 +579,8 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
         when (id) {
             "all" -> { sel.selectAll(popVisible); confirmDel = false; refresh() }
             "none" -> { sel.clear(); confirmDel = false; refresh() }
+            "selrecent" -> { sel.selectOnly(popVisible, false); confirmDel = false; refresh() }   // v0.41.1
+            "selpinned" -> { sel.selectOnly(popVisible, true); confirmDel = false; refresh() }   // v0.41.1
             "edit" -> actEdit()
             "replace" -> actReplaceIn()
             "merge" -> actMerge()
@@ -1042,6 +1044,8 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
             val items = listOf<View>(
                 menuPill("All") { sel.selectAll(visible); confirmDel = false; refresh() },
                 menuPill("None") { sel.clear(); confirmDel = false; refresh() },
+                menuPill("Recent") { sel.selectOnly(visible, false); confirmDel = false; refresh() },   // v0.41.1
+                menuPill("Pinned") { sel.selectOnly(visible, true); confirmDel = false; refresh() },   // v0.41.1
                 menuPill("Edit") { actEdit() },
                 menuPill("Replace") { actReplaceIn() },   // v0.29.0
                 menuPill("Merge") { actMerge() },
@@ -1053,6 +1057,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
         } else if (moreOpen) {   // v0.17.67 (R7): grouped dropdown menu (same actions as before + "None")
             val menu = menuCard()
             menu.addView(menuRow("Select", 3, menuPill("All") { sel.selectAll(visible); confirmDel = false; refresh() }, menuPill("None") { sel.clear(); confirmDel = false; refresh() }))
+            menu.addView(menuRow("", 3, menuPill("Recent") { sel.selectOnly(visible, false); confirmDel = false; refresh() }, menuPill("Pinned") { sel.selectOnly(visible, true); confirmDel = false; refresh() }))   // v0.41.1
             menu.addView(menuRow("Change", 3, menuPill("Edit") { actEdit() }, menuPill("Merge") { actMerge() }, menuPill("Unpin") { actPin(false) }))
             val send = ArrayList<View>()
             send.add(menuPill("Paste 1 line") { actPaste(true) })
