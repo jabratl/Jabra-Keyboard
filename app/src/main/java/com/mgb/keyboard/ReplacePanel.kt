@@ -28,7 +28,9 @@ import com.mgb.keyboard.typing.ReplaceHelp
 import com.mgb.keyboard.typing.ReplacePads
 import com.mgb.keyboard.typing.ReplacePairList   // v0.40.0
 import com.mgb.keyboard.typing.ReplacePaste   // v0.41.0
+import com.mgb.keyboard.typing.ReplaceMore   // v0.42.3
 import com.mgb.keyboard.typing.ReplacePeek
+import com.mgb.keyboard.typing.ReplaceSlimPlan   // v0.42.2
 import com.mgb.keyboard.typing.ReplaceProtect   // v0.41.0
 import com.mgb.keyboard.typing.ReplaceRules
 
@@ -958,6 +960,11 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
     }
 
     private fun mainViewMini(): View {
+        // v0.42.2 (M2): slim look (pref rp_slim, default OFF). Any exception = slimFail = the exact old view below.
+        if (ReplaceSlim.on(prefs) && !slimFail) {
+            val keepMsg = msg
+            try { return mainViewSlim() } catch (_: Throwable) { slimFail = true; msg = keepMsg }
+        }
         val root = LinearLayout(ctx)
         root.orientation = LinearLayout.VERTICAL
         paintBg(root)
@@ -1122,6 +1129,133 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
         else act.addView(btn("Copy", 1f, 44) { copyResult(res) })
         root.addView(act)
         if (floatSwitch() && fcard == null) {   // v0.39.3 (FLOAT F4): show / update the floating window once the view is attached
+            val fSnap = ReplaceFloat.snap(src, res, step, setRules != null, floatLines(res))
+            val fTab = ReplaceFloat.sanitizeTab(prefs.int("rp_float_tab", 0))
+            val fAct = floatActions(res, shown)
+            root.post { floatSync(root, fSnap, fTab, fAct) }
+        }
+        return root
+    }
+
+    // ------------------------------------------------------------------ v0.42.2 (M2) + v0.42.3 (M3): SLIM main view (look of docs/Replace_Tool_Minimal_Mock.html). NEW code, the old mainViewMini above is untouched.
+    // The head (calc / msg / wOn / fcard) and the tail (floatSync) are copies of mainViewMini on purpose: if the float feed changes, change BOTH.
+    private fun mainViewSlim(): View {
+        val root = LinearLayout(ctx)
+        root.orientation = LinearLayout.VERTICAL
+        paintBg(root)
+        root.setPadding(dp(4), dp(4), dp(4), dp(4))
+        valueTv = null
+        keysBox = null
+        ReplaceSlim.closeIfIdle()   // a menu left open without a pending re-show is closed
+
+        val res = calc()
+        val shown = msg
+        msg = ""
+        val nRules = setRules?.count { it.kind != ReplaceRules.K_COMMENT } ?: 0
+        val wOn = winShows()
+        val fcard: View? = if (floatOn() && !floatSwitch()) (try { floatCard(res, shown) } catch (_: Throwable) { null }) else null
+        val setLoaded = setRules != null && !pairMode
+
+        // 1) top bar: [ABC] [Sets] [Recent] [?] [Pair] ........ [Float] pill
+        val top = row()
+        top.gravity = Gravity.CENTER_VERTICAL
+        top.addView(small("ABC", 38) { host.showLetters() })
+        top.addView(small("Sets", 38) { typing = 3; confirmAll = false; refresh() })
+        top.addView(small("Recent", 38) { typing = 4; confirmAll = false; rprAsk = false; refresh() })
+        top.addView(small("?", 38) { typing = 5; helpPage = 0; confirmAll = false; refresh() })   // D4: moves into the Options menu in M4
+        if (pairMode && find.isEmpty()) editIdx = -1
+        val pb = ReplaceSlimPlan.pairButton(pairMode, setLoaded, find.isEmpty(), editIdx)
+        if (pb == "+Paste") top.addView(small(pb, 38) { pastePairs() })
+        else if (pb.isNotEmpty()) top.addView(small(pb, 38) { addPair(false) })
+        val sp = View(ctx)
+        sp.layoutParams = LinearLayout.LayoutParams(0, 1, 1f)
+        top.addView(sp)
+        val rr0 = setRun
+        val pillText: String
+        var warn = false
+        if (res.err != null || (setRules != null && rr0 != null && rr0.err != null)) { pillText = "Error"; warn = true }
+        else if (setRules != null) pillText = if (res.changed == 0) "No match" else (res.changed.toString() + (if (res.changed == 1) " change" else " changes"))
+        else if (res.blank) pillText = "Type Find"
+        else pillText = ReplaceEngine.info(res)
+        if (floatSwitch()) top.addView(small(if (winShows()) "\u2713 Float" else "Float", 38) { toggleFloat() })
+        if (!wOn) top.addView(pill(pillText, warn))
+        root.addView(top)
+
+        // 2) mode row: segmented [Text | Word | Regex] + the Options button
+        if (setRules == null || pairMode) {
+            val mr = row()
+            mr.gravity = Gravity.CENTER_VERTICAL
+            val seg = ReplaceSlim.segmented(ctx, prefs, host, opt.mode) { i -> opt.mode = i; optChanged() }
+            seg.layoutParams = LinearLayout.LayoutParams(0, dp(34), 1f).also { it.setMargins(dp(2), dp(2), dp(2), dp(2)) }
+            mr.addView(seg)
+            val ob = ReplaceSlim.optionsButton(ctx, prefs, host, opt, protectList.size, { optChanged() }, { openProtect() }, { slimFail = true; refresh() })
+                ?: throw IllegalStateException("options button")   // caller: slimFail = true = old view
+            ob.layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, dp(34)).also { it.setMargins(dp(6), dp(2), dp(2), dp(2)) }
+            mr.addView(ob)
+            root.addView(mr)
+        }
+
+        // 3) ONE card: Find + With (D5: With has only the swap icon), or the loaded set (unchanged line)
+        val card = ReplaceSlim.slimCard(ctx, prefs)
+        if (setLoaded) {
+            card.addView(miniLine("Set", (setName ?: "") + " (" + nRules + ")", { typing = 3; refresh() },
+                listOf(Pair("\u2715 Set") { dropSet(); refresh() }, Pair("Check") { checkNow() }, Pair("Never") { openProtect() }, Pair("Fmt") { copyForFormatter() })))
+        } else {
+            card.addView(ReplaceSlim.slimLine(ctx, prefs, host, "Find", find, "Type the word to find", shortVal(find), { startTyping(1) },
+                listOf(Pair("Sel") { take(true, io.selected(), "Nothing is selected") }, Pair("Clip") { take(true, io.clipText(), "Clipboard is empty") })))
+            card.addView(ReplaceSlim.slimDivider(ctx, prefs))
+            card.addView(ReplaceSlim.slimLine(ctx, prefs, host, "With", repl, "Replace with", shortVal(repl), { startTyping(2) },
+                listOf(Pair("\u21C4") { swap() })))
+        }
+        root.addView(card)
+
+        // 3b) pair row (only while a pair list exists): [Check] [List N] [More]
+        val nShort = if (setRules != null) ReplaceCheck.shortCount(checkWarn) else 0
+        if (pairMode) {
+            root.addView(ReplaceSlim.pairRow(ctx, prefs, host, pairRules.size, nShort, clearAsk,
+                { checkNow() }, { typing = 8; clearAsk = false; refresh() },
+                { id ->
+                    if (id == ReplaceMore.PASTE) pastePairs()
+                    else if (id == ReplaceMore.SAVE) savePairs()
+                    else if (id == ReplaceMore.WORD) fixShort()
+                    else if (id == ReplaceMore.CLEAR) clearPairs()   // keeps its own 2-tap logic
+                },
+                { slimFail = true; refresh() }))
+        } else if (nShort > 0) {   // D7: a loaded set keeps "Whole word (N)" reachable
+            val wr = row()
+            wr.gravity = Gravity.CENTER_VERTICAL
+            wr.addView(btn("Whole word (" + nShort + ")", 0f, 34) { fixShort() })
+            root.addView(wr)
+        }
+
+        // 4) step row (D1 / D3: no preview card, no "1st"); hidden while the float test card is shown (it has its own < n/N > and Replace this)
+        val ask = confirmAll && !usedSel
+        if (fcard != null) {
+            root.addView(fcard)
+        } else {
+            val nHits = res.hits.size
+            val plan = ReplaceSlimPlan.step(nHits, res.count, step, res.err != null, res.blank, setLoaded, pairMode, find.isEmpty(), pairRules.size, ask)
+            if (nHits > 0) step = step.coerceIn(0, nHits - 1)
+            root.addView(ReplaceSlim.stepRow(ctx, prefs, host, plan,
+                { if (nHits > 0) { step = if (step <= 0) nHits - 1 else step - 1; showStep(res) } },
+                { if (nHits > 0) { step = if (step >= nHits - 1) 0 else step + 1; showStep(res) } },
+                { showStep(res) },
+                { onReplace(ReplaceEngine.run(src, find, repl, opt, step + 1, Int.MAX_VALUE), true) },
+                { onReplace(ReplaceEngine.replaceNth(src, find, repl, opt, step + 1), true) },
+                { onReplace(res, false) },
+                { b -> accentButton(b, if (ask) JabraTokens.WARN else JabraTokens.ACCENT); peekOn(b) { peekResult(res) } }))
+        }
+
+        // 5) ONE note line: message or scope text (tap = scope), link on the right: Undo > Paste back > Copy (D2)
+        val canPasteBack = copiedOut != null && copiedOut == res.out
+        val note = ReplaceSlimPlan.note(shown, scopeWord(), src.length, undoStack.canUndo(), ReplaceExtras.undoLabel(undoStack.size()), canPasteBack)
+        root.addView(ReplaceSlim.noteLine(ctx, prefs, host, note, { toggleScope() }, {
+            if (note.rightKind == ReplaceSlimPlan.R_UNDO) undo()
+            else if (note.rightKind == ReplaceSlimPlan.R_PASTE_BACK) pasteCopied()
+            else copyResult(res)
+        }))
+
+        if (floatSwitch() && fcard == null) {   // floating window feed (same as mainViewMini)
             val fSnap = ReplaceFloat.snap(src, res, step, setRules != null, floatLines(res))
             val fTab = ReplaceFloat.sanitizeTab(prefs.int("rp_float_tab", 0))
             val fAct = floatActions(res, shown)
@@ -1574,6 +1708,13 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
             val lk = row()
             lk.addView(UiKit.chip(ctx, prefs, if (miniOn()) "\u2713 Minimal look (tap = previous look)" else "Previous look (tap = minimal look)", miniOn(), 34, { v -> host.feedback(v) }) { prefs.setBool("rp_mini", !miniOn()); refresh() })
             root.addView(lk)
+        } catch (_: Throwable) { }
+        try {   // v0.42.2 (M2): slim look switch (pref rp_slim, default OFF until M4)
+            val sl = row()
+            sl.addView(UiKit.chip(ctx, prefs, if (ReplaceSlim.on(prefs)) "\u2713 Slim look: ON (tap = off)" else "Slim look: OFF (tap = on)", ReplaceSlim.on(prefs), 34, { v -> host.feedback(v) }) {
+                prefs.setBool("rp_slim", !ReplaceSlim.on(prefs)); slimFail = false; refresh()
+            })
+            root.addView(sl)
         } catch (_: Throwable) { }
         try {   // v0.39.1 (FLOAT F2): test switch of the float preview card (pref rp_float_view, default OFF)
             val fl = row()
