@@ -45,7 +45,8 @@ class ReplaceFloatView(private val ctx: Context, private val prefs: JabraPrefs, 
         val onPick: ((Int) -> Unit)? = null,   // v0.39.6: tap a row = that match (0-based) becomes the current one (simple window only)
         val onReplaceAll: (() -> Unit)? = null,   // v0.42.5: [Replace all] inside the window (same code path as the main Replace all; also for a pair list). null = no button
         val allLabel: String = "Replace all",     // v0.42.5: "Replace all (N)" / "Sure? Replace all"
-        val onCopy: (() -> Unit)? = null          // v0.42.5: [Copy] the result (with the format of the field when the app gives it)
+        val onCopy: (() -> Unit)? = null,         // v0.42.5: [Copy] the result (with the format of the field when the app gives it)
+        val onReset: (() -> Unit)? = null         // v0.44.0: [reset] button in the header = size + place back to default (floating window only)
     )
 
     private val AMBER: Int = 0xFFF9A825.toInt()
@@ -189,8 +190,8 @@ class ReplaceFloatView(private val ctx: Context, private val prefs: JabraPrefs, 
         return sb
     }
 
-    private fun body(snap: ReplaceFloat.Snap, tab: Int, simple: Boolean = false, onPick: ((Int) -> Unit)? = null): View {
-        val maxRows = if (simple) (if (snap.setMode && snap.setLines.size > 2) minOf(snap.setLines.size, 4) else 2) else ReplaceFloat.MAX_ROWS   // v0.40.0: a pair list (3-4 pairs) shows one line per pair
+    private fun body(snap: ReplaceFloat.Snap, tab: Int, simple: Boolean = false, onPick: ((Int) -> Unit)? = null, rows: Int = 0): View {
+        val maxRows = if (simple) rowsFor(snap, rows) else ReplaceFloat.MAX_ROWS   // v0.40.0: a pair list (3-4 pairs) shows one line per pair; v0.44.0: [rows] > 0 = the size the person dragged
         val box = LinearLayout(ctx)
         box.orientation = LinearLayout.VERTICAL
         box.setPadding(dp(8), dp(2), dp(8), dp(2))
@@ -292,7 +293,7 @@ class ReplaceFloatView(private val ctx: Context, private val prefs: JabraPrefs, 
     }
 
     /** The window. [tab] = 0 Before, 1 After, 2 Changes (sanitized). Throws only when nothing could be built (caller = old inline preview). */
-    fun window(snap: ReplaceFloat.Snap, tab: Int, a: Actions): View {
+    fun window(snap: ReplaceFloat.Snap, tab: Int, a: Actions, rows: Int = 0): View {
         val box = LinearLayout(ctx)
         box.orientation = LinearLayout.VERTICAL
         box.setPadding(dp(6), dp(2), dp(6), dp(4))
@@ -311,15 +312,19 @@ class ReplaceFloatView(private val ctx: Context, private val prefs: JabraPrefs, 
         val sp = View(ctx)
         sp.layoutParams = LinearLayout.LayoutParams(0, 1, 1f)
         head.addView(sp)
+        val rs = a.onReset
+        if (rs != null) head.addView(iconBtn("\u21BA", "Reset size and place") { rs() })   // v0.44.0
         val mn = a.onMinimize
         if (mn != null) head.addView(iconBtn("\u2013", "Minimize") { mn() })
         val cl = a.onClose
         if (cl != null) head.addView(iconBtn("\u2715", "Close") { cl() })
         box.addView(head)
 
-        val simple = mn != null   // v0.39.6: the FLOATING window is the simple one (no tabs, 2 rows, one line per match); the inline test card keeps the tabs
+        val simple = mn != null
+        if (simple) box.setPadding(dp(6), dp(2), dp(6), dp(8))   // v0.44.0: room for the corner resize marks
+        // v0.39.6: the FLOATING window is the simple one (no tabs, 2 rows, one line per match); the inline test card keeps the tabs
         if (!simple) box.addView(tabs(tab, a))
-        box.addView(body(snap, tab, simple, a.onPick))
+        box.addView(body(snap, tab, simple, a.onPick, rows))
         val f = footer(snap, a)
         if (f != null) box.addView(f)
         return box
@@ -346,5 +351,10 @@ class ReplaceFloatView(private val ctx: Context, private val prefs: JabraPrefs, 
 
     companion object {
         const val ROW_DP = 24
+
+        /** v0.44.0: visible match rows of the simple window. [pref] > 0 = the dragged size (1..8), else the old default (2, a pair list 3-4). */
+        fun rowsFor(snap: ReplaceFloat.Snap, pref: Int): Int =
+            if (pref > 0) pref.coerceIn(1, ReplaceFloat.WIN_MAX_ROWS)
+            else if (snap.setMode && snap.setLines.size > 2) minOf(snap.setLines.size, 4) else 2
     }
 }

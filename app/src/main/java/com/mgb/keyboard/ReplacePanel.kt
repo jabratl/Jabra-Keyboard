@@ -1136,7 +1136,7 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
         else act.addView(btn("Copy", 1f, 44) { copyResult(res) })
         root.addView(act)
         if (floatSwitch() && fcard == null) {   // v0.39.3 (FLOAT F4): show / update the floating window once the view is attached
-            val fSnap = ReplaceFloat.snap(src, res, step, setRules != null, floatLines(res))
+            val fSnap = ReplaceFloat.snap(src, res, step, setRules != null, floatLines(res), ReplaceFloat.WIN_MAX_ROWS)   // v0.44.0
             val fTab = ReplaceFloat.sanitizeTab(prefs.int("rp_float_tab", 0))
             val fAct = floatActions(res, shown)
             root.post { floatSync(root, fSnap, fTab, fAct) }
@@ -1262,7 +1262,7 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
         }))
 
         if (floatSwitch() && fcard == null) {   // floating window feed (same as mainViewMini)
-            val fSnap = ReplaceFloat.snap(src, res, step, setRules != null, floatLines(res))
+            val fSnap = ReplaceFloat.snap(src, res, step, setRules != null, floatLines(res), ReplaceFloat.WIN_MAX_ROWS)   // v0.44.0
             val fTab = ReplaceFloat.sanitizeTab(prefs.int("rp_float_tab", 0))
             val fAct = floatActions(res, shown)
             root.post { floatSync(root, fSnap, fTab, fAct) }

@@ -20,6 +20,7 @@ public final class ReplaceFloat {
     public static final String[] TAB_NAMES = { "Before", "After", "Changes" };
     public static final int CTX = 12;        // context chars each side of the found text
     public static final int MAX_ROWS = 3;
+    public static final int WIN_MAX_ROWS = 8;   // v0.44.0: the floating window can be resized up to 8 match rows
     public static final int MAX_MID = 24;    // found / replacement are cut after this many chars
     public static final String EMPTY = "\u2205";   // shown for an empty found text / empty replacement
 
@@ -134,6 +135,12 @@ public final class ReplaceFloat {
      * rule set (null when no set). Rows: current match first, then the next ones (wrap-around), max MAX_ROWS. Never null, never throws.
      */
     public static Snap snap(String src, ReplaceEngine.Result res, int cur0, boolean setMode, List<String> setLines) {
+        return snap(src, res, cur0, setMode, setLines, MAX_ROWS);
+    }
+
+    /** v0.44.0: same as above with a row limit (1..WIN_MAX_ROWS) for the resizable floating window. */
+    public static Snap snap(String src, ReplaceEngine.Result res, int cur0, boolean setMode, List<String> setLines, int maxRows) {
+        final int mr = Math.max(1, Math.min(maxRows, WIN_MAX_ROWS));
         Snap p = new Snap();
         try {
             p.setMode = setMode;
@@ -154,7 +161,7 @@ public final class ReplaceFloat {
             if (res.count <= 0 || n == 0) { p.empty = "No match"; return p; }
             int c = cur0 < 0 ? 0 : (cur0 >= n ? n - 1 : cur0);
             p.cur = c + 1;
-            int show = Math.min(MAX_ROWS, n);
+            int show = Math.min(mr, n);
             for (int k = 0; k < show; k++) {
                 int i = (c + k) % n;
                 Row r = row(src, res.hits.get(i), i, k == 0);

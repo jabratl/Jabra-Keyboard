@@ -1356,3 +1356,17 @@ ZB. CLIPBOARD COLLAPSE + PASTE Aa / T (v0.43.0)
  [ ] Settings > Clipboard & tools > "Paste with / without format buttons" OFF = one Paste again. "Collapsible clipboard parts" OFF = no arrows, the title is the old one, nothing is folded even if it was folded before.
  [ ] "Slim select bar" ON + "Floating select bar" OFF: the slim bar shows Aa / T too (and the chevron next to them still opens Paste 1 line / To Vault / Export).
  [ ] Dark + light theme, a 360 dp phone: the pill does not clip with Aa + T + the count badge + a "Sure? delete N" step; the header arrows are easy to tap.
+
+ZC. FLOATING WINDOW RESIZE + RESET + DOUBLE-TAP (v0.44.0)
+ [ ] Float window ON: each of the 4 corners shows 3 small diagonal marks. A normal touch + drag anywhere still moves the window; buttons and rows still tap.
+ [ ] Hold the bottom-right corner about 0.25 s (short vibration, marks turn blue), then drag right / down: the window gets wider and shows more match rows (needs a text with many matches). Release: size stays; close the Replace panel and open it again: same size.
+ [ ] Same with the top-left corner: the bottom-right corner of the window stays fixed while the window grows up / left. Also test top-right and bottom-left.
+ [ ] Drag smaller: fewer rows (down to 1), width not below 260 dp. Drag bigger: never wider than the screen, never taller than about 80% of the screen, never outside the screen.
+ [ ] Hold a corner but do not move, then lift: nothing is clicked (also on the minimize / reset / Replace all button near a corner).
+ [ ] Quick tap on a row or a button near a corner (no hold) works as before. Quick drag starting at a corner moves the window (no resize).
+ [ ] Header [reset] (circle arrow): window goes back to the default size AND to the place just above the keyboard.
+ [ ] Double-tap an empty part of the header (title / count pill): back to the default size. Double-tap again: bigger window (wide, 5 rows). Tapping minimize / reset twice does NOT trigger it.
+ [ ] Pair list (+Paste 3 lines) and a normal Find: rows show correctly at 1, 2, 5 rows; footer buttons ([<] n/N [>] [Undo] [Replace this] / [Copy] [Replace all]) are not cut off at 260 dp and on a 320 dp phone.
+ [ ] Landscape / very low keyboard: the window shows fewer rows and stays on the screen. Rotate with a big window: it comes back inside the screen.
+ [ ] If the window does NOT follow the drag (stays the old size), or jumps: send what you see (this is the Android popup limit noted as UNKNOWN in the changelog).
+
