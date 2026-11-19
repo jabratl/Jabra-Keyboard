@@ -46,7 +46,13 @@ class ReplaceFloatView(private val ctx: Context, private val prefs: JabraPrefs, 
         val onReplaceAll: (() -> Unit)? = null,   // v0.42.5: [Replace all] inside the window (same code path as the main Replace all; also for a pair list). null = no button
         val allLabel: String = "Replace all",     // v0.42.5: "Replace all (N)" / "Sure? Replace all"
         val onCopy: (() -> Unit)? = null,         // v0.42.5: [Copy] the result (with the format of the field when the app gives it)
-        val onReset: (() -> Unit)? = null         // v0.44.0: [reset] button in the header = size + place back to default (floating window only)
+        val onReset: (() -> Unit)? = null,        // v0.44.0: [reset] button in the header = size + place back to default (floating window only)
+        val onPaste: (() -> Unit)? = null,        // v0.45.0: [Paste] after [Copy] (only while the copied result is still the current one)
+        val onTools: (() -> Unit)? = null,        // v0.45.0: header gear = shows / hides the tools row (floating window only)
+        val onLock: (() -> Unit)? = null,         // v0.45.0: tools row: lock the place (no drag; resize and buttons still work)
+        val onAlpha: (() -> Unit)? = null,        // v0.45.0: tools row: 100% / 80% / 60% see-through
+        val onFont: ((Int) -> Unit)? = null,      // v0.45.0: tools row: A- / A+ (-1 / +1)
+        val onCtx: (() -> Unit)? = null           // v0.45.0: tools row (pair list): lines (counts) <-> text rows with the real text around
     )
 
     private val AMBER: Int = 0xFFF9A825.toInt()
@@ -89,13 +95,13 @@ class ReplaceFloatView(private val ctx: Context, private val prefs: JabraPrefs, 
     }
 
     /** Small round icon button (36 x 36 dp touch target). */
-    private fun iconBtn(label: String, desc: String, onClick: () -> Unit): TextView {
+    private fun iconBtn(label: String, desc: String, onClick: () -> Unit): TextView {   // v0.45.0: 32 dp wide (3 icons in the header)
         val t = tv(16f, ink(), true)
         t.text = label
         t.gravity = Gravity.CENTER
         t.contentDescription = desc
         t.isClickable = true
-        t.layoutParams = LinearLayout.LayoutParams(dp(36), dp(36))
+        t.layoutParams = LinearLayout.LayoutParams(dp(32), dp(36))
         t.setOnClickListener { try { feedback(t) } catch (_: Throwable) { }; try { onClick() } catch (_: Throwable) { } }
         return t
     }
@@ -191,28 +197,32 @@ class ReplaceFloatView(private val ctx: Context, private val prefs: JabraPrefs, 
     }
 
     private fun body(snap: ReplaceFloat.Snap, tab: Int, simple: Boolean = false, onPick: ((Int) -> Unit)? = null, rows: Int = 0): View {
+        val fo = if (simple) fontOffset(prefs) else 0   // v0.45.0
+        val rd = rowDp(fo)
+        val ctxOn = simple && snap.setMode && snap.rows.isNotEmpty() && prefs.bool("rp_float_ctx", false)
         val maxRows = if (simple) rowsFor(snap, rows) else ReplaceFloat.MAX_ROWS   // v0.40.0: a pair list (3-4 pairs) shows one line per pair; v0.44.0: [rows] > 0 = the size the person dragged
         val box = LinearLayout(ctx)
+        box.tag = "rf_body"   // v0.45.0: swipe left / right inside this area = next / previous match
         box.orientation = LinearLayout.VERTICAL
         box.setPadding(dp(8), dp(2), dp(8), dp(2))
-        box.layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(ROW_DP * maxRows + 4))   // fixed height: the window does not jump
+        box.layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(rd * maxRows + 4))   // fixed height: the window does not jump
         val lines = ArrayList<CharSequence>()
         val picks = ArrayList<Int>()   // 0-based match of each line, -1 = none
-        if (snap.setMode && snap.setLines.isNotEmpty()) {
+        if (snap.setMode && snap.setLines.isNotEmpty() && !ctxOn) {
             for (l in snap.setLines.take(maxRows)) { lines.add(l); picks.add(-1) }
         } else {
-            for (r in snap.rows.take(maxRows)) { lines.add(if (simple) rowCombined(r) else rowText(r, tab)); picks.add(r.n - 1) }
+            for (r in snap.rows.take(maxRows)) { lines.add(if (simple) rowCombined(r) else rowText(r, tab)); picks.add(if (snap.setMode) -1 else r.n - 1) }
         }
         if (lines.isEmpty()) {
-            val e = tv(12f, dim())
+            val e = tv(12f + fo, dim())
             e.text = if (snap.empty.isNotEmpty()) snap.empty else "No match"
             e.gravity = Gravity.CENTER_VERTICAL
-            e.layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(ROW_DP))
+            e.layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(rd))
             box.addView(e)
             return box
         }
         for ((li, ln) in lines.withIndex()) {
-            val t = tv(12f, ink())
+            val t = tv(12f + fo, ink())
             t.text = ln
             val pk = picks.getOrElse(li) { -1 }
             if (onPick != null && pk >= 0) {
@@ -220,7 +230,7 @@ class ReplaceFloatView(private val ctx: Context, private val prefs: JabraPrefs, 
                 t.setOnClickListener { try { feedback(t) } catch (_: Throwable) { }; try { onPick(pk) } catch (_: Throwable) { } }
             }
             t.gravity = Gravity.CENTER_VERTICAL
-            t.layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(ROW_DP))
+            t.layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(rd))
             box.addView(t)
         }
         return box
@@ -252,6 +262,28 @@ class ReplaceFloatView(private val ctx: Context, private val prefs: JabraPrefs, 
         return col
     }
 
+    /** v0.45.0: tools row (floating window, shown by the header gear): [Lock] [100%] [A-] [A+] ([Text] for a pair list). */
+    private fun toolsRow(snap: ReplaceFloat.Snap, a: Actions): View? {
+        if (a.onTools == null || !prefs.bool("rp_float_tools", false)) return null
+        val row = LinearLayout(ctx)
+        row.orientation = LinearLayout.HORIZONTAL
+        row.gravity = Gravity.CENTER_VERTICAL
+        fun add(label: String, sel: Boolean, onClick: () -> Unit) {
+            val c = UiKit.chip(ctx, prefs, label, sel, 32, feedback) { onClick() }
+            c.layoutParams = LinearLayout.LayoutParams(0, dp(32), 1f).also { it.setMargins(dp(2), dp(2), dp(2), dp(2)) }
+            c.setPadding(dp(4), 0, dp(4), 0)
+            row.addView(c)
+        }
+        val lock = prefs.bool("rp_float_lock", false)
+        val al = prefs.int("rp_float_alpha", 0).coerceIn(0, 2)
+        add(if (lock) "Locked" else "Lock", lock) { a.onLock?.invoke() }
+        add(arrayOf("100%", "80%", "60%")[al], al != 0) { a.onAlpha?.invoke() }
+        add("A-", false) { a.onFont?.invoke(-1) }
+        add("A+", false) { a.onFont?.invoke(1) }
+        if (snap.setMode && snap.rows.isNotEmpty() && a.onCtx != null) add("Text", prefs.bool("rp_float_ctx", false)) { a.onCtx?.invoke() }
+        return row
+    }
+
     private fun actionRow(snap: ReplaceFloat.Snap, a: Actions): View? {
         val all = a.onReplaceAll
         val cp = a.onCopy
@@ -260,6 +292,8 @@ class ReplaceFloatView(private val ctx: Context, private val prefs: JabraPrefs, 
         row.orientation = LinearLayout.HORIZONTAL
         row.gravity = Gravity.CENTER_VERTICAL
         if (cp != null) row.addView(UiKit.btn(ctx, prefs, "Copy", 0f, 36, 12f, feedback) { cp() }.also { it.setPadding(dp(10), 0, dp(10), 0) })
+        val ps = a.onPaste
+        if (ps != null) row.addView(UiKit.btn(ctx, prefs, "Paste", 0f, 36, 12f, feedback) { ps() }.also { it.setPadding(dp(10), 0, dp(10), 0) })   // v0.45.0
         val sp = View(ctx)
         sp.layoutParams = LinearLayout.LayoutParams(0, 1, 1f)
         row.addView(sp)
@@ -312,6 +346,8 @@ class ReplaceFloatView(private val ctx: Context, private val prefs: JabraPrefs, 
         val sp = View(ctx)
         sp.layoutParams = LinearLayout.LayoutParams(0, 1, 1f)
         head.addView(sp)
+        val gr = a.onTools
+        if (gr != null) head.addView(iconBtn("\u2699", "Tools") { gr() })   // v0.45.0
         val rs = a.onReset
         if (rs != null) head.addView(iconBtn("\u21BA", "Reset size and place") { rs() })   // v0.44.0
         val mn = a.onMinimize
@@ -324,6 +360,7 @@ class ReplaceFloatView(private val ctx: Context, private val prefs: JabraPrefs, 
         if (simple) box.setPadding(dp(6), dp(2), dp(6), dp(8))   // v0.44.0: room for the corner resize marks
         // v0.39.6: the FLOATING window is the simple one (no tabs, 2 rows, one line per match); the inline test card keeps the tabs
         if (!simple) box.addView(tabs(tab, a))
+        else { val tr = try { toolsRow(snap, a) } catch (_: Throwable) { null }; if (tr != null) box.addView(tr) }   // v0.45.0
         box.addView(body(snap, tab, simple, a.onPick, rows))
         val f = footer(snap, a)
         if (f != null) box.addView(f)
@@ -351,6 +388,10 @@ class ReplaceFloatView(private val ctx: Context, private val prefs: JabraPrefs, 
 
     companion object {
         const val ROW_DP = 24
+
+        /** v0.45.0: font offset in sp (-1..4) of the rows of the floating window (A- / A+); a row gets 2 dp more per step. */
+        fun fontOffset(p: JabraPrefs): Int = p.int("rp_float_font", 0).coerceIn(-1, 4)
+        fun rowDp(fo: Int): Int = ROW_DP + fo * 2
 
         /** v0.44.0: visible match rows of the simple window. [pref] > 0 = the dragged size (1..8), else the old default (2, a pair list 3-4). */
         fun rowsFor(snap: ReplaceFloat.Snap, pref: Int): Int =

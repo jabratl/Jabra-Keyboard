@@ -884,7 +884,8 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
             onPick = { i -> step = i.coerceIn(0, (nHits - 1).coerceAtLeast(0)); showStep(res) },   // v0.39.6: tap a row = that match
             onReplaceAll = { onReplace(res, false) },   // v0.42.5: same as the main Replace all (asks "Sure?" first)
             allLabel = if (confirmAll) "Sure? Replace all" else if (res.err == null && res.count > 0) "Replace all (" + res.count + ")" else "Replace all",
-            onCopy = { copyResult(res) }
+            onCopy = { copyResult(res) },
+            onPaste = if (copiedOut != null && copiedOut == res.out) ({ pasteCopied() }) else null   // v0.45.0: [Paste] after Copy (same as the main Paste)
         )
     }
 
@@ -1136,7 +1137,7 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
         else act.addView(btn("Copy", 1f, 44) { copyResult(res) })
         root.addView(act)
         if (floatSwitch() && fcard == null) {   // v0.39.3 (FLOAT F4): show / update the floating window once the view is attached
-            val fSnap = ReplaceFloat.snap(src, res, step, setRules != null, floatLines(res), ReplaceFloat.WIN_MAX_ROWS)   // v0.44.0
+            val fSnap = ReplaceFloat.snap(src, res, step, setRules != null, floatLines(res), ReplaceFloat.WIN_MAX_ROWS, if (setRules != null) setRun?.edits else null)   // v0.44.0 / v0.45.0 (context rows of a pair list)
             val fTab = ReplaceFloat.sanitizeTab(prefs.int("rp_float_tab", 0))
             val fAct = floatActions(res, shown)
             root.post { floatSync(root, fSnap, fTab, fAct) }
@@ -1262,7 +1263,7 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
         }))
 
         if (floatSwitch() && fcard == null) {   // floating window feed (same as mainViewMini)
-            val fSnap = ReplaceFloat.snap(src, res, step, setRules != null, floatLines(res), ReplaceFloat.WIN_MAX_ROWS)   // v0.44.0
+            val fSnap = ReplaceFloat.snap(src, res, step, setRules != null, floatLines(res), ReplaceFloat.WIN_MAX_ROWS, if (setRules != null) setRun?.edits else null)   // v0.44.0 / v0.45.0 (context rows of a pair list)
             val fTab = ReplaceFloat.sanitizeTab(prefs.int("rp_float_tab", 0))
             val fAct = floatActions(res, shown)
             root.post { floatSync(root, fSnap, fTab, fAct) }

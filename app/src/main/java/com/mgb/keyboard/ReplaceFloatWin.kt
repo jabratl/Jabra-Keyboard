@@ -30,6 +30,9 @@ import com.mgb.keyboard.typing.ReplaceFloat
  * match rows (pref rp_float_rows, 1..8; 0 = default). The corner opposite to the one you hold stays where it is. Limits: width 260 dp .. screen - 20 dp (max 560 dp), height at most
  * about 80% of the screen. Without the hold a touch is a normal drag / tap, so rows and buttons are not confused with resizing. Double-tap on the header = back to the default
  * size, or (when already default) a bigger size. [reset] button in the header = default size AND default place. Nothing but numbers is stored.
+ * v0.45.0: header gear = TOOLS row: [Lock] (no drag; resize / buttons work), [100% / 80% / 60%] see-through (pref rp_float_alpha), [A- / A+] row font (rp_float_font),
+ * [Text] (pair list: real text rows). Edge snap: a drag released within 28 dp of the left / right / top edge slides to the edge. Swipe left / right inside the rows = next / previous match.
+ * Prefs: rp_float_tools, rp_float_lock, rp_float_alpha, rp_float_font, rp_float_ctx (numbers / switches only).
  * Delete this file + the hooks marked "v0.39.2" / "v0.39.3" = back to v0.39.1.
  */
 class ReplaceFloatWin(private val ctx: Context, private val prefs: JabraPrefs, private val feedback: (View) -> Unit) {
@@ -79,7 +82,7 @@ class ReplaceFloatWin(private val ctx: Context, private val prefs: JabraPrefs, p
     }
 
     private fun actionsFor(a: ReplaceFloatView.Actions): ReplaceFloatView.Actions =
-        ReplaceFloatView.Actions(a.onTab, a.onPrev, a.onNext, a.onReplace, a.onUndo, { setState(ReplaceFloat.MINI) }, null, a.notice, a.onPick, a.onReplaceAll, a.allLabel, a.onCopy, { resetAll() })   // v0.39.6: no close button (the Float chip closes / opens)
+        ReplaceFloatView.Actions(a.onTab, a.onPrev, a.onNext, a.onReplace, a.onUndo, { setState(ReplaceFloat.MINI) }, null, a.notice, a.onPick, a.onReplaceAll, a.allLabel, a.onCopy, { resetAll() }, a.onPaste, { flip("rp_float_tools") }, { flip("rp_float_lock") }, { cycleAlpha() }, { d -> bumpFont(d) }, { flip("rp_float_ctx") })   // v0.39.6: no close button (the Float chip closes / opens)
 
     private fun content(snap: ReplaceFloat.Snap, tab: Int, a: ReplaceFloatView.Actions, st: Int, w: Int, rows: Int): View {
         val v = ReplaceFloatView(ctx, prefs, feedback)
@@ -101,7 +104,28 @@ class ReplaceFloatWin(private val ctx: Context, private val prefs: JabraPrefs, p
 
     // ------------------------------------------------------------------ v0.44.0: size helpers
 
-    private fun rowPx(): Int = dp(ReplaceFloatView.ROW_DP)
+    private fun rowPx(): Int = dp(ReplaceFloatView.rowDp(ReplaceFloatView.fontOffset(prefs)))
+
+    private fun locked(): Boolean = try { shownState == ReplaceFloat.OPEN && prefs.bool("rp_float_lock", false) } catch (_: Throwable) { false }
+
+    /** v0.45.0: 100% / 80% / 60% (pref rp_float_alpha 0..2). */
+    private fun baseAlpha(): Float = when (try { prefs.int("rp_float_alpha", 0) } catch (_: Throwable) { 0 }) { 1 -> 0.8f; 2 -> 0.6f; else -> 1f }
+
+    private fun flip(k: String) {
+        try { prefs.setBool(k, !prefs.bool(k, false)) } catch (_: Throwable) { }
+        try { onChange?.invoke() } catch (_: Throwable) { }
+    }
+
+    private fun cycleAlpha() {
+        try { prefs.setInt("rp_float_alpha", (prefs.int("rp_float_alpha", 0).coerceIn(0, 2) + 1) % 3) } catch (_: Throwable) { }
+        try { box?.alpha = baseAlpha() } catch (_: Throwable) { }
+        try { onChange?.invoke() } catch (_: Throwable) { }
+    }
+
+    private fun bumpFont(d: Int) {
+        try { prefs.setInt("rp_float_font", (ReplaceFloatView.fontOffset(prefs) + d).coerceIn(-1, 4)) } catch (_: Throwable) { }
+        try { onChange?.invoke() } catch (_: Throwable) { }
+    }
 
     private fun roomW(b: IntArray): Int = (b[2] - 2 * dp(10)).coerceAtLeast(dp(200))
 
@@ -123,7 +147,7 @@ class ReplaceFloatWin(private val ctx: Context, private val prefs: JabraPrefs, p
 
     /** Rows that fit: the window (about 130 dp of header + footer + rows) stays under 80% of the screen height (landscape / low screens get fewer rows). */
     private fun fitRows(b: IntArray, rows: Int): Int {
-        val room = ((b[3] - 2 * dp(10)) * 0.8f).toInt() - dp(130)
+        val room = ((b[3] - 2 * dp(10)) * 0.8f).toInt() - dp(130 + (if (try { prefs.bool("rp_float_tools", false) } catch (_: Throwable) { false }) 36 else 0))
         val maxR = (room / rowPx()).coerceIn(1, ReplaceFloat.WIN_MAX_ROWS)
         return rows.coerceIn(1, maxR)
     }
@@ -214,23 +238,25 @@ class ReplaceFloatWin(private val ctx: Context, private val prefs: JabraPrefs, p
         private var sH = 0
         private var sRows = 2
         private var lastTap = 0L
+        private var swipeOk = false   // v0.45.0: the touch started inside the rows
+        private var downT = 0L
         private val holdRun = Runnable { try { startResize() } catch (_: Throwable) { } }
         private val markPaint = Paint(Paint.ANTI_ALIAS_FLAG)
 
         init { setWillNotDraw(false) }
 
         private fun begin(e: MotionEvent) {
-            downX = e.rawX; downY = e.rawY; downLocalY = e.y; startX = curX; startY = curY; dragging = false
+            downX = e.rawX; downY = e.rawY; downLocalY = e.y; downT = e.eventTime; swipeOk = inBody(e.y); startX = curX; startY = curY; dragging = false
             removeCallbacks(holdRun)
             corner = if (shownState == ReplaceFloat.OPEN && !resizing) cornerAt(e.x, e.y) else null
             if (corner != null) postDelayed(holdRun, 250)
         }
         private fun far(e: MotionEvent): Boolean { val dx = e.rawX - downX; val dy = e.rawY - downY; return dx * dx + dy * dy > slop * slop }
         private fun cancelHold() { removeCallbacks(holdRun); corner = null }
-        private fun start() { cancelHold(); dragging = true; alpha = 0.85f; try { parent?.requestDisallowInterceptTouchEvent(true) } catch (_: Throwable) { } }
+        private fun start() { cancelHold(); dragging = true; if (!locked()) alpha = minOf(baseAlpha(), 0.85f); try { parent?.requestDisallowInterceptTouchEvent(true) } catch (_: Throwable) { } }
         private fun end() {
             cancelHold()
-            alpha = 1f
+            alpha = baseAlpha()
             if (resizing) {
                 resizing = false; resizeActive = false
                 saveSize()
@@ -240,7 +266,7 @@ class ReplaceFloatWin(private val ctx: Context, private val prefs: JabraPrefs, p
             if (!dragging) return
             dragging = false
             if (shownState == ReplaceFloat.MINI) snapToEdge()
-            else { try { prefs.setInt("rp_float_x", curX); prefs.setInt("rp_float_y", curY) } catch (_: Throwable) { } }
+            else if (!locked()) snapEdges()
         }
 
         private fun cornerAt(x: Float, y: Float): IntArray? {
@@ -254,7 +280,7 @@ class ReplaceFloatWin(private val ctx: Context, private val prefs: JabraPrefs, p
             if (dragging || resizing || pw == null || shownState != ReplaceFloat.OPEN) return
             resizing = true; resizeActive = true
             sW = winW; sH = if (height > 0) height else winH; sRows = rowsNow; startX = curX; startY = curY
-            alpha = 0.92f
+            alpha = minOf(baseAlpha(), 0.92f)
             try { performHapticFeedback(HapticFeedbackConstants.LONG_PRESS) } catch (_: Throwable) { }
             try { parent?.requestDisallowInterceptTouchEvent(true) } catch (_: Throwable) { }
             invalidate()
@@ -279,6 +305,11 @@ class ReplaceFloatWin(private val ctx: Context, private val prefs: JabraPrefs, p
             curX = c[0]; curY = c[1]
             applySize(nw, nr, nh)
         }
+
+        private fun inBody(y: Float): Boolean = try {
+            val bv = getChildAt(0)?.findViewWithTag<View>("rf_body")
+            shownState == ReplaceFloat.OPEN && bv != null && y >= bv.top && y <= bv.bottom
+        } catch (_: Throwable) { false }
 
         private fun headerBottom(): Int = try { (getChildAt(0)?.findViewWithTag<View>("rf_header")?.bottom ?: 0) } catch (_: Throwable) { 0 }
 
@@ -311,13 +342,23 @@ class ReplaceFloatWin(private val ctx: Context, private val prefs: JabraPrefs, p
                         if (resizing) resizeMove(e)
                         else {
                             if (!dragging && far(e)) start()
-                            if (dragging) moveTo(startX + (e.rawX - downX).toInt(), startY + (e.rawY - downY).toInt())
+                            if (dragging && !locked()) moveTo(startX + (e.rawX - downX).toInt(), startY + (e.rawY - downY).toInt())
                         }
                     }
                     MotionEvent.ACTION_UP -> {
+                        val dx = e.rawX - downX
+                        val dy = e.rawY - downY
+                        val swipe = swipeOk && !resizing && e.eventTime - downT < 350 && Math.abs(dx) > dp(56) && Math.abs(dx) > 2 * Math.abs(dy)
                         val tap = !dragging && !resizing && shownState == ReplaceFloat.OPEN && downLocalY < headerBottom()
-                        end()
-                        if (tap) tapped()
+                        if (swipe) {   // v0.45.0: a quick sideways flick in the rows = next / previous match; the window goes back to where it was
+                            if (dragging && !locked()) moveTo(startX, startY)
+                            end()
+                            val a = lastA
+                            try { if (dx < 0) a?.onNext?.invoke() else a?.onPrev?.invoke() } catch (_: Throwable) { }
+                        } else {
+                            end()
+                            if (tap) tapped()
+                        }
                     }
                     MotionEvent.ACTION_CANCEL -> end()
                 }
@@ -346,6 +387,29 @@ class ReplaceFloatWin(private val ctx: Context, private val prefs: JabraPrefs, p
                 }
             } catch (_: Throwable) { }
         }
+    }
+
+    /** v0.45.0: a window released within 28 dp of the left / right / top edge slides to that edge (6 dp margin); the place is saved. */
+    private fun snapEdges() {
+        try {
+            val b = bounds()
+            val th = dp(28)
+            val m = dp(6)
+            var tx = curX
+            var ty = curY
+            if (curX - b[0] < th) tx = b[0] + m else if (b[2] - (curX + winW) < th) tx = b[2] - winW - m
+            if (curY - b[1] < th) ty = b[1] + m
+            val x0 = curX
+            val y0 = curY
+            if (tx == x0 && ty == y0) { prefs.setInt("rp_float_x", curX); prefs.setInt("rp_float_y", curY); return }
+            val va = ValueAnimator.ofFloat(0f, 1f)
+            va.duration = 150
+            va.addUpdateListener { try { val t = it.animatedValue as Float; moveTo(x0 + ((tx - x0) * t).toInt(), y0 + ((ty - y0) * t).toInt()) } catch (_: Throwable) { } }
+            va.addListener(object : AnimatorListenerAdapter() {
+                override fun onAnimationEnd(animation: Animator) { try { prefs.setInt("rp_float_x", curX); prefs.setInt("rp_float_y", curY) } catch (_: Throwable) { } }
+            })
+            va.start()
+        } catch (_: Throwable) { try { prefs.setInt("rp_float_x", curX); prefs.setInt("rp_float_y", curY) } catch (_: Throwable) { } }
     }
 
     /** v0.39.6: after the bubble is released it slides (180 ms) to the left or right edge, whichever is nearer, and the place is saved. */
@@ -395,6 +459,17 @@ class ReplaceFloatWin(private val ctx: Context, private val prefs: JabraPrefs, p
                 bx.addView(c)
                 wire(c, st)
                 winW = w
+                bx.post {   // v0.45.0: the content may be taller / shorter now (tools row, font): keep the window on the screen
+                    try {
+                        val h = bx.height
+                        if (box === bx && h > 0) {
+                            winH = h
+                            val bb = bounds()
+                            val cc = ReplaceFloat.clamp(curX, curY, winW, h, bb[0], bb[1], bb[2], bb[3], dp(6))
+                            if (cc[0] != curX || cc[1] != curY) { curX = cc[0]; curY = cc[1]; try { pw?.update(curX - offX, curY - offY, -1, -1) } catch (_: Throwable) { } }
+                        }
+                    } catch (_: Throwable) { }
+                }
                 return true
             }
             hide()
@@ -424,8 +499,8 @@ class ReplaceFloatWin(private val ctx: Context, private val prefs: JabraPrefs, p
             try {   // v0.39.6: soft open (fade + small zoom from the top-left corner, so the measured place does not change)
                 f.pivotX = 0f; f.pivotY = 0f
                 f.alpha = 0f; f.scaleX = 0.96f; f.scaleY = 0.96f
-                f.animate().alpha(1f).scaleX(1f).scaleY(1f).setDuration(140).start()
-            } catch (_: Throwable) { f.alpha = 1f; f.scaleX = 1f; f.scaleY = 1f }
+                f.animate().alpha(baseAlpha()).scaleX(1f).scaleY(1f).setDuration(140).start()
+            } catch (_: Throwable) { f.alpha = baseAlpha(); f.scaleX = 1f; f.scaleY = 1f }
             f.post { calibrate(f) }
             return true
         } catch (e: Throwable) {

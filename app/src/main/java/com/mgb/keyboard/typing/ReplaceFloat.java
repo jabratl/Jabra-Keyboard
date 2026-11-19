@@ -140,6 +140,11 @@ public final class ReplaceFloat {
 
     /** v0.44.0: same as above with a row limit (1..WIN_MAX_ROWS) for the resizable floating window. */
     public static Snap snap(String src, ReplaceEngine.Result res, int cur0, boolean setMode, List<String> setLines, int maxRows) {
+        return snap(src, res, cur0, setMode, setLines, maxRows, null);
+    }
+
+    /** v0.45.0: [ctxHits] = the edits of a pair list run (ORIGINAL text); in set mode they become context rows (left + found + replacement + right). null = none. */
+    public static Snap snap(String src, ReplaceEngine.Result res, int cur0, boolean setMode, List<String> setLines, int maxRows, List<ReplaceEngine.Hit> ctxHits) {
         final int mr = Math.max(1, Math.min(maxRows, WIN_MAX_ROWS));
         Snap p = new Snap();
         try {
@@ -152,6 +157,12 @@ public final class ReplaceFloat {
                 p.count = countText(p.err, false, p.total, true);
                 if (setLines != null) for (String l : setLines) { if (p.setLines.size() >= 6) break; if (l != null) p.setLines.add(l); }
                 if (p.setLines.isEmpty()) p.empty = p.total == 0 ? "No match" : "";
+                if (ctxHits != null) {
+                    for (int i = 0; i < ctxHits.size() && p.rows.size() < mr; i++) {
+                        Row r = row(src, ctxHits.get(i), i, i == 0);
+                        if (r != null) p.rows.add(r);
+                    }
+                }
                 return p;
             }
             p.count = countText(p.err, res.blank, p.total, false);

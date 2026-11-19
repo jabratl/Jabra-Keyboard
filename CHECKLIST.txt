@@ -1370,3 +1370,14 @@ ZC. FLOATING WINDOW RESIZE + RESET + DOUBLE-TAP (v0.44.0)
  [ ] Landscape / very low keyboard: the window shows fewer rows and stays on the screen. Rotate with a big window: it comes back inside the screen.
  [ ] If the window does NOT follow the drag (stays the old size), or jumps: send what you see (this is the Android popup limit noted as UNKNOWN in the changelog).
 
+ZD. FLOATING WINDOW TOOLS (v0.45.0) - test ZC (v0.44.0) first
+ [ ] Header: [grip] Preview [pill] ... [gear] [reset] [minimize]; at 260 dp / 320 dp phone nothing is pushed out (title / pill may show ...). Tap the gear: a tools row [Lock] [100%] [A-] [A+] appears under the header; tap again: gone. The window stays on the screen.
+ [ ] [100%] tap: 80%, again 60%, again 100%. The text behind the window is visible at 60%. Close and reopen the panel: it is remembered.
+ [ ] [A+] x4: the row text grows (max 16 sp) and the rows get taller; [A-] x2: smaller (min 11 sp). Row count / resize still work. Remembered.
+ [ ] [Lock]: the chip says Locked. Drag the window from the header / body: it does NOT move. Buttons, rows, double-tap header, hold a corner + resize still work. Lock again = drag works.
+ [ ] Edge snap: drag the window so that it ends 10-20 dp from the left edge: it slides to the edge. Same for the right edge and the top. In the middle it stays where dropped. Locked = no snap.
+ [ ] Swipe: Find with 4+ matches, window shows rows. A quick flick left inside the rows = next match (n/N changes, the match is selected in the text), flick right = previous. The window does not move. A slow drag inside the rows moves the window. Drag from the header always moves it.
+ [ ] After Copy (second row [Copy]): a [Paste] button appears next to it; tap = pastes the result (same as the main Paste). After the result changes it is gone.
+ [ ] Pair list (+Paste 3 lines): tools row has a 5th chip [Text]. Tap: rows show the real text around each change (found struck out, replacement green). Tap again: the lines "3x cat -> dog" come back. Remembered.
+ [ ] 260 dp: the second row [Copy] [Paste] [Replace all (N)] is not cut off (if it is: tell me, Paste can then replace Copy).
+
