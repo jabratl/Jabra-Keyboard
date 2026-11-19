@@ -209,6 +209,7 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
                 val rr = ReplaceRules.run(src, rules, setOpt)
                 setRun = rr
                 r.out = rr.out; r.count = rr.changed; r.changed = rr.changed; r.skipped = rr.skipped
+                r.edits = rr.edits   // v0.42.5: a pair list is now written match by match too (the format of the field stays) and Copy can keep the format
             } catch (_: Throwable) { setRun = null }
             return r
         }
@@ -441,13 +442,15 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
         val fullBefore = fullText
         val fullAfter = if (partial) composeFull(r.out) else r.out
         var ok = false
+        var byEdits = false   // v0.42.5: true = written match by match (the format of the field stays)
         if (!usedSel && r.edits.isNotEmpty()) {   // v0.37.1: match by match first (the text between the matches is never rewritten = its format stays; also works in apps that cannot "select all")
             try { ok = io.replaceEdits(0, fullBefore, fullAfter, if (part == 1) com.mgb.keyboard.typing.ReplaceEdits.shift(r.edits, partCut.coerceIn(0, fullText.length)) else r.edits) } catch (_: Throwable) { ok = false }
+            byEdits = ok
         }
         if (!ok) ok = try { if (usedSel) io.replaceSelection(r.out) else io.replaceAll(fullAfter) } catch (_: Throwable) { false }
         confirmAll = false
         if (ok && partial && part == 2) partCut = r.out.length   // the piece before the cursor now has the new length
-        if (ok) { undoStack.push(if (usedSel) r.out else fullAfter, if (usedSel) before else fullBefore); msg = "Replaced " + r.changed + (if (r.skipped > 0) "  \u00B7  " + r.skipped + " kept (never change)" else ""); recordPair(); readSource(false) } else msg = "Could not replace in this app. Use Copy, then paste"   // v0.26.0 (R3): recordPair = only when Recent pairs is ON
+        if (ok) { undoStack.push(if (usedSel) r.out else fullAfter, if (usedSel) before else fullBefore); msg = "Replaced " + r.changed + (if (r.skipped > 0) "  \u00B7  " + r.skipped + " kept (never change)" else "") + (if (!usedSel && !byEdits && io !is ClipReplaceIo) "  \u00B7  plain rewrite: format of the field may be lost (Undo)" else ""); recordPair(); readSource(false) } else msg = "Could not replace in this app. Use Copy, then paste"   // v0.42.5: the user is told when the format could not be kept. // v0.26.0 (R3): recordPair = only when Recent pairs is ON
         refresh()
     }
 
@@ -870,14 +873,18 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
     private fun floatActions(res: ReplaceEngine.Result, shown: String): ReplaceFloatView.Actions {
         val nHits = res.hits.size
         val replaced = shown.startsWith("Replaced")
+        val copied = shown.startsWith("Copied")   // v0.42.5: the window shows a short "Copied" too (the long hint stays in the note line)
         return ReplaceFloatView.Actions(
             onTab = { t -> prefs.setInt("rp_float_tab", ReplaceFloat.sanitizeTab(t)); refresh() },
             onPrev = { step = ReplaceFloat.step(step, nHits, -1); showStep(res) },
             onNext = { step = ReplaceFloat.step(step, nHits, 1); showStep(res) },
             onReplace = { onReplace(ReplaceEngine.replaceNth(src, find, repl, opt, step + 1), true) },
             onUndo = if (replaced && undoStack.canUndo()) ({ undo() }) else null,
-            notice = if (replaced) shown else "",
-            onPick = { i -> step = i.coerceIn(0, (nHits - 1).coerceAtLeast(0)); showStep(res) }   // v0.39.6: tap a row = that match
+            notice = if (replaced || copied) shown.substringBefore("  \u00B7  ").substringBefore(". ") else "",
+            onPick = { i -> step = i.coerceIn(0, (nHits - 1).coerceAtLeast(0)); showStep(res) },   // v0.39.6: tap a row = that match
+            onReplaceAll = { onReplace(res, false) },   // v0.42.5: same as the main Replace all (asks "Sure?" first)
+            allLabel = if (confirmAll) "Sure? Replace all" else if (res.err == null && res.count > 0) "Replace all (" + res.count + ")" else "Replace all",
+            onCopy = { copyResult(res) }
         )
     }
 

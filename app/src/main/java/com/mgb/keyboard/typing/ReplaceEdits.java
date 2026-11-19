@@ -45,4 +45,51 @@ public final class ReplaceEdits {
     public static boolean matches(String before, String after, List<ReplaceEngine.Hit> edits) {
         try { return !edits.isEmpty() && apply(before, edits).equals(after); } catch (RuntimeException e) { return false; }
     }
+
+    /**
+     * v0.42.5: more edits than the field can take one by one (each edit = 3 calls to the app) used to mean "rewrite the WHOLE text" = the format of the whole field lost.
+     * Now the closest edits are joined into bigger ones (found = the old text between them, repl = the new text between them), so at most [max] edits remain and the
+     * text far from the matches keeps its format. Only the small gaps that were joined are rewritten. Returns the same list when it is short enough; null on any problem.
+     */
+    public static List<ReplaceEngine.Hit> coalesce(String before, List<ReplaceEngine.Hit> edits, int max) {
+        try {
+            if (before == null || edits == null || max < 1) return null;
+            int n = edits.size();
+            if (n <= max) return edits;
+            int need = n - max;   // gaps to close
+            Integer[] idx = new Integer[n - 1];
+            for (int i = 0; i < n - 1; i++) idx[i] = i;
+            final List<ReplaceEngine.Hit> e = edits;
+            java.util.Arrays.sort(idx, new java.util.Comparator<Integer>() {
+                public int compare(Integer x, Integer y) {
+                    int gx = e.get(x + 1).start - e.get(x).end, gy = e.get(y + 1).start - e.get(y).end;
+                    return gx != gy ? (gx < gy ? -1 : 1) : (x < y ? -1 : (x > y ? 1 : 0));
+                }
+            });
+            boolean[] join = new boolean[n - 1];
+            for (int k = 0; k < need; k++) join[idx[k]] = true;
+            List<ReplaceEngine.Hit> out = new ArrayList<ReplaceEngine.Hit>(max);
+            int i = 0;
+            while (i < n) {
+                int j = i;
+                while (j < n - 1 && join[j]) j++;
+                if (j == i) { out.add(edits.get(i)); }
+                else {
+                    int a = edits.get(i).start, b = edits.get(j).end;
+                    StringBuilder sb = new StringBuilder();
+                    int pos = a;
+                    for (int k = i; k <= j; k++) {
+                        ReplaceEngine.Hit h = edits.get(k);
+                        sb.append(before, pos, h.start).append(h.repl);
+                        pos = h.end;
+                    }
+                    out.add(new ReplaceEngine.Hit(a, b, before.substring(a, b), sb.toString()));
+                }
+                i = j + 1;
+            }
+            return out;
+        } catch (RuntimeException ex) {
+            return null;
+        }
+    }
 }

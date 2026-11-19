@@ -67,7 +67,7 @@ class ReplaceFloatWin(private val ctx: Context, private val prefs: JabraPrefs, p
     }
 
     private fun actionsFor(a: ReplaceFloatView.Actions): ReplaceFloatView.Actions =
-        ReplaceFloatView.Actions(a.onTab, a.onPrev, a.onNext, a.onReplace, a.onUndo, { setState(ReplaceFloat.MINI) }, null, a.notice, a.onPick)   // v0.39.6: no close button (the Float chip closes / opens)
+        ReplaceFloatView.Actions(a.onTab, a.onPrev, a.onNext, a.onReplace, a.onUndo, { setState(ReplaceFloat.MINI) }, null, a.notice, a.onPick, a.onReplaceAll, a.allLabel, a.onCopy)   // v0.39.6: no close button (the Float chip closes / opens)
 
     private fun content(snap: ReplaceFloat.Snap, tab: Int, a: ReplaceFloatView.Actions, st: Int, w: Int): View {
         val v = ReplaceFloatView(ctx, prefs, feedback)

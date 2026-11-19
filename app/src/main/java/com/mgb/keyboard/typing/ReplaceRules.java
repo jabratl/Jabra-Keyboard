@@ -52,6 +52,7 @@ public final class ReplaceRules {
         public int errors = 0;                // rules skipped because of an error
         public int skipped = 0;               // v0.41.0: matches left alone because of the never-change list
         public String err = null;             // first error, "Rule N: ..."
+        public List<ReplaceEngine.Hit> edits = new ArrayList<ReplaceEngine.Hit>();   // v0.42.5: what the whole run changed, as ONE edit list on the ORIGINAL text (ReplaceCompose). Empty = nothing changed OR not available (then the caller rewrites the whole text, old behaviour)
     }
 
     private static String trim(String s) { return s.trim(); }
@@ -135,6 +136,9 @@ public final class ReplaceRules {
     public static RunResult run(String text, List<Rule> rules, ReplaceEngine.Opt o) {
         RunResult rr = new RunResult();
         String cur = text == null ? "" : text;
+        final String orig = cur;
+        List<ReplaceEngine.Hit> eds = new ArrayList<ReplaceEngine.Hit>();   // v0.42.5: edits orig -> cur, joined rule by rule
+        boolean edsOk = true;
         rr.out = cur;
         rr.counts = new int[rules.size()];
         try {
@@ -168,6 +172,10 @@ public final class ReplaceRules {
                 rr.counts[i] = res.changed;
                 rr.changed += res.changed;
                 rr.skipped += res.skipped;   // v0.41.0
+                if (edsOk) {   // v0.42.5
+                    List<ReplaceEngine.Hit> nx = res.changed > 0 ? ReplaceCompose.compose(orig, eds, res.edits) : eds;
+                    if (nx == null || (res.changed > 0 && res.edits.isEmpty())) edsOk = false; else eds = nx;
+                }
                 cur = res.out;
             }
         } catch (Throwable t) {
@@ -175,6 +183,13 @@ public final class ReplaceRules {
             if (rr.err == null) rr.err = "Rules stopped: " + t.getClass().getSimpleName();
         }
         rr.out = cur;
+        try {   // v0.42.5: only an edit list that really turns the old text into the new one is given out (else empty = the old whole-text replace)
+            if (edsOk && !eds.isEmpty()) {
+                List<ReplaceEngine.Hit> real = new ArrayList<ReplaceEngine.Hit>(eds.size());
+                for (ReplaceEngine.Hit h : eds) if (!h.found.equals(h.repl)) real.add(h);   // a match that is replaced by itself is not touched in the field (its format stays)
+                if (!real.isEmpty() && ReplaceEdits.matches(orig, cur, real)) rr.edits = real;
+            }
+        } catch (Throwable t) { rr.edits = new ArrayList<ReplaceEngine.Hit>(); }
         return rr;
     }
 

@@ -99,18 +99,21 @@ class ImeFmtIo(private val svc: InputMethodService, private val isPwd: () -> Boo
 
     override fun replaceEdits(base: Int, before: String, after: String, edits: List<com.mgb.keyboard.typing.ReplaceEngine.Hit>): Boolean {
         val c = ic() ?: return false
-        if (edits.isEmpty() || edits.size > 2000 || base < 0) return false
+        if (edits.isEmpty() || base < 0) return false
         if (!com.mgb.keyboard.typing.ReplaceEdits.matches(before, after, edits)) return false
+        // v0.42.5: more than 2000 matches used to mean "rewrite the whole text" (format of the whole field lost). Now the closest matches are joined (max 2000 edits, 60000 matches).
+        val eds: List<com.mgb.keyboard.typing.ReplaceEngine.Hit> = if (edits.size <= 2000) edits else (if (edits.size > 60000) return false else (com.mgb.keyboard.typing.ReplaceEdits.coalesce(before, edits, 2000) ?: return false))
+        if (!com.mgb.keyboard.typing.ReplaceEdits.matches(before, after, eds)) return false
         var ok = false
         try {
             if (wholeText() != before) return false   // the field changed meanwhile: do nothing here
             c.beginBatchEdit()
-            ok = applyEdits(c, base, edits)
+            ok = applyEdits(c, base, eds)
         } catch (_: Throwable) { ok = false } finally { try { c.endBatchEdit() } catch (_: Throwable) { } }
         if (ok) ok = try { wholeText() == after } catch (_: Throwable) { false }   // never report success for a wrong result
         if (ok) {
             try { c.setSelection(after.length, after.length) } catch (_: Throwable) { }   // caret at the end, same as the whole-text replace
-            editRecs.add(EditRec(after, before, com.mgb.keyboard.typing.ReplaceEdits.inverse(edits), base))
+            editRecs.add(EditRec(after, before, com.mgb.keyboard.typing.ReplaceEdits.inverse(eds), base))
             while (editRecs.size > 10) editRecs.removeAt(0)
         }
         return ok   // false after a half-done try: the caller's replaceAll(after) still writes the right text

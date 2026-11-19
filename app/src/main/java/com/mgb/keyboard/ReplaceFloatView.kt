@@ -42,7 +42,10 @@ class ReplaceFloatView(private val ctx: Context, private val prefs: JabraPrefs, 
         val onMinimize: (() -> Unit)? = null,
         val onClose: (() -> Unit)? = null,
         val notice: String = "",         // e.g. "Replaced 3": shown in the pill instead of the count
-        val onPick: ((Int) -> Unit)? = null   // v0.39.6: tap a row = that match (0-based) becomes the current one (simple window only)
+        val onPick: ((Int) -> Unit)? = null,   // v0.39.6: tap a row = that match (0-based) becomes the current one (simple window only)
+        val onReplaceAll: (() -> Unit)? = null,   // v0.42.5: [Replace all] inside the window (same code path as the main Replace all; also for a pair list). null = no button
+        val allLabel: String = "Replace all",     // v0.42.5: "Replace all (N)" / "Sure? Replace all"
+        val onCopy: (() -> Unit)? = null          // v0.42.5: [Copy] the result (with the format of the field when the app gives it)
     )
 
     private val AMBER: Int = 0xFFF9A825.toInt()
@@ -235,7 +238,35 @@ class ReplaceFloatView(private val ctx: Context, private val prefs: JabraPrefs, 
         return row
     }
 
+    /** v0.42.5: footer = the step row (old) + a second row [Copy] ..... [Replace all] when the panel gave those actions. */
     private fun footer(snap: ReplaceFloat.Snap, a: Actions): View? {
+        val r1 = stepRow(snap, a)
+        val r2 = try { actionRow(snap, a) } catch (_: Throwable) { null }
+        if (r2 == null) return r1
+        if (r1 == null) return r2
+        val col = LinearLayout(ctx)
+        col.orientation = LinearLayout.VERTICAL
+        col.addView(r1)
+        col.addView(r2)
+        return col
+    }
+
+    private fun actionRow(snap: ReplaceFloat.Snap, a: Actions): View? {
+        val all = a.onReplaceAll
+        val cp = a.onCopy
+        if ((all == null && cp == null) || snap.err || snap.total <= 0) return null
+        val row = LinearLayout(ctx)
+        row.orientation = LinearLayout.HORIZONTAL
+        row.gravity = Gravity.CENTER_VERTICAL
+        if (cp != null) row.addView(UiKit.btn(ctx, prefs, "Copy", 0f, 36, 12f, feedback) { cp() }.also { it.setPadding(dp(10), 0, dp(10), 0) })
+        val sp = View(ctx)
+        sp.layoutParams = LinearLayout.LayoutParams(0, 1, 1f)
+        row.addView(sp)
+        if (all != null) row.addView(primary(a.allLabel) { all() })
+        return row
+    }
+
+    private fun stepRow(snap: ReplaceFloat.Snap, a: Actions): View? {
         val canStep = !snap.setMode && snap.rows.isNotEmpty() && snap.err == false
         if (!canStep && a.onUndo == null) return null
         val row = LinearLayout(ctx)
