@@ -9,7 +9,7 @@ import java.util.regex.Pattern;
 
 /**
  * v0.41.0 SMART MATCHING (idea from the Bulk Replace tool, item 5). PURE JAVA (no Android), never throws.
- * pattern(term, bangla) = the regex SOURCE of ONE plain-text Find, where small spelling differences in the TEXT still match:
+ * pattern(term) = the regex SOURCE of ONE plain-text Find, where small spelling differences in the TEXT still match:
  *  - space / hyphen / apostrophe (and zero-width characters) between the parts of the term: "Xiao Yan" also finds "XiaoYan", "Xiao-Yan", "Xiao'Yan", "Xiao  Yan".
  *    A line break is NOT a gap (the match never joins two lines).
  *  - accents: "cafe" also finds "caf\u00E9" (a letter of the term matches the letter with any accent, and a combining mark after it);
@@ -18,7 +18,6 @@ import java.util.regex.Pattern;
  *  - Russian: e also finds the letter with two dots.
  * The TEXT is never changed or normalized (only the term is expanded), so the positions of the matches stay right.
  * Returns null when smart cannot help (empty term, only gaps, longer than MAX_LEN characters): the engine then uses its normal pattern.
- * Bangla: when bangla = true the three composed letters (dda / ddha / ya + nukta) keep matching both forms and zero-width joiners are ignored, like ReplaceEngine.
  * Used by ReplaceEngine (Opt.smart) for TEXT / WORD modes. Not used for REGEX.
  */
 public final class ReplaceSmart {
@@ -108,21 +107,16 @@ public final class ReplaceSmart {
         return letterClass(b) + "\\p{M}*";
     }
 
-    private static String otherPattern(int cp, boolean bangla) {
-        if (bangla) {
-            if (cp == 0x09DC) return "(?:\\u09DC|\\u09A1\\u09BC)";
-            if (cp == 0x09DD) return "(?:\\u09DD|\\u09A2\\u09BC)";
-            if (cp == 0x09DF) return "(?:\\u09DF|\\u09AF\\u09BC)";
-        }
+    private static String otherPattern(int cp) {
         if (cp == 0x0435 || cp == 0x0415 || cp == 0x0451 || cp == 0x0401) return "[\\u0435\\u0415\\u0451\\u0401]";
         return Pattern.quote(new String(Character.toChars(cp)));
     }
 
     /** The regex source of one smart Find text, or null when the normal pattern should be used. Never throws. */
-    public static String pattern(String term, boolean bangla) {
+    public static String pattern(String term) {
         try {
             if (term == null) return null;
-            String t = bangla ? ReplaceEngine.composeBangla(term.trim()) : term.trim();
+            String t = term.trim();
             if (t.isEmpty() || t.codePointCount(0, t.length()) > MAX_LEN) return null;
             List<Tok> toks = new ArrayList<Tok>();
             for (int i = 0; i < t.length(); ) {
@@ -153,7 +147,7 @@ public final class ReplaceSmart {
                 Tok k = toks.get(i);
                 if (k.kind == 0) { out.append(GAP); continue; }
                 if (i > 0 && toks.get(i - 1).kind != 0) out.append(ZWO);
-                out.append(k.kind == 1 ? latinPattern(k) : otherPattern(k.cp, bangla));
+                out.append(k.kind == 1 ? latinPattern(k) : otherPattern(k.cp));
             }
             return out.toString();
         } catch (RuntimeException e) { return null; }

@@ -15,7 +15,7 @@ public class ReplaceMoreTest {
     static void eq(String name, Object a, Object b) {
         if (String.valueOf(a).equals(String.valueOf(b))) ok++; else { bad++; System.out.println("FAIL " + name + ": got [" + a + "] want [" + b + "]"); }
     }
-    static ReplaceEngine.Opt opt() { ReplaceEngine.Opt o = new ReplaceEngine.Opt(); o.bangla = false; return o; }
+    static ReplaceEngine.Opt opt() { ReplaceEngine.Opt o = new ReplaceEngine.Opt(); return o; }
     static ReplaceEngine.Opt smart() { ReplaceEngine.Opt o = opt(); o.smart = true; return o; }
     static String one(String text, String find, String with, ReplaceEngine.Opt o) { return ReplaceEngine.replaceAll(text, find, with, o).out; }
     static String rules(String text, String r) { return ReplaceRules.run(text, ReplaceRules.parse(r).rules, opt()).out; }
@@ -43,10 +43,10 @@ public class ReplaceMoreTest {
         eq("smart keep", one("XIAO-YAN", "xiao yan", "ming li", keepSmart()), "MING LI");
         eq("smart only gaps term falls back", one("a b", " ", "_", smart()), "a_b");
         eq("smart newline term", one("a\nb ab", "a\nb", "X", escSmart()), "X ab");
-        eq("smart null for empty", ReplaceSmart.pattern("", true), null);
-        eq("smart null too long", ReplaceSmart.pattern("abcdefghij".repeat(7), true), null);
+        eq("smart null for empty", ReplaceSmart.pattern(""), null);
+        eq("smart null too long", ReplaceSmart.pattern("abcdefghij".repeat(7)), null);
         eq("smart regex ignored", one("a-b", "a.b", "X", regexSmart()), "X");
-        eq("smart bangla nukta", one("\u09A1\u09BC", "\u09DC", "X", bnSmart()), "X");
+        eq("smart: nukta forms are not joined any more (Bangla switch removed)", one("\u09A1\u09BC", "\u09DC", "X", smart()), "\u09A1\u09BC");
         eq("pack smart", ReplaceEngine.unpack(ReplaceEngine.pack(smart())).smart, true);
         eq("pack no smart", ReplaceEngine.unpack(ReplaceEngine.pack(opt())).smart, false);
         eq("pack old value", ReplaceEngine.unpack(8 | 32).smart, false);
@@ -157,7 +157,6 @@ public class ReplaceMoreTest {
     static ReplaceEngine.Opt keepSmart() { ReplaceEngine.Opt o = smart(); o.keepCase = true; return o; }
     static ReplaceEngine.Opt escSmart() { ReplaceEngine.Opt o = smart(); o.escapes = true; return o; }
     static ReplaceEngine.Opt regexSmart() { ReplaceEngine.Opt o = smart(); o.mode = ReplaceEngine.MODE_REGEX; return o; }
-    static ReplaceEngine.Opt bnSmart() { ReplaceEngine.Opt o = smart(); o.bangla = true; return o; }
     static ReplaceEngine.Opt withProtect(List<String> l) { ReplaceEngine.Opt o = opt(); o.protect = l; return o; }
     static ReplaceEngine.Opt regexProtect() { ReplaceEngine.Opt o = opt(); o.mode = ReplaceEngine.MODE_REGEX; o.protect = list("Mark Twain"); return o; }
     static ReplaceEngine.Opt protectSmart() { ReplaceEngine.Opt o = smart(); o.protect = list("Mark-Twain"); return o; }

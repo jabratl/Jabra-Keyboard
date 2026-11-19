@@ -14,7 +14,7 @@ public class ReplaceHelpTest {
             ReplaceHelp.Example e = ReplaceHelp.example(i);
             t("lang " + langs[i], e != null && e.lang.equals(langs[i]));
             ReplaceEngine.Opt o = new ReplaceEngine.Opt();
-            o.mode = e.mode; o.matchCase = e.matchCase; o.bangla = false; o.escapes = false;
+            o.mode = e.mode; o.matchCase = e.matchCase; o.escapes = false;
             ReplaceEngine.Result r = ReplaceEngine.replaceAll(e.input, e.find, e.with, o);
             t("example " + langs[i] + " no error", r.err == null);
             t("example " + langs[i] + " result = expected", e.expected.equals(r.out));

@@ -6,7 +6,7 @@ public class ReplacePadsTest {
     static void t(String n, boolean c) { if (c) ok++; else { bad++; System.out.println("FAIL: " + n); } }
 
     public static void main(String[] x) {
-        t("4 pages + 4 names", ReplacePads.ROWS.length == 4 && ReplacePads.PAGE_NAMES.length == 4);
+        t("2 pages + 2 names (Bangla pages removed in v0.42.0)", ReplacePads.ROWS.length == 2 && ReplacePads.PAGE_NAMES.length == 2);
         boolean rowsOk = true, tokOk = true, valOk = true;
         for (int p = 0; p < ReplacePads.ROWS.length; p++) {
             t("page " + p + " has 4 rows", ReplacePads.ROWS[p].length == 4);
@@ -27,7 +27,10 @@ public class ReplacePadsTest {
         t("dotted circle token types the sign only", ReplacePads.value("\u25CC\u09BE").equals("\u09BE") && ReplacePads.label("\u25CC\u09BE").equals("\u25CC\u09BE"));
         t("a lone dotted circle types itself", ReplacePads.value("\u25CC").equals("\u25CC"));
         t("plain token", ReplacePads.value("q").equals("q") && ReplacePads.value("\\n").equals("\\n") && ReplacePads.value(null).equals(""));
-        t("next page wraps", ReplacePads.next(0) == 1 && ReplacePads.next(3) == 0);
+        t("next page wraps", ReplacePads.next(0) == 1 && ReplacePads.next(1) == 0);
+        boolean noBn = true;
+        for (int p = 0; p < ReplacePads.ROWS.length; p++) for (int r = 0; r < ReplacePads.ROWS[p].length; r++) for (String s : ReplacePads.tokens(p, r)) for (char c : ReplacePads.value(s).toCharArray()) if (c >= 0x0980 && c <= 0x09FF) noBn = false;
+        t("no Bangla key on the pads", noBn);
         t("append", ReplacePads.append("ab", "c").equals("abc") && ReplacePads.append(null, "c").equals("c") && ReplacePads.append("ab", "").equals("ab") && ReplacePads.append("ab", null).equals("ab"));
         StringBuilder full = new StringBuilder();
         for (int i = 0; i < ReplacePads.FIELD_MAX; i++) full.append('a');

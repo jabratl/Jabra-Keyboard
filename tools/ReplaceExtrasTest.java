@@ -62,7 +62,7 @@ public class ReplaceExtrasTest {
         }
         // ---- v0.31.0 set preview
         {
-            com.mgb.keyboard.typing.ReplaceEngine.Opt po = new com.mgb.keyboard.typing.ReplaceEngine.Opt(); po.bangla = false;
+            com.mgb.keyboard.typing.ReplaceEngine.Opt po = new com.mgb.keyboard.typing.ReplaceEngine.Opt();
             String pv = ReplaceExtras.setPreview("Demo", "a => b\n# note\nzzz => y\ndel: q", po, "a a\nq\nx");
             t("preview: head line", pv.startsWith("Demo: ") && pv.contains("on 7 chars"));
             t("preview: counts per rule", pv.contains("2x  a => b") && pv.contains("0x  zzz => y") && pv.contains("1x  del: q"));

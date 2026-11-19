@@ -35,10 +35,10 @@ import com.mgb.keyboard.typing.ReplaceRules
 /*
  * v0.24.0 (R1) ADVANCED FIND & REPLACE panel (route showPanel("replace"), toolbar item "rp", OFF until the user adds it in Edit toolbar).
  * Engine = typing/ReplaceEngine.java (pure Java, tested). Keys of the small keyboard = typing/ReplacePads.java.
- * Main view: Find / With boxes (tap = type; Sel = take the selected text; Clip = take the clipboard), options (Text | Word | Regex, Aa, Bangla-safe, \n),
+ * Main view: Find / With boxes (tap = type; Sel = take the selected text; Clip = take the clipboard), options (Text | Word | Regex, Aa, \n),
  * live match count + preview of the first matches, [Replace all (N)] [1st] [In: Field / Selection] [Undo / Copy].
  * Typing view: an IME panel cannot hold a normal text box, so a small keyboard is drawn inside the panel (same idea as the clipboard search):
- * pages abc | #+= (with regex helper keys) | Bangla consonants | Bangla vowels, signs, digits. Typing only updates one text line (no rebuild per key).
+ * pages abc | #+= (with regex helper keys) (v0.42.0: the Bangla pages were removed). Typing only updates one text line (no rebuild per key).
  * Source = the selected text or the whole field (same reader as the Formatter / Text tools: FmtIo). Replace on the WHOLE field = two taps (Sure?) + Undo.
  * Saved: ONLY the option switches (pref rp_opt, one number). Find / With texts stay in memory while the keyboard runs (never written to disk).
  * build() returns null on any problem -> the keyboard shows the letters.
@@ -270,7 +270,6 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
         if (opt.mode != ReplaceEngine.MODE_REGEX) {
             r3.addView(btn((if (opt.list) "\u2713 " else "") + "List", 0.9f, 32) { opt.list = !opt.list; optChanged() })   // v0.31.0: Find = a | b | c
             r3.addView(btn((if (opt.smart) "\u2713 " else "") + "Smart", 0.9f, 32) { opt.smart = !opt.smart; optChanged() })   // v0.41.0
-            r3.addView(btn((if (opt.bangla) "\u2713 " else "") + "\u09AC\u09BE\u0982", 0.9f, 32) { opt.bangla = !opt.bangla; optChanged() })
             r3.addView(btn((if (opt.escapes) "\u2713 " else "") + "\\n", 0.8f, 32) { opt.escapes = !opt.escapes; optChanged() })
         }
         root.addView(r3)
@@ -785,7 +784,6 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
             if (opt.mode != ReplaceEngine.MODE_REGEX) {
                 oc.addView(UiKit.chip(ctx, prefs, "List", opt.list, 36, { v -> host.feedback(v) }) { opt.list = !opt.list; optChanged() })   // v0.31.0
                 oc.addView(UiKit.chip(ctx, prefs, "Smart", opt.smart, 36, { v -> host.feedback(v) }) { opt.smart = !opt.smart; optChanged() })   // v0.41.0
-                oc.addView(UiKit.chip(ctx, prefs, "\u09AC\u09BE\u0982", opt.bangla, 36, { v -> host.feedback(v) }) { opt.bangla = !opt.bangla; optChanged() })
                 oc.addView(UiKit.chip(ctx, prefs, "\\n", opt.escapes, 36, { v -> host.feedback(v) }) { opt.escapes = !opt.escapes; optChanged() })
             }
             root.addView(oc)
@@ -1016,7 +1014,6 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
                 orow.addView(UiKit.chip(ctx, prefs, "Keep", opt.keepCase, 34, { v -> host.feedback(v) }) { opt.keepCase = !opt.keepCase; if (opt.keepCase) opt.matchCase = false; optChanged() })
                 if (opt.mode != ReplaceEngine.MODE_REGEX) {
                     orow.addView(UiKit.chip(ctx, prefs, "List", opt.list, 34, { v -> host.feedback(v) }) { opt.list = !opt.list; optChanged() })
-                    orow.addView(UiKit.chip(ctx, prefs, "\u09AC\u09BE\u0982", opt.bangla, 34, { v -> host.feedback(v) }) { opt.bangla = !opt.bangla; optChanged() })
                     orow.addView(UiKit.chip(ctx, prefs, "\\n", opt.escapes, 34, { v -> host.feedback(v) }) { opt.escapes = !opt.escapes; optChanged() })
                 }
                 root.addView(orow)
@@ -1172,8 +1169,8 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
         if (!pairMode) {
             val o = opt.copy(); o.mode = ReplaceEngine.MODE_TEXT; o.list = false; o.keepCase = false; o.smart = false   // the mode / keep / smart of each pair are in the pair itself (word: / re: / keep: / smart:)
             setOpt = o
-        } else if (opt.matchCase != setOpt.matchCase || opt.bangla != setOpt.bangla || opt.escapes != setOpt.escapes) {
-            note = "  \u00B7  the list keeps the Aa / \u09AC\u09BE\u0982 / \\n settings of its first pair"
+        } else if (opt.matchCase != setOpt.matchCase || opt.escapes != setOpt.escapes) {
+            note = "  \u00B7  the list keeps the Aa / \\n settings of its first pair"
         }
         val idx = ReplacePairList.indexOf(pairRules, r)
         val ei = editIdx   // v0.41.1: a pair opened with Edit in the Pairs view is written back to the SAME place
@@ -1250,7 +1247,7 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
             val name = ReplacePairList.nextName(all.keys)
             all[name] = ReplaceStore.Def(ReplacePairList.text(pairRules), setOpt.matchCase, false)
             ReplaceStore.save(prefs, all)
-            msg = "Saved as set \"" + name + "\" (Sets > \u2605). Rename it in app > Tools & Panels" + (if (setOpt.bangla || setOpt.escapes) "  \u00B7  the \u09AC\u09BE\u0982 / \\n switches are not kept in sets" else "")
+            msg = "Saved as set \"" + name + "\" (Sets > \u2605). Rename it in app > Tools & Panels" + (if (setOpt.escapes) "  \u00B7  the \\n switch is not kept in sets" else "")
         } catch (_: Throwable) { msg = "Could not save the set" }
         refresh()
     }

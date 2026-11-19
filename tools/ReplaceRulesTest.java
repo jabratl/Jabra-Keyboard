@@ -8,7 +8,7 @@ public class ReplaceRulesTest {
     static void eq(String name, Object a, Object b) {
         if (String.valueOf(a).equals(String.valueOf(b))) ok++; else { bad++; System.out.println("FAIL " + name + ": got [" + a + "] want [" + b + "]"); }
     }
-    static ReplaceEngine.Opt opt() { ReplaceEngine.Opt o = new ReplaceEngine.Opt(); o.bangla = false; return o; }
+    static ReplaceEngine.Opt opt() { ReplaceEngine.Opt o = new ReplaceEngine.Opt(); return o; }
     static String run(String text, String rules) { return ReplaceRules.run(text, ReplaceRules.parse(rules).rules, opt()).out; }
 
     public static void main(String[] a) {
@@ -82,7 +82,7 @@ public class ReplaceRulesTest {
             eq("both flags", pw.rules.get(2).keep && pw.rules.get(2).word ? 1 : 0, 1);
             eq("keep before re:", pw.rules.get(3).keep && pw.rules.get(3).kind == ReplaceRules.K_REGEX ? 1 : 0, 1);
             eq("serialize round trip", ReplaceRules.serialize(ReplaceRules.parse(ReplaceRules.serialize(pw.rules)).rules).equals(ReplaceRules.serialize(pw.rules)) ? 1 : 0, 1);
-            ReplaceEngine.Opt o0 = new ReplaceEngine.Opt(); o0.bangla = false;
+            ReplaceEngine.Opt o0 = new ReplaceEngine.Opt();
             ReplaceRules.RunResult r1 = ReplaceRules.run("cat concat Cat", ReplaceRules.parse("word: cat => dog").rules, o0);
             eq("word: only whole words", r1.out.equals("dog concat dog") ? 1 : 0, 1);
             ReplaceRules.RunResult r2 = ReplaceRules.run("hello Hello HELLO", ReplaceRules.parse("keep: hello => world").rules, o0);

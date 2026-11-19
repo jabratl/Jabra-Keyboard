@@ -34,7 +34,7 @@ object ReplaceStore {
         fun opt(): ReplaceEngine.Opt {
             val o = ReplaceEngine.Opt()
             o.mode = if (word) ReplaceEngine.MODE_WORD else ReplaceEngine.MODE_TEXT
-            o.matchCase = matchCase; o.bangla = false; o.escapes = false
+            o.matchCase = matchCase; o.escapes = false
             return o
         }
     }
@@ -241,7 +241,7 @@ object ReplaceSetsPage {
                     if (p.tooMany) s += "  ·  only the first " + ReplaceRules.MAX_RULES + " rules are used"
                     infoTv.text = s
                     infoTv.setTextColor(if (p.bad.isNotEmpty() || p.tooMany) warn else dim)
-                    val o = ReplaceEngine.Opt(); o.mode = if (wd) ReplaceEngine.MODE_WORD else ReplaceEngine.MODE_TEXT; o.matchCase = mc; o.bangla = false
+                    val o = ReplaceEngine.Opt(); o.mode = if (wd) ReplaceEngine.MODE_WORD else ReplaceEngine.MODE_TEXT; o.matchCase = mc
                     val rr = ReplaceRules.run(sample.text.toString(), p.rules, o)
                     resultTv.text = if (sample.text.isEmpty()) "" else rr.out + (if (rr.err != null) "\n⚠ " + rr.err else "")
                 } catch (_: Throwable) { }

@@ -1,0 +1,12 @@
+HANDOFF Jabra-Keyboard v0.42.0 - Find & Replace: Bangla removed (step B1 of PLAN_RP_MINIMAL.txt)
+
+Rules of work: HANDOFF.txt section 0 (patch do not rewrite, ONLY changed files in the zip + handoff). Newest CHANGELOG entry = v0.42.0.
+
+1. STATE: repo = v0.42.0 (after v0.41.1; GitHub build of v0.41.1 and of v0.42.0 NOT confirmed yet: send the build log first if red).
+- DONE (B1): no Bangla in Replace: Opt.bangla / composeBangla / nukta + zero-width branches removed (ReplaceEngine.java), bangla parameter removed (ReplaceSmart.pattern(term)), 3 switch chips removed (ReplacePanel.kt), 2 Bangla pad pages removed (ReplacePads: PAGE_NAMES = abc, #+=), o.bangla lines removed (ReplaceSets.java, ReplaceSetsPage.kt), notes / messages cleaned.
+- rp_opt: pack BIT 8 RESERVED (unpack ignores it, pack never writes it). Default Opt packs to 0.
+- Kept on purpose: ReplaceEngine.isZw (Smart still ignores zero-width chars), ReplacePads.value() ZWNJ / ZWJ / dotted-circle handling (unused tokens, tests kept), word boundary (generic letter + mark + digit + _).
+- Float window files untouched. Java tests 170/170 green. Kotlin NEVER compiled in the chat: the owner must confirm the GitHub build.
+
+2. NEXT: build log + phone test (CHANGELOG v0.42.0 "CHECK ON THE PHONE"). Then M1 v0.42.1 of PLAN_RP_MINIMAL.txt: NEW typing/ReplaceOpts.java (+ tools/ReplaceOptsTest.java), ClipPopover.kt Item flag keepOpen (clipboard must behave the same), NEW ReplaceSlim.kt (Options button + floating Options menu, 224 dp, stays open while ticking), one branch at the top of ReplacePanel.mainViewMini behind pref rp_slim (default OFF). The Options menu has NO Bangla row. Then M2 (segmented Text | Word | Regex + slim card + step row), M3 (pair row + More menu), M4 (phone polish, rp_slim default ON).
+3. KNOWN LIMITS: see CHANGELOG v0.42.0 HONEST NOTES. Old looks (New / Classic) keep their rows (Bangla removed from them too, not redesigned).

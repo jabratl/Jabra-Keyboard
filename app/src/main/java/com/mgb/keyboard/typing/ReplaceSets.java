@@ -16,7 +16,7 @@ public final class ReplaceSets {
         Def(String name, boolean matchCase, String text) { this.name = name; this.matchCase = matchCase; this.text = text; }
         public ReplaceEngine.Opt opt() {
             ReplaceEngine.Opt o = new ReplaceEngine.Opt();
-            o.mode = ReplaceEngine.MODE_TEXT; o.matchCase = matchCase; o.bangla = false; o.escapes = false;
+            o.mode = ReplaceEngine.MODE_TEXT; o.matchCase = matchCase; o.escapes = false;
             return o;
         }
     }

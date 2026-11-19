@@ -12,7 +12,7 @@ public class ReplaceCheckTest {
     static void eq(String name, Object a, Object b) {
         if (String.valueOf(a).equals(String.valueOf(b))) ok++; else { bad++; System.out.println("FAIL " + name + ": got [" + a + "] want [" + b + "]"); }
     }
-    static ReplaceEngine.Opt opt() { ReplaceEngine.Opt o = new ReplaceEngine.Opt(); o.bangla = false; return o; }
+    static ReplaceEngine.Opt opt() { ReplaceEngine.Opt o = new ReplaceEngine.Opt(); return o; }
     static ReplaceEngine.Opt optCase() { ReplaceEngine.Opt o = opt(); o.matchCase = true; return o; }
     static String run(String text, String rules) { return ReplaceRules.run(text, ReplaceRules.parse(rules).rules, opt()).out; }
     static List<ReplaceCheck.Warn> chk(String rules) { return ReplaceCheck.check(ReplaceRules.parse(rules).rules, opt()); }

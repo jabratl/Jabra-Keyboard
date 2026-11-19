@@ -11,9 +11,8 @@ import java.util.regex.PatternSyntaxException;
  * v0.24.0 (R1) ADVANCED FIND & REPLACE engine (pure Java, no Android classes, tested by tools/ReplaceEngineTest.java).
  * Never throws: every problem comes back as Result.err and the text is left untouched.
  *
- * Modes: TEXT (plain), WORD (whole word; boundary knows Bangla vowel signs), REGEX (Java regex, ^ and $ work per line).
- * Options: matchCase, bangla (TEXT / WORD only: zero-width joiners in the Find are ignored and may sit between letters of the text;
- *          the three composed Bangla letters (dda-nukta, ddha-nukta, ya-nukta) match both of their forms), escapes (TEXT / WORD only: \n \t \\ in Find / With).
+ * Modes: TEXT (plain), WORD (whole word; boundary = letters, marks, digits, _), REGEX (Java regex, ^ and $ work per line).
+ * Options: matchCase, escapes (TEXT / WORD only: \n \t \\ in Find / With).   (v0.42.0: the Bangla switch was removed; pack bit 8 stays reserved)
  * With (REGEX): $0 $& $1..$99 ${name} $$, backslash-n, backslash-t, double backslash, and case switches: backslash + capital U / L (until backslash + E), small u / l (next letter only).
  * With (TEXT / WORD): literal text (escapes only when the option is ON).
  * Safety: input up to MAX_TEXT characters, at most MAX_MATCHES matches, output up to MAX_OUT characters,
@@ -32,11 +31,10 @@ public final class ReplaceEngine {
     public static final int MAX_HITS = 50;        // hits kept for the preview
     public static final long BUDGET_MS = 400;     // time budget of one run
 
-    /** Options of one run. Default = Text mode, ignore case, Bangla-safe ON, escapes OFF. */
+    /** Options of one run. Default = Text mode, ignore case, escapes OFF. */
     public static final class Opt {
         public int mode = MODE_TEXT;
         public boolean matchCase = false;
-        public boolean bangla = true;
         public boolean escapes = false;
         public boolean list = false;       // v0.31.0: Find holds several texts separated by | (Text / Word only); every one is replaced by With
         public boolean keepCase = false;   // v0.29.0: the replacement copies the case look of the found text (hello > world, Hello > World, HELLO > WORLD)
@@ -45,7 +43,7 @@ public final class ReplaceEngine {
 
         public Opt copy() {
             Opt o = new Opt();
-            o.mode = mode; o.matchCase = matchCase; o.bangla = bangla; o.escapes = escapes; o.keepCase = keepCase; o.list = list; o.smart = smart; o.protect = protect;
+            o.mode = mode; o.matchCase = matchCase; o.escapes = escapes; o.keepCase = keepCase; o.list = list; o.smart = smart; o.protect = protect;
             return o;
         }
     }
@@ -205,13 +203,6 @@ public final class ReplaceEngine {
 
     static boolean isZw(int cp) { return cp == 0x200C || cp == 0x200D; }
 
-    private static final String ZW = "[\\u200C\\u200D]*";
-
-    /** Bangla: ড + nukta = ড়, ঢ + nukta = ঢ়, য + nukta = য়. Returns the composed form. */
-    static String composeBangla(String s) {
-        return s.replace("\u09A1\u09BC", "\u09DC").replace("\u09A2\u09BC", "\u09DD").replace("\u09AF\u09BC", "\u09DF");
-    }
-
     /** v0.31.0: the texts of a list Find: split at |, empty ones dropped, no duplicates, longest first. */
     public static List<String> listParts(String find, Opt o) {
         List<String> out = new ArrayList<String>();
@@ -225,28 +216,11 @@ public final class ReplaceEngine {
         return out;
     }
 
-    /** v0.31.0: the regex text of ONE plain Find text (Bangla-safe or quoted). */
+    /** v0.31.0: the regex text of ONE plain Find text (quoted, or smart). v0.42.0: no Bangla branches any more. */
     private static String body(String f0, Opt o) {
-        String f = f0;
-        if (o.smart) { String sp = ReplaceSmart.pattern(f0, o.bangla); if (sp != null) return sp; }   // v0.41.0: smart matching (null = not usable, the normal pattern below)
-        if (!o.bangla) return Pattern.quote(f);
-        StringBuilder sb = new StringBuilder();
-        f = composeBangla(f);
-        int i = 0;
-        boolean first = true;
-        while (i < f.length()) {
-            int cp = f.codePointAt(i);
-            i += Character.charCount(cp);
-            if (isZw(cp)) continue;
-            if (!first) sb.append(ZW);
-            first = false;
-            if (cp == 0x09DC) sb.append("(?:\\u09DC|\\u09A1\\u09BC)");
-            else if (cp == 0x09DD) sb.append("(?:\\u09DD|\\u09A2\\u09BC)");
-            else if (cp == 0x09DF) sb.append("(?:\\u09DF|\\u09AF\\u09BC)");
-            else sb.append(Pattern.quote(new String(Character.toChars(cp))));
-        }
-        if (first) sb.append("(?!)");
-        return sb.toString();
+        if (o.smart) { String sp = ReplaceSmart.pattern(f0); if (sp != null) return sp; }   // v0.41.0: smart matching (null = not usable, the normal pattern below)
+        if (f0.length() == 0) return "(?!)";   // an empty Find never matches (same as before)
+        return Pattern.quote(f0);
     }
 
     /** Builds the Pattern of a Find text. Throws PatternSyntaxException (REGEX mode only). */
@@ -412,7 +386,7 @@ public final class ReplaceEngine {
     public static int pack(Opt o) {
         if (o == null) return pack(new Opt());
         int mode = o.mode < 0 || o.mode > 2 ? 0 : o.mode;
-        return mode | (o.matchCase ? 4 : 0) | (o.bangla ? 8 : 0) | (o.escapes ? 16 : 0) | (o.keepCase ? 32 : 0) | (o.list ? 64 : 0) | (o.smart ? 128 : 0);
+        return mode | (o.matchCase ? 4 : 0) | (o.escapes ? 16 : 0) | (o.keepCase ? 32 : 0) | (o.list ? 64 : 0) | (o.smart ? 128 : 0);
     }
 
     public static Opt unpack(int v) {
@@ -421,7 +395,7 @@ public final class ReplaceEngine {
         int mode = v & 3;
         o.mode = mode > 2 ? 0 : mode;
         o.matchCase = (v & 4) != 0;
-        o.bangla = (v & 8) != 0;
+        // v0.42.0: bit 8 (old Bangla switch) is RESERVED: ignored here, never written by pack()
         o.escapes = (v & 16) != 0;
         o.keepCase = (v & 32) != 0;
         o.list = (v & 64) != 0;

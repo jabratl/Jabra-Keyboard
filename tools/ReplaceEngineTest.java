@@ -48,14 +48,10 @@ public class ReplaceEngineTest {
         t("escapes: double backslash", all("a b", " ", "\\\\", es).equals("a\\b"));
         t("escapes off = literal backslash n", all("a,b", ",", "\\n", text()).equals("a\\nb"));
 
-        // ---- bangla
-        t("bangla: zero-width joiner in text still matches", all("ক\u200Cষ", "কষ", "X", text()).equals("X"));
-        t("bangla: zero-width in find ignored", all("কষ", "ক\u200Cষ", "X", text()).equals("X"));
-        t("bangla: ড় composed in find matches decomposed text", all("ঢা\u09A1\u09BCা", "ড়", "R", text()).equals("ঢাRা"));
-        t("bangla: decomposed find matches composed text", all("আ\u09DCা", "\u09A1\u09BC", "R", text()).equals("আRা"));
-        t("bangla: য় both forms", ReplaceEngine.count("\u09DF \u09AF\u09BC", "\u09DF", text()) == 2);
-        Opt nb = text(); nb.bangla = false;
-        t("bangla OFF: exact only", ReplaceEngine.count("\u09DC \u09A1\u09BC", "\u09DC", nb) == 1);
+// ---- v0.42.0: the Bangla switch was removed: plain Bangla text still matches EXACTLY, nothing is joined or skipped any more
+t("bangla text: exact match works", all("\u0995\u09b7 \u0995\u09b7", "\u0995\u09b7", "X", text()).equals("X X"));
+t("no Bangla magic: zero-width joiner in text is NOT skipped", all("\u0995\u200C\u09b7", "\u0995\u09b7", "X", text()).equals("\u0995\u200C\u09b7"));
+t("no Bangla magic: nukta forms are different texts", ReplaceEngine.count("\u09DF \u09AF\u09BC", "\u09DF", text()) == 1);
         t("find of only zero-width chars matches nothing", ReplaceEngine.replaceAll("abc", "\u200C", "x", text()).count == 0);
 
         // ---- regex
@@ -120,11 +116,13 @@ public class ReplaceEngineTest {
             && ReplaceEngine.info(null).equals(""));
 
         // ---- pack / unpack
-        Opt p = new Opt(); p.mode = 2; p.matchCase = true; p.bangla = false; p.escapes = true;
+        Opt p = new Opt(); p.mode = 2; p.matchCase = true; p.escapes = true;
         Opt q = ReplaceEngine.unpack(ReplaceEngine.pack(p));
-        t("pack round trip", q.mode == 2 && q.matchCase && !q.bangla && q.escapes);
-        t("pack default", ReplaceEngine.pack(new Opt()) == 8 && ReplaceEngine.unpack(8).bangla && ReplaceEngine.unpack(8).mode == 0);
-        t("unpack garbage = default", ReplaceEngine.unpack(-5).bangla && ReplaceEngine.unpack(-5).mode == 0 && ReplaceEngine.unpack(3).mode == 0);
+        t("pack round trip", q.mode == 2 && q.matchCase && q.escapes);
+        t("pack default", ReplaceEngine.pack(new Opt()) == 0 && ReplaceEngine.unpack(0).mode == 0);
+        t("old saved value with bit 8 still unpacks (bit 8 reserved)", ReplaceEngine.unpack(8).mode == 0 && !ReplaceEngine.unpack(8).matchCase && !ReplaceEngine.unpack(8).escapes && ReplaceEngine.unpack(8 | 4 | 2).mode == 2 && ReplaceEngine.unpack(8 | 4 | 2).matchCase);
+        t("pack never writes bit 8", (ReplaceEngine.pack(ReplaceEngine.unpack(8 | 4 | 2)) & 8) == 0 && ReplaceEngine.pack(ReplaceEngine.unpack(8 | 4 | 2)) == 6);
+        t("unpack garbage = default", ReplaceEngine.unpack(-5).mode == 0 && ReplaceEngine.unpack(3).mode == 0);
         t("copy is independent", p.copy().mode == 2 && p.copy() != p);
         t("mode names", ReplaceEngine.MODE_NAMES.length == 3);
 
@@ -148,7 +146,7 @@ public class ReplaceEngineTest {
 
         // ---- v0.29.0 keep case
         {
-            Opt k = new Opt(); k.keepCase = true; k.bangla = false;
+            Opt k = new Opt(); k.keepCase = true;
             t("keep: all caps", ReplaceEngine.replaceAll("say HELLO now", "hello", "world", k).out.equals("say WORLD now"));
             t("keep: capitalized", ReplaceEngine.replaceAll("Hello there", "hello", "world", k).out.equals("World there"));
             t("keep: small", ReplaceEngine.replaceAll("hello", "hello", "world", k).out.equals("world"));
@@ -159,12 +157,12 @@ public class ReplaceEngineTest {
             t("keep: off = plain", ReplaceEngine.replaceAll("HELLO", "hello", "world", new Opt()).out.equals("world"));
             t("keep: null safe", "x".equals(ReplaceEngine.keepCase(null, "x")) && "".equals(ReplaceEngine.keepCase("A", "")));
             Opt pk = ReplaceEngine.unpack(ReplaceEngine.pack(k));
-            t("keep: pack round trip", pk.keepCase && ReplaceEngine.pack(new Opt()) == 8);
+            t("keep: pack round trip", pk.keepCase && ReplaceEngine.pack(new Opt()) == 0);
         }
 
         // ---- v0.31.0 list mode
         {
-            Opt l = new Opt(); l.list = true; l.bangla = false;
+            Opt l = new Opt(); l.list = true;
             t("list: three texts", ReplaceEngine.replaceAll("a b c d", "a|b|c", "x", l).out.equals("x x x d"));
             t("list: longest first", ReplaceEngine.replaceAll("category cat", "cat|category", "Z", l).out.equals("Z Z"));
             t("list: empty parts and duplicates ignored", ReplaceEngine.replaceAll("a b", "a||a|", "x", l).out.equals("x b"));
@@ -174,10 +172,10 @@ public class ReplaceEngineTest {
             t("list: whole words", ReplaceEngine.replaceAll("cat category dog", "cat|dog", "pet", lw).out.equals("pet category pet"));
             Opt lk = l.copy(); lk.keepCase = true;
             t("list + keep case", ReplaceEngine.replaceAll("Cat DOG", "cat|dog", "pet", lk).out.equals("Pet PET"));
-            Opt lb = new Opt(); lb.list = true;   // Bangla-safe ON
-            t("list with Bangla-safe on", ReplaceEngine.replaceAll("ab cd", "ab|cd", "x", lb).out.equals("x x"));
+            Opt lb = new Opt(); lb.list = true;   // default Opt
+            t("list with default Opt", ReplaceEngine.replaceAll("ab cd", "ab|cd", "x", lb).out.equals("x x"));
             Opt ls = ReplaceEngine.unpack(ReplaceEngine.pack(l));
-            t("list: pack round trip, default unchanged", ls.list && !ReplaceEngine.unpack(8).list && ReplaceEngine.pack(new Opt()) == 8);
+            t("list: pack round trip, default unchanged", ls.list && !ReplaceEngine.unpack(8).list && ReplaceEngine.pack(new Opt()) == 0);
             t("list: off = bar is plain text", ReplaceEngine.replaceAll("a|b", "a|b", "x", new Opt()).out.equals("x"));
         }
         System.out.println("ReplaceEngineTest: " + ok + " ok, " + bad + " failed");
