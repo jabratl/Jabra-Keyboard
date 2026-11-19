@@ -45,7 +45,9 @@ object ClipCards {
         onPin: (ClipList.Item) -> Unit, onDel: (ClipList.Item) -> Unit,
         sm: SelectMode = SelectMode(),   // v0.2.5.3: select mode (default = off = part 2 behaviour)
         recentFirst: Boolean = false,   // v0.15.2 (N2): true = Recent section above Pinned (pref clip_order); default = old order
-        onHeader: (() -> Unit)? = null   // v0.15.2: tap on a section header swaps the order (null = headers are plain text as before)
+        onHeader: (() -> Unit)? = null,   // v0.15.2: tap on a section header swaps the order (null = headers are plain text as before)
+        fold: ((String) -> Boolean)? = null,   // v0.43.0: label ("Pinned" / "Recent") -> is this section folded now? null = no chevron, nothing folds (old behaviour)
+        onFold: ((String) -> Unit)? = null     // v0.43.0: the chevron was tapped
     ): View? = try {
         val lv = lines.coerceIn(0, 2)
         val col = LinearLayout(ctx)
@@ -55,8 +57,17 @@ object ClipCards {
         var firstHdr = true
         for (sec in secs) {
             if (sec.second.isEmpty()) continue
-            if (showHeaders) { col.addView(header(ctx, sec.first, onHeader, firstHdr)); firstHdr = false }
-            addGrid(ctx, host, col, sec.second, lv, onPin, onDel, sm)
+            val folded = showHeaders && fold != null && onFold != null && (try { fold(sec.first) } catch (_: Throwable) { false })   // v0.43.0
+            if (showHeaders) {
+                var hv = header(ctx, sec.first, onHeader, firstHdr)
+                if (fold != null && onFold != null) {   // v0.43.0: collapsible header (chevron on the left); any problem = the old header
+                    val dimC = try { JabraTokens.dimText(JabraPrefs(ctx)) } catch (_: Throwable) { Color.DKGRAY }
+                    hv = ClipFoldHeader.wrap(ctx, hv, folded, sec.second.size, dimC) { onFold(sec.first) }
+                }
+                col.addView(hv)
+                firstHdr = false
+            }
+            if (!folded) addGrid(ctx, host, col, sec.second, lv, onPin, onDel, sm)
         }
         col
     } catch (_: Throwable) { null }

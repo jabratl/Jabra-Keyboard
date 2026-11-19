@@ -22,7 +22,7 @@ import com.mgb.keyboard.typing.ClipFloat
  * Any problem = build() returns null and the caller uses the old slim bar. Pref clip_float (default ON), OFF = exactly v0.36.5.
  */
 object ClipFloatBar {
-    class Act(val label: String, val icon: String?, val weight: Float, val danger: Boolean, val onTap: () -> Unit)
+    class Act(val label: String, val icon: String?, val weight: Float, val danger: Boolean, val desc: String? = null, val onTap: () -> Unit)   // v0.43.0: desc = spoken name when the label is only a sign (Aa / T); default null = label (old calls unchanged)
     class Built(val wrap: View, val pill: View)
 
     fun build(ctx: Context, p: JabraPrefs, acts: List<Act>, barDp: Int, animate: Boolean, count: Int, feedback: (View) -> Unit): Built? {
@@ -136,7 +136,7 @@ object ClipFloatBar {
         t.ellipsize = TextUtils.TruncateAt.END
         t.setTextColor(col)
         c.addView(t, LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT))
-        c.contentDescription = a.label
+        c.contentDescription = a.desc ?: a.label   // v0.43.0
         c.isClickable = true
         c.setOnClickListener { v ->
             try { feedback(v) } catch (_: Throwable) { }

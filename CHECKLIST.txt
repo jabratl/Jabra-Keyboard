@@ -1343,3 +1343,16 @@ ZA. FIND & REPLACE PAIR LIST KEEPS THE FORMAT (v0.42.5)
  [ ] Float window ON + a pair list: window shows the pair lines, count pill "N changes", second row [Copy] [Replace all (N)]. Replace all asks "Sure? Replace all" once, second tap replaces; pill shows "Replaced N" + [Undo]. Copy: pill shows "Copied (...)".
  [ ] Float window + normal Find (4 matches): row 1 [<] n/N [>] [Replace this], row 2 [Copy] [Replace all (4)]. No button is cut off on a 320 dp phone; the window still drags and minimizes. Float OFF = exactly as before.
 
+ZB. CLIPBOARD COLLAPSE + PASTE Aa / T (v0.43.0)
+ [ ] Clipboard (normal mode): the title ends with a small arrow ("Clipboard . 12 v"). Tap the title: the Filter / Sort / View row disappears, the list moves up, the arrow turns to >. Tap again: the row is back. Leave the clipboard and come back: the choice is remembered.
+ [ ] Choose a filter (e.g. Links), then fold the row: the title says "Clipboard . N . Links >" and the list stays filtered. Unfold = the pill shows Links.
+ [ ] Delete a clip, then fold the filter row: the "Undo" button is still there (small line under the top row).
+ [ ] Pinned + Recent both exist: each header has a small arrow on the left. Tap the arrow of Recent: its clips hide and the header shows "Recent . N". Tap again: back. Same in List view and in Cards view. Tap the NAME part of the header (not the arrow): Pinned / Recent still swap order as before.
+ [ ] Fold Recent, then press Manage (or long-press a clip): select mode shows ALL clips again. Done: Recent is folded again. Same while searching.
+ [ ] Only Pinned OR only Recent exists (no headers): nothing can fold, nothing looks odd.
+ [ ] Select 3 clips where at least one has the small Aa tag (copied from a web page / Docs with bold): the pill shows two buttons "paste Aa" and "paste T" instead of Paste. Tap Aa in a note app that supports bold: the text comes with its bold / italic / links, clips separated by a blank line. Tap T: plain text (same as the old Paste).
+ [ ] Select only clips WITHOUT a format: the pill shows the one Paste button as before.
+ [ ] Select ONE formatted clip: Aa pastes it with format, T plain. In a plain field (no format support) Aa still pastes the text.
+ [ ] Settings > Clipboard & tools > "Paste with / without format buttons" OFF = one Paste again. "Collapsible clipboard parts" OFF = no arrows, the title is the old one, nothing is folded even if it was folded before.
+ [ ] "Slim select bar" ON + "Floating select bar" OFF: the slim bar shows Aa / T too (and the chevron next to them still opens Paste 1 line / To Vault / Export).
+ [ ] Dark + light theme, a 360 dp phone: the pill does not clip with Aa + T + the count badge + a "Sure? delete N" step; the header arrows are easy to tap.

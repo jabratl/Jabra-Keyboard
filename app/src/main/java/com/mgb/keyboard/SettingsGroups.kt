@@ -757,6 +757,8 @@ object SettingsGroups {
             toggle(g, "Slim select bar", "clip_slimbar", true)   // v0.35.0 (CC3-A): 34 dp bottom bar, icon + one word, count in Done; OFF = exactly v0.34.0
             toggle(g, "Tight clip cards", "clip_tight", true)   // v0.36.0 (CC4): smaller padding, lower cards, small check box; OFF = v0.35.1 cards
             toggle(g, "Popup menus (More / 3-dot)", "clip_pop", true)   // v0.35.1 (CC3-B): floating menu for select-mode More + the 3-dot menu; OFF = old trays
+            toggle(g, "Collapsible clipboard parts (tap the title / Pinned / Recent)", "clip_fold", true)   // v0.43.0: chevron on the Pinned / Recent headers + the title folds the Filter / Sort / View row; OFF = exactly v0.42.5
+            toggle(g, "Paste with / without format buttons (Aa / T)", "clip_paste2", true)   // v0.43.0: select bar shows Aa (with format) + T (plain) when a selected clip has a format; OFF = the one Paste button
             toggle(g, "Floating select bar", "clip_float", true)   // v0.37.0: select bar = a rounded pill floating over the list, only while clips are selected; OFF = exactly v0.36.5 slim bar
             toggle(g, "Clipboard new look", "clip_new_look", true)   // v0.17.58 (C3): OFF = exactly the old clipboard panel (panel_ui decides)
             toggle(g, "Clipboard follows keyboard height", "clip_fit", true)   // v0.15.1 (N1): OFF = old fixed clipboard size

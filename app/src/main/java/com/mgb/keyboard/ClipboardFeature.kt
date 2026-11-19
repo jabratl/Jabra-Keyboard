@@ -24,6 +24,8 @@ import com.mgb.keyboard.typing.ClipSensitive   // v0.10.10 (W4)
 import com.mgb.keyboard.typing.ClipFilter   // v0.16.9 (X9)
 import com.mgb.keyboard.typing.ClipCompact   // v0.33.0 (CC1)
 import com.mgb.keyboard.typing.ClipCopy   // v0.17.58 (C3)
+import com.mgb.keyboard.typing.ClipFold   // v0.43.0
+import com.mgb.keyboard.typing.ClipMultiPaste   // v0.43.0
 import com.mgb.keyboard.typing.PanelLayout   // v0.16.9 (X9)
 
 /*
@@ -501,6 +503,17 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
     private fun slimBarOn(): Boolean = try { compactOn() && JabraPrefs(ctx).bool("clip_slimbar", true) } catch (_: Throwable) { false }   // v0.35.0 (CC3-A): pref clip_slimbar (default ON, needs the new look) = 34 dp select bar, icon + one word, count in Done; OFF = exactly v0.34.0
     private fun doneLbl(): String = try { if (slimBarOn()) ClipCompact.doneLabel(sel.count(), true) else "Done" } catch (_: Throwable) { "Done" }
 
+    // ---- v0.43.0: COLLAPSIBLE parts (pref clip_fold, default ON, needs the new look; OFF = exactly v0.42.5) + paste WITH / WITHOUT format for the selection (pref clip_paste2, default ON; OFF = the one old Paste button). ----
+    private fun foldOn(): Boolean = try { nl() && pf.bool(ClipFold.KEY_ON, true) } catch (_: Throwable) { false }
+    private fun foldedOf(label: String): Boolean = try { pf.bool(ClipFold.keyFor(label), false) } catch (_: Throwable) { false }
+    private fun toggleFold(key: String) { try { pf.setBool(key, !pf.bool(key, false)) } catch (_: Throwable) { }; confirmDel = false; refresh() }   // refresh() keeps the list position
+    private val foldFn: (String) -> Boolean = { l -> foldedOf(l) }
+    private val foldTap: (String) -> Unit = { l -> toggleFold(ClipFold.keyFor(l)) }
+    private fun paste2On(): Boolean = try { nl() && pf.bool("clip_paste2", true) } catch (_: Throwable) { false }
+    private fun selHasFmt(): Boolean = try { ClipMultiPaste.anyFormat(sel.selection().map { store.fmtOf(it.text) }) } catch (_: Throwable) { false }
+    /** true = the select bar shows [Aa] [T] (with format / plain) instead of the one Paste: switch ON and at least one selected clip has a stored format. */
+    private fun twoPaste(): Boolean = try { ClipMultiPaste.twoButtons(paste2On(), selHasFmt()) } catch (_: Throwable) { false }
+
     // ---- v0.35.1 (CC3-B): floating popover for select-mode More + the 3-dot menu (pref clip_pop, default ON, needs the new look). OFF or ANY failure = the old trays, exactly as v0.35.0. ----
     private var barAnchor: View? = null
     private var hdrAnchor: View? = null
@@ -520,7 +533,10 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
             acts.add(ClipFloatBar.Act(if (allPinned) "Unpin" else "Pin", "pin", 1f, false) { actPin(!allPinned) })
             if (confirmDel) acts.add(ClipFloatBar.Act("Sure? delete " + n, null, 2.6f, true) { actDelete() })   // destructive step: wide, red, text only
             else acts.add(ClipFloatBar.Act("Delete", "trash", 1.1f, false) { actDelete() })
-            acts.add(ClipFloatBar.Act("Paste", "paste", 1f, false) { actPaste(false) })
+            if (twoPaste()) {   // v0.43.0: two small signs: Aa = paste with format, T = paste plain text
+                acts.add(ClipFloatBar.Act(ClipMultiPaste.FORMAT_SIGN, "paste", 0.95f, false, "Paste with format") { actPasteAs(true) })
+                acts.add(ClipFloatBar.Act(ClipMultiPaste.PLAIN_SIGN, "paste", 0.8f, false, "Paste plain text") { actPasteAs(false) })
+            } else acts.add(ClipFloatBar.Act("Paste", "paste", 1f, false) { actPaste(false) })
             acts.add(ClipFloatBar.Act("More", "more", 1f, false) { moreToggle() })
             val b = ClipFloatBar.build(ctx, pf, acts, sz(ClipCompact.barDp(PanelLayout.MIN_TOUCH, true)), ClipFloat.animate(floatShown), n) { v -> try { host.feedback(v) } catch (_: Throwable) { } } ?: return null
             barAnchor = b.pill   // the More popover opens upward from the pill
@@ -643,9 +659,11 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
         val tTop = ClipCompact.rowDp(t40, cp)   // v0.33.0 (CC1): compact top row (OFF = t40)
         top.addView(ClipBar.func(pf, btn("ABC", ClipCompact.weight(ClipCompact.ABC, cp, false), tTop) { sel.leave(); confirmDel = false; moreOpen = false; host.showLetters() }))   // v0.17.30 (UI6): function-key look
         val slim = nlOn && !selOn && !searching   // v0.17.58 (C3): header = ABC | title + count | search | Add | more
+        val toolsFold = slim && ClipFold.hidden(foldOn(), foldedOf(ClipFold.KEY_TOOLS), selOn, searching)   // v0.43.0: the Filter / Sort / View row is folded (tap the title to open it)
         if (slim) {
             val ttl = TextView(ctx)
-            ttl.text = ClipCopy.title(store.pinnedView("").size + store.recentView("").size)
+            ttl.text = ClipFold.title(store.pinnedView("").size + store.recentView("").size, foldOn(), toolsFold, fChip, ClipFilter.label(fChip))   // v0.43.0: switch OFF = ClipCopy.title exactly
+            if (foldOn()) { ttl.isClickable = true; ttl.contentDescription = if (toolsFold) "Show filters" else "Hide filters"; ttl.setOnClickListener { toggleFold(ClipFold.KEY_TOOLS) } }   // v0.43.0
             ttl.textSize = fs(14f)
             ttl.setTextColor(ink())
             ttl.setTypeface(ttl.typeface, android.graphics.Typeface.BOLD)
@@ -681,10 +699,10 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
         val pillOn = nlOn && !simple() && try { pf.bool("ui_pill", true) } catch (_: Throwable) { true }   // v0.19.8: simple look = one flat chip row instead of the 3 dropdown pills
         // v0.34.0 (CC2): which header rows exist + does Undo live in the filter row (pref clip_compact2; OFF = the v0.33.0 rows)
         val c2 = compact2On()
-        val filterShown = !(selOn && moreOpen) && (pillOn || !(ovOpen && nlOn))
+        val filterShown = !(selOn && moreOpen) && (pillOn || !(ovOpen && nlOn)) && !toolsFold   // v0.43.0: && !toolsFold
         val rowPlan = ClipCompact.rowPlan(c2, filterShown, selOn, undoAvail(), msg.isNotEmpty(), confirmClear, searching)
         val undoIn = ClipCompact.undoInFilter(rowPlan)
-        if (pillOn && !(selOn && moreOpen)) {
+        if (pillOn && !(selOn && moreOpen) && !toolsFold) {   // v0.43.0: && !toolsFold
             val prow = row()
             try {
                 val fb: (View) -> Unit = { v -> try { host.feedback(v) } catch (_: Throwable) { } }
@@ -718,7 +736,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
             root.addView(prow)
         }
         // ---- filter chips (hidden while the More tray is open: the space goes to the list)
-        if (!pillOn && !(selOn && moreOpen) && !(ovOpen && nlOn)) {   // v0.18.8: also hide the chips while the \u22EF menu is open (the space goes to the list)
+        if (!pillOn && !(selOn && moreOpen) && !(ovOpen && nlOn) && !toolsFold) {   // v0.43.0: && !toolsFold   // v0.18.8: also hide the chips while the \u22EF menu is open (the space goes to the list)
             val chips = row()
             for (c in 0 until ClipFilter.COUNT) {
                 val ch = UiKit.chip(ctx, pf, ClipFilter.label(c), c == fChip, sz(t40), { v -> try { host.feedback(v) } catch (_: Throwable) { } }) {
@@ -882,12 +900,14 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
         val ordMode = try { ClipOrder.sanitize(JabraPrefs(ctx).int("clip_order", 0)) } catch (_: Throwable) { 0 }
         val ordSwap: () -> Unit = { try { JabraPrefs(ctx).setInt("clip_order", ClipOrder.next(ordMode)) } catch (_: Throwable) { }; confirmClear = false; refreshTop() }
         val lines = try { JabraPrefs(ctx).int("clip_lines", 0).coerceIn(0, 2) } catch (_: Throwable) { 0 }
+        val foldable = showHeaders && ClipFold.interactive(foldOn(), selOn, searching)   // v0.43.0: headers can fold (never while selecting / searching)
         val cards: View? = if (cardsOn && visible.isNotEmpty()) {
             ClipCards.build(ctx, host, pinnedItems, recentItems, !searching, lines,
                 { it2 -> store.togglePin(it2); refresh() },
                 { it2 -> keepUndo(listOf(it2)); store.remove(it2); if (nlOn) msg = ClipCopy.deleted(1); refresh() },
                 SelectMode(selOn, { x -> sel.isSelected(x) }, { x -> sel.toggle(x); confirmDel = false; refresh() }, { x -> sel.enterWith(x); confirmDel = false; refresh() },
-                    { x -> store.noteUse(x) }, { x -> infoLine(x) }, clipHoldMs(), { afterPaste(false) }, { x -> store.hasFmt(x.text) }, { x, b -> pasteItem(x, b) }), ClipOrder.recentFirst(ordMode), ordSwap)
+                    { x -> store.noteUse(x) }, { x -> infoLine(x) }, clipHoldMs(), { afterPaste(false) }, { x -> store.hasFmt(x.text) }, { x, b -> pasteItem(x, b) }), ClipOrder.recentFirst(ordMode), ordSwap,
+                if (foldable) foldFn else null, if (foldable) foldTap else null)   // v0.43.0: chevron on the Pinned / Recent headers
         } else null
         if (cards != null) {
             col.addView(cards)
@@ -895,8 +915,13 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
             val ordLabels = ClipOrder.labels(ordMode)
             val ordGroups = ClipOrder.groups(pinnedItems, recentItems, ordMode)
             for (gi in 0..1) {
-                if (showHeaders) col.addView(sectionHeader(ordLabels[gi], gi == 0, ordSwap))
-                for (entry in ordGroups[gi]) col.addView(itemRow(entry))
+                val folded = foldable && foldedOf(ordLabels[gi])   // v0.43.0
+                if (showHeaders) {
+                    var hv = sectionHeader(ordLabels[gi], gi == 0, ordSwap)
+                    if (foldable) hv = ClipFoldHeader.wrap(ctx, hv, folded, ordGroups[gi].size, dim()) { toggleFold(ClipFold.keyFor(ordLabels[gi])) }   // v0.43.0
+                    col.addView(hv)
+                }
+                if (!folded) for (entry in ordGroups[gi]) col.addView(itemRow(entry))
             }
         }
         sv.addView(col)
@@ -1014,6 +1039,9 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
             val h = sz(ClipCompact.barDp(PanelLayout.MIN_TOUCH, true))
             val fb: (View) -> Unit = { v -> try { host.feedback(v) } catch (_: Throwable) { } }
             val r = UiKit.row(ctx)
+            val two = twoPaste()   // v0.43.0
+            fun fmtBtn(w: Float): Button { val b = ClipSlimBar.btn(ctx, pf, ClipMultiPaste.FORMAT_SIGN, "paste", w, h, fb) { actPasteAs(true) }; try { b.contentDescription = "Paste with format" } catch (_: Throwable) { }; return b }
+            fun plainBtn(w: Float): Button { val b = ClipSlimBar.btn(ctx, pf, ClipMultiPaste.PLAIN_SIGN, "paste", w, h, fb) { actPasteAs(false) }; try { b.contentDescription = "Paste plain text" } catch (_: Throwable) { }; return b }
             r.addView(ClipSlimBar.btn(ctx, pf, if (allPinned) "Unpin" else "Pin", "pin", 1f, h, fb) { actPin(!allPinned) })
             if (confirmDel) r.addView(ClipSlimBar.btn(ctx, pf, "Sure? delete $n", null, 3f, h, fb) { actDelete() })   // destructive step: wide, text only
             else r.addView(ClipSlimBar.btn(ctx, pf, "Delete", "trash", 1.2f, h, fb) { actDelete() })
@@ -1021,14 +1049,16 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
                 val split = LinearLayout(ctx)
                 split.orientation = LinearLayout.HORIZONTAL
                 split.gravity = Gravity.CENTER_VERTICAL
-                split.layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1.5f)
-                split.addView(ClipSlimBar.btn(ctx, pf, "Paste", "paste", 1f, h, fb) { actPaste(false) })
+                split.layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, if (two) 2.2f else 1.5f)
+                if (two) { split.addView(fmtBtn(1f)); split.addView(plainBtn(0.9f)) }
+                else split.addView(ClipSlimBar.btn(ctx, pf, "Paste", "paste", 1f, h, fb) { actPaste(false) })
                 val chev = btn("\u25BE", 0f, ClipCompact.barDp(PanelLayout.MIN_TOUCH, true)) { pasteMenu = !pasteMenu; moreOpen = false; confirmDel = false; refresh() }
                 chev.layoutParams = LinearLayout.LayoutParams(dp(30), dp(h)).also { it.setMargins(dp(2), dp(2), dp(2), dp(2)) }
                 chev.contentDescription = "More paste options"
                 split.addView(if (pasteMenu) ClipBar.on(ctx, pf, chev) else chev)
                 r.addView(split)
-            } else r.addView(ClipSlimBar.btn(ctx, pf, "Paste", "paste", 1.1f, h, fb) { actPaste(false) })
+            } else if (two) { r.addView(fmtBtn(0.95f)); r.addView(plainBtn(0.85f)) }
+            else r.addView(ClipSlimBar.btn(ctx, pf, "Paste", "paste", 1.1f, h, fb) { actPaste(false) })
             r.addView(ClipSlimBar.btn(ctx, pf, if (moreOpen) "Less" else "More", "more", 1.1f, h, fb) { moreToggle() })
             return r
         } catch (_: Throwable) { return null }
@@ -1166,6 +1196,21 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
         val text = if (oneLine) chosen.joinToString(" ") { it.text.replace(Regex("\\s*\\n\\s*"), " ").trim() } else chosen.joinToString("\n\n") { it.text }
         sel.leave(); confirmDel = false; moreOpen = false
         if (oneLine) pasteClip(text, null, true) else pasteChosen(chosen, text)   // v0.17.37 (M4); v0.17.41 (M8): one clip = with format
+    }
+
+    /** v0.43.0: select-mode paste with an explicit choice: Aa = WITH format (all selected clips as one html, a clip without format stays plain inside it), T = plain text (the old joined text). Any problem with the format = plain paste. */
+    private fun actPasteAs(format: Boolean) {
+        val chosen = sel.selection()
+        if (chosen.isEmpty()) { msg = "Nothing selected"; confirmDel = false; refresh(); return }
+        val text = chosen.joinToString("\n\n") { it.text }
+        sel.leave(); confirmDel = false; moreOpen = false
+        if (!format) { pasteClip(text, null, true, com.mgb.keyboard.typing.ClipPasteMode.PLAIN); return }
+        val html = try { ClipMultiPaste.combine(chosen.map { it.text }, chosen.map { store.fmtOf(it.text) }) } catch (_: Throwable) { null }
+        var done = false
+        if (html != null) done = try { host.pasteFormatted(text, html) } catch (_: Throwable) { false }
+        if (!done) { host.commitWord(); host.typeText(text) }   // the same plain fallback as pasteClip
+        if (chosen.size == 1) store.noteUse(chosen[0])
+        afterPaste(true)
     }
 
     private fun actMerge() {
