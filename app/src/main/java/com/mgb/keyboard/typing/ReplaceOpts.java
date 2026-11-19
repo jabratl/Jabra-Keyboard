@@ -12,7 +12,7 @@ import java.util.List;
 public final class ReplaceOpts {
     private ReplaceOpts() { }
 
-    public static final String AA = "aa", SMART = "smart", KEEP = "keep", LIST = "list", NL = "nl", NEVER = "never";
+    public static final String AA = "aa", SMART = "smart", KEEP = "keep", LIST = "list", NL = "nl", NEVER = "never", HELP = "help";
     public static final int WIDTH_DP = 224;
 
     /** The menu rows for these options. protectCount = size of the never-change list. */
@@ -30,11 +30,12 @@ public final class ReplaceOpts {
             l.add(tick(NL, "\\n as new line", 1, a.escapes));
         }
         l.add(new ClipPop.Item(NEVER, "Never change", null, 2, false, false, Math.max(0, protectCount) + " \u203A"));
+        l.add(new ClipPop.Item(HELP, "Help", null, 3, false, false, "\u203A"));   // v0.42.4 (M4): the "?" of the slim top bar lives here
         return l;
     }
 
     private static ClipPop.Item tick(String id, String label, int group, boolean on) {
-        return new ClipPop.Item(id, label, null, group, on, false, "", 1, true, false);
+        return new ClipPop.Item(id, label, null, group, on, false, "", 1, true, false, true);   // v0.42.4: boxTick
     }
 
     /** The small number on the Options button: how many of the shown options are ON, +1 when the never-change list is not empty. */

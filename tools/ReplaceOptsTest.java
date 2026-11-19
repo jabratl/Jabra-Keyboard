@@ -13,12 +13,12 @@ public class ReplaceOptsTest {
     public static void main(String[] x) {
         ReplaceEngine.Opt o = new ReplaceEngine.Opt();
         List<ClipPop.Item> l = ReplaceOpts.items(o, 0);
-        t("text mode rows + order", ids(l).equals("h_match,aa,smart,h_text,keep,list,nl,never,"));
+        t("text mode rows + order", ids(l).equals("h_match,aa,smart,h_text,keep,list,nl,never,help,"));
         o.mode = ReplaceEngine.MODE_REGEX;
-        t("regex mode hides smart / list / nl", ids(ReplaceOpts.items(o, 0)).equals("h_match,aa,h_text,keep,never,"));
+        t("regex mode hides smart / list / nl", ids(ReplaceOpts.items(o, 0)).equals("h_match,aa,h_text,keep,never,help,"));
         o.mode = ReplaceEngine.MODE_WORD;
-        t("word mode has all rows", ids(ReplaceOpts.items(o, 0)).equals("h_match,aa,smart,h_text,keep,list,nl,never,"));
-        t("null opt = defaults, no crash", ReplaceOpts.items(null, 0).size() == 8 && ReplaceOpts.activeCount(null, 0) == 0);
+        t("word mode has all rows", ids(ReplaceOpts.items(o, 0)).equals("h_match,aa,smart,h_text,keep,list,nl,never,help,"));
+        t("null opt = defaults, no crash", ReplaceOpts.items(null, 0).size() == 9 && ReplaceOpts.activeCount(null, 0) == 0);
 
         t("tick rows keep the menu open", find(l, "aa").keepOpen && find(l, "smart").keepOpen && find(l, "keep").keepOpen && find(l, "list").keepOpen && find(l, "nl").keepOpen);
         t("Never row closes the menu", !find(l, "never").keepOpen);
@@ -61,6 +61,12 @@ public class ReplaceOptsTest {
         for (ClipPop.Item i : ClipPop.moreItems(true)) if (i.keepOpen || i.header) oldOk = false;
         for (ClipPop.Item i : ClipPop.headerItems(0, false, false, 5, 2)) if (i.keepOpen || i.header) oldOk = false;
         t("clipboard rows: keepOpen / header stay false", oldOk);
+        boolean noBox = true;
+        for (ClipPop.Item i : ClipPop.moreItems(true)) if (i.boxTick) noBox = false;
+        for (ClipPop.Item i : ClipPop.headerItems(0, false, false, 5, 2)) if (i.boxTick) noBox = false;
+        t("clipboard rows: boxTick stays false", noBox);
+        t("Options tick rows use the box, Never / Help / headers do not", find(l, "aa").boxTick && find(l, "keep").boxTick && !find(l, "never").boxTick && !find(l, "help").boxTick && !find(l, "h_match").boxTick);
+        t("Help row last, group 3, closes the menu", l.get(l.size() - 1).id.equals("help") && find(l, "help").group == 3 && !find(l, "help").keepOpen && !find(l, "help").ticked);
 
         System.out.println("ReplaceOptsTest: " + ok + " ok, " + bad + " failed");
         if (bad > 0) System.exit(1);

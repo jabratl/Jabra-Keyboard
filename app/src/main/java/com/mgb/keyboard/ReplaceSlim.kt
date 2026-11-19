@@ -18,7 +18,7 @@ import com.mgb.keyboard.typing.ReplaceSlimPlan
 
 /**
  * v0.42.1 (M1 of PLAN_RP_MINIMAL): the slim "Options" button + its floating menu for the Find & Replace panel (look of docs/Replace_Tool_Minimal_Mock.html).
- * Only used while pref rp_slim is ON (default OFF). Rows come from the pure model typing/ReplaceOpts.java; the window is ClipPopover (same as the clipboard menu).
+ * Used while pref rp_slim is ON (v0.42.4: default ON; an explicit saved false = old view). Rows come from the pure model typing/ReplaceOpts.java; the window is ClipPopover (same as the clipboard menu).
  * Tick rows keep the menu open: the state changes, the panel refreshes (new Options button), and the menu is shown again on the new button (no fade = no blink).
  * Any problem returns null / calls onFail: the panel then uses the OLD option chips. Delete this file + the lines marked "v0.42.1" = back to v0.42.0.
  * NOT tested on a phone (Kotlin not compiled here).
@@ -27,7 +27,7 @@ object ReplaceSlim {
     private var reopenAt = 0L   // uptime of the last tick; 0 = nothing pending
     private var reopenKind = 0  // v0.42.3 (M3): which menu to show again: 1 = Options, 2 = More (so the two never re-open each other)
 
-    fun on(p: JabraPrefs): Boolean = try { p.bool("rp_slim", false) } catch (_: Throwable) { false }
+    fun on(p: JabraPrefs): Boolean = try { p.bool("rp_slim", true) } catch (_: Throwable) { false }   // v0.42.4 (M4): default ON (an explicit saved false stays OFF)
 
     /** True once after a tick: the freshly built panel shows the menu again. */
     private fun takeReopen(kind: Int): Boolean {   // v0.42.3: only the button of the SAME kind takes the flag
@@ -46,24 +46,27 @@ object ReplaceSlim {
      */
     fun optionsButton(
         ctx: android.content.Context, p: JabraPrefs, host: JabraHost, opt: ReplaceEngine.Opt, protectCount: Int,
-        onChange: () -> Unit, onNever: () -> Unit, onFail: () -> Unit
+        onChange: () -> Unit, onNever: () -> Unit, onFail: () -> Unit, onHelp: () -> Unit = { }
     ): Button? {
         return try {
-            val b = UiKit.chip(ctx, p, ReplaceOpts.buttonLabel(opt, protectCount), false, 34, { v -> host.feedback(v) }) { btn ->
+            val b = UiKit.chip(ctx, p, "Options", false, 34, { v -> host.feedback(v) }) { btn ->
                 try {
                     if (ClipPopover.isOpen()) { ClipPopover.dismiss(); return@chip }
                     if (!ClipPop.reopenGuard(SystemClock.uptimeMillis(), ClipPopover.lastDismiss())) return@chip   // the tap that just closed it must not re-open it
-                    if (!show(btn, p, host, opt, protectCount, true, onChange, onNever)) onFail()
+                    if (!show(btn, p, host, opt, protectCount, true, onChange, onNever, onHelp)) onFail()
                 } catch (_: Throwable) { onFail() }
             }
-            if (takeReopen(1)) b.post { try { show(b, p, host, opt, protectCount, false, onChange, onNever) } catch (_: Throwable) { } }
+            if (takeReopen(1)) b.post { try { show(b, p, host, opt, protectCount, false, onChange, onNever, onHelp) } catch (_: Throwable) { } }
+            val n = ReplaceOpts.activeCount(opt, protectCount)
+            if (n > 0) { dotOn(b, n); b.contentDescription = "Options, " + n + " on" }
             b
         } catch (_: Throwable) { null }
     }
 
-    private fun show(a: View, p: JabraPrefs, host: JabraHost, opt: ReplaceEngine.Opt, protectCount: Int, animate: Boolean, onChange: () -> Unit, onNever: () -> Unit): Boolean {
+    private fun show(a: View, p: JabraPrefs, host: JabraHost, opt: ReplaceEngine.Opt, protectCount: Int, animate: Boolean, onChange: () -> Unit, onNever: () -> Unit, onHelp: () -> Unit): Boolean {
         return ClipPopover.show(a, p, host, ReplaceOpts.items(opt, protectCount), false, animate, ReplaceOpts.WIDTH_DP) { picked ->
             if (picked.id == ReplaceOpts.NEVER) onNever()
+            else if (picked.id == ReplaceOpts.HELP) onHelp()
             else if (ReplaceOpts.toggle(opt, picked.id)) { reopenAt = SystemClock.uptimeMillis(); reopenKind = 1; onChange() }
         }
     }
@@ -223,7 +226,8 @@ object ReplaceSlim {
         }
         val all = UiKit.btn(ctx, p, plan.allLabel, 0f, 34, 12.5f, fb) { onAll() }
         all.minWidth = dp(ctx, 44)
-        all.setPadding(dp(ctx, 14), 0, dp(ctx, 14), 0)
+        val narrow = try { ctx.resources.displayMetrics.let { it.widthPixels / it.density } < 360f } catch (_: Throwable) { false }   // v0.42.4: 320 dp phones: tighter padding
+        all.setPadding(dp(ctx, if (narrow) 8 else 14), 0, dp(ctx, if (narrow) 8 else 14), 0)
         styleAll(all)
         if (!plan.allEnabled) all.alpha = 0.6f
         sr.addView(all)
@@ -273,7 +277,8 @@ object ReplaceSlim {
         val m = { w: Float -> lp(0, dp(ctx, 34), w, dp(ctx, 2), dp(ctx, 2), dp(ctx, 2), dp(ctx, 2)) }
         val check = UiKit.chip(ctx, p, "Check", false, 34, fb) { onCheck() }
         pr.addView(check, m(1f))
-        val list = UiKit.chip(ctx, p, "List " + Math.max(0, nPairs), false, 34, fb) { onList() }
+        val list = UiKit.chip(ctx, p, "List", false, 34, fb) { onList() }
+        dotOn(list, Math.max(0, nPairs))
         list.contentDescription = "Pair list, " + Math.max(0, nPairs) + " pairs"
         pr.addView(list, m(1f))
         val more = UiKit.chip(ctx, p, "More", false, 34, fb) { btn ->
@@ -294,5 +299,45 @@ object ReplaceSlim {
             if (picked.id == ReplaceMore.CLEAR && nPairs >= 2 && !clearAsk) { reopenAt = SystemClock.uptimeMillis(); reopenKind = 2 }
             onMore(picked.id)
         }
+    }
+
+    // ------------------------------------------------------------------ v0.42.4 (M4): round count dot inside a button (16 dp high, min 16 wide, radius 8, accent fill, white 10.5 sp bold)
+    private class DotDrawable(private val ctx: android.content.Context, private val n: Int) : android.graphics.drawable.Drawable() {
+        private val fill = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG)
+        private val ink = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG)
+        private val label = n.toString()
+        private val h = JabraTokens.dp(ctx, 16)
+        private val w: Int
+        init {
+            fill.color = JabraTokens.ACCENT
+            ink.color = Color.WHITE
+            ink.textSize = 10.5f * ctx.resources.displayMetrics.scaledDensity
+            ink.typeface = Typeface.DEFAULT_BOLD
+            ink.textAlign = android.graphics.Paint.Align.CENTER
+            w = Math.max(h, ink.measureText(label).toInt() + JabraTokens.dp(ctx, 8))
+        }
+        override fun getIntrinsicWidth(): Int = w
+        override fun getIntrinsicHeight(): Int = h
+        override fun draw(c: android.graphics.Canvas) {
+            val b = bounds
+            c.drawRoundRect(android.graphics.RectF(b), h / 2f, h / 2f, fill)
+            val y = b.exactCenterY() - (ink.descent() + ink.ascent()) / 2f
+            c.drawText(label, b.exactCenterX(), y, ink)
+        }
+        override fun setAlpha(a: Int) { }
+        override fun setColorFilter(f: android.graphics.ColorFilter?) { }
+        @Suppress("OVERRIDE_DEPRECATION")
+        override fun getOpacity(): Int = android.graphics.PixelFormat.TRANSLUCENT
+    }
+
+    /** Puts the round dot with the number n on the right inside the button text (n <= 0 = nothing). */
+    private fun dotOn(b: Button, n: Int) {
+        try {
+            if (n <= 0) return
+            val d = DotDrawable(b.context, n)
+            d.setBounds(0, 0, d.intrinsicWidth, d.intrinsicHeight)
+            b.setCompoundDrawables(null, null, d, null)
+            b.compoundDrawablePadding = dp(b.context, 5)
+        } catch (_: Throwable) { }
     }
 }

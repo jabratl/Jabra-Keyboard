@@ -1319,3 +1319,14 @@ v0.39.3 - FLOATING PREVIEW WINDOW (F3 + F4)
  [ ] Rotate the phone and a small phone: window / bubble stay visible. Light + dark theme readable.
  [ ] Switch OFF in "?" = exactly the v0.38.1 screen. Any problem = old inline preview.
 
+
+
+Z. FIND & REPLACE SLIM LOOK (v0.42.4, default ON)
+ [ ] Replace opens: top bar [ABC] [Sets] [Recent] [Pair/+Paste] (no "?"), then [Text | Word | Regex] + [Options], one card (Find / With), step row, one note line.
+ [ ] Find "cat" in a text with 4 cats: pill "4 matches", step "1 / 4"; > selects the next cat; This replaces one; Rest replaces the others; Replace all asks "Sure? Replace all" once; note shows "Replaced N" + Undo; Undo works.
+ [ ] Tap the note text (e.g. "whole field: 120 characters") = scope changes (selection / from cursor / to cursor / field).
+ [ ] Options: tick boxes are on the LEFT, filled when ON; ticking several times in a row never shows two menus or a blink; the round dot on the button shows how many are ON; last row "Help >" opens the help page.
+ [ ] +Paste 3 lines: pair row [Check] [List 3 (dot)] [More]; More = Paste pairs, Save as Set, Whole word (N) after a Check, Clear (red, last); Clear asks "Sure? Clear" once, 2nd tap clears; List page works; Edit line 2 > top bar "Update" > writes back.
+ [ ] Float window ON: Float chip shows, count pill hides, window follows the text, step row hides while the float test card is on.
+ [ ] Dark + light theme; 320 dp phone: mode row and step row do not clip.
+ [ ] Help > Look > Slim look OFF = the old view; ON = slim again.

@@ -1162,7 +1162,6 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
         top.addView(small("ABC", 38) { host.showLetters() })
         top.addView(small("Sets", 38) { typing = 3; confirmAll = false; refresh() })
         top.addView(small("Recent", 38) { typing = 4; confirmAll = false; rprAsk = false; refresh() })
-        top.addView(small("?", 38) { typing = 5; helpPage = 0; confirmAll = false; refresh() })   // D4: moves into the Options menu in M4
         if (pairMode && find.isEmpty()) editIdx = -1
         val pb = ReplaceSlimPlan.pairButton(pairMode, setLoaded, find.isEmpty(), editIdx)
         if (pb == "+Paste") top.addView(small(pb, 38) { pastePairs() })
@@ -1188,7 +1187,7 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
             val seg = ReplaceSlim.segmented(ctx, prefs, host, opt.mode) { i -> opt.mode = i; optChanged() }
             seg.layoutParams = LinearLayout.LayoutParams(0, dp(34), 1f).also { it.setMargins(dp(2), dp(2), dp(2), dp(2)) }
             mr.addView(seg)
-            val ob = ReplaceSlim.optionsButton(ctx, prefs, host, opt, protectList.size, { optChanged() }, { openProtect() }, { slimFail = true; refresh() })
+            val ob = ReplaceSlim.optionsButton(ctx, prefs, host, opt, protectList.size, { optChanged() }, { openProtect() }, { slimFail = true; refresh() }, { typing = 5; helpPage = 0; confirmAll = false; refresh() })   // v0.42.4: Options > Help (the "?" moved here)
                 ?: throw IllegalStateException("options button")   // caller: slimFail = true = old view
             ob.layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, dp(34)).also { it.setMargins(dp(6), dp(2), dp(2), dp(2)) }
             mr.addView(ob)

@@ -1,0 +1,10 @@
+HANDOFF Jabra-Keyboard v0.42.4 - Find & Replace slim look M4: default ON + polish (PLAN_RP_MINIMAL_M2-M4.txt section 5). PLAN_RP_MINIMAL.txt = DONE.
+
+Rules of work: HANDOFF.txt section 0 (patch do not rewrite, ONLY changed files in the zip + handoff). Newest CHANGELOG entry = v0.42.4.
+
+1. STATE: repo = v0.42.4. Builds of v0.42.0 .. v0.42.4 NOT confirmed; Kotlin NEVER compiled in the chat. Slim look = default ON (pref rp_slim; explicit false stays OFF). Java tests 173/173 green. Float window files untouched since v0.41.x.
+- DONE (M4): boxTick flag (ClipPop.Item), box ticks in the Options menu, round count dots (ReplaceSlim.DotDrawable) on Options and List, Options > Help row (no "?" in the slim top bar), narrow-phone padding, CHECKLIST section Z.
+
+2. NEXT: build log + phone test (CHANGELOG v0.42.4 / CHECKLIST Z). Fix real problems with small patches in mainViewSlim / ReplaceSlim.kt. IDEAS (not planned): landscape / very low keyboard height check (total slim view ~250 dp) with scroll if needed; "Preview" row in the Options menu (the slim look has no inline preview card, D1); remove the dead M1 slimBtn path inside mainViewMini; Tools & Panels switch for the slim look.
+
+3. KNOWN LIMITS: slim view duplicates head + tail of mainViewMini on purpose (change BOTH if the float feed changes). Old looks (New / Classic, rp_mini OFF) are not redesigned. With a pair list and Find typed, < > Rest This are disabled (calc() runs the list).

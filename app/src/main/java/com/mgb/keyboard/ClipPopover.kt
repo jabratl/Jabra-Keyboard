@@ -170,6 +170,23 @@ object ClipPopover {
         r.gravity = Gravity.CENTER_VERTICAL
         r.setPadding(JabraTokens.dp(ctx, ClipPop.PAD_L_DP), 0, JabraTokens.dp(ctx, ClipPop.PAD_R_DP), 0)
         r.layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, rowPx)
+        if (it.boxTick) {   // v0.42.4 (M4): small rounded box on the LEFT, accent fill + check when ticked
+            val bx = TextView(ctx)
+            val bs = JabraTokens.dp(ctx, 16)
+            val g = GradientDrawable()
+            g.cornerRadius = JabraTokens.dp(ctx, 4).toFloat()
+            if (it.ticked) g.setColor(JabraTokens.ACCENT) else g.setColor(Color.TRANSPARENT)
+            g.setStroke(JabraTokens.dp(ctx, 1) + (JabraTokens.dp(ctx, 1) / 2), if (it.ticked) JabraTokens.ACCENT else JabraTokens.withAlpha(ink, 0x80))
+            bx.background = g
+            bx.text = if (it.ticked) "\u2713" else ""
+            bx.textSize = 11f
+            bx.setTypeface(bx.typeface, Typeface.BOLD)
+            bx.setTextColor(Color.WHITE)
+            bx.gravity = Gravity.CENTER
+            val bl = LinearLayout.LayoutParams(bs, bs)
+            bl.setMargins(0, 0, JabraTokens.dp(ctx, 10), 0)
+            r.addView(bx, bl)
+        }
         val t = TextView(ctx)
         t.text = it.label
         t.textSize = ClipPop.TEXT_SP.toFloat()
@@ -189,7 +206,7 @@ object ClipPopover {
             r.addView(v)
         }
         try {
-            val name = if (it.ticked) "tick" else it.icon
+            val name = if (it.boxTick) null else if (it.ticked) "tick" else it.icon
             if (iconOn && name != null && name in JabraIcons.NAMES) {
                 val c = if (it.danger) JabraTokens.DANGER else try { JabraThemes.iconColor(p) } catch (_: Throwable) { ink }
                 val iv = ImageView(ctx)
