@@ -31,9 +31,13 @@ public final class ClipPop {
         public final int group;
         public final boolean ticked, danger;
         public final int cols;   // v0.37.3: 1 = a full row; 2 = small chips, two per row (Sort / View / select actions)
+        public final boolean keepOpen;   // v0.42.1: a tap does NOT close the menu (the caller re-shows it); default false = clipboard behaviour unchanged
+        public final boolean header;     // v0.42.1: a small dim group label, not tappable; default false
         Item(String id, String label, String icon, int group, boolean ticked, boolean danger, String value) { this(id, label, icon, group, ticked, danger, value, 1); }
-        Item(String id, String label, String icon, int group, boolean ticked, boolean danger, String value, int cols) {
+        Item(String id, String label, String icon, int group, boolean ticked, boolean danger, String value, int cols) { this(id, label, icon, group, ticked, danger, value, cols, false, false); }
+        Item(String id, String label, String icon, int group, boolean ticked, boolean danger, String value, int cols, boolean keepOpen, boolean header) {
             this.id = id; this.label = label; this.icon = icon; this.group = group; this.ticked = ticked; this.danger = danger; this.value = value; this.cols = cols;
+            this.keepOpen = keepOpen; this.header = header;
         }
     }
 

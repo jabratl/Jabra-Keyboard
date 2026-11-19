@@ -42,7 +42,7 @@ object ClipPopover {
     }
 
     /** Shows the menu at the right edge of [anchor]. preferUp = open upward (bottom bar); else downward when it fits. onPick runs AFTER the menu closed (except the Undo row, which keeps it open). */
-    fun show(anchor: View, p: JabraPrefs, host: JabraHost?, items: List<ClipPop.Item>, preferUp: Boolean, animate: Boolean = true, onPick: (ClipPop.Item) -> Unit): Boolean {
+    fun show(anchor: View, p: JabraPrefs, host: JabraHost?, items: List<ClipPop.Item>, preferUp: Boolean, animate: Boolean = true, widthDp: Int = ClipPop.WIDTH_DP, onPick: (ClipPop.Item) -> Unit): Boolean {   // v0.42.1: widthDp (Replace Options menu = 224)
         dismiss()
         try {
             val ctx = anchor.context
@@ -51,7 +51,7 @@ object ClipPopover {
             val dm = ctx.resources.displayMetrics
             val sw = dm.widthPixels
             val margin = JabraTokens.dp(ctx, 6)
-            val w = JabraTokens.dp(ctx, ClipPop.WIDTH_DP).coerceAtMost(sw - 2 * margin)
+            val w = JabraTokens.dp(ctx, widthDp).coerceAtMost(sw - 2 * margin)
             val ink = JabraTokens.cardText(p)
             val iconOn = try { p.bool("icons_on", true) } catch (_: Throwable) { true }
             val rowPx = JabraTokens.dp(ctx, ClipPop.ROW_DP)
@@ -156,6 +156,15 @@ object ClipPopover {
     }
 
     private fun row(ctx: android.content.Context, p: JabraPrefs, host: JabraHost?, it: ClipPop.Item, ink: Int, iconOn: Boolean, rowPx: Int, onPick: (ClipPop.Item) -> Unit): View {
+        if (it.header) {   // v0.42.1: small dim group label (Replace Options menu), not clickable
+            val g = TextView(ctx)
+            g.text = it.label
+            g.textSize = 11f
+            g.setTextColor(JabraTokens.withAlpha(ink, 0xAA))
+            g.setPadding(JabraTokens.dp(ctx, ClipPop.PAD_L_DP), JabraTokens.dp(ctx, 4), JabraTokens.dp(ctx, ClipPop.PAD_R_DP), 0)
+            g.layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+            return g
+        }
         val r = LinearLayout(ctx)
         r.orientation = LinearLayout.HORIZONTAL
         r.gravity = Gravity.CENTER_VERTICAL
@@ -198,7 +207,7 @@ object ClipPopover {
         r.isClickable = true
         r.setOnClickListener { v ->
             try { host?.feedback(v) } catch (_: Throwable) { }
-            if (it.id != ClipPop.UNDO) dismiss()   // the Undo row keeps the menu open (the caller re-shows it with the new value)
+            if (it.id != ClipPop.UNDO && !it.keepOpen) dismiss()   // the Undo row (and v0.42.1 keepOpen rows) keeps the menu open (the caller re-shows it with the new value)
             try { onPick(it) } catch (_: Throwable) { }
         }
         return r

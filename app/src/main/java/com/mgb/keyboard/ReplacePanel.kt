@@ -93,6 +93,7 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
     var clipList: (() -> List<ClipList.Item>)? = null          // set by MgbIme: the clipboard history (null = the list shows only the latest copy)
     private var pasteBack = 1
     private var pasteTab = 0
+    private var slimFail = false                                // v0.42.1 (M1): the slim Options menu could not open: back to the old option chips
     private var optsOpen = false                                // v0.38.1 (P2): mini look: the option chips (Aa, Keep, List ...) are folded away until "Options" is tapped
 
     /** v0.29.0: open on ONE clip: reset first (clears any old clip), then the clip text is the source. */
@@ -1004,11 +1005,19 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
                 c.layoutParams = LinearLayout.LayoutParams(0, dp(34), 1f).also { it.setMargins(dp(2), dp(2), dp(2), dp(2)) }
                 mr.addView(c)
             }
-            val oc = UiKit.chip(ctx, prefs, if (optsOpen) "Options \u25B4" else "Options \u25BE", optsOpen, 34, { v -> host.feedback(v) }) { optsOpen = !optsOpen; refresh() }
+            // v0.42.1 (M1): pref rp_slim ON (default OFF) = slim Options button + floating menu; any problem = the old chip + folded rows below
+            var slimBtn: android.widget.Button? = null
+            if (ReplaceSlim.on(prefs) && !slimFail) {
+                slimBtn = try { ReplaceSlim.optionsButton(ctx, prefs, host, opt, protectList.size, { optChanged() }, { openProtect() }, { slimFail = true; refresh() }) } catch (_: Throwable) { null }
+                if (slimBtn == null) slimFail = true
+                else if (slimFail) slimBtn = null
+            }
+            val oc = slimBtn ?: UiKit.chip(ctx, prefs, if (optsOpen) "Options \u25B4" else "Options \u25BE", optsOpen, 34, { v -> host.feedback(v) }) { optsOpen = !optsOpen; refresh() }
             oc.layoutParams = LinearLayout.LayoutParams(0, dp(34), 1.5f).also { it.setMargins(dp(2), dp(2), dp(2), dp(2)) }
             mr.addView(oc)
             root.addView(mr)
-            if (optsOpen) {
+            if (slimBtn == null) { try { ReplaceSlim.closeIfIdle() } catch (_: Throwable) { } }   // v0.42.1
+            if (optsOpen && slimBtn == null) {
                 val orow = row()
                 orow.addView(UiKit.chip(ctx, prefs, "Aa", opt.matchCase, 34, { v -> host.feedback(v) }) { opt.matchCase = !opt.matchCase; optChanged() })
                 orow.addView(UiKit.chip(ctx, prefs, "Keep", opt.keepCase, 34, { v -> host.feedback(v) }) { opt.keepCase = !opt.keepCase; if (opt.keepCase) opt.matchCase = false; optChanged() })

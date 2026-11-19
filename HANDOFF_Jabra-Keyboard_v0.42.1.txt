@@ -1,0 +1,12 @@
+HANDOFF Jabra-Keyboard v0.42.1 - Find & Replace: slim Options button + floating Options menu (step M1 of PLAN_RP_MINIMAL.txt)
+
+Rules of work: HANDOFF.txt section 0 (patch do not rewrite, ONLY changed files in the zip + handoff). Newest CHANGELOG entry = v0.42.1.
+
+1. STATE: repo = v0.42.1 (after v0.42.0 = Bangla removed). GitHub build of v0.42.0 / v0.42.1 NOT confirmed yet: send the build log first if red.
+- DONE (M1): typing/ReplaceOpts.java (pure: items(opt, protectCount), activeCount, toggle, buttonLabel; test tools/ReplaceOptsTest.java), ReplaceSlim.kt (Options button + menu glue, re-show after a tick via ReplaceSlim.reopenAt, 1.5 s guard), ClipPop.Item flags keepOpen / header (default false), ClipPopover.show(widthDp = 168 default) + keepOpen rows stay open + header rows. ReplacePanel.mainViewMini: pref rp_slim (default OFF) swaps the Options chip for the slim button and hides the folded rows; slimFail = back to the old chip.
+- There is NO settings switch for rp_slim yet (M4 adds it and sets default ON). Until then the screen is the same as v0.42.0.
+- Float window files untouched. Java tests 171/171 green. Kotlin NEVER compiled in the chat.
+
+2. NEXT: build log + phone test (CHANGELOG v0.42.1). Then M2 v0.42.2 of PLAN_RP_MINIMAL.txt: segmented control [ Text | Word | Regex ] (soft tinted chosen pill, bold) + Options button on the same row; slim card (Find line: Sel Clip / With line: swap icon, thin divider); slim step row [<] n/N [>] .... Rest [This] [Replace all] (Replace all = the ONLY filled button; with a pair list and empty Find: "Replace all (N pairs)", < > Rest This hidden) + one note line with the message and an Undo link. All behind rp_slim; old rows = fallback. Keep the float rules: Float chip only when floatSwitch(), count pill hidden when winShows(), step row hidden when floatCard exists.
+   Then M3 (pair row Check | List N | More + More menu: Paste pairs, Save as Set, Whole word (N), Clear; top bar Pair / Update / +Paste), M4 (phone polish, tick box on the left + round count dot like the mock, rp_slim switch + default ON, CHECKLIST).
+3. KNOWN LIMITS: Bangla removed (v0.42.0 notes). Old looks (New / Classic) keep their rows, not redesigned.
