@@ -1,0 +1,8 @@
+HANDOFF Jabra-Keyboard v0.45.7 - Formatter floating result window (exact result, live). Includes v0.45.1 - v0.45.6.
+
+Rules of work: HANDOFF.txt section 0 (patch do not rewrite, ONLY changed files in the zip + handoff). Newest CHANGELOG entry = v0.45.7.
+
+1. STATE: repo = v0.45.7. Builds of v0.42.0 .. v0.45.7 NOT confirmed; Kotlin NEVER compiled in the chat. v0.44.0 / v0.45.0 (Find & Replace floating window) still NOT phone tested. All 177 Java tests green.
+- v0.45.7: NEW FormatFloatWin.kt (PopupWindow host, same calibrate trick as ReplaceFloatWin; header drag, Original / Result, Copy, close; prefs fmt_float_x / fmt_float_y). FormatterFeature: liveFull() (exact text of Show: Result / Original), floatOn() (pref fmt_float, default ON, Settings > Tools & Panels), syncFloat(root, full) posted at the end of make(), floatClosed / floatFail session flags (Preview and reset() clear them); with the window off / closed / failed the v0.45.6 small live box is used. MgbIme: FormatFloatWin.dismissLive() beside the 3 ReplaceFloatWin.dismissLive() calls + in showPanel for name != "format".
+
+2. NEXT: owner tests CHECKLIST ZE .. ZK (screenshots if a look is wrong). Open ideas (not built): resize / see-through / font size for the Formatter window (like Replace v0.44.0 / v0.45.0); a [Replace with this] button in the window; hold-to-accelerate for arrows; Word select / plain paste key. Then floating Replace window phone results (ZC, ZD) / PLAN_RP_FLOAT.

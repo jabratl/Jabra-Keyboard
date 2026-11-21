@@ -330,9 +330,12 @@ class FormatterPanel(private val ctx: Context, private val host: JabraHost, priv
     private var pickedClip: String? = null   // v0.23.1: clip chosen from the history (null = latest system clipboard)
     private var pickedHtml: String? = null
     private var picking = false              // v0.23.1: the clip list is open
+    private val fwin by lazy { FormatFloatWin(ctx, prefs) { v -> host.feedback(v) } }   // v0.45.7: floating exact-result window
+    private var floatClosed = false   // v0.45.7: the person closed the floating window (Preview opens it again)
+    private var floatFail = false     // v0.45.7: the window could not be shown on this phone: the small box inside the panel is used
 
     /** Call when the panel is opened from outside. */
-    fun reset() { page = "run"; status = ""; peek = ""; confirm = ""; savedY = 0; pickedClip = null; pickedHtml = null; picking = false }
+    fun reset() { page = "run"; status = ""; peek = ""; confirm = ""; savedY = 0; pickedClip = null; pickedHtml = null; picking = false; floatClosed = false; floatFail = false; try { fwin.hide() } catch (_: Throwable) { } }
 
     private fun dp(v: Int): Int = (v * ctx.resources.displayMetrics.density).toInt()
 
@@ -418,19 +421,34 @@ class FormatterPanel(private val ctx: Context, private val host: JabraHost, priv
         return t
     }
 
-    /** v0.45.6: the result of the current options on the current source, same size as the Preview button's (800 chars). Any problem = the last preview text. */
-    private fun livePeek(): String {
+    /** v0.45.7: the EXACT text the Formatter shows now (Show: Result = the output, Original = the source), no cut. null = it cannot be read now. The status line is kept. */
+    private fun liveFull(): String? {
         val keepStatus = status
         return try {
             val src = readSource()
-            if (src == null) peek
+            if (src == null) null
             else {
                 val r = NovelFormatter.gen(store.current(), src.blocks)
-                val shown = if (prefs.str("fmt_prev", "result") == "original") src.shownOriginal else r.out
-                val t = if (shown.length > 800) shown.substring(0, 800) else shown
-                if (t.isEmpty()) "(empty)" else t
+                if (prefs.str("fmt_prev", "result") == "original") src.shownOriginal else r.out
             }
-        } catch (_: Throwable) { peek } finally { status = keepStatus }
+        } catch (_: Throwable) { null } finally { status = keepStatus }
+    }
+
+    /** v0.45.7: pref fmt_float (Settings > Tools & Panels), default ON. */
+    private fun floatOn(): Boolean = try { prefs.bool("fmt_float", true) } catch (_: Throwable) { true }
+
+    /** v0.45.7: shows / updates the floating result window, or hides it (full = null). Failing to show it = the small box inside the panel (floatFail). */
+    private fun syncFloat(anchor: View, full: String?) {
+        if (full == null) { fwin.hide(); return }
+        if (!anchor.isAttachedToWindow) return
+        val orig = prefs.str("fmt_prev", "result") == "original"
+        val title = (if (orig) "Original" else "Result") + " \u00B7 " + full.length + " chars"
+        val actions = FormatFloatWin.Actions(
+            { status = if (io.setClip(full, null)) "Copied " + full.length + " chars." else "Copy failed."; refresh() },
+            { prefs.setStr("fmt_prev", if (orig) "result" else "original"); refresh() },
+            { floatClosed = true; fwin.hide(); refresh() })
+        fwin.onFail = { _ -> floatFail = true; if (anchor.isAttachedToWindow) refresh() else fwin.hide() }
+        if (!fwin.show(anchor, title, full, actions)) { floatFail = true; refresh() }
     }
 
     private fun refresh(keepScroll: Boolean = true) {
@@ -494,9 +512,14 @@ class FormatterPanel(private val ctx: Context, private val host: JabraHost, priv
         }
         root.addView(top)
 
-        // v0.45.6: LIVE PREVIEW. After you tapped Preview once, every page except Run shows the current result in a small box under the page buttons and
-        // it updates by itself when you change an option (no need to go back to Run). Never tapped Preview = nothing changes.
-        val live = if (page != "run" && peek.isNotEmpty() && !picking) livePeek() else ""
+        // v0.45.6 / v0.45.7: LIVE RESULT. After you tapped Preview once, the Formatter keeps the result up to date by itself (every option / rule change).
+        // v0.45.7: it is shown in a FLOATING WINDOW (exact text, scrolls, Original / Result, Copy, close) when the pref fmt_float is ON (default) and the window can be
+        // shown; otherwise (OFF, closed with the x, or this phone cannot show it) every page except Run shows the small "Live preview" box under the page buttons.
+        // Never tapped Preview = nothing changes.
+        val full: String? = if (peek.isNotEmpty() && !picking) liveFull() else null
+        if (full != null) peek = if (full.isEmpty()) "(empty)" else if (full.length > 800) full.substring(0, 800) else full   // the Run page box is live too
+        val floatActive = full != null && floatOn() && !floatClosed && !floatFail
+        val live = if (page != "run" && full != null && !floatActive) peek else ""
         if (live.isNotEmpty()) {
             val lv = peekView("Live preview\n" + live)
             lv.maxLines = 5
@@ -521,6 +544,8 @@ class FormatterPanel(private val ctx: Context, private val host: JabraHost, priv
         sv = scroll
         val y = savedY
         scroll.post { try { scroll.scrollTo(0, y) } catch (_: Throwable) { } }
+        val fullNow = if (floatActive) full else null
+        root.post { try { syncFloat(root, fullNow) } catch (_: Throwable) { } }   // v0.45.7: show / update / hide the floating window once the panel is attached
         return root
     }
 
@@ -813,6 +838,8 @@ class FormatterPanel(private val ctx: Context, private val host: JabraHost, priv
             r.paras.toString() + " paragraphs \u00B7 " + r.words.toString() + " words \u00B7 " + r.out.length.toString() + " characters of code"
 
     private fun preview() {
+        floatClosed = false   // v0.45.7: Preview opens the floating window again
+        floatFail = false
         status = ""
         peek = ""
         val s = readSource()

@@ -86,7 +86,7 @@ public final class ChangedPlan {
             if (in(key, "clip_expire", "clip_sens", "clip_pwd")) return "Privacy";
         } else if (group.equals("Tools & Panels")) {
             if (in(key, "edit_bar", "tb_vault", "tb_custom", "tb_auto", "tb_fold", "tb_hpct", "tb_ipct", "pad_extra")) return "Toolbar";
-            if (in(key, "fmt_on")) return "Formatter";
+            if (in(key, "fmt_on", "fmt_float")) return "Formatter";
             if (in(key, "vault_sort", "vault_dest")) return "Vault";
         }
         return "";

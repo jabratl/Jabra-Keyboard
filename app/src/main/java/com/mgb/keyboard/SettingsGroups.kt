@@ -787,6 +787,7 @@ object SettingsGroups {
             stepper(g, "Toolbar icon / text size", "tb_ipct", com.mgb.keyboard.typing.BarSize.MIN, com.mgb.keyboard.typing.BarSize.MAX, com.mgb.keyboard.typing.BarSize.STEP, "%",   // v0.16.6 (X6): 100 = old 12 sp, 44 dp wide
                 { com.mgb.keyboard.typing.BarSize.sanitize(prefs.int("tb_ipct", com.mgb.keyboard.typing.BarSize.DEF)) }, com.mgb.keyboard.typing.BarSize.DEF)
             toggle(g, "Formatter (Aa button)", "fmt_on", true)
+            toggle(g, "Formatter: floating result window", "fmt_float", true)   // v0.45.7: after Preview, the exact result floats over the screen and updates live; OFF = the small box inside the panel
             toggle(g, "Cursor pad: extra keys", "pad_extra", true)   // v0.45.4: Word / Page / Line / Undo / Redo rows under the cursor pad; OFF = the 4 old rows (needs the pad to be opened again)
             if (sink != null) {   // v0.25.0 (R2): "Find & Replace sets" page button (new app screen only); any problem = no button
                 try {

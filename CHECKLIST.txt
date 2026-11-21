@@ -1428,3 +1428,15 @@ ZJ. FORMATTER LIVE PREVIEW + LONGER PREVIEWS (v0.45.6) - test ZI first
  [ ] Open the Formatter fresh (never tapped Preview): no live box, pages look as in v0.45.5.
  [ ] Replace: type Find on text that has many matches: the preview box lists up to 12 matches (was 6), the first one marked with the arrow; Set mode lists up to 12 changed rules.
  [ ] Panel height still = the letters keyboard on every page; nothing cut off at the bottom. Screenshot if something looks wrong.
+
+ZK. FORMATTER FLOATING RESULT WINDOW (v0.45.7) - test ZJ first
+ [ ] Formatter (Aa), put some text in the field, tap Preview: a floating window opens above the keyboard: title "Result . N chars", the exact result text (not cut at 800 chars), buttons Original / Copy / x. The app's text field keeps the cursor (keyboard stays).
+ [ ] Scroll inside the window with a long text: it scrolls, the keyboard does not move.
+ [ ] Drag the window by its title: it moves; leave the Formatter and come back, tap Preview: it opens at the same place.
+ [ ] Go to Clean / Keep / Para, change an option: the window text changes by itself, the scroll position stays.
+ [ ] [Original] shows the source text (title "Original"), the button now says [Result]. Same as the Show setting on the Run page.
+ [ ] [Copy] copies the whole shown text (paste it somewhere to check); the status line in the panel says "Copied N chars.".
+ [ ] [x] closes it; the small "Live preview" box appears on the pages; Preview opens the window again.
+ [ ] ABC / another panel / hiding the keyboard: the window is gone.
+ [ ] Settings > Tools & Panels > "Formatter: floating result window" OFF: no window, the small live box is used (as v0.45.6). ON again: the window is back.
+ [ ] If the window does not show or is off screen: the small box appears instead; send a screenshot + phone model.
