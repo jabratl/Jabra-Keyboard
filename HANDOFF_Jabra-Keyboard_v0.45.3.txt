@@ -1,0 +1,9 @@
+HANDOFF Jabra-Keyboard v0.45.3 - cursor pad 5th row (Word left / right, Line, Undo, Redo) + pad scrolls when too tall. Includes v0.45.1 and v0.45.2.
+
+Rules of work: HANDOFF.txt section 0 (patch do not rewrite, ONLY changed files in the zip + handoff). Newest CHANGELOG entry = v0.45.3.
+
+1. STATE: repo = v0.45.3. Builds of v0.42.0 .. v0.45.3 NOT confirmed; Kotlin NEVER compiled in the chat. v0.44.0 / v0.45.0 (Find & Replace floating window) still NOT phone tested.
+- v0.45.1: Top / Bottom stages (MgbIme.padJump, padHop, padAtEdge, padKeyRetry, PadJump.span). v0.45.2: pad layout + Select ON look (PadPanel tracked / paintSelect / statusText).
+- v0.45.3: PadPanel row 5 (r5: Word <, Word >, Line, Undo, Redo); PadIo.word (default no-op) -> MgbIme.padWord (Ctrl+arrow key; Select OFF fallback padWordCheck / padWordText with typing/PadWord.step); capTall now also wraps "pad".
+
+2. NEXT: owner tests CHECKLIST ZE, ZF, ZG (screenshots if a look is wrong). Open idea (not built): ON / OFF switch for the 5th row in Settings; PgUp / PgDn keys; hold-to-accelerate for arrows. Then floating window phone results (ZC, ZD) / PLAN_RP_FLOAT.

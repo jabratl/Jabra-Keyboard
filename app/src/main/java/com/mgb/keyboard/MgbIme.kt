@@ -106,6 +106,7 @@ class MgbIme : InputMethodService() {
         override fun sendKey(code: Int, meta: Int) { this@MgbIme.padSend(code, meta) }
         override fun edit(kind: String) { this@MgbIme.editAction(kind) }
         override fun jump(top: Boolean, selectOn: Boolean) { this@MgbIme.padJump(top, selectOn) }   // v0.17.36 (M3)
+        override fun word(left: Boolean, selectOn: Boolean) { this@MgbIme.padWord(left, selectOn) }   // v0.45.3
     }
     private val tbHost = object : ToolbarHost {   // v0.2.1
         override fun makeKey(id: String): Button? = this@MgbIme.toolbarKey(id)
@@ -1344,6 +1345,56 @@ class MgbIme : InputMethodService() {
         InputSafe.keyCombo(ic, code, com.mgb.keyboard.typing.PcKeyPlan.MOD_CTRL or (if (selectOn) com.mgb.keyboard.typing.PcKeyPlan.MOD_SHIFT else 0))
     }
 
+    /**
+     * v0.45.3: cursor pad Word keys = Ctrl+Left / Ctrl+Right (+ Shift when Select is ON). Select OFF only: if the app refuses the key, or accepts it but the
+     * text around the cursor did not change 0.15 s later, the cursor moves with PadWord + setSelection. Any problem = nothing happens.
+     */
+    private fun padWord(left: Boolean, selectOn: Boolean) {
+        try {
+            commitWord()
+            val ic = currentInputConnection ?: return
+            val code = if (left) KeyEvent.KEYCODE_DPAD_LEFT else KeyEvent.KEYCODE_DPAD_RIGHT
+            val meta = KeyEvent.META_CTRL_ON or KeyEvent.META_CTRL_LEFT_ON or (if (selectOn) (KeyEvent.META_SHIFT_ON or KeyEvent.META_SHIFT_LEFT_ON) else 0)
+            val snap = padSnap(ic)
+            if (InputSafe.key(ic, code, meta)) {
+                if (selectOn || snap.isEmpty()) return
+                pcIdleHandler.postDelayed({ try { padWordCheck(left, snap) } catch (_: Throwable) { } }, 150L)
+                return
+            }
+            if (!selectOn) padWordText(ic, left)
+        } catch (_: Throwable) { }
+    }
+
+    /** v0.45.3: a short fingerprint of the text around the cursor (empty = the app does not say). */
+    private fun padSnap(ic: android.view.inputmethod.InputConnection): String {
+        return try {
+            (ic.getTextBeforeCursor(40, 0)?.toString() ?: "?") + "\u0001" + (ic.getSelectedText(0)?.toString() ?: "") + "\u0001" + (ic.getTextAfterCursor(40, 0)?.toString() ?: "?")
+        } catch (_: Throwable) { "" }
+    }
+
+    private fun padWordCheck(left: Boolean, snap: String) {
+        val ic = currentInputConnection ?: return
+        if (padSnap(ic) != snap) return   // it moved: nothing to do
+        padWordText(ic, left)
+    }
+
+    /** v0.45.3: one word step from the text around the cursor (PadWord rule) + setSelection. */
+    private fun padWordText(ic: android.view.inputmethod.InputConnection, left: Boolean) {
+        val w = com.mgb.keyboard.typing.PadWord.WINDOW
+        val before = ic.getTextBeforeCursor(w, 0)?.toString() ?: return
+        val sel = ic.getSelectedText(0)?.toString() ?: ""
+        val after = ic.getTextAfterCursor(w, 0)?.toString() ?: return
+        var abs = padAbs(ic, null)
+        if (abs == null && before.length < w) abs = intArrayOf(before.length, before.length + sel.length)
+        if (abs == null) abs = padAbs(ic, try { ic.getExtractedText(android.view.inputmethod.ExtractedTextRequest(), 0) } catch (_: Throwable) { null })
+        val a = abs ?: return
+        val base = if (left) before.length else before.length + sel.length
+        val np = com.mgb.keyboard.typing.PadWord.step(before + sel + after, base, left)
+        val p = a[0] - before.length + np
+        if (p < 0) return
+        ic.setSelection(p, p)
+    }
+
     /** v0.2.2: what a toolbar item does. Only opens things that already exist (panels, switcher, theme / one-hand cycle). */
     private fun toolbarAction(id: String) {
         try { if (prefs.bool("tb_auto", false)) prefs.setStr("tb_use", com.mgb.keyboard.typing.ToolUsage.count(prefs.str("tb_use", ""), id)) } catch (_: Throwable) { }   // v0.5.4: usage count (only when "Move most used to front" is ON)
@@ -1614,7 +1665,7 @@ class MgbIme : InputMethodService() {
     }
 
     private fun capTall(name: String, v: View, c: FrameLayout): View {
-        if (name != "settings" && name != "more" && name != "typing" && name != "size" && name != "themes" && name != "vault" && name != "tt" && name != "replace" && name != "profiles" && name != "tstudio" && name != "keymap") return v
+        if (name != "settings" && name != "more" && name != "typing" && name != "size" && name != "themes" && name != "vault" && name != "tt" && name != "replace" && name != "profiles" && name != "tstudio" && name != "keymap" && name != "pad") return v   // v0.45.3: the pad got a 5th row: too tall = scrolls inside, the window never grows
         val cap = if (lettersH > 0) maxOf(lettersH, dp(keyDp() * 4 + 16)) else dp(38 + 5 * (keyDp() + 4))
         val w = if (c.width > 0) c.width else resources.displayMetrics.widthPixels
         v.measure(View.MeasureSpec.makeMeasureSpec(w, View.MeasureSpec.EXACTLY), View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED))

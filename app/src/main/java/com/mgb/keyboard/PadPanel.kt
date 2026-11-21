@@ -16,6 +16,7 @@ interface PadIo {
     fun sendKey(code: Int, meta: Int)
     fun edit(kind: String)
     fun jump(top: Boolean, selectOn: Boolean)   // v0.17.36 (M3): Top / Bottom of the whole text
+    fun word(left: Boolean, selectOn: Boolean) { }   // v0.45.3: one word left / right (default: does nothing)
 }
 
 /**
@@ -120,7 +121,7 @@ class PadPanel(private val ctx: Context, private val host: JabraHost, private va
 
     private fun statusText(on: Boolean): String =
         (if (on) "Select ON: blue keys extend the selection.\n" else "Select OFF: keys only move the cursor.\n") +
-        "Home / End = this line, Top / Bottom = whole text. Arrows need an app that reads key events."
+        "Home / End = line, Top / Bottom = whole text, Word = by word, Line = select line. Arrows need an app that reads key events."
 
     // v0.10.14 (D2.4): note() = UiKit.noteText (11sp, note colour, 6 / 2dp padding). Old body kept as noteOld() = fallback.
     private fun note(text: String): TextView {
@@ -184,6 +185,21 @@ class PadPanel(private val ctx: Context, private val host: JabraHost, private va
         r4.addView(pk("All", 1f) { io.edit("all") })
         r4.addView(pk("Paste", 2f) { io.edit("paste") })
         root.addView(r4)
+
+        // v0.45.3 row 5: word jump, select line, undo, redo (Word keys: Select ON extends the selection by words, hold = repeat)
+        val r5 = row()
+        val wl = held("\u25C2 Word", 12f) { io.word(true, state.isSelect()) }
+        try { wl.contentDescription = "Previous word" } catch (_: Throwable) { }
+        r5.addView(track(wl))
+        val wr = held("Word \u25B8", 12f) { io.word(false, state.isSelect()) }
+        try { wr.contentDescription = "Next word" } catch (_: Throwable) { }
+        r5.addView(track(wr))
+        val ln = pk("Line", 1f, 12f) { io.sendKey(KeyEvent.KEYCODE_MOVE_HOME, 0); io.sendKey(KeyEvent.KEYCODE_MOVE_END, PadState.META_SHIFT) }
+        try { ln.contentDescription = "Select this line" } catch (_: Throwable) { }
+        r5.addView(ln)
+        r5.addView(pk("Undo", 1f, 12f) { io.sendKey(KeyEvent.KEYCODE_Z, KeyEvent.META_CTRL_ON or KeyEvent.META_CTRL_LEFT_ON) })
+        r5.addView(pk("Redo", 1f, 12f) { io.sendKey(KeyEvent.KEYCODE_Z, KeyEvent.META_CTRL_ON or KeyEvent.META_CTRL_LEFT_ON or KeyEvent.META_SHIFT_ON or KeyEvent.META_SHIFT_LEFT_ON) })
+        root.addView(r5)
 
         val st = note("")
         statusView = st

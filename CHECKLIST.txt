@@ -1397,3 +1397,12 @@ ZF. CURSOR PAD DESIGN (v0.45.2) - test ZE (v0.45.1) first
  [ ] ABC returns to the letters; open the pad again: Select is OFF.
  [ ] Look at it in 2 themes (a light one and Dark) and one Jabra look / Borderless: text readable on the soft blue, keys not cut off. Landscape too.
  [ ] If something looks wrong: send a screenshot + the theme / look name.
+
+ZG. CURSOR PAD ROW 5 (v0.45.3) - test ZE and ZF first
+ [ ] The pad has a 5th row: [< Word] [Word >] [Line] [Undo] [Redo], then the status text. Everything is visible; if the pad is taller than the letters keyboard it scrolls (drag on the status text) and the keyboard does not grow.
+ [ ] Type "one two three four", cursor at the end: [< Word] jumps to the start of "four", again to "three", ... Hold = repeats. [Word >] goes the other way (to the END of each word).
+ [ ] Bangla text with vowel signs (e.g. "amar valo"-style Bangla words): Word keys move over the whole word, never into the middle of a vowel sign.
+ [ ] Select ON (blue) + [< Word]: the selection grows word by word to the left. Same with [Word >].
+ [ ] [Line]: cursor in the middle of a line: that line gets selected (Home, then Shift+End). Copy works after it.
+ [ ] [Undo] undoes the last typing / paste; [Redo] brings it back (same as the toolbar keys).
+ [ ] In an app where the arrows do nothing: Word keys (Select OFF) still move the cursor by word. Send the app name if they do not.
