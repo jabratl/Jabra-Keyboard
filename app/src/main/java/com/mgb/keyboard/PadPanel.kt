@@ -3,6 +3,7 @@ package com.mgb.keyboard
 import android.content.Context
 import android.content.res.ColorStateList
 import android.graphics.Color
+import android.graphics.Typeface
 import android.view.KeyEvent
 import android.view.View
 import android.widget.Button
@@ -30,20 +31,21 @@ class PadPanel(private val ctx: Context, private val host: JabraHost, private va
 
     private fun dp(v: Int): Int = (v * ctx.resources.displayMetrics.density).toInt()
 
-    // v0.10.14 (D2.4): pk() = UiKit.btn (key-height tall, 14f, same 2dp margins, theme style, feedback first). Old body kept as pkOld() = fallback.
-    private fun pk(label: String, weight: Float, onClick: (Button) -> Unit): Button {
-        try { return UiKit.btn(ctx, prefs, label, weight, host.keyHeightDp(), 14f, { v -> host.feedback(v) }, onClick) } catch (_: Throwable) { }
-        return pkOld(label, weight, onClick)
+    // v0.10.14 (D2.4): pk() = UiKit.btn (key-height tall, same 2dp margins, theme style, feedback first). Old body kept as pkOld() = fallback.
+    // v0.45.2: sp = text size (arrows are bigger, 14f = as before for every other key).
+    private fun pk(label: String, weight: Float, sp: Float = 14f, onClick: (Button) -> Unit): Button {
+        try { return UiKit.btn(ctx, prefs, label, weight, host.keyHeightDp(), sp, { v -> host.feedback(v) }, onClick) } catch (_: Throwable) { }
+        return pkOld(label, weight, sp, onClick)
     }
 
-    private fun pkOld(label: String, weight: Float, onClick: (Button) -> Unit): Button {
+    private fun pkOld(label: String, weight: Float, sp: Float, onClick: (Button) -> Unit): Button {
         val b = Button(ctx)
         b.text = label
         b.isAllCaps = false
         b.minWidth = 0
         b.minimumWidth = 0
         b.setPadding(0, 0, 0, 0)
-        b.textSize = 14f
+        b.textSize = sp
         try { JabraThemes.style(prefs, b) } catch (_: Throwable) { }
         b.setOnClickListener {
             try { host.feedback(b) } catch (_: Throwable) { }
@@ -68,21 +70,57 @@ class PadPanel(private val ctx: Context, private val host: JabraHost, private va
     }
 
     /** Key that fires at once and repeats while held (same helper as Backspace). */
-    private fun held(label: String, fire: () -> Unit): Button {
-        val b = pk(label, 1f) { }
+    private fun held(label: String, sp: Float = 14f, fire: () -> Unit): Button {
+        val b = pk(label, 1f, sp) { }
         try { RepeatKeyHelper({ fire() }, { v -> try { host.feedback(v) } catch (_: Throwable) { } }).attach(b) } catch (_: Throwable) { }
         return b
     }
 
     private fun move(code: Int) { io.sendKey(code, state.meta()) }
 
-    private fun selectLook(b: Button) {
-        b.text = if (state.isSelect()) "Select ON" else "Select"
-        try {
-            b.backgroundTintList = if (state.isSelect()) ColorStateList.valueOf(Color.parseColor("#2271B1"))
-                else (try { JabraThemes.keyTint(prefs) } catch (_: Throwable) { null })
-        } catch (_: Throwable) { }
+    // v0.45.2: look of the pad keys. The Select key and every key that Select changes (arrows, Home, End, Top, Bottom) are remembered with their
+    // normal look; Select ON = Select key strong blue (white bold text), those keys soft blue (dark text, readable in every theme); OFF = the normal look back.
+    private class Saved(val tint: ColorStateList?, val txt: ColorStateList, val face: Typeface?)
+
+    private val tracked = ArrayList<Pair<Button, Saved>>()
+    private var selectBtn: Button? = null
+    private var statusView: TextView? = null
+
+    private fun track(b: Button): Button {
+        try { tracked.add(Pair(b, Saved(b.backgroundTintList, b.textColors, b.typeface))) } catch (_: Throwable) { }
+        return b
     }
+
+    private fun restore(b: Button, s: Saved) {
+        b.backgroundTintList = s.tint
+        b.setTextColor(s.txt)
+        b.typeface = s.face
+    }
+
+    private fun paintSelect() {
+        val on = state.isSelect()
+        for ((b, s) in tracked) {
+            try {
+                if (b === selectBtn) {
+                    b.text = if (on) "Select ON" else "Select"
+                    try { b.contentDescription = if (on) "Select on" else "Select off" } catch (_: Throwable) { }
+                    if (on) {
+                        b.backgroundTintList = ColorStateList.valueOf(JabraTokens.ACCENT)
+                        b.setTextColor(Color.WHITE)
+                        b.setTypeface(s.face, Typeface.BOLD)
+                    } else restore(b, s)
+                } else if (on) {
+                    b.backgroundTintList = ColorStateList.valueOf(JabraTokens.ACCENT_SOFT)
+                    b.setTextColor(JabraTokens.ON_ACCENT_SOFT)
+                } else restore(b, s)
+            } catch (_: Throwable) { }
+        }
+        try { statusView?.text = statusText(on) } catch (_: Throwable) { }
+    }
+
+    private fun statusText(on: Boolean): String =
+        (if (on) "Select ON: blue keys extend the selection.\n" else "Select OFF: keys only move the cursor.\n") +
+        "Home / End = this line, Top / Bottom = whole text. Arrows need an app that reads key events."
 
     // v0.10.14 (D2.4): note() = UiKit.noteText (11sp, note colour, 6 / 2dp padding). Old body kept as noteOld() = fallback.
     private fun note(text: String): TextView {
@@ -105,18 +143,22 @@ class PadPanel(private val ctx: Context, private val host: JabraHost, private va
 
     private fun make(keepSelect: Boolean): View {
         if (!keepSelect) state.setSelect(false)   // Select starts OFF when the pad opens (v0.17.35: not when it is only rebuilt)
+        tracked.clear()
+        selectBtn = null
+        statusView = null
         val root = LinearLayout(ctx)
         root.orientation = LinearLayout.VERTICAL
         root.setBackgroundColor(Color.parseColor("#DDDDDD"))
         try { JabraThemes.paint(prefs, root) } catch (_: Throwable) { }   // v0.2.6
         root.setPadding(dp(2), dp(4), dp(2), dp(4))
 
+        // v0.45.2 layout (4 columns): the LEFT 3 columns = moving (Select, Top / Bottom, Home / up / End, arrows), the RIGHT column = editing (Backspace, Copy, Cut, Paste).
         val r1 = row()
-        val sel = pk("Select", 1f) { btn -> state.toggle(); selectLook(btn) }
-        selectLook(sel)
-        r1.addView(sel)
-        r1.addView(held("\u2191") { move(KeyEvent.KEYCODE_DPAD_UP) })
-        r1.addView(pk("All", 1f) { io.edit("all") })
+        val sel = pk("Select", 1.5f) { _ -> state.toggle(); paintSelect() }
+        selectBtn = sel
+        r1.addView(track(sel))
+        r1.addView(track(pk("Top", 1f) { io.jump(true, state.isSelect()) }))   // v0.17.36 (M3): cursor to the very start (Select ON: select up to it)
+        r1.addView(track(pk("Bottom", 1f) { io.jump(false, state.isSelect()) }))   // v0.17.36 (M3): cursor to the very end (Select ON: select up to it)
         val bs = pk("\u232B", 1f) { }
         try { JabraIcons.putThemed(ctx, bs, "back") } catch (_: Throwable) { }
         try { RepeatKeyHelper({ host.backspace() }, { v -> try { host.feedback(v) } catch (_: Throwable) { } }).attach(bs) } catch (_: Throwable) { }
@@ -124,26 +166,29 @@ class PadPanel(private val ctx: Context, private val host: JabraHost, private va
         root.addView(r1)
 
         val r2 = row()
-        r2.addView(held("\u2190") { move(KeyEvent.KEYCODE_DPAD_LEFT) })
-        r2.addView(held("\u2193") { move(KeyEvent.KEYCODE_DPAD_DOWN) })
-        r2.addView(held("\u2192") { move(KeyEvent.KEYCODE_DPAD_RIGHT) })
+        r2.addView(track(held("Home") { move(KeyEvent.KEYCODE_MOVE_HOME) }))
+        r2.addView(track(held("\u2191", 20f) { move(KeyEvent.KEYCODE_DPAD_UP) }))
+        r2.addView(track(held("End") { move(KeyEvent.KEYCODE_MOVE_END) }))
         r2.addView(pk("Copy", 1f) { io.edit("copy") })
         root.addView(r2)
 
         val r3 = row()
-        r3.addView(held("Home") { move(KeyEvent.KEYCODE_MOVE_HOME) })
-        r3.addView(held("End") { move(KeyEvent.KEYCODE_MOVE_END) })
+        r3.addView(track(held("\u2190", 20f) { move(KeyEvent.KEYCODE_DPAD_LEFT) }))
+        r3.addView(track(held("\u2193", 20f) { move(KeyEvent.KEYCODE_DPAD_DOWN) }))
+        r3.addView(track(held("\u2192", 20f) { move(KeyEvent.KEYCODE_DPAD_RIGHT) }))
         r3.addView(pk("Cut", 1f) { io.edit("cut") })
-        r3.addView(pk("Paste", 1f) { io.edit("paste") })
         root.addView(r3)
 
-        root.addView(note("Select ON: arrows, Home, End, Top, Bottom extend the selection.\nHome / End = this line, Top / Bottom = whole text. Arrows need an app that reads key events."))   // v0.17.43: shorter, two clear lines (was one long sentence)
-
         val r4 = row()
-        r4.addView(pk("Top", 1f) { io.jump(true, state.isSelect()) })   // v0.17.36 (M3): cursor to the very start (Select ON: select up to it)
-        r4.addView(pk("Bottom", 1f) { io.jump(false, state.isSelect()) })   // v0.17.36 (M3): cursor to the very end (Select ON: select up to it)
         r4.addView(pk("ABC", 1f) { state.setSelect(false); host.showLetters() })   // v0.17.35 (M2): ABC is the only way out; Select ends with it
+        r4.addView(pk("All", 1f) { io.edit("all") })
+        r4.addView(pk("Paste", 2f) { io.edit("paste") })
         root.addView(r4)
+
+        val st = note("")
+        statusView = st
+        root.addView(st)   // v0.45.2: the note is now the Select status (first line) + the short help (second line)
+        paintSelect()
         return root
     }
 }

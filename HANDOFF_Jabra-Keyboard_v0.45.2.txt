@@ -1,0 +1,9 @@
+HANDOFF Jabra-Keyboard v0.45.2 - cursor / select pad DESIGN (layout, Select ON look, status line). Includes v0.45.1 (Top / Bottom stronger).
+
+Rules of work: HANDOFF.txt section 0 (patch do not rewrite, ONLY changed files in the zip + handoff). Newest CHANGELOG entry = v0.45.2.
+
+1. STATE: repo = v0.45.2. Builds of v0.42.0 .. v0.45.2 NOT confirmed; Kotlin NEVER compiled in the chat. v0.44.0 / v0.45.0 (Find & Replace floating window) still NOT phone tested.
+- v0.45.1 (see its handoff): MgbIme.padJump stages + padHop / padAtEdge / padKeyRetry, PadJump.span.
+- v0.45.2: PadPanel.kt only. Layout 4 columns (move = left 3, edit = right). tracked / Saved / paintSelect: Select key strong blue (JabraTokens.ACCENT, white bold), moving keys soft blue (ACCENT_SOFT + ON_ACCENT_SOFT) while Select is ON, restore = saved tint / text colours / typeface. statusView = live note. pk / held got a text size parameter (arrows 20 sp).
+
+2. NEXT: owner tests CHECKLIST ZE then ZF (screenshot if the look is wrong). Then floating window phone results (ZC, ZD) / PLAN_RP_FLOAT.

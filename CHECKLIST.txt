@@ -1389,3 +1389,11 @@ ZE. CURSOR PAD TOP / BOTTOM (v0.45.1)
  [ ] Same in a browser text box (Chrome) and in a messaging app: Top / Bottom work. If one site does NOT move: send the site / app name + what you see.
  [ ] Select ON + Bottom on long text: the whole rest of the text is selected, then Copy works.
  [ ] Home / End (this line) and the arrows still work as before.
+
+ZF. CURSOR PAD DESIGN (v0.45.2) - test ZE (v0.45.1) first
+ [ ] Open the pad: row 1 = Select, Top, Bottom, Backspace; row 2 = Home, Up, End, Copy; row 3 = Left, Down, Right, Cut; row 4 = ABC, All, Paste (wide). Arrows look bigger. Below: "Select OFF: keys only move the cursor." + the help line (not cut off).
+ [ ] Tap Select: the key turns blue, white bold "Select ON"; arrows, Home, End, Top, Bottom turn soft blue with dark text; the status says "Select ON: blue keys extend the selection." Tap again: everything is back to the normal look.
+ [ ] Select ON + arrows / Home / End / Top / Bottom still extend the selection. Hold an arrow / Home / End / Backspace: repeats. Copy / Cut / Paste / All / Backspace still work from the new places.
+ [ ] ABC returns to the letters; open the pad again: Select is OFF.
+ [ ] Look at it in 2 themes (a light one and Dark) and one Jabra look / Borderless: text readable on the soft blue, keys not cut off. Landscape too.
+ [ ] If something looks wrong: send a screenshot + the theme / look name.
