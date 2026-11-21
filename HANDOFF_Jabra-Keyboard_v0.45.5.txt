@@ -1,0 +1,8 @@
+HANDOFF Jabra-Keyboard v0.45.5 - Formatter + Replace panels = letters keyboard height. Includes v0.45.1 - v0.45.4.
+
+Rules of work: HANDOFF.txt section 0 (patch do not rewrite, ONLY changed files in the zip + handoff). Newest CHANGELOG entry = v0.45.5.
+
+1. STATE: repo = v0.45.5. Builds of v0.42.0 .. v0.45.5 NOT confirmed; Kotlin NEVER compiled in the chat. v0.44.0 / v0.45.0 (Find & Replace floating window) still NOT phone tested. All 177 Java tests green (v0.45.4; v0.45.5 changed only MgbIme.kt).
+- v0.45.5: MgbIme.showPanel -> stretchToLetters(name, v, shown0) after capTall: for "format" / "replace" minimumHeight = lettersH and the last ScrollView child gets weight 1; "format" added to the capTall list. Other panels untouched.
+
+2. NEXT: owner tests CHECKLIST ZE, ZF, ZG, ZH, ZI (screenshots if a look is wrong). If a Replace view shows a blank gap: give that view its own weighted area. Open ideas (not built): hold-to-accelerate for arrows; Word select / plain paste key. Then floating window phone results (ZC, ZD) / PLAN_RP_FLOAT.

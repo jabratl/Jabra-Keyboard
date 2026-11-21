@@ -1,3 +1,15 @@
+v0.45.5 - FIX: Formatter and Replace panels are now exactly as tall as the letters keyboard
+- SEEN/WHY: owner: "make formatter tool and replace tool same height as the keyboard, right now they are shorter". Both panels are a vertical list of rows with a fixed-height scroll area inside (the Formatter: 200 dp), so they were only as tall as their content. MgbIme.showPanel only capped TOO TALL panels (capTall); a short panel stayed short (the keyboard window shrank when you opened it).
+- WHAT: (1) new MgbIme.stretchToLetters(): for the panels "format" and "replace" (every Replace view: main, slim, sets, type, pairs ...) the panel gets minimumHeight = the letters keyboard height (lettersH, remembered when a panel opens from the letters keyboard) and the LAST ScrollView of the panel gets layout weight 1, so the list / scroll area takes the extra room and the button rows stay at the bottom (not a blank gap). (2) "format" was added to the capTall list: a Formatter page that is too tall now scrolls inside and the window never grows (Replace was already there). Result: both panels = exactly the letters keyboard height, the window does not jump when you open or close them.
+- NOT changed: what the panels show or do, all other panels, the letters keyboard, prefs, storage. Floating Replace window untouched.
+- FALLBACK: inside try / catch; lettersH unknown (0) = nothing changes; a panel whose root is not a LinearLayout is left as it was.
+- WHAT BROKE: nothing known. Visible change: the two panels are taller (same as the keyboard); the scroll / list area inside is taller by the difference.
+- TESTED here: all Java unchanged (177 tests green in v0.45.4), bracket balance of MgbIme.kt OK. Kotlin NOT compiled (no kotlinc here), phone NOT tested.
+- UNKNOWN (phone): lettersH is the height of the letters page that was on screen when the panel opened (e.g. with the number row on, it is a little taller); on a Replace view without any scroll area the extra room is blank space at the bottom.
+- CHECK ON THE PHONE: CHECKLIST section ZI.
+- If the Kotlin build is red, the new place is MgbIme.kt only (search "v0.45.5": showPanel line, capTall list, stretchToLetters).
+- Code: PATCH MgbIme.kt, app/build.gradle.kts (0.45.5), CHECKLIST.txt, CHANGELOG.txt. NEW HANDOFF_Jabra-Keyboard_v0.45.5.txt. (This zip holds ALL files changed since v0.45.0, so one upload is enough.)
+
 v0.45.4 - NEW: cursor pad: Settings switch "Cursor pad: extra keys" + PgUp / PgDn keys; the extra keys are now 2 lower rows
 - SEEN/WHY: owner picked items 1 + 2 of the idea list after v0.45.3: (1) an ON / OFF switch for the 5th row, (2) PgUp / PgDn keys.
 - WHAT (1, SWITCH): Settings > Tools & Panels > "Cursor pad: extra keys" (pref pad_extra, default ON). ON = the extra rows (below). OFF = exactly the 4 rows of v0.45.2 (and the shorter status help). The pad reads the pref when it is built, so open the pad again after changing it. Registered like every other row: SettingsGroups.kt, SectionPlan (basic key), ChangedPlan (section "Toolbar"), SettingsIndex + HelpPlan (help line).

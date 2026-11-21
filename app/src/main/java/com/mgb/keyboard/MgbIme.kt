@@ -1638,6 +1638,7 @@ class MgbIme : InputMethodService() {
         shownPanel = name
         inPanel = true
         val shown0 = try { capTall(name, v, c) } catch (_: Throwable) { v }   // v0.3.3: tall panel = scrolls, window never grows
+        try { stretchToLetters(name, v, shown0) } catch (_: Throwable) { }   // v0.45.5: Formatter / Replace = as tall as the letters keyboard
         val shown = try { fitWide(shown0, c) } catch (_: Throwable) { shown0 }   // v0.10.21 (D4): window wider than 700dp = centred 600dp column
         c.removeAllViews()
         c.addView(shown)
@@ -1664,8 +1665,25 @@ class MgbIme : InputMethodService() {
         return box
     }
 
+    /**
+     * v0.45.5: the Formatter and Replace panels were only as tall as their content = shorter than the letters keyboard. Now they are exactly as
+     * tall as the letters keyboard (lettersH): a panel that is too tall already scrolls inside (capTall); a panel that is too short gets a minimum
+     * height and its list / scroll area (the last ScrollView of the panel) takes the extra room, so the button rows stay at the bottom.
+     * Any problem = the panel keeps its old height. Other panels are not touched.
+     */
+    private fun stretchToLetters(name: String, v: View, shown: View) {
+        if (name != "format" && name != "replace") return
+        if (shown !== v) return   // capped: the scroll wrapper already has the letters height
+        if (lettersH <= 0) return
+        val ll = v as? LinearLayout ?: return
+        val last = (0 until ll.childCount).map { ll.getChildAt(it) }.lastOrNull { it is ScrollView }
+        val lp = last?.layoutParams as? LinearLayout.LayoutParams
+        if (last != null && lp != null) { lp.weight = 1f; last.layoutParams = lp }
+        ll.minimumHeight = lettersH
+    }
+
     private fun capTall(name: String, v: View, c: FrameLayout): View {
-        if (name != "settings" && name != "more" && name != "typing" && name != "size" && name != "themes" && name != "vault" && name != "tt" && name != "replace" && name != "profiles" && name != "tstudio" && name != "keymap" && name != "pad") return v   // v0.45.3: the pad got a 5th row: too tall = scrolls inside, the window never grows
+        if (name != "settings" && name != "more" && name != "typing" && name != "size" && name != "themes" && name != "vault" && name != "tt" && name != "replace" && name != "profiles" && name != "tstudio" && name != "keymap" && name != "pad" && name != "format") return v   // v0.45.3: the pad got a 5th row: too tall = scrolls inside, the window never grows
         val cap = if (lettersH > 0) maxOf(lettersH, dp(keyDp() * 4 + 16)) else dp(38 + 5 * (keyDp() + 4))
         val w = if (c.width > 0) c.width else resources.displayMetrics.widthPixels
         v.measure(View.MeasureSpec.makeMeasureSpec(w, View.MeasureSpec.EXACTLY), View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED))

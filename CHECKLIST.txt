@@ -1413,3 +1413,10 @@ ZH. CURSOR PAD SWITCH + PGUP / PGDN (v0.45.4) - test ZE, ZF, ZG first
  [ ] Long text: [PgDn] moves the cursor one page down, [PgUp] one page up; hold = repeats. Select ON (blue) + PgDn: a page gets selected.
  [ ] Switch the row OFF, open the pad again: only the 4 old rows (Select/Top/Bottom/Backspace ... ABC/All/Paste) and the shorter help text. Switch ON again, open the pad: the 2 extra rows are back.
  [ ] If the pad is taller than the letters keyboard on your phone: it scrolls (drag on the status text) and the keyboard window does not grow. Tell me if you prefer the extra rows in a smaller form.
+
+ZI. FORMATTER + REPLACE HEIGHT (v0.45.5)
+ [ ] Open the letters keyboard, tap Aa (Formatter): the panel is exactly as tall as the letters keyboard (compare the top edge with the letters keyboard; the text field above does not jump). Go through all its pages (the page buttons at the top): same height on every page; ABC returns to the letters.
+ [ ] Open Replace (Find & Replace): same height as the letters keyboard on the main view and after tapping Find / With (typing view), Sets, Recent pairs. The scroll / list area is taller, the buttons (Replace / Done ...) are still at the bottom, nothing cut off.
+ [ ] Try with the number row ON and OFF (Settings > Look) and in landscape: the panel follows the height of the letters keyboard you came from.
+ [ ] The other panels (Clipboard, More, Emoji ...) look as before.
+ [ ] If a Replace view has a big blank gap at the bottom: send a screenshot + which view (Main / Sets / Pairs ...).
