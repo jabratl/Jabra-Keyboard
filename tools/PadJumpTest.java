@@ -5,6 +5,9 @@ public class PadJumpTest {
     static void eq(String n, int[] got, int s, int e) {
         if (got.length == 2 && got[0] == s && got[1] == e) ok++; else { bad++; System.out.println("FAIL " + n + ": got " + got[0] + "," + got[1] + " want " + s + "," + e); }
     }
+    static void spanEq(String n, int[] got, int s, int e) {
+        if (got != null && got.length == 2 && got[0] == s && got[1] == e) ok++; else { bad++; System.out.println("FAIL " + n); }
+    }
     public static void main(String[] a) {
         eq("off top", PadJump.jump(100, 40, 40, true, false), 0, 0);
         eq("off bottom", PadJump.jump(100, 40, 40, false, false), 100, 100);
@@ -26,6 +29,14 @@ public class PadJumpTest {
         eq("selection beyond len is clamped", PadJump.jump(50, 20, 90, false, true), 20, 50);
         eq("negative selection clamped", PadJump.jump(50, -3, 10, true, true), 0, 10);
         eq("whole selected, top", PadJump.jump(100, 0, 100, true, true), 0, 100);
+        // v0.45.1: span()
+        spanEq("span whole text", PadJump.span(0, 5, 9), 5, 9);
+        spanEq("span window offset", PadJump.span(100000, 4, 4), 100004, 100004);
+        spanEq("span reversed", PadJump.span(10, 9, 2), 12, 19);
+        if (PadJump.span(-1, 3, 3) == null) ok++; else { bad++; System.out.println("FAIL span unknown offset"); }
+        if (PadJump.span(0, -1, 3) == null) ok++; else { bad++; System.out.println("FAIL span unknown start"); }
+        if (PadJump.span(0, 3, -1) == null) ok++; else { bad++; System.out.println("FAIL span unknown end"); }
+        if (PadJump.HOP_CHARS > 0 && PadJump.HOP_MAX > 0) ok++; else { bad++; System.out.println("FAIL hop consts"); }
         System.out.println("PadJumpTest: " + ok + " ok, " + bad + " bad");
         if (bad > 0) System.exit(1);
     }

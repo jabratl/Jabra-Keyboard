@@ -1381,3 +1381,11 @@ ZD. FLOATING WINDOW TOOLS (v0.45.0) - test ZC (v0.44.0) first
  [ ] Pair list (+Paste 3 lines): tools row has a 5th chip [Text]. Tap: rows show the real text around each change (found struck out, replacement green). Tap again: the lines "3x cat -> dog" come back. Remembered.
  [ ] 260 dp: the second row [Copy] [Paste] [Replace all (N)] is not cut off (if it is: tell me, Paste can then replace Copy).
 
+
+ZE. CURSOR PAD TOP / BOTTOM (v0.45.1)
+ [ ] Short note field: Cursor pad > Top = cursor at the very start, Bottom = very end (same as before).
+ [ ] Select ON + Top: selects from the cursor up to the very start. Select ON + Bottom: selects from the cursor down to the very end. With a part already selected: the far end stays.
+ [ ] Very long text (a whole novel chapter, 30000+ chars) in Notes / Google Keep / Blogger post editor: Top and Bottom both reach the real start / end (check by typing one letter).
+ [ ] Same in a browser text box (Chrome) and in a messaging app: Top / Bottom work. If one site does NOT move: send the site / app name + what you see.
+ [ ] Select ON + Bottom on long text: the whole rest of the text is selected, then Copy works.
+ [ ] Home / End (this line) and the arrows still work as before.

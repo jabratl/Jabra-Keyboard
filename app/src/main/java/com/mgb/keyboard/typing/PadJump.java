@@ -19,5 +19,14 @@ public final class PadJump {
         return top ? new int[] { 0, b } : new int[] { a, n };
     }
 
+    /** v0.45.1: hop size (chars asked per step) and the most steps for padHop in MgbIme.kt (400 x 30000 = 12 million chars). */
+    public static final int HOP_CHARS = 30000, HOP_MAX = 400;
+
+    /** v0.45.1: selection (start <= end) in the WHOLE text, from a text window that starts at offset. null = the app does not say (any negative value). */
+    public static int[] span(int offset, int s, int e) {
+        if (offset < 0 || s < 0 || e < 0) return null;
+        return new int[] { offset + Math.min(s, e), offset + Math.max(s, e) };
+    }
+
     private static int clamp(int v, int n) { return v < 0 ? 0 : (v > n ? n : v); }
 }

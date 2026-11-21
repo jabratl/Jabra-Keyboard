@@ -1254,31 +1254,94 @@ class MgbIme : InputMethodService() {
         InputSafe.key(ic, code, meta)   // v0.3.1: same event + soft-keyboard flags
     }
 
-    /** v0.17.36 (M3): cursor pad Top / Bottom = start / end of the WHOLE text (Select ON: select from the current position). Max 3 stages: (1) field text from getExtractedText + PadJump + setSelection, (2) Ctrl+Home / Ctrl+End key event (+ Shift when Select is ON), (3) text before / after the cursor (works only when the whole text is under 20000 chars). Any problem = nothing happens. */
+    /**
+     * v0.17.36 (M3) + v0.45.1: cursor pad Top / Bottom = start / end of the WHOLE text (Select ON: select from the current position).
+     * Stages (each one is CHECKED, a stage that did nothing hands over to the next): (1) the field text from getExtractedText + PadJump
+     * + setSelection (text under 100000 chars, was 20000); (2) NEW setSelection hops: Top = position 0, Bottom = hop forward until
+     * no text is left after the cursor (works for LONG text and when the app only shows part of the text); (3) Ctrl+Home / Ctrl+End key
+     * event (+ Shift when Select is ON, now with the LEFT meta bits) and, if the cursor did not move after 0.2 s, the same with REAL Ctrl / Shift
+     * key events. Any problem = nothing happens.
+     */
     private fun padJump(top: Boolean, selectOn: Boolean) {
         try {
             commitWord()
             val ic = currentInputConnection ?: return
             val req = android.view.inputmethod.ExtractedTextRequest()
-            req.hintMaxChars = 20000
+            req.hintMaxChars = 100000
             req.hintMaxLines = 2000
             val ex = try { ic.getExtractedText(req, 0) } catch (_: Throwable) { null }
             val t = ex?.text
-            if (ex != null && t != null && ex.selectionStart >= 0 && ex.selectionEnd >= 0 && ex.startOffset == 0 && ex.partialStartOffset < 0 && t.length < 20000) {
+            if (ex != null && t != null && ex.selectionStart >= 0 && ex.selectionEnd >= 0 && ex.startOffset == 0 && ex.partialStartOffset < 0 && t.length < 100000) {
                 val r = com.mgb.keyboard.typing.PadJump.jump(t.length, ex.selectionStart, ex.selectionEnd, top, selectOn)
                 ic.setSelection(r[0], r[1])
-                return
+                if (padAtEdge(ic, top) != false) return   // v0.45.1: false = the app ignored setSelection -> next stage
             }
-            val meta = KeyEvent.META_CTRL_ON or (if (selectOn) KeyEvent.META_SHIFT_ON else 0)
-            if (InputSafe.key(ic, if (top) KeyEvent.KEYCODE_MOVE_HOME else KeyEvent.KEYCODE_MOVE_END, meta)) return
-            val n = 20000
-            val before = ic.getTextBeforeCursor(n, 0)?.length ?: return
-            val sel = ic.getSelectedText(0)?.length ?: 0
-            val after = ic.getTextAfterCursor(n, 0)?.length ?: return
-            if (before >= n || after >= n) return
-            val r = com.mgb.keyboard.typing.PadJump.jump(before + sel + after, before, before + sel, top, selectOn)
-            ic.setSelection(r[0], r[1])
+            if (padHop(ic, top, selectOn, padAbs(ic, ex))) return
+            val meta = KeyEvent.META_CTRL_ON or KeyEvent.META_CTRL_LEFT_ON or (if (selectOn) (KeyEvent.META_SHIFT_ON or KeyEvent.META_SHIFT_LEFT_ON) else 0)
+            val code = if (top) KeyEvent.KEYCODE_MOVE_HOME else KeyEvent.KEYCODE_MOVE_END
+            if (!InputSafe.key(ic, code, meta)) return
+            pcIdleHandler.postDelayed({ try { padKeyRetry(top, selectOn, code) } catch (_: Throwable) { } }, 200L)
         } catch (_: Throwable) { }
+    }
+
+    /** v0.45.1: true = no text before (Top) / after (Bottom) the selection, false = there is text, null = the app does not say. */
+    private fun padAtEdge(ic: android.view.inputmethod.InputConnection, top: Boolean): Boolean? {
+        return try {
+            val s = if (top) ic.getTextBeforeCursor(1, 0) else ic.getTextAfterCursor(1, 0)
+            if (s == null) null else s.length == 0
+        } catch (_: Throwable) { null }
+    }
+
+    /** v0.45.1: selection (start <= end) in the WHOLE text, or null when the app does not say. API 31+ surrounding text first, then the extracted text. */
+    private fun padAbs(ic: android.view.inputmethod.InputConnection, ex: android.view.inputmethod.ExtractedText?): IntArray? {
+        try {
+            if (android.os.Build.VERSION.SDK_INT >= 31) {
+                val st = ic.getSurroundingText(8, 8, 0)
+                if (st != null) {
+                    val r = com.mgb.keyboard.typing.PadJump.span(st.offset, st.selectionStart, st.selectionEnd)
+                    if (r != null) return r
+                }
+            }
+        } catch (_: Throwable) { }
+        try {
+            if (ex != null) return com.mgb.keyboard.typing.PadJump.span(ex.startOffset, ex.selectionStart, ex.selectionEnd)
+        } catch (_: Throwable) { }
+        return null
+    }
+
+    /** v0.45.1: reach the start / end with setSelection only. true = at the edge (or the app cannot say), false = did not work. */
+    private fun padHop(ic: android.view.inputmethod.InputConnection, top: Boolean, selectOn: Boolean, abs: IntArray?): Boolean {
+        try {
+            if (top) {
+                if (selectOn && abs == null) return false   // Select ON needs the far end of the selection
+                ic.setSelection(0, if (selectOn) abs!![1] else 0)
+                return padAtEdge(ic, true) != false
+            }
+            if (abs != null && padHopEnd(ic, if (selectOn) abs[0] else abs[1], abs[1], selectOn)) return true
+            if (!selectOn) return padHopEnd(ic, 0, 0, false)   // position unknown or wrong: start from 0 and hop down
+            return false
+        } catch (_: Throwable) { return false }
+    }
+
+    /** v0.45.1: move the end of the selection forward until no text is left after it (anchor stays when Select is ON). */
+    private fun padHopEnd(ic: android.view.inputmethod.InputConnection, anchor: Int, end0: Int, selectOn: Boolean): Boolean {
+        var end = end0
+        var i = 0
+        while (i < com.mgb.keyboard.typing.PadJump.HOP_MAX) {
+            ic.setSelection(if (selectOn) anchor else end, end)
+            val after = ic.getTextAfterCursor(com.mgb.keyboard.typing.PadJump.HOP_CHARS, 0) ?: return false
+            if (after.length == 0) return true
+            end += after.length
+            i++
+        }
+        return false
+    }
+
+    /** v0.45.1: 0.2 s after the Ctrl+Home / Ctrl+End key event: the app accepted it but the cursor did not move -> real Ctrl (+ Shift) key events. */
+    private fun padKeyRetry(top: Boolean, selectOn: Boolean, code: Int) {
+        val ic = currentInputConnection ?: return
+        if (padAtEdge(ic, top) != false) return
+        InputSafe.keyCombo(ic, code, com.mgb.keyboard.typing.PcKeyPlan.MOD_CTRL or (if (selectOn) com.mgb.keyboard.typing.PcKeyPlan.MOD_SHIFT else 0))
     }
 
     /** v0.2.2: what a toolbar item does. Only opens things that already exist (panels, switcher, theme / one-hand cycle). */
