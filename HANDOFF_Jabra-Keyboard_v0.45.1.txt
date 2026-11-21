@@ -1,9 +1,0 @@
-HANDOFF Jabra-Keyboard v0.45.1 - cursor pad Top / Bottom made stronger (long text, checked stages, real-key retry).
-
-Rules of work: HANDOFF.txt section 0 (patch do not rewrite, ONLY changed files in the zip + handoff). Newest CHANGELOG entry = v0.45.1.
-
-1. STATE: repo = v0.45.1. Builds of v0.42.0 .. v0.45.1 NOT confirmed; Kotlin NEVER compiled in the chat. v0.44.0 / v0.45.0 (Find & Replace floating window) are still NOT phone tested.
-- DONE in v0.45.1: MgbIme.padJump() = stage 1 exact (text < 100000, then checked with padAtEdge) -> stage 2 padHop / padHopEnd (setSelection hops, PadJump.HOP_CHARS / HOP_MAX, position from padAbs = getSurroundingText API 31+ or extracted text, PadJump.span) -> stage 3 Ctrl+Home / Ctrl+End key event + padKeyRetry after 200 ms with InputSafe.keyCombo (real Ctrl / Shift). padAtEdge: true / false / null (unknown = treated as done, so a Select ON selection is never destroyed by a second key event).
-- Tests: tools/PadJumpTest.java 27 checks green, PadTest 9 green. Kotlin NOT compiled, phone NOT tested.
-
-2. NEXT: owner tests CHECKLIST ZE. If a site / app does not move: ask for the app name, then look at what getTextAfterCursor returns there. Then continue PLAN_RP_FLOAT / floating window phone results (ZC, ZD).
