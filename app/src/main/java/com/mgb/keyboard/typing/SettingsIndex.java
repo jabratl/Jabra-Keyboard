@@ -188,6 +188,7 @@ public final class SettingsIndex {
             case "edit_bar": return "The toolbar row above the letters (Aa, clipboard, select, copy...).";
             case "clip_on": return "Saves copied text in the clipboard history.";
             case "fmt_on": return "Shows the Aa novel formatter button.";
+            case "pad_extra": return "Cursor pad: extra rows with Word, PgUp / PgDn, Line, Undo, Redo. OFF = the 4 old rows.";   // v0.45.4
             case "clip_lines": return "How many lines of each clip are shown in the clipboard.";
             case "clip_view": return "Clipboard as a list or as 2-column cards.";
             case "clip_order": return "Which group comes first in the clipboard: Pinned or Recent (List and Cards).";   // v0.15.2

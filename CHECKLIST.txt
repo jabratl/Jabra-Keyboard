@@ -1406,3 +1406,10 @@ ZG. CURSOR PAD ROW 5 (v0.45.3) - test ZE and ZF first
  [ ] [Line]: cursor in the middle of a line: that line gets selected (Home, then Shift+End). Copy works after it.
  [ ] [Undo] undoes the last typing / paste; [Redo] brings it back (same as the toolbar keys).
  [ ] In an app where the arrows do nothing: Word keys (Select OFF) still move the cursor by word. Send the app name if they do not.
+
+ZH. CURSOR PAD SWITCH + PGUP / PGDN (v0.45.4) - test ZE, ZF, ZG first
+ [ ] Settings > Tools & Panels: a row "Cursor pad: extra keys" (ON by default). Search "pad" in the settings search finds it.
+ [ ] Pad (ON): below the 4 main rows: row 5 [< Word] [Word >] [PgUp] [PgDn], row 6 [Line] [Undo] [Redo]; these 2 rows are a bit lower than the main keys. Status text under them.
+ [ ] Long text: [PgDn] moves the cursor one page down, [PgUp] one page up; hold = repeats. Select ON (blue) + PgDn: a page gets selected.
+ [ ] Switch the row OFF, open the pad again: only the 4 old rows (Select/Top/Bottom/Backspace ... ABC/All/Paste) and the shorter help text. Switch ON again, open the pad: the 2 extra rows are back.
+ [ ] If the pad is taller than the letters keyboard on your phone: it scrolls (drag on the status text) and the keyboard window does not grow. Tell me if you prefer the extra rows in a smaller form.

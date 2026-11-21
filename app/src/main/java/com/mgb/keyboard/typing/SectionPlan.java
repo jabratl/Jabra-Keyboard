@@ -29,7 +29,7 @@ public final class SectionPlan {
         // Clipboard & tools
         "clip_on", "clip_view", "clip_sort", "clip_count", "clip_expire", "clip_new_look", "clip_compact", "clip_compact2", "clip_slimbar", "clip_pop", "clip_float", "clip_fold", "clip_paste2", "clip_tight", "clip_sens", "clip_pwd", "clip_simple", "ui_pill", "clip_img", "clip_undo_n", "clip_tidy",
         // Tools & Panels
-        "edit_bar", "tb_vault", "tb_custom", "fmt_on"
+        "edit_bar", "tb_vault", "tb_custom", "fmt_on", "pad_extra"
     };
     private static final String[] ADV_KEYS = {
         "bn_map", "lang_fav", "lang_order", "sp_preview", "sp_tick", "sp_anim", "sp_step", "tools_keep", "bn_hints", "bn_numpage",

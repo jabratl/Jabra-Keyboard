@@ -34,12 +34,14 @@ class PadPanel(private val ctx: Context, private val host: JabraHost, private va
 
     // v0.10.14 (D2.4): pk() = UiKit.btn (key-height tall, same 2dp margins, theme style, feedback first). Old body kept as pkOld() = fallback.
     // v0.45.2: sp = text size (arrows are bigger, 14f = as before for every other key).
-    private fun pk(label: String, weight: Float, sp: Float = 14f, onClick: (Button) -> Unit): Button {
-        try { return UiKit.btn(ctx, prefs, label, weight, host.keyHeightDp(), sp, { v -> host.feedback(v) }, onClick) } catch (_: Throwable) { }
-        return pkOld(label, weight, sp, onClick)
+    // v0.45.4: h = key height in dp (0 = the normal key height; the extra rows are lower).
+    private fun pk(label: String, weight: Float, sp: Float = 14f, h: Int = 0, onClick: (Button) -> Unit): Button {
+        val hh = if (h > 0) h else host.keyHeightDp()
+        try { return UiKit.btn(ctx, prefs, label, weight, hh, sp, { v -> host.feedback(v) }, onClick) } catch (_: Throwable) { }
+        return pkOld(label, weight, sp, hh, onClick)
     }
 
-    private fun pkOld(label: String, weight: Float, sp: Float, onClick: (Button) -> Unit): Button {
+    private fun pkOld(label: String, weight: Float, sp: Float, hh: Int, onClick: (Button) -> Unit): Button {
         val b = Button(ctx)
         b.text = label
         b.isAllCaps = false
@@ -52,7 +54,7 @@ class PadPanel(private val ctx: Context, private val host: JabraHost, private va
             try { host.feedback(b) } catch (_: Throwable) { }
             try { onClick(b) } catch (_: Throwable) { }
         }
-        val lp = LinearLayout.LayoutParams(0, dp(host.keyHeightDp()), weight)
+        val lp = LinearLayout.LayoutParams(0, dp(hh), weight)
         lp.setMargins(dp(2), dp(2), dp(2), dp(2))
         b.layoutParams = lp
         return b
@@ -71,8 +73,8 @@ class PadPanel(private val ctx: Context, private val host: JabraHost, private va
     }
 
     /** Key that fires at once and repeats while held (same helper as Backspace). */
-    private fun held(label: String, sp: Float = 14f, fire: () -> Unit): Button {
-        val b = pk(label, 1f, sp) { }
+    private fun held(label: String, sp: Float = 14f, h: Int = 0, fire: () -> Unit): Button {
+        val b = pk(label, 1f, sp, h) { }
         try { RepeatKeyHelper({ fire() }, { v -> try { host.feedback(v) } catch (_: Throwable) { } }).attach(b) } catch (_: Throwable) { }
         return b
     }
@@ -119,9 +121,12 @@ class PadPanel(private val ctx: Context, private val host: JabraHost, private va
         try { statusView?.text = statusText(on) } catch (_: Throwable) { }
     }
 
+    private var extras = true   // v0.45.4: pref pad_extra (read when the pad is built)
+
     private fun statusText(on: Boolean): String =
         (if (on) "Select ON: blue keys extend the selection.\n" else "Select OFF: keys only move the cursor.\n") +
-        "Home / End = line, Top / Bottom = whole text, Word = by word, Line = select line. Arrows need an app that reads key events."
+        (if (extras) "Home / End = line, Top / Bottom = whole text, Word = by word, PgUp / PgDn = page, Line = select line. Arrows need an app that reads key events."
+         else "Home / End = this line, Top / Bottom = whole text. Arrows need an app that reads key events.")
 
     // v0.10.14 (D2.4): note() = UiKit.noteText (11sp, note colour, 6 / 2dp padding). Old body kept as noteOld() = fallback.
     private fun note(text: String): TextView {
@@ -186,20 +191,33 @@ class PadPanel(private val ctx: Context, private val host: JabraHost, private va
         r4.addView(pk("Paste", 2f) { io.edit("paste") })
         root.addView(r4)
 
-        // v0.45.3 row 5: word jump, select line, undo, redo (Word keys: Select ON extends the selection by words, hold = repeat)
-        val r5 = row()
-        val wl = held("\u25C2 Word", 12f) { io.word(true, state.isSelect()) }
-        try { wl.contentDescription = "Previous word" } catch (_: Throwable) { }
-        r5.addView(track(wl))
-        val wr = held("Word \u25B8", 12f) { io.word(false, state.isSelect()) }
-        try { wr.contentDescription = "Next word" } catch (_: Throwable) { }
-        r5.addView(track(wr))
-        val ln = pk("Line", 1f, 12f) { io.sendKey(KeyEvent.KEYCODE_MOVE_HOME, 0); io.sendKey(KeyEvent.KEYCODE_MOVE_END, PadState.META_SHIFT) }
-        try { ln.contentDescription = "Select this line" } catch (_: Throwable) { }
-        r5.addView(ln)
-        r5.addView(pk("Undo", 1f, 12f) { io.sendKey(KeyEvent.KEYCODE_Z, KeyEvent.META_CTRL_ON or KeyEvent.META_CTRL_LEFT_ON) })
-        r5.addView(pk("Redo", 1f, 12f) { io.sendKey(KeyEvent.KEYCODE_Z, KeyEvent.META_CTRL_ON or KeyEvent.META_CTRL_LEFT_ON or KeyEvent.META_SHIFT_ON or KeyEvent.META_SHIFT_LEFT_ON) })
-        root.addView(r5)
+        // v0.45.3 / v0.45.4 extra rows (pref pad_extra, default ON, OFF = the 4 old rows): row 5 = move by word / page, row 6 = Line / Undo / Redo. Lower keys (85%).
+        extras = try { prefs.bool("pad_extra", true) } catch (_: Throwable) { true }
+        if (extras) {
+            val eh = try { (host.keyHeightDp() * 85 / 100).coerceAtLeast(30) } catch (_: Throwable) { 36 }
+            val r5 = row()
+            val wl = held("\u25C2 Word", 12f, eh) { io.word(true, state.isSelect()) }
+            try { wl.contentDescription = "Previous word" } catch (_: Throwable) { }
+            r5.addView(track(wl))
+            val wr = held("Word \u25B8", 12f, eh) { io.word(false, state.isSelect()) }
+            try { wr.contentDescription = "Next word" } catch (_: Throwable) { }
+            r5.addView(track(wr))
+            val pu = held("PgUp", 12f, eh) { move(KeyEvent.KEYCODE_PAGE_UP) }   // Select ON = Shift + Page Up (selects a page)
+            try { pu.contentDescription = "Page up" } catch (_: Throwable) { }
+            r5.addView(track(pu))
+            val pd = held("PgDn", 12f, eh) { move(KeyEvent.KEYCODE_PAGE_DOWN) }
+            try { pd.contentDescription = "Page down" } catch (_: Throwable) { }
+            r5.addView(track(pd))
+            root.addView(r5)
+
+            val r6 = row()
+            val ln = pk("Line", 1f, 12f, eh) { io.sendKey(KeyEvent.KEYCODE_MOVE_HOME, 0); io.sendKey(KeyEvent.KEYCODE_MOVE_END, PadState.META_SHIFT) }
+            try { ln.contentDescription = "Select this line" } catch (_: Throwable) { }
+            r6.addView(ln)
+            r6.addView(pk("Undo", 1f, 12f, eh) { io.sendKey(KeyEvent.KEYCODE_Z, KeyEvent.META_CTRL_ON or KeyEvent.META_CTRL_LEFT_ON) })
+            r6.addView(pk("Redo", 1f, 12f, eh) { io.sendKey(KeyEvent.KEYCODE_Z, KeyEvent.META_CTRL_ON or KeyEvent.META_CTRL_LEFT_ON or KeyEvent.META_SHIFT_ON or KeyEvent.META_SHIFT_LEFT_ON) })
+            root.addView(r6)
+        }
 
         val st = note("")
         statusView = st
