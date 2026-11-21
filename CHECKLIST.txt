@@ -1420,3 +1420,11 @@ ZI. FORMATTER + REPLACE HEIGHT (v0.45.5)
  [ ] Try with the number row ON and OFF (Settings > Look) and in landscape: the panel follows the height of the letters keyboard you came from.
  [ ] The other panels (Clipboard, More, Emoji ...) look as before.
  [ ] If a Replace view has a big blank gap at the bottom: send a screenshot + which view (Main / Sets / Pairs ...).
+
+ZJ. FORMATTER LIVE PREVIEW + LONGER PREVIEWS (v0.45.6) - test ZI first
+ [ ] Formatter > Run page: put some text in the field, tap Preview: the preview box shows more lines than before (up to 9).
+ [ ] Go to the Clean (or Keep / Paragraphs) page: a "Live preview" box is shown under the page buttons. Change an option (a toggle): the box changes right away, you do not have to go back to Run.
+ [ ] Rules page: edit / add a rule: the live box shows the effect.
+ [ ] Open the Formatter fresh (never tapped Preview): no live box, pages look as in v0.45.5.
+ [ ] Replace: type Find on text that has many matches: the preview box lists up to 12 matches (was 6), the first one marked with the arrow; Set mode lists up to 12 changed rules.
+ [ ] Panel height still = the letters keyboard on every page; nothing cut off at the bottom. Screenshot if something looks wrong.

@@ -403,7 +403,7 @@ class FormatterPanel(private val ctx: Context, private val host: JabraHost, priv
         t.text = text
         t.textSize = 11f
         t.typeface = Typeface.MONOSPACE
-        t.maxLines = 5
+        t.maxLines = 9   // v0.45.6: was 5 (the panel is as tall as the keyboard now)
         t.ellipsize = TextUtils.TruncateAt.END
         val themed = try { !JabraTokens.isClassic(prefs) } catch (_: Throwable) { false }   // v0.6.5: Classic = same colours as before
         t.setTextColor(try { if (themed && JabraTokens.isDark(prefs)) JabraTokens.panelText(prefs) else Color.parseColor("#B02A63") } catch (_: Throwable) { Color.parseColor("#B02A63") })
@@ -416,6 +416,21 @@ class FormatterPanel(private val ctx: Context, private val host: JabraHost, priv
         lp.setMargins(dp(4), dp(2), dp(4), dp(4))
         t.layoutParams = lp
         return t
+    }
+
+    /** v0.45.6: the result of the current options on the current source, same size as the Preview button's (800 chars). Any problem = the last preview text. */
+    private fun livePeek(): String {
+        val keepStatus = status
+        return try {
+            val src = readSource()
+            if (src == null) peek
+            else {
+                val r = NovelFormatter.gen(store.current(), src.blocks)
+                val shown = if (prefs.str("fmt_prev", "result") == "original") src.shownOriginal else r.out
+                val t = if (shown.length > 800) shown.substring(0, 800) else shown
+                if (t.isEmpty()) "(empty)" else t
+            }
+        } catch (_: Throwable) { peek } finally { status = keepStatus }
     }
 
     private fun refresh(keepScroll: Boolean = true) {
@@ -479,8 +494,17 @@ class FormatterPanel(private val ctx: Context, private val host: JabraHost, priv
         }
         root.addView(top)
 
+        // v0.45.6: LIVE PREVIEW. After you tapped Preview once, every page except Run shows the current result in a small box under the page buttons and
+        // it updates by itself when you change an option (no need to go back to Run). Never tapped Preview = nothing changes.
+        val live = if (page != "run" && peek.isNotEmpty() && !picking) livePeek() else ""
+        if (live.isNotEmpty()) {
+            val lv = peekView("Live preview\n" + live)
+            lv.maxLines = 5
+            root.addView(lv)
+        }
+
         val scroll = ScrollView(ctx)
-        scroll.layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(200))
+        scroll.layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(if (live.isNotEmpty()) 130 else 200))
         val col = LinearLayout(ctx)
         col.orientation = LinearLayout.VERTICAL
         if (status.isNotEmpty()) col.addView(note(status, true))
@@ -796,7 +820,7 @@ class FormatterPanel(private val ctx: Context, private val host: JabraHost, priv
             val r = NovelFormatter.gen(store.current(), s.blocks)
             status = stats(r)
             val shown = if (prefs.str("fmt_prev", "result") == "original") s.shownOriginal else r.out
-            peek = if (shown.length > 400) shown.substring(0, 400) else shown
+            peek = if (shown.length > 800) shown.substring(0, 800) else shown   // v0.45.6: was 400
             if (peek.isEmpty()) peek = "(empty)"
         }
         refresh(false)

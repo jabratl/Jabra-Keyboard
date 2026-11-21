@@ -1,0 +1,8 @@
+HANDOFF Jabra-Keyboard v0.45.6 - Formatter live preview + longer previews (Formatter 9 lines / Replace 12 matches). Includes v0.45.1 - v0.45.5.
+
+Rules of work: HANDOFF.txt section 0 (patch do not rewrite, ONLY changed files in the zip + handoff). Newest CHANGELOG entry = v0.45.6.
+
+1. STATE: repo = v0.45.6. Builds of v0.42.0 .. v0.45.6 NOT confirmed; Kotlin NEVER compiled in the chat. v0.44.0 / v0.45.0 (Find & Replace floating window) still NOT phone tested. Java tests: 177 green (v0.45.4), nothing in Java changed since.
+- v0.45.6: FormatterFeature.make(): livePeek() box (page != run, peek non-empty, not picking), scroll base 130 dp with it; peekView maxLines 9, peek 800 chars. ReplacePanel: PREV_MAX = 12 replaces the 6 in previewText / previewSpan.
+
+2. NEXT: owner tests CHECKLIST ZE .. ZJ (screenshots if a look is wrong). Open ideas (not built): hold-to-accelerate for arrows; Word select / plain paste key; Replace view with the floating window on has no scroll area (blank room under the buttons). Then floating window phone results (ZC, ZD) / PLAN_RP_FLOAT.

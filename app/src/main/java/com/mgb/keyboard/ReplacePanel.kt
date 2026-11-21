@@ -336,6 +336,8 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
         return root
     }
 
+    private val PREV_MAX = 12   // v0.45.6: lines in the preview box (was 6), the panel is as tall as the keyboard now and the box takes the free room
+
     private fun previewText(res: ReplaceEngine.Result): String {
         val rules = setRules
         if (rules != null) {   // v0.25.0 (R2): one line per rule that changed something
@@ -344,7 +346,7 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
             var n = 0
             for (i in rules.indices) {
                 if (i >= rr.counts.size || rr.counts[i] == 0) continue
-                if (n >= 6) { sb.append("\n\u2026"); break }
+                if (n >= PREV_MAX) { sb.append("\n\u2026"); break }
                 if (n > 0) sb.append("\n")
                 val r = rules[i]
                 sb.append(rr.counts[i]).append("\u00D7  ").append(r.find.take(24)).append(if (r.kind == ReplaceRules.K_DEL || r.kind == ReplaceRules.K_DELRE) "  (line removed)" else "  \u2192  " + r.with.take(24))
@@ -367,7 +369,7 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
         var n = 0
         val from = if (step in res.hits.indices) step else 0
         for (hi in from until res.hits.size) {
-            if (n >= 6) break
+            if (n >= PREV_MAX) break
             if (n > 0) sb.append("\n")
             if (n == 0 && res.hits.size > 1) sb.append("\u25B6 ")
             sb.append(ReplaceEngine.line(src, res.hits[hi], 14))
@@ -713,7 +715,7 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
             var n = 0
             for (i in rules.indices) {
                 if (i >= rr.counts.size || rr.counts[i] == 0) continue
-                if (n >= 6) { sb.append("\n\u2026"); break }
+                if (n >= PREV_MAX) { sb.append("\n\u2026"); break }
                 if (n > 0) sb.append("\n")
                 val r = rules[i]
                 sb.append(rr.counts[i].toString()).append("\u00D7  ")
@@ -728,7 +730,7 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
         var n = 0
         val from = if (step in res.hits.indices) step else 0
         for (hi in from until res.hits.size) {
-            if (n >= 6) break
+            if (n >= PREV_MAX) break
             if (n > 0) sb.append("\n")
             if (n == 0 && res.hits.size > 1) sb.append("\u25B6 ")
             val p = ReplaceEngine.lineParts(src, res.hits[hi], 14)
