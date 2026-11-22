@@ -4,7 +4,9 @@ import android.content.Context
 import android.content.res.ColorStateList
 import android.graphics.Color
 import android.graphics.Typeface
+import android.graphics.drawable.GradientDrawable
 import android.view.KeyEvent
+import android.view.MotionEvent
 import android.view.View
 import android.widget.Button
 import android.widget.LinearLayout
@@ -24,6 +26,12 @@ interface PadIo {
  * Keys: Select (toggle) | Up | All | Backspace  /  Left | Down | Right | Copy  /  Home | End | Cut | Paste  /  ABC.
  * Select ON = arrows + Home / End are sent with Shift, so they extend the selection (the app must read key events, same limit as PC mode).
  * Arrows, Home / End and Backspace repeat while held. Built in code like the other panels; build() returns null on any problem.
+ *
+ * v0.46.0 (redesign): rows are grouped into rounded theme-aware cards (UiKit.cardBackground) instead of one flat
+ * block, the status line is a small coloured badge instead of two lines of text, and a slim drag strip ("trackpad")
+ * sits between the top row and the arrow grid: drag left/right/up/down on it to glide the cursor (or extend the
+ * selection when Select is ON) without having to tap the small arrow keys one at a time. A new "Clear" key collapses
+ * an active selection (cursor jumps to the right edge, Select switches back OFF) without leaving the pad.
  */
 class PadPanel(private val ctx: Context, private val host: JabraHost, private val io: PadIo) {
 
@@ -70,6 +78,69 @@ class PadPanel(private val ctx: Context, private val host: JabraHost, private va
         val r = LinearLayout(ctx)
         r.orientation = LinearLayout.HORIZONTAL
         return r
+    }
+
+    // v0.46.0: wrap one or more rows in a rounded, theme-aware card (same look as the clipboard cards) so the
+    // pad reads as grouped sections (Move / Select & edit / Extras) instead of one flat block of keys.
+    private fun cardWrap(vararg rows: LinearLayout): LinearLayout {
+        val card = LinearLayout(ctx)
+        card.orientation = LinearLayout.VERTICAL
+        try { card.background = UiKit.cardBackground(ctx, prefs) } catch (_: Throwable) { }
+        val lp = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
+        lp.setMargins(dp(2), dp(2), dp(2), dp(2))
+        card.layoutParams = lp
+        card.setPadding(dp(1), dp(1), dp(1), dp(1))
+        for (r in rows) card.addView(r)
+        return card
+    }
+
+    // v0.46.0: slim drag strip between the top row and the arrow grid. Drag it like a trackpad to glide the
+    // cursor (Select ON = extend the selection instead) -- a steadier way to move more than one or two spaces
+    // than tapping the small arrow keys repeatedly. A plain tap does nothing (only drags trigger movement).
+    private fun trackpad(): View {
+        val stepDp = 16   // px moved on screen = one character / one line step
+        val step = dp(stepDp).coerceAtLeast(12)
+        val bar = TextView(ctx)
+        bar.text = "\u2500\u2500\u2500  drag to glide cursor  \u2500\u2500\u2500"
+        bar.textSize = 10f
+        bar.gravity = android.view.Gravity.CENTER
+        try { bar.setTextColor(JabraTokens.note(prefs)) } catch (_: Throwable) { bar.setTextColor(Color.parseColor("#777777")) }
+        try {
+            val bg = GradientDrawable()
+            bg.cornerRadius = JabraTokens.dp(ctx, JabraTokens.R_SM).toFloat()
+            bg.setColor(JabraTokens.withAlpha(JabraTokens.ACCENT, 28))
+            bar.background = bg
+        } catch (_: Throwable) { }
+        val lp = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(18))
+        lp.setMargins(dp(4), dp(2), dp(4), dp(2))
+        bar.layoutParams = lp
+        var lastX = 0f; var lastY = 0f; var accX = 0f; var accY = 0f; var dragged = false
+        bar.setOnTouchListener { v, e ->
+            when (e.actionMasked) {
+                MotionEvent.ACTION_DOWN -> { lastX = e.rawX; lastY = e.rawY; accX = 0f; accY = 0f; dragged = false; true }
+                MotionEvent.ACTION_MOVE -> {
+                    val dx = e.rawX - lastX; val dy = e.rawY - lastY
+                    lastX = e.rawX; lastY = e.rawY
+                    accX += dx; accY += dy
+                    var fired = false
+                    // horizontal wins when it is the larger movement (avoids sending both on a diagonal drag)
+                    while (kotlin.math.abs(accX) >= step && kotlin.math.abs(accX) >= kotlin.math.abs(accY)) {
+                        move(if (accX > 0) KeyEvent.KEYCODE_DPAD_RIGHT else KeyEvent.KEYCODE_DPAD_LEFT)
+                        accX -= if (accX > 0) step else -step
+                        fired = true
+                    }
+                    while (kotlin.math.abs(accY) >= step && kotlin.math.abs(accY) > kotlin.math.abs(accX)) {
+                        move(if (accY > 0) KeyEvent.KEYCODE_DPAD_DOWN else KeyEvent.KEYCODE_DPAD_UP)
+                        accY -= if (accY > 0) step else -step
+                        fired = true
+                    }
+                    if (fired) { try { host.feedback(v) } catch (_: Throwable) { }; dragged = true }
+                    true
+                }
+                else -> { dragged = false; true }
+            }
+        }
+        return bar
     }
 
     /** Key that fires at once and repeats while held (same helper as Backspace). */
@@ -124,9 +195,8 @@ class PadPanel(private val ctx: Context, private val host: JabraHost, private va
     private var extras = true   // v0.45.4: pref pad_extra (read when the pad is built)
 
     private fun statusText(on: Boolean): String =
-        (if (on) "Select ON: blue keys extend the selection.\n" else "Select OFF: keys only move the cursor.\n") +
-        (if (extras) "Home / End = line, Top / Bottom = whole text, Word = by word, PgUp / PgDn = page, Line = select line. Arrows need an app that reads key events."
-         else "Home / End = this line, Top / Bottom = whole text. Arrows need an app that reads key events.")
+        (if (on) "\u25CF Select ON \u2014 blue keys extend the selection" else "\u25CB Select OFF \u2014 keys just move the cursor") +
+        (if (extras) " \u00b7 drag the bar above the arrows to glide" else "")
 
     // v0.10.14 (D2.4): note() = UiKit.noteText (11sp, note colour, 6 / 2dp padding). Old body kept as noteOld() = fallback.
     private fun note(text: String): TextView {
@@ -156,9 +226,10 @@ class PadPanel(private val ctx: Context, private val host: JabraHost, private va
         root.orientation = LinearLayout.VERTICAL
         root.setBackgroundColor(Color.parseColor("#DDDDDD"))
         try { JabraThemes.paint(prefs, root) } catch (_: Throwable) { }   // v0.2.6
-        root.setPadding(dp(2), dp(4), dp(2), dp(4))
+        root.setPadding(dp(2), dp(3), dp(2), dp(3))
 
         // v0.45.2 layout (4 columns): the LEFT 3 columns = moving (Select, Top / Bottom, Home / up / End, arrows), the RIGHT column = editing (Backspace, Copy, Cut, Paste).
+        // v0.46.0: the rows are the same keys as before, just grouped into cards (cardWrap) instead of sitting flat on the panel background.
         val r1 = row()
         val sel = pk("Select", 1.5f) { _ -> state.toggle(); paintSelect() }
         selectBtn = sel
@@ -169,29 +240,31 @@ class PadPanel(private val ctx: Context, private val host: JabraHost, private va
         try { JabraIcons.putThemed(ctx, bs, "back") } catch (_: Throwable) { }
         try { RepeatKeyHelper({ host.backspace() }, { v -> try { host.feedback(v) } catch (_: Throwable) { } }).attach(bs) } catch (_: Throwable) { }
         r1.addView(bs)
-        root.addView(r1)
+        root.addView(cardWrap(r1))
+
+        // v0.46.0: drag strip -- glides the cursor (or extends the selection) without tapping the arrows one at a time.
+        try { root.addView(trackpad()) } catch (_: Throwable) { }
 
         val r2 = row()
         r2.addView(track(held("Home") { move(KeyEvent.KEYCODE_MOVE_HOME) }))
         r2.addView(track(held("\u2191", 20f) { move(KeyEvent.KEYCODE_DPAD_UP) }))
         r2.addView(track(held("End") { move(KeyEvent.KEYCODE_MOVE_END) }))
         r2.addView(pk("Copy", 1f) { io.edit("copy") })
-        root.addView(r2)
 
         val r3 = row()
         r3.addView(track(held("\u2190", 20f) { move(KeyEvent.KEYCODE_DPAD_LEFT) }))
         r3.addView(track(held("\u2193", 20f) { move(KeyEvent.KEYCODE_DPAD_DOWN) }))
         r3.addView(track(held("\u2192", 20f) { move(KeyEvent.KEYCODE_DPAD_RIGHT) }))
         r3.addView(pk("Cut", 1f) { io.edit("cut") })
-        root.addView(r3)
+        root.addView(cardWrap(r2, r3))
 
         val r4 = row()
         r4.addView(pk("ABC", 1f) { state.setSelect(false); host.showLetters() })   // v0.17.35 (M2): ABC is the only way out; Select ends with it
         r4.addView(pk("All", 1f) { io.edit("all") })
         r4.addView(pk("Paste", 2f) { io.edit("paste") })
-        root.addView(r4)
+        root.addView(cardWrap(r4))
 
-        // v0.45.3 / v0.45.4 extra rows (pref pad_extra, default ON, OFF = the 4 old rows): row 5 = move by word / page, row 6 = Line / Undo / Redo. Lower keys (85%).
+        // v0.45.3 / v0.45.4 extra rows (pref pad_extra, default ON, OFF = the 4 old rows): row 5 = move by word / page, row 6 = Line / Clear / Undo / Redo. Lower keys (85%).
         extras = try { prefs.bool("pad_extra", true) } catch (_: Throwable) { true }
         if (extras) {
             val eh = try { (host.keyHeightDp() * 85 / 100).coerceAtLeast(30) } catch (_: Throwable) { 36 }
@@ -208,20 +281,26 @@ class PadPanel(private val ctx: Context, private val host: JabraHost, private va
             val pd = held("PgDn", 12f, eh) { move(KeyEvent.KEYCODE_PAGE_DOWN) }
             try { pd.contentDescription = "Page down" } catch (_: Throwable) { }
             r5.addView(track(pd))
-            root.addView(r5)
 
             val r6 = row()
             val ln = pk("Line", 1f, 12f, eh) { io.sendKey(KeyEvent.KEYCODE_MOVE_HOME, 0); io.sendKey(KeyEvent.KEYCODE_MOVE_END, PadState.META_SHIFT) }
             try { ln.contentDescription = "Select this line" } catch (_: Throwable) { }
             r6.addView(ln)
+            // v0.46.0 (new): collapses an active selection to its right edge and switches Select back OFF,
+            // instead of having to tap an arrow key just to drop out of a selection you no longer want.
+            val clr = pk("Clear", 1f, 12f, eh) { io.sendKey(KeyEvent.KEYCODE_DPAD_RIGHT, 0); if (state.isSelect()) { state.setSelect(false); paintSelect() } }
+            try { clr.contentDescription = "Clear selection" } catch (_: Throwable) { }
+            r6.addView(clr)
             r6.addView(pk("Undo", 1f, 12f, eh) { io.sendKey(KeyEvent.KEYCODE_Z, KeyEvent.META_CTRL_ON or KeyEvent.META_CTRL_LEFT_ON) })
             r6.addView(pk("Redo", 1f, 12f, eh) { io.sendKey(KeyEvent.KEYCODE_Z, KeyEvent.META_CTRL_ON or KeyEvent.META_CTRL_LEFT_ON or KeyEvent.META_SHIFT_ON or KeyEvent.META_SHIFT_LEFT_ON) })
-            root.addView(r6)
+            root.addView(cardWrap(r5, r6))
         }
 
+        // v0.46.0: single-line coloured status badge (was a two-line plain note).
         val st = note("")
+        st.gravity = android.view.Gravity.CENTER
         statusView = st
-        root.addView(st)   // v0.45.2: the note is now the Select status (first line) + the short help (second line)
+        root.addView(st)
         paintSelect()
         return root
     }

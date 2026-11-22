@@ -1,0 +1,34 @@
+HANDOFF - Jabra Keyboard - Cursor/Select pad (PadPanel.kt) - v0.46.0
+
+ONLY FILE TOUCHED:
+  app/src/main/java/com/mgb/keyboard/PadPanel.kt
+
+WHAT CHANGED (design):
+  - Rows are now grouped into rounded, theme-aware cards (UiKit.cardBackground), instead of
+    sitting flat on one background: [Select/Top/Bottom/Backspace] card, [arrow grid + Copy/Cut] card,
+    [ABC/All/Paste] card, and (when "pad_extra" is ON) [Word/PgUp/PgDn + Line/Clear/Undo/Redo] card.
+  - Status line is now a single centered coloured badge (was two lines of plain text).
+
+NEW FEATURES ADDED:
+  1. Drag "trackpad" strip between the top row and the arrow grid: drag it left/right/up/down to
+     glide the cursor (or extend the selection when Select is ON) instead of tapping the small
+     arrow keys repeatedly. Tap-only (no drag) does nothing. Haptic feedback fires on every step,
+     same as a normal key press.
+  2. New "Clear" key (extras row 6, pad_extra must be ON to see it): collapses an active selection
+     to its right edge and switches Select back OFF in one tap, instead of needing an arrow-key tap
+     just to drop a selection you no longer want.
+
+NOT CHANGED:
+  - PadIo / JabraHost interfaces (no other file needed edits).
+  - Existing key behaviour, prefs (pad_extra), Select-ON colour-sync logic, RepeatKeyHelper use.
+  - No new strings/resources added; everything is built in code like the rest of the panel.
+
+TO APPLY:
+  Overwrite app/src/main/java/com/mgb/keyboard/PadPanel.kt with the file in this zip. No other
+  files need touching. Build + open "Cursor pad" from the toolbar / More settings to see it.
+
+NOT DONE YET (next chat if wanted):
+  - Trackpad sensitivity is a fixed 16dp-per-step; could be made a setting (like key_gap) if it
+    feels too fast/slow on your device.
+  - Card colours currently reuse the clipboard-card palette (JabraTokens/UiKit) so it automatically
+    matches your active theme; no separate "pad" theme was added.
