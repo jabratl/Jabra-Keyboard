@@ -584,6 +584,26 @@ class MgbIme : InputMethodService() {
         try { sg.schedule() } catch (_: Throwable) { }   // v0.10.1 (G2): cursor moved / deleted
         val kind = pendingKind; pendingKind = com.mgb.keyboard.typing.AutoCapGate.E_JUMP   // v0.6.1: consume once; anything we did not type = JUMP
         autoCapUpdate(kind)   // v0.0.9 (has its own try/catch)
+        try { if (newSelStart != newSelEnd) autoOpenPadForSelection() } catch (_: Throwable) { }   // v0.47.0: setting "auto_pad_select"
+    }
+
+    /**
+     * v0.47.0: setting "auto_pad_select" (default ON, app Settings -> Cursor pad: auto-open on text selection).
+     * The app/field just got a non-empty selection (e.g. the user long-pressed a word with the system's own
+     * selection handles) -> open the cursor pad with Select already ON, so arrow / Home / End / word keys
+     * continue extending that same selection right away. Only fires from the normal letters keyboard: never while
+     * another panel is already open (including the pad itself -- so our own Select-ON arrow presses, which also
+     * produce a non-empty selection, do not re-trigger this), and never in a password field.
+     */
+    private fun autoOpenPadForSelection() {
+        if (inPanel) return
+        if (pwdField) return
+        if (!prefs.bool("auto_pad_select", true)) return
+        try {
+            padPanel.forceSelectOn()
+            shownPanel = "pad"; inPanel = true   // showPanel("pad") below reads these to decide keepSelect; see PadPanel.forceSelectOn() doc
+            showPanel("pad")
+        } catch (_: Throwable) { }
     }
 
     // ---------- v0.0.9: typing basics ----------

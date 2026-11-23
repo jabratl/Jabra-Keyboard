@@ -1,0 +1,43 @@
+HANDOFF - Jabra Keyboard - Auto-open cursor pad on text selection - v0.47.0
+
+3 FILES TOUCHED (this one needed more than the pad file, unlike the last two handoffs):
+  app/src/main/java/com/mgb/keyboard/PadPanel.kt        (+ small forceSelectOn() method)
+  app/src/main/java/com/mgb/keyboard/MgbIme.kt           (new auto-open hook in onUpdateSelection)
+  app/src/main/java/com/mgb/keyboard/SettingsGroups.kt   (+1 toggle line, app Settings screen)
+
+FEATURE:
+  As soon as the field's own text selection becomes non-empty (e.g. you long-press a word with the
+  normal system selection handles -- not inside our pad), the keyboard now switches straight to the
+  Cursor pad with Select already ON, so arrow / Home / End / Word keys continue extending that same
+  selection immediately -- no need to tap "Select" yourself first.
+
+SETTING:
+  App Settings -> (same group as "Cursor pad: extra keys") -> "Cursor pad: auto-open on text
+  selection". Pref key "auto_pad_select", default ON. Turn it OFF to go back to the old behaviour
+  (pad only opens when you tap it).
+
+HOW IT WORKS / WHY IT WON'T LOOP:
+  - MgbIme.onUpdateSelection() already fires on every selection change; added one line that calls a
+    new autoOpenPadForSelection() when the new selection is non-empty.
+  - That function bails out if: a panel is already open (inPanel == true) -- this is also what stops
+    it from re-triggering itself once the pad is open and you use its own Select-ON arrows (those
+    also produce a non-empty selection, but by then inPanel is already true); the field is a
+    password field (pwdField); or the new setting is OFF.
+  - It calls PadPanel.forceSelectOn() (sets the pad's internal Select state ON) and pre-sets
+    shownPanel/inPanel the same way they'd be set if the pad were already open, THEN calls the
+    normal showPanel("pad") -- that makes the existing dispatch pass keepSelect = true into
+    PadPanel.build(), so it does not reset Select back to OFF like a fresh open normally would.
+    No changes to PadPanel's build()/make() signature were needed for this.
+
+NOT DONE / WORTH KNOWING:
+  - First selection-triggered open skips the little fade-in animation that a normal tap-to-open panel
+    switch gets (cosmetic only; pre-setting inPanel/shownPanel to make keepSelect work also makes the
+    dispatch think it's "the same panel already open", which turns the fade off for that first open).
+    Say if you want that fixed -- it would need a small tweak to showPanel()'s freshPanel check.
+  - If an app selects text programmatically in a way you don't want to trigger the pad (rare), that's
+    what the new setting is for -- turn it off from the app Settings screen.
+
+TO APPLY:
+  Overwrite the 3 files above with the ones in this zip (PadPanel.kt here already includes the
+  v0.46.1 ScrollView/height bugfix from last time). Rebuild and test: long-press-select a word in any
+  text field -> pad should open with "Select ON" shown immediately.

@@ -789,6 +789,7 @@ object SettingsGroups {
             toggle(g, "Formatter (Aa button)", "fmt_on", true)
             toggle(g, "Formatter: floating result window", "fmt_float", true)   // v0.45.7: after Preview, the exact result floats over the screen and updates live; OFF = the small box inside the panel
             toggle(g, "Cursor pad: extra keys", "pad_extra", true)   // v0.45.4: Word / Page / Line / Undo / Redo rows under the cursor pad; OFF = the 4 old rows (needs the pad to be opened again)
+            toggle(g, "Cursor pad: auto-open on text selection", "auto_pad_select", true)   // v0.47.0: selecting text the normal way (e.g. long-press) switches straight to the cursor pad with Select ON, so arrow/Home/End/word keys keep extending it; OFF = the pad only opens when you tap it yourself
             if (sink != null) {   // v0.25.0 (R2): "Find & Replace sets" page button (new app screen only); any problem = no button
                 try {
                     val rb = ReplaceSetsPage.button(ctx)

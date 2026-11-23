@@ -204,6 +204,13 @@ class PadPanel(private val ctx: Context, private val host: JabraHost, private va
         return t
     }
 
+    // v0.47.0: called by MgbIme right before showPanel("pad") when it auto-opens the pad because the app's own
+    // text selection just became non-empty (setting "auto_pad_select"). Sets Select ON so the pad opens already
+    // matching the selection that is on screen, instead of the user having to tap Select themselves. MgbIme also
+    // pre-sets its own inPanel/shownPanel="pad" before that showPanel() call so build() is called with
+    // keepSelect = true and does not reset this back to OFF (see the keepSelect doc below).
+    fun forceSelectOn() { state.setSelect(true) }
+
     /** Returns null on any problem -> keyboard shows normal letters. */
     /** v0.17.35 (M2): keepSelect = the pad is rebuilt while it is already open (Select stays as the user left it). A fresh open starts with Select OFF as before. */
     fun build(keepSelect: Boolean = false): View? = try { make(keepSelect) } catch (_: Throwable) { null }
