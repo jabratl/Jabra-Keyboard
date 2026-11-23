@@ -584,7 +584,10 @@ class MgbIme : InputMethodService() {
         try { sg.schedule() } catch (_: Throwable) { }   // v0.10.1 (G2): cursor moved / deleted
         val kind = pendingKind; pendingKind = com.mgb.keyboard.typing.AutoCapGate.E_JUMP   // v0.6.1: consume once; anything we did not type = JUMP
         autoCapUpdate(kind)   // v0.0.9 (has its own try/catch)
-        try { if (newSelStart != newSelEnd) autoOpenPadForSelection() } catch (_: Throwable) { }   // v0.47.0: setting "auto_pad_select"
+        try {
+            if (newSelStart != newSelEnd) autoOpenPadForSelection()   // v0.47.0: setting "auto_pad_select"
+            else if (autoPadOpen && inPanel && shownPanel == "pad") showLetters()   // v0.47.1: the selection that opened the pad is gone (deselected) -> switch back; never fires for a pad the user opened themselves (autoPadOpen stays false for that)
+        } catch (_: Throwable) { }
     }
 
     /**
@@ -594,6 +597,8 @@ class MgbIme : InputMethodService() {
      * continue extending that same selection right away. Only fires from the normal letters keyboard: never while
      * another panel is already open (including the pad itself -- so our own Select-ON arrow presses, which also
      * produce a non-empty selection, do not re-trigger this), and never in a password field.
+     * v0.47.1: also sets autoPadOpen so a later deselect (see onUpdateSelection above) can close this particular
+     * pad session again -- a manually-opened pad never sets this flag, so it is never auto-closed.
      */
     private fun autoOpenPadForSelection() {
         if (inPanel) return
@@ -603,6 +608,7 @@ class MgbIme : InputMethodService() {
             padPanel.forceSelectOn()
             shownPanel = "pad"; inPanel = true   // showPanel("pad") below reads these to decide keepSelect; see PadPanel.forceSelectOn() doc
             showPanel("pad")
+            autoPadOpen = inPanel && shownPanel == "pad"   // v0.47.1: only true if the pad is actually the thing on screen now (showPanel can still fall back to letters on failure)
         } catch (_: Throwable) { }
     }
 
@@ -1591,6 +1597,7 @@ class MgbIme : InputMethodService() {
         val c = container ?: return
         autoNumpad = false
         inPanel = false   // v0.3.3
+        autoPadOpen = false   // v0.47.1: letters are back on screen (for any reason) -- any auto-open session is over
         c.removeAllViews()
         try {
             letterKeys.clear(); numKeys.clear()
@@ -1673,6 +1680,7 @@ class MgbIme : InputMethodService() {
     // leaves free -> the app / browser text bar jumped up and the bottom rows were cut off. Now such a panel is capped to
     // the letters-keyboard height and scrolls inside. Panels that already fit are NOT wrapped (no change).
     private var inPanel = false
+    private var autoPadOpen = false   // v0.47.1: true only while the cursor pad is open BECAUSE autoOpenPadForSelection() opened it (never set for a manual open) -- lets a deselect close it again without touching a pad the user opened themselves
     private var shownPanel = ""   // v0.18: name of the panel on screen (for the open fade)
     private var lettersH = 0
     /** v0.10.21 (D4): tablet / fold / split screen wider than 700dp: panel content in a centred 600dp column (letters keyboard untouched). Phones: returns v itself. */

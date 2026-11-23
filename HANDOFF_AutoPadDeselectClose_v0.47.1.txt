@@ -1,0 +1,39 @@
+HANDOFF - Jabra Keyboard - auto-close the pad on deselect - v0.47.1
+
+1 FILE TOUCHED (PadPanel.kt / SettingsGroups.kt unchanged since the last handoff):
+  app/src/main/java/com/mgb/keyboard/MgbIme.kt
+
+FEATURE (asked: "deselect closes it automatically, manual-open case doesn't need this"):
+  If the cursor pad was opened BY the v0.47.0 auto-open-on-selection feature, and the selection
+  that triggered it becomes empty again (deselected), the keyboard now switches straight back to
+  normal letters -- same as if you'd tapped ABC.
+  A pad you opened yourself (toolbar / More settings) is NEVER auto-closed this way, exactly as
+  asked -- see below for how that is kept separate.
+
+HOW:
+  - New field `autoPadOpen` (false by default). It is set true ONLY inside
+    autoOpenPadForSelection() (the v0.47.0 function), and only if the pad is actually the thing on
+    screen right after that call (so a failed open does not wrongly set it).
+  - It is reset to false inside showLetters() itself, so ANY path back to the letters (ABC, you
+    opening a different panel, closing the keyboard, etc.) always clears it -- a later MANUAL pad
+    open always starts from false and can never inherit a stale "auto" flag from an earlier session.
+  - onUpdateSelection(): when the new selection is empty AND autoPadOpen is true AND the pad is
+    still the panel on screen, it calls showLetters(). Manual opens never set autoPadOpen, so this
+    branch never fires for them.
+
+NOT IN SCOPE (as asked):
+  - Closing the keyboard fully (back button / hide) and reopening on a new field still goes through
+    the pre-existing PanelKeep/onStartInputView logic, untouched here -- you only asked for the
+    deselect case, not that one.
+
+TO APPLY:
+  Overwrite app/src/main/java/com/mgb/keyboard/MgbIme.kt with the one in this zip. It already
+  includes the v0.47.0 auto-open hook from the last handoff, so you don't need to re-apply that
+  separately -- just replace the file. PadPanel.kt and SettingsGroups.kt from the previous handoff
+  are unchanged and don't need to be re-copied if you already applied them.
+
+TEST:
+  Long-press-select a word (pad opens, Select ON) -> tap elsewhere to deselect (or press an arrow
+  key without Select, if you already have one) -> keyboard should switch back to normal letters by
+  itself. Then open the pad manually from the toolbar, select nothing happens automatically -- it
+  should behave exactly as before (stays open until you tap ABC).
