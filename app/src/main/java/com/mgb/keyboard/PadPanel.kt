@@ -36,6 +36,10 @@ interface PadIo {
  */
 class PadPanel(private val ctx: Context, private val host: JabraHost, private val io: PadIo) {
 
+    private companion object {
+        const val DOUBLE_TAP_MS = 300L   // v0.48.0: two clean taps on the status line within this = select word
+    }
+
     private val prefs = JabraPrefs(ctx)
     private val state = PadState()
 
@@ -103,14 +107,40 @@ class PadPanel(private val ctx: Context, private val host: JabraHost, private va
     // Same drag-to-glide feature, zero extra height: the gesture is attached to the status line at the bottom,
     // which the pad already had. Drag it like a trackpad to glide the cursor (Select ON = extend the selection);
     // a plain tap does nothing (only drags trigger movement), so it still reads fine as a status line.
+    //
+    // v0.48.0: (a) the step size is now a setting (pref "pad_speed": 0 Slow / 1 Normal / 2 Fast, read at the start of every
+    // drag so a change applies at once), (b) a quick double-tap on this line (no drag in between) selects the word at the
+    // cursor: one word left, then one word right with Shift (io.word() both ways), so no repeated dragging is needed.
+    private fun stepDp(): Int = when (try { prefs.int("pad_speed", 1) } catch (_: Throwable) { 1 }) {
+        0 -> 24   // Slow: more finger travel per step
+        2 -> 10   // Fast
+        else -> 16   // Normal (= the old fixed value)
+    }
+
+    private fun selectWordAtCursor() {
+        // cursor to the start of the current word, then extend (Shift) to its end; both calls go through the same
+        // io.word() the Word keys use, so the app-side fallback for fields that ignore Ctrl+Arrow applies here too
+        io.word(true, false)
+        io.word(false, true)
+        if (!state.isSelect()) { state.setSelect(true); paintSelect() }   // the selection is on screen: show Select ON so the arrows extend it
+    }
+
     private fun attachDrag(bar: TextView) {
-        val step = dp(16).coerceAtLeast(12)
+        var step = dp(stepDp()).coerceAtLeast(12)
         var lastX = 0f; var lastY = 0f; var accX = 0f; var accY = 0f
+        var moved = false          // did the current touch drag at all?
+        var lastTapUp = 0L         // uptime of the previous clean tap (0 = none)
+        val slop = dp(8).coerceAtLeast(6).toFloat()
+        var downX = 0f; var downY = 0f
         bar.setOnTouchListener { v, e ->
             when (e.actionMasked) {
                 // must return true on DOWN or the OS never delivers the MOVE events that follow
-                MotionEvent.ACTION_DOWN -> { lastX = e.rawX; lastY = e.rawY; accX = 0f; accY = 0f; true }
+                MotionEvent.ACTION_DOWN -> {
+                    step = dp(stepDp()).coerceAtLeast(8)
+                    lastX = e.rawX; lastY = e.rawY; downX = e.rawX; downY = e.rawY; accX = 0f; accY = 0f; moved = false; true
+                }
                 MotionEvent.ACTION_MOVE -> {
+                    if (kotlin.math.abs(e.rawX - downX) > slop || kotlin.math.abs(e.rawY - downY) > slop) moved = true
                     val dx = e.rawX - lastX; val dy = e.rawY - lastY
                     lastX = e.rawX; lastY = e.rawY
                     accX += dx; accY += dy
@@ -129,6 +159,19 @@ class PadPanel(private val ctx: Context, private val host: JabraHost, private va
                     if (fired) { try { host.feedback(v) } catch (_: Throwable) { } }
                     true
                 }
+                MotionEvent.ACTION_UP -> {
+                    if (moved) { lastTapUp = 0L }   // a drag is never half of a double-tap
+                    else {
+                        val now = android.os.SystemClock.uptimeMillis()
+                        if (lastTapUp != 0L && now - lastTapUp <= DOUBLE_TAP_MS) {
+                            lastTapUp = 0L
+                            try { host.feedback(v) } catch (_: Throwable) { }
+                            try { selectWordAtCursor() } catch (_: Throwable) { }
+                        } else lastTapUp = now
+                    }
+                    true
+                }
+                MotionEvent.ACTION_CANCEL -> { lastTapUp = 0L; true }
                 else -> true
             }
         }
@@ -187,7 +230,7 @@ class PadPanel(private val ctx: Context, private val host: JabraHost, private va
 
     private fun statusText(on: Boolean): String =
         (if (on) "\u25CF Select ON \u2014 blue keys extend the selection" else "\u25CB Select OFF \u2014 keys just move the cursor") +
-        " \u00b7 drag this line to glide"
+        " \u00b7 drag = glide \u00b7 2\u00d7tap = word"
 
     // v0.10.14 (D2.4): note() = UiKit.noteText (11sp, note colour, 6 / 2dp padding). Old body kept as noteOld() = fallback.
     private fun note(text: String): TextView {
@@ -210,6 +253,9 @@ class PadPanel(private val ctx: Context, private val host: JabraHost, private va
     // pre-sets its own inPanel/shownPanel="pad" before that showPanel() call so build() is called with
     // keepSelect = true and does not reset this back to OFF (see the keepSelect doc below).
     fun forceSelectOn() { state.setSelect(true) }
+
+    /** v0.48.0: MgbIme calls this when a NEW field starts (onStartInputView, restarting = false): Select is OFF again, so a pad opened later never starts with a stale Select ON. */
+    fun reset() { try { state.setSelect(false) } catch (_: Throwable) { } }
 
     /** Returns null on any problem -> keyboard shows normal letters. */
     /** v0.17.35 (M2): keepSelect = the pad is rebuilt while it is already open (Select stays as the user left it). A fresh open starts with Select OFF as before. */

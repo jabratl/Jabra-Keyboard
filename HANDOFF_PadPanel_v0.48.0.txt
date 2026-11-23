@@ -1,0 +1,22 @@
+HANDOFF - Jabra Keyboard - Cursor pad polish - v0.48.0
+
+FILES TOUCHED (overwrite, same paths):
+  app/src/main/java/com/mgb/keyboard/PadPanel.kt
+  app/src/main/java/com/mgb/keyboard/MgbIme.kt
+  app/src/main/java/com/mgb/keyboard/SettingsGroups.kt
+  app/src/main/java/com/mgb/keyboard/typing/HelpPlan.java       (help line for pad_speed)
+  app/src/main/java/com/mgb/keyboard/typing/SettingsIndex.java  (search line for pad_speed)
+  app/src/main/java/com/mgb/keyboard/typing/ChangedPlan.java    (pad_speed counted in section "Toolbar")
+
+1. DEBOUNCE: auto-open now waits 180 ms (AUTO_PAD_DELAY_MS). Every non-empty selection update restarts the timer;
+   a deselect / showLetters() / keyboard hide cancels it. Timer re-checks the last reported selection when it fires.
+2. FADE: showPanel(name, forceFade) -> auto-open gets the same 110 ms fade as a tapped panel.
+   showLetters(fade) -> pad -> letters after a deselect fades in too (only that path; every other showLetters() is unchanged).
+3. TRACKPAD SPEED: pref "pad_speed" (0 Slow 24dp / 1 Normal 16dp = old / 2 Fast 10dp). Settings > Tools & Panels.
+   Read at every drag start, so no need to reopen the pad.
+4. DOUBLE-TAP = SELECT WORD: two clean taps (no drag) on the pad's status line within 300 ms -> io.word(true,false) then
+   io.word(false,true); Select switches ON so the arrows keep extending.
+5. NEW FIELD RESET: onStartInputView(restarting=false): cancel timer, padPanel.reset() (Select OFF), close a pad left open,
+   autoPadOpen=false. restarting=true is untouched (PanelKeep rule: a pad the user opened stays).
+
+NOT COMPILED HERE (no Kotlin toolchain in the sandbox) - build in GitHub Actions and check the new "v0.48.0" lines if red.

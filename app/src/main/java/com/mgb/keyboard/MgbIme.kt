@@ -490,6 +490,15 @@ class MgbIme : InputMethodService() {
             pwdField = v == InputType.TYPE_TEXT_VARIATION_PASSWORD || v == InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD ||
                 v == InputType.TYPE_TEXT_VARIATION_WEB_PASSWORD ||
                 (cls == InputType.TYPE_CLASS_NUMBER && v == InputType.TYPE_NUMBER_VARIATION_PASSWORD)   // v0.0.6
+            // v0.48.0: a NEW field (restarting = false), e.g. keyboard hidden with Back and opened again in another field, always starts
+            // with the normal letters: reset the auto-open state + the pad's Select, and close a pad that was left open. A restart
+            // (restarting = true) is untouched, so a pad the user opened keeps staying open (PanelKeep rule).
+            if (!restarting) {
+                cancelAutoPad()
+                try { padPanel.reset() } catch (_: Throwable) { }
+                if (inPanel && shownPanel == "pad") showLetters()   // showLetters() also clears autoPadOpen
+                autoPadOpen = false
+            }
             val keepP = try { com.mgb.keyboard.typing.PanelKeep.keepPanel(restarting, inPanel, autoNumpad) } catch (_: Throwable) { false }   // v0.17.35 (M2): input restart must not close a panel the user opened (cursor pad, clipboard ...)
             if (sgTools) { sgTools = false; if (!(try { com.mgb.keyboard.typing.PanelKeep.keepForRowReset(inPanel, autoNumpad) } catch (_: Throwable) { false })) showLetters() }   // v0.10.1 (G2): a new field starts with the suggestion row again; v0.17.35 (M2): not on a restart with a panel open
             captureClip()   // v0.0.6: catch text copied while we were not listening
@@ -543,6 +552,7 @@ class MgbIme : InputMethodService() {
 
     override fun onFinishInputView(finishingInput: Boolean) {
         super.onFinishInputView(finishingInput)
+        cancelAutoPad()   // v0.48.0: keyboard hides = no pending auto-open of the pad
         try { ReplaceFloatWin.dismissLive() } catch (_: Throwable) { }   // v0.39.3 (FLOAT F4)
         try { FormatFloatWin.dismissLive() } catch (_: Throwable) { }   // v0.45.7: the floating Formatter window never stays on the letters
         try { UiKit.closeSelect() } catch (_: Throwable) { }   // v0.19.6 (S7): an open dropdown list never stays on screen after the keyboard closes
@@ -580,14 +590,37 @@ class MgbIme : InputMethodService() {
                 currentInputConnection?.finishComposingText()
             }
         } catch (_: Throwable) { }
+        selNowS = newSelStart; selNowE = newSelEnd   // v0.48.0: the auto-pad timer re-checks this when it fires
         try { sg.selection(newSelStart, newSelEnd) } catch (_: Throwable) { }   // v0.10.23 (W9): remember the selection (plain assignment)
         try { sg.schedule() } catch (_: Throwable) { }   // v0.10.1 (G2): cursor moved / deleted
         val kind = pendingKind; pendingKind = com.mgb.keyboard.typing.AutoCapGate.E_JUMP   // v0.6.1: consume once; anything we did not type = JUMP
         autoCapUpdate(kind)   // v0.0.9 (has its own try/catch)
         try {
-            if (newSelStart != newSelEnd) autoOpenPadForSelection()   // v0.47.0: setting "auto_pad_select"
-            else if (autoPadOpen && inPanel && shownPanel == "pad") showLetters()   // v0.47.1: the selection that opened the pad is gone (deselected) -> switch back; never fires for a pad the user opened themselves (autoPadOpen stays false for that)
+            if (newSelStart != newSelEnd) scheduleAutoPad()   // v0.47.0: setting "auto_pad_select"; v0.48.0: only after the selection has stayed ~180 ms (debounce)
+            else {
+                cancelAutoPad()   // v0.48.0: let go / deselected before the delay = the pad never opens
+                if (autoPadOpen && inPanel && shownPanel == "pad") showLetters(true)   // v0.47.1: the selection that opened the pad is gone (deselected) -> switch back; never fires for a pad the user opened themselves (autoPadOpen stays false for that); v0.48.0: with the soft fade
+            }
         } catch (_: Throwable) { }
+    }
+
+    // v0.48.0 (debounce): a selection that appears for a moment only (e.g. a finger slipping while reading) must not open the pad.
+    // Every non-empty selection update (re)starts a short timer; the pad opens only if the selection is STILL there when it fires.
+    private var selNowS = 0
+    private var selNowE = 0
+    private val autoPadRun = Runnable { try { autoPadFire() } catch (_: Throwable) { } }
+
+    private fun scheduleAutoPad() {
+        if (inPanel || pwdField) return   // same early outs as autoOpenPadForSelection(): nothing to wait for
+        try { pcIdleHandler.removeCallbacks(autoPadRun); pcIdleHandler.postDelayed(autoPadRun, AUTO_PAD_DELAY_MS) } catch (_: Throwable) { }
+    }
+
+    private fun cancelAutoPad() {
+        try { pcIdleHandler.removeCallbacks(autoPadRun) } catch (_: Throwable) { }
+    }
+
+    private fun autoPadFire() {
+        if (selNowS != selNowE) autoOpenPadForSelection()   // still a non-empty selection (last one the app reported)? (not getSelectedText(): some apps return null for it)
     }
 
     /**
@@ -607,7 +640,7 @@ class MgbIme : InputMethodService() {
         try {
             padPanel.forceSelectOn()
             shownPanel = "pad"; inPanel = true   // showPanel("pad") below reads these to decide keepSelect; see PadPanel.forceSelectOn() doc
-            showPanel("pad")
+            showPanel("pad", true)   // v0.48.0: forceFade = the same soft fade a tapped panel gets (the pre-set inPanel / shownPanel above made showPanel think the pad was already open)
             autoPadOpen = inPanel && shownPanel == "pad"   // v0.47.1: only true if the pad is actually the thing on screen now (showPanel can still fall back to letters on failure)
         } catch (_: Throwable) { }
     }
@@ -1590,7 +1623,8 @@ class MgbIme : InputMethodService() {
         return k
     }
 
-    private fun showLetters() {
+    private fun showLetters(fade: Boolean = false) {   // v0.48.0: fade = soft fade-in of the letters (pad -> letters after a deselect)
+        cancelAutoPad()   // v0.48.0: letters on screen again = no pending auto-open of the pad
         try { ReplaceFloatWin.dismissLive() } catch (_: Throwable) { }   // v0.39.3 (FLOAT F4): the floating Replace window never stays on the letters
         try { FormatFloatWin.dismissLive() } catch (_: Throwable) { }   // v0.45.7: the floating Formatter window never stays on the letters
         try { UiKit.closeSelect() } catch (_: Throwable) { }   // v0.19.6 (S7): panel switch closes an open dropdown list
@@ -1606,6 +1640,7 @@ class MgbIme : InputMethodService() {
             c.addView(LinearLayout(this))
         }
         try { KeyPopup.attachHost(c) } catch (_: Throwable) { }   // v0.9.9 (V4): removeAllViews() removed the overlay, put it back on top
+        if (fade) { try { c.getChildAt(0)?.let { AppMotion.fadeIn(it, 110, false) } } catch (_: Throwable) { } }   // v0.48.0: same 0.1 s fade as a panel opening (no motion when the phone's animations are off)
     }
 
     // v0.17.53 (M1): the tools row (toolbar, or the suggestion row) stays on top of the number / symbol page, so letters -> numbers keeps the same top row (English, Bangla, Bangla fixed).
@@ -1652,7 +1687,7 @@ class MgbIme : InputMethodService() {
         showPanel("replace")
     }
 
-    private fun showPanel(name: String) {
+    private fun showPanel(name: String, forceFade: Boolean = false) {   // v0.48.0: forceFade = fade even though inPanel / shownPanel were pre-set (auto-open of the pad)
         if (name != "replace") { try { ReplaceFloatWin.dismissLive() } catch (_: Throwable) { } }   // v0.39.3 (FLOAT F4)
         if (name != "format") { try { FormatFloatWin.dismissLive() } catch (_: Throwable) { } }   // v0.45.7
         try { UiKit.closeSelect() } catch (_: Throwable) { }   // v0.19.6 (S7)
@@ -1665,7 +1700,7 @@ class MgbIme : InputMethodService() {
         try { PanelGuard.ok(this, name) } catch (_: Throwable) { }   // v0.5.3
         try { JabraOneHand.apply(this, prefs, v) } catch (_: Throwable) { }   // v0.1.0
         try { if (!inPanel && c.height > 0) lettersH = c.height } catch (_: Throwable) { }   // v0.3.3: remember the letters-keyboard height
-        val freshPanel = !inPanel || name != shownPanel   // v0.18: true only when a panel REALLY opens (not when the same panel is rebuilt after a tap)
+        val freshPanel = forceFade || !inPanel || name != shownPanel   // v0.18: true only when a panel REALLY opens (not when the same panel is rebuilt after a tap)
         shownPanel = name
         inPanel = true
         val shown0 = try { capTall(name, v, c) } catch (_: Throwable) { v }   // v0.3.3: tall panel = scrolls, window never grows
@@ -1680,6 +1715,7 @@ class MgbIme : InputMethodService() {
     // leaves free -> the app / browser text bar jumped up and the bottom rows were cut off. Now such a panel is capped to
     // the letters-keyboard height and scrolls inside. Panels that already fit are NOT wrapped (no change).
     private var inPanel = false
+    private val AUTO_PAD_DELAY_MS = 180L   // v0.48.0: how long a selection must stay before the pad auto-opens (150-200 ms)
     private var autoPadOpen = false   // v0.47.1: true only while the cursor pad is open BECAUSE autoOpenPadForSelection() opened it (never set for a manual open) -- lets a deselect close it again without touching a pad the user opened themselves
     private var shownPanel = ""   // v0.18: name of the panel on screen (for the open fade)
     private var lettersH = 0
