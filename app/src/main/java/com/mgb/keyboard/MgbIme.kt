@@ -1810,8 +1810,30 @@ class MgbIme : InputMethodService() {
         else { InputSafe.deleteWord(currentInputConnection); try { if (histOk()) HistStore.backWord() } catch (_: Throwable) { } }   // v0.20.0 (H1)
     }
 
+    /**
+     * v0.48.2: a selection is on screen = Backspace deletes THAT, always, on the first tap. Before this, the first tap could be used up by
+     * "undo the last auto-correct" or by the half-typed word in buf, or the app could ignore the DEL key for a selection (long selection,
+     * WebView...), so the pad's delete key "did nothing" and the next tap (keyboard delete) worked. Order: drop the composing word, replace the selection
+     * with "" (commitText), and if the app still shows a selection fall back to the DEL key. false = no selection, the normal code runs.
+     */
+    private fun deleteSelectionNow(): Boolean {
+        val ic = currentInputConnection ?: return false
+        return try {
+            val sel0 = ic.getSelectedText(0)
+            val has = if (sel0 == null) selNowS != selNowE else sel0.isNotEmpty()   // null = this app can not tell: trust the last reported selection
+            if (!has) return false
+            if (buf.isNotEmpty()) { buf.setLength(0) }
+            ic.beginBatchEdit()
+            try { ic.finishComposingText(); ic.commitText("", 1) } finally { ic.endBatchEdit() }
+            val left = try { ic.getSelectedText(0) } catch (_: Throwable) { null }
+            if (!left.isNullOrEmpty()) InputSafe.backspace(ic)   // the app kept the selection: the DEL key as the second try
+            true
+        } catch (_: Throwable) { false }
+    }
+
     private fun onBackspace() {
         pendingKind = com.mgb.keyboard.typing.AutoCapGate.E_BACKSPACE   // v0.6.1
+        if (selNowS != selNowE && deleteSelectionNow()) return   // v0.48.2: selection first (see deleteSelectionNow)
         if (buf.isEmpty() && (try { sg.undoAutoCorrect() } catch (_: Throwable) { false })) return   // v0.10.3 (G3.2): backspace right after an auto-correct = undo
         if (buf.isNotEmpty()) {
             buf.setLength(buf.length - 1)
