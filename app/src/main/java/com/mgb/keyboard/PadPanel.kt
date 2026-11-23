@@ -10,6 +10,7 @@ import android.view.View
 import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.TextView
+import com.mgb.keyboard.typing.PadGesture
 import com.mgb.keyboard.typing.PadState
 
 /** v0.2.3: MgbIme implements this (key event with meta bits, and the existing edit-bar actions all / copy / cut / paste). */
@@ -35,10 +36,6 @@ interface PadIo {
  * the pad.
  */
 class PadPanel(private val ctx: Context, private val host: JabraHost, private val io: PadIo) {
-
-    private companion object {
-        const val DOUBLE_TAP_MS = 300L   // v0.48.0: two clean taps on the status line within this = select word
-    }
 
     private val prefs = JabraPrefs(ctx)
     private val state = PadState()
@@ -108,70 +105,67 @@ class PadPanel(private val ctx: Context, private val host: JabraHost, private va
     // which the pad already had. Drag it like a trackpad to glide the cursor (Select ON = extend the selection);
     // a plain tap does nothing (only drags trigger movement), so it still reads fine as a status line.
     //
-    // v0.48.0: (a) the step size is now a setting (pref "pad_speed": 0 Slow / 1 Normal / 2 Fast, read at the start of every
-    // drag so a change applies at once), (b) a quick double-tap on this line (no drag in between) selects the word at the
-    // cursor: one word left, then one word right with Shift (io.word() both ways), so no repeated dragging is needed.
-    private fun stepDp(): Int = when (try { prefs.int("pad_speed", 1) } catch (_: Throwable) { 1 }) {
-        0 -> 24   // Slow: more finger travel per step
-        2 -> 10   // Fast
-        else -> 16   // Normal (= the old fixed value)
-    }
+    // v0.48.0: (a) the step size is a setting (pref "pad_speed", read at the start of every drag), (b) a quick double-tap
+    // on this line (no drag in between) selects the word at the cursor.
+    // v0.48.1: (c) a quick TRIPLE-tap selects the whole line (same keys as the Line key); (d) all the rules (step size,
+    // tap counting, drag -> steps) moved to typing/PadGesture.java (pure Java, testable); this function only reads touch events.
+    private fun stepDp(): Int = PadGesture.stepDp(try { prefs.int("pad_speed", PadGesture.SPEED_DEF) } catch (_: Throwable) { PadGesture.SPEED_DEF })
 
     private fun selectWordAtCursor() {
         // cursor to the start of the current word, then extend (Shift) to its end; both calls go through the same
         // io.word() the Word keys use, so the app-side fallback for fields that ignore Ctrl+Arrow applies here too
         io.word(true, false)
         io.word(false, true)
-        if (!state.isSelect()) { state.setSelect(true); paintSelect() }   // the selection is on screen: show Select ON so the arrows extend it
+        selectionMade()
+    }
+
+    private fun selectLineAtCursor() {
+        io.sendKey(KeyEvent.KEYCODE_MOVE_HOME, 0)
+        io.sendKey(KeyEvent.KEYCODE_MOVE_END, PadState.META_SHIFT)
+        selectionMade()
+    }
+
+    /** A selection is on screen now: show Select ON so the arrows keep extending it (same as the auto-open path). */
+    private fun selectionMade() {
+        if (!state.isSelect()) { state.setSelect(true); paintSelect() }
     }
 
     private fun attachDrag(bar: TextView) {
-        var step = dp(stepDp()).coerceAtLeast(12)
-        var lastX = 0f; var lastY = 0f; var accX = 0f; var accY = 0f
+        var step = dp(stepDp()).coerceAtLeast(8)
+        val glide = PadGesture.Glide()
+        val taps = PadGesture.TapCounter()
+        var lastX = 0f; var lastY = 0f; var downX = 0f; var downY = 0f
         var moved = false          // did the current touch drag at all?
-        var lastTapUp = 0L         // uptime of the previous clean tap (0 = none)
         val slop = dp(8).coerceAtLeast(6).toFloat()
-        var downX = 0f; var downY = 0f
         bar.setOnTouchListener { v, e ->
             when (e.actionMasked) {
                 // must return true on DOWN or the OS never delivers the MOVE events that follow
                 MotionEvent.ACTION_DOWN -> {
                     step = dp(stepDp()).coerceAtLeast(8)
-                    lastX = e.rawX; lastY = e.rawY; downX = e.rawX; downY = e.rawY; accX = 0f; accY = 0f; moved = false; true
+                    lastX = e.rawX; lastY = e.rawY; downX = e.rawX; downY = e.rawY; glide.reset(); moved = false; true
                 }
                 MotionEvent.ACTION_MOVE -> {
-                    if (kotlin.math.abs(e.rawX - downX) > slop || kotlin.math.abs(e.rawY - downY) > slop) moved = true
+                    if (kotlin.math.abs(e.rawX - downX) > slop || kotlin.math.abs(e.rawY - downY) > slop) { moved = true; taps.reset() }   // a drag is never part of a multi-tap
                     val dx = e.rawX - lastX; val dy = e.rawY - lastY
                     lastX = e.rawX; lastY = e.rawY
-                    accX += dx; accY += dy
+                    val st = glide.feed(dx, dy, step)
                     var fired = false
-                    // horizontal wins when it is the larger movement (avoids sending both on a diagonal drag)
-                    while (kotlin.math.abs(accX) >= step && kotlin.math.abs(accX) >= kotlin.math.abs(accY)) {
-                        move(if (accX > 0) KeyEvent.KEYCODE_DPAD_RIGHT else KeyEvent.KEYCODE_DPAD_LEFT)
-                        accX -= if (accX > 0) step else -step
-                        fired = true
-                    }
-                    while (kotlin.math.abs(accY) >= step && kotlin.math.abs(accY) > kotlin.math.abs(accX)) {
-                        move(if (accY > 0) KeyEvent.KEYCODE_DPAD_DOWN else KeyEvent.KEYCODE_DPAD_UP)
-                        accY -= if (accY > 0) step else -step
-                        fired = true
-                    }
+                    for (i in 0 until kotlin.math.abs(st[0])) { move(if (st[0] > 0) KeyEvent.KEYCODE_DPAD_RIGHT else KeyEvent.KEYCODE_DPAD_LEFT); fired = true }
+                    for (i in 0 until kotlin.math.abs(st[1])) { move(if (st[1] > 0) KeyEvent.KEYCODE_DPAD_DOWN else KeyEvent.KEYCODE_DPAD_UP); fired = true }
                     if (fired) { try { host.feedback(v) } catch (_: Throwable) { } }
                     true
                 }
                 MotionEvent.ACTION_UP -> {
-                    if (moved) { lastTapUp = 0L }   // a drag is never half of a double-tap
-                    else {
-                        val now = android.os.SystemClock.uptimeMillis()
-                        if (lastTapUp != 0L && now - lastTapUp <= DOUBLE_TAP_MS) {
-                            lastTapUp = 0L
-                            try { host.feedback(v) } catch (_: Throwable) { }
-                            try { selectWordAtCursor() } catch (_: Throwable) { }
-                        } else lastTapUp = now
+                    if (!moved) {
+                        when (taps.tap(android.os.SystemClock.uptimeMillis())) {
+                            2 -> { try { host.feedback(v) } catch (_: Throwable) { }; try { selectWordAtCursor() } catch (_: Throwable) { } }
+                            3 -> { try { host.feedback(v) } catch (_: Throwable) { }; try { selectLineAtCursor() } catch (_: Throwable) { } }
+                            else -> { }
+                        }
                     }
                     true
                 }
-                MotionEvent.ACTION_CANCEL -> { lastTapUp = 0L; true }
+                MotionEvent.ACTION_CANCEL -> { taps.reset(); true }
                 else -> true
             }
         }
@@ -230,7 +224,7 @@ class PadPanel(private val ctx: Context, private val host: JabraHost, private va
 
     private fun statusText(on: Boolean): String =
         (if (on) "\u25CF Select ON \u2014 blue keys extend the selection" else "\u25CB Select OFF \u2014 keys just move the cursor") +
-        " \u00b7 drag = glide \u00b7 2\u00d7tap = word"
+        " \u00b7 drag = glide \u00b7 2\u00d7 word \u00b7 3\u00d7 line"
 
     // v0.10.14 (D2.4): note() = UiKit.noteText (11sp, note colour, 6 / 2dp padding). Old body kept as noteOld() = fallback.
     private fun note(text: String): TextView {

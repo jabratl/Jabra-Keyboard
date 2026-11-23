@@ -612,7 +612,10 @@ class MgbIme : InputMethodService() {
 
     private fun scheduleAutoPad() {
         if (inPanel || pwdField) return   // same early outs as autoOpenPadForSelection(): nothing to wait for
-        try { pcIdleHandler.removeCallbacks(autoPadRun); pcIdleHandler.postDelayed(autoPadRun, AUTO_PAD_DELAY_MS) } catch (_: Throwable) { }
+        try { pcIdleHandler.removeCallbacks(autoPadRun) } catch (_: Throwable) { }
+        val ms = com.mgb.keyboard.typing.PadGesture.delayMs(try { prefs.int("pad_delay", com.mgb.keyboard.typing.PadGesture.DELAY_DEF) } catch (_: Throwable) { com.mgb.keyboard.typing.PadGesture.DELAY_DEF })   // v0.48.1: setting "pad_delay" (Instant / Short / Normal / Long)
+        if (ms <= 0L) { autoOpenPadForSelection(); return }   // Instant = open at once (v0.47 behaviour)
+        try { pcIdleHandler.postDelayed(autoPadRun, ms) } catch (_: Throwable) { }
     }
 
     private fun cancelAutoPad() {
@@ -1715,7 +1718,6 @@ class MgbIme : InputMethodService() {
     // leaves free -> the app / browser text bar jumped up and the bottom rows were cut off. Now such a panel is capped to
     // the letters-keyboard height and scrolls inside. Panels that already fit are NOT wrapped (no change).
     private var inPanel = false
-    private val AUTO_PAD_DELAY_MS = 180L   // v0.48.0: how long a selection must stay before the pad auto-opens (150-200 ms)
     private var autoPadOpen = false   // v0.47.1: true only while the cursor pad is open BECAUSE autoOpenPadForSelection() opened it (never set for a manual open) -- lets a deselect close it again without touching a pad the user opened themselves
     private var shownPanel = ""   // v0.18: name of the panel on screen (for the open fade)
     private var lettersH = 0
