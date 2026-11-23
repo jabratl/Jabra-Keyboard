@@ -1,42 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-
-    <!-- ONLY used when YOU tap "Check for updates" (no background network) -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+    <!-- ONLY used when YOU tap "Check for updates" -->
     <uses-permission android:name="android.permission.INTERNET" />
     <!-- ONLY used to install the downloaded update APK -->
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
-    <!-- key vibration (normal permission, no prompt) -->
-    <uses-permission android:name="android.permission.VIBRATE" />
 
     <application
-        android:allowBackup="false"
-        android:icon="@mipmap/ic_launcher"
-        android:roundIcon="@mipmap/ic_launcher"
-        android:label="Jabra Keyboard"
-        android:theme="@android:style/Theme.DeviceDefault.Light">
-
-        <activity
-            android:name=".SettingsActivity"
-            android:exported="true">
+        android:label="Fake SMS Prank"
+        android:theme="@android:style/Theme.Material.Light.DarkActionBar">
+        <activity android:name=".MainActivity" android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-
-        <service
-            android:name=".MgbIme"
-            android:exported="true"
-            android:label="Jabra Keyboard"
-            android:icon="@mipmap/ic_launcher"
-            android:permission="android.permission.BIND_INPUT_METHOD">
-            <intent-filter>
-                <action android:name="android.view.InputMethod" />
-            </intent-filter>
-            <meta-data
-                android:name="android.view.im"
-                android:resource="@xml/method" />
-        </service>
+        <receiver android:name=".NotifReceiver" android:exported="false" />
 
         <provider
             android:name="androidx.core.content.FileProvider"

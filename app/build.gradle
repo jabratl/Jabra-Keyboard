@@ -1,0 +1,53 @@
+plugins { id 'com.android.application' }
+
+// Version: change ONLY this line to bump the version (the workflow reads it).
+def appVersionName = "1.0.0"
+// versionCode = GitHub run number (always goes up, so Android accepts the update).
+def runNumber = (System.getenv("GITHUB_RUN_NUMBER") ?: "1").toInteger()
+
+android {
+    namespace 'com.prank.fakesms'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId "com.prank.fakesms"
+        minSdk 26
+        targetSdk 34
+        versionCode runNumber
+        versionName appVersionName
+        // owner/repo is filled automatically by GitHub Actions (used by the in-app updater)
+        buildConfigField "String", "GITHUB_REPO", "\"${System.getenv('GITHUB_REPOSITORY') ?: ''}\""
+    }
+
+    buildFeatures { buildConfig true }
+
+    signingConfigs {
+        def ks = System.getenv("KEYSTORE_PATH")
+        if (ks) {
+            release {
+                storeFile file(ks)
+                storePassword System.getenv("KEYSTORE_PASSWORD")
+                keyAlias System.getenv("KEY_ALIAS")
+                keyPassword System.getenv("KEY_PASSWORD")
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            if (signingConfigs.findByName("release") != null) {
+                signingConfig signingConfigs.release
+            }
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+dependencies {
+    implementation 'androidx.core:core:1.13.1'
+}

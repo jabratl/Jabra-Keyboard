@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="20dp">
+
+    <EditText android:id="@+id/sender" android:layout_width="match_parent"
+        android:layout_height="wrap_content" android:hint="Sender (e.g. Mom, bKash, 16216)" />
+
+    <EditText android:id="@+id/msg" android:layout_width="match_parent"
+        android:layout_height="wrap_content" android:hint="Message"
+        android:minLines="3" android:gravity="top" />
+
+    <EditText android:id="@+id/delay" android:layout_width="match_parent"
+        android:layout_height="wrap_content" android:hint="Koto second pore (e.g. 30)"
+        android:inputType="numberDecimal" />
+
+    <Button android:id="@+id/go" android:layout_width="match_parent"
+        android:layout_height="wrap_content" android:text="Schedule" />
+
+    <View android:layout_width="match_parent" android:layout_height="24dp" />
+
+    <TextView android:id="@+id/ver" android:layout_width="match_parent"
+        android:layout_height="wrap_content" android:gravity="center" />
+
+    <Button android:id="@+id/upd" android:layout_width="match_parent"
+        android:layout_height="wrap_content" android:text="Check for updates" />
+</LinearLayout>
