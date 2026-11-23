@@ -1,0 +1,44 @@
+HANDOFF - Jabra Keyboard - Cursor/Select pad (PadPanel.kt) - v0.46.1 (bugfix on v0.46.0)
+
+ONLY FILE TOUCHED:
+  app/src/main/java/com/mgb/keyboard/PadPanel.kt   (overwrite the v0.46.0 one)
+
+REPORTED BUGS (after installing v0.46.0):
+  - Top / Bottom: worked sometimes, not other times.
+  - Select: "turns itself ON/OFF, gets stuck."
+
+ROOT CAUSE:
+  v0.46.0 added real height to the pad: a brand-new "trackpad" row (~22dp) plus a 2dp margin +
+  1dp padding around every card (4 cards). MgbIme has a capTall() check (existing code, not
+  touched): if a panel's measured height goes over a cap (based on the normal letters-keyboard
+  height), it wraps that panel in a ScrollView so the window never grows. v0.46.0 was tall enough
+  to cross that cap on your device/theme, so the pad silently became scrollable. A ScrollView
+  sitting above a grid of small buttons intercepts a tap as a "scroll" whenever the finger moves
+  even a little during the press -- which reads exactly like "sometimes the tap works, sometimes
+  it doesn't" (Top/Bottom) and "Select seems to toggle on its own" (a swallowed tap looks like the
+  state didn't follow the last press).
+
+FIX (v0.46.1):
+  - Card margin trimmed from 2dp+1dp padding to a single 1dp margin, no padding (~4x less height
+    added per card).
+  - The dedicated trackpad row is gone. The same drag-to-glide gesture is now attached to the
+    status line at the bottom of the pad (which already existed) instead of a new row, so the
+    feature costs 0 extra dp of height. Status text now ends with "drag this line to glide" to
+    point at the new spot.
+  - Net effect: the pad's total height is back down near the original (pre-redesign) height, so it
+    should no longer cross capTall()'s cap / get ScrollView-wrapped, and the card look + Clear key
+    from v0.46.0 are both kept.
+
+NOT CHANGED:
+  - MgbIme.kt / capTall() itself (not touched -- the fix stays inside the one file as before).
+  - Clear key, card grouping, Select-ON colour sync: all kept, just the height trimmed.
+
+TO APPLY:
+  Overwrite app/src/main/java/com/mgb/keyboard/PadPanel.kt with the file in this zip (replaces the
+  v0.46.0 one from the last handoff). No other files need touching.
+
+IF IT STILL MISBEHAVES AFTER THIS:
+  That would point away from height/ScrollView and at something else (e.g. capTall()'s cap itself
+  being unusually small on your device/theme) -- tell me and I'll ask you to check whether the pad
+  is actually scrolling (a thin scrollbar / the content shifting slightly) next time it happens, so
+  the next fix targets the real cause instead of guessing again.

@@ -4,7 +4,6 @@ import android.content.Context
 import android.content.res.ColorStateList
 import android.graphics.Color
 import android.graphics.Typeface
-import android.graphics.drawable.GradientDrawable
 import android.view.KeyEvent
 import android.view.MotionEvent
 import android.view.View
@@ -27,11 +26,13 @@ interface PadIo {
  * Select ON = arrows + Home / End are sent with Shift, so they extend the selection (the app must read key events, same limit as PC mode).
  * Arrows, Home / End and Backspace repeat while held. Built in code like the other panels; build() returns null on any problem.
  *
- * v0.46.0 (redesign): rows are grouped into rounded theme-aware cards (UiKit.cardBackground) instead of one flat
- * block, the status line is a small coloured badge instead of two lines of text, and a slim drag strip ("trackpad")
- * sits between the top row and the arrow grid: drag left/right/up/down on it to glide the cursor (or extend the
- * selection when Select is ON) without having to tap the small arrow keys one at a time. A new "Clear" key collapses
- * an active selection (cursor jumps to the right edge, Select switches back OFF) without leaving the pad.
+ * v0.46.0/v0.46.1 (redesign): rows are grouped into rounded theme-aware cards (UiKit.cardBackground) instead of
+ * one flat block, and the status line is a single-line coloured badge instead of two lines of text. The status
+ * line also doubles as a drag strip ("trackpad"): drag left/right/up/down on it to glide the cursor (or extend
+ * the selection when Select is ON) without tapping the small arrow keys one at a time (v0.46.1: moved onto the
+ * existing status line instead of its own row -- see the note on attachDrag() for why). A new "Clear" key (extras
+ * row) collapses an active selection (cursor jumps to the right edge, Select switches back OFF) without leaving
+ * the pad.
  */
 class PadPanel(private val ctx: Context, private val host: JabraHost, private val io: PadIo) {
 
@@ -80,44 +81,35 @@ class PadPanel(private val ctx: Context, private val host: JabraHost, private va
         return r
     }
 
-    // v0.46.0: wrap one or more rows in a rounded, theme-aware card (same look as the clipboard cards) so the
-    // pad reads as grouped sections (Move / Select & edit / Extras) instead of one flat block of keys.
+    // v0.46.1 (was v0.46.0): wrap one or more rows in a rounded, theme-aware card (same look as the clipboard
+    // cards). v0.46.0 used a 2dp margin + 1dp padding on every card, which (together with the drag strip as its
+    // own row) made the whole pad tall enough to cross MgbIme's capTall() cap on some devices/themes -> the pad
+    // got wrapped in a ScrollView there, and a ScrollView above a grid of small buttons swallows some taps as
+    // scroll gestures (the intermittent Top/Bottom/Select bugs). v0.46.1 trims the card to a 1dp margin and no
+    // extra padding, so the added height versus the pre-card layout is a few dp, not ~25dp per card.
     private fun cardWrap(vararg rows: LinearLayout): LinearLayout {
         val card = LinearLayout(ctx)
         card.orientation = LinearLayout.VERTICAL
         try { card.background = UiKit.cardBackground(ctx, prefs) } catch (_: Throwable) { }
         val lp = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
-        lp.setMargins(dp(2), dp(2), dp(2), dp(2))
+        lp.setMargins(dp(1), dp(1), dp(1), dp(1))
         card.layoutParams = lp
-        card.setPadding(dp(1), dp(1), dp(1), dp(1))
         for (r in rows) card.addView(r)
         return card
     }
 
-    // v0.46.0: slim drag strip between the top row and the arrow grid. Drag it like a trackpad to glide the
-    // cursor (Select ON = extend the selection instead) -- a steadier way to move more than one or two spaces
-    // than tapping the small arrow keys repeatedly. A plain tap does nothing (only drags trigger movement).
-    private fun trackpad(): View {
-        val stepDp = 16   // px moved on screen = one character / one line step
-        val step = dp(stepDp).coerceAtLeast(12)
-        val bar = TextView(ctx)
-        bar.text = "\u2500\u2500\u2500  drag to glide cursor  \u2500\u2500\u2500"
-        bar.textSize = 10f
-        bar.gravity = android.view.Gravity.CENTER
-        try { bar.setTextColor(JabraTokens.note(prefs)) } catch (_: Throwable) { bar.setTextColor(Color.parseColor("#777777")) }
-        try {
-            val bg = GradientDrawable()
-            bg.cornerRadius = JabraTokens.dp(ctx, JabraTokens.R_SM).toFloat()
-            bg.setColor(JabraTokens.withAlpha(JabraTokens.ACCENT, 28))
-            bar.background = bg
-        } catch (_: Throwable) { }
-        val lp = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(18))
-        lp.setMargins(dp(4), dp(2), dp(4), dp(2))
-        bar.layoutParams = lp
-        var lastX = 0f; var lastY = 0f; var accX = 0f; var accY = 0f; var dragged = false
+    // v0.46.1: the v0.46.0 trackpad was a brand-new row (+ ~22dp of height) between the top row and the arrow
+    // grid -- that extra row was the main reason the pad could cross capTall()'s cap (see cardWrap note above).
+    // Same drag-to-glide feature, zero extra height: the gesture is attached to the status line at the bottom,
+    // which the pad already had. Drag it like a trackpad to glide the cursor (Select ON = extend the selection);
+    // a plain tap does nothing (only drags trigger movement), so it still reads fine as a status line.
+    private fun attachDrag(bar: TextView) {
+        val step = dp(16).coerceAtLeast(12)
+        var lastX = 0f; var lastY = 0f; var accX = 0f; var accY = 0f
         bar.setOnTouchListener { v, e ->
             when (e.actionMasked) {
-                MotionEvent.ACTION_DOWN -> { lastX = e.rawX; lastY = e.rawY; accX = 0f; accY = 0f; dragged = false; true }
+                // must return true on DOWN or the OS never delivers the MOVE events that follow
+                MotionEvent.ACTION_DOWN -> { lastX = e.rawX; lastY = e.rawY; accX = 0f; accY = 0f; true }
                 MotionEvent.ACTION_MOVE -> {
                     val dx = e.rawX - lastX; val dy = e.rawY - lastY
                     lastX = e.rawX; lastY = e.rawY
@@ -134,13 +126,12 @@ class PadPanel(private val ctx: Context, private val host: JabraHost, private va
                         accY -= if (accY > 0) step else -step
                         fired = true
                     }
-                    if (fired) { try { host.feedback(v) } catch (_: Throwable) { }; dragged = true }
+                    if (fired) { try { host.feedback(v) } catch (_: Throwable) { } }
                     true
                 }
-                else -> { dragged = false; true }
+                else -> true
             }
         }
-        return bar
     }
 
     /** Key that fires at once and repeats while held (same helper as Backspace). */
@@ -196,7 +187,7 @@ class PadPanel(private val ctx: Context, private val host: JabraHost, private va
 
     private fun statusText(on: Boolean): String =
         (if (on) "\u25CF Select ON \u2014 blue keys extend the selection" else "\u25CB Select OFF \u2014 keys just move the cursor") +
-        (if (extras) " \u00b7 drag the bar above the arrows to glide" else "")
+        " \u00b7 drag this line to glide"
 
     // v0.10.14 (D2.4): note() = UiKit.noteText (11sp, note colour, 6 / 2dp padding). Old body kept as noteOld() = fallback.
     private fun note(text: String): TextView {
@@ -241,9 +232,6 @@ class PadPanel(private val ctx: Context, private val host: JabraHost, private va
         try { RepeatKeyHelper({ host.backspace() }, { v -> try { host.feedback(v) } catch (_: Throwable) { } }).attach(bs) } catch (_: Throwable) { }
         r1.addView(bs)
         root.addView(cardWrap(r1))
-
-        // v0.46.0: drag strip -- glides the cursor (or extends the selection) without tapping the arrows one at a time.
-        try { root.addView(trackpad()) } catch (_: Throwable) { }
 
         val r2 = row()
         r2.addView(track(held("Home") { move(KeyEvent.KEYCODE_MOVE_HOME) }))
@@ -296,10 +284,12 @@ class PadPanel(private val ctx: Context, private val host: JabraHost, private va
             root.addView(cardWrap(r5, r6))
         }
 
-        // v0.46.0: single-line coloured status badge (was a two-line plain note).
+        // v0.46.1: single-line coloured status badge (was a two-line plain note); also doubles as the drag strip
+        // (attachDrag) so the glide feature costs no extra row / height.
         val st = note("")
         st.gravity = android.view.Gravity.CENTER
         statusView = st
+        try { attachDrag(st) } catch (_: Throwable) { }
         root.addView(st)
         paintSelect()
         return root
