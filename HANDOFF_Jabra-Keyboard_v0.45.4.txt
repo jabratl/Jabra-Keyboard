@@ -1,8 +1,0 @@
-HANDOFF Jabra-Keyboard v0.45.4 - cursor pad: Settings switch pad_extra + PgUp / PgDn; extra keys in 2 lower rows. Includes v0.45.1 - v0.45.3.
-
-Rules of work: HANDOFF.txt section 0 (patch do not rewrite, ONLY changed files in the zip + handoff). Newest CHANGELOG entry = v0.45.4.
-
-1. STATE: repo = v0.45.4. Builds of v0.42.0 .. v0.45.4 NOT confirmed; Kotlin NEVER compiled in the chat. v0.44.0 / v0.45.0 (Find & Replace floating window) still NOT phone tested. All 177 Java tests green.
-- v0.45.1 Top / Bottom stages; v0.45.2 pad layout + Select ON look; v0.45.3 Word / Line / Undo / Redo + PadWord fallback + capTall "pad"; v0.45.4 pref pad_extra (Settings > Tools & Panels, default ON; registered in SettingsGroups, SectionPlan BASIC, ChangedPlan "Toolbar", SettingsIndex, HelpPlan) + PgUp / PgDn; PadPanel rows 5 (Word, Word, PgUp, PgDn) and 6 (Line, Undo, Redo) at 85% key height (pk / held got an h parameter).
-
-2. NEXT: owner tests CHECKLIST ZE, ZF, ZG, ZH (screenshots if a look is wrong). Open ideas (not built): hold-to-accelerate for arrows; Word select / plain paste key. Then floating window phone results (ZC, ZD) / PLAN_RP_FLOAT.
