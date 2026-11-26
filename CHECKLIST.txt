@@ -1440,3 +1440,13 @@ ZK. FORMATTER FLOATING RESULT WINDOW (v0.45.7) - test ZJ first
  [ ] ABC / another panel / hiding the keyboard: the window is gone.
  [ ] Settings > Tools & Panels > "Formatter: floating result window" OFF: no window, the small live box is used (as v0.45.6). ON again: the window is back.
  [ ] If the window does not show or is off screen: the small box appears instead; send a screenshot + phone model.
+
+ZL. CLIPBOARD LIMITS (v0.49.0) - test ZK first
+ [ ] Settings > Clipboard & tools: rows "Clips kept in Recent" (100) and "Longest copied text (k characters)" (100k) are there, [-] / [+] work, tapping the number lets you type a value (clamped to 10 - 300 and 5 - 200).
+ [ ] Copy a very long text (e.g. 50000 chars) in another app: it appears in the clipboard as one clip. Copy 120000 chars: it is NOT saved (limit 100k).
+ [ ] Set "Longest copied text" to 5k, copy 8000 chars: not saved. Old long clips are still in the list after you close and reopen the keyboard.
+ [ ] Set "Clips kept in Recent" to 10, copy one new text: the list shrinks to 10 (+ pinned). Set it back to 100: nothing comes back (expected).
+ [ ] Edit a long clip (more than 2000 chars): Save works, the counter shows "/20000".
+ [ ] Pin more than 30 clips: it works up to 50, then "Pinned N of M (limit 50)".
+ [ ] Restart the phone: clips and pinned clips are all still there; copying is not slower than before.
+ [ ] Backup / restore: the two new settings are restored.

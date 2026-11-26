@@ -106,6 +106,8 @@ public final class HelpPlan {
             case "clip_slimbar": return "Select mode: lower bottom bar with icon + one word; the count moves into Done. OFF = old bar.";   // v0.35.0 (CC3-A)
             case "clip_compact2": return "Undo is a small arrow at the end of the filter row; no count line. OFF = old two rows.";   // v0.34.0 (CC2)
             case "clip_compact": return "Lower clipboard top row, more room for clips. OFF = old header.";   // v0.33.0 (CC1)
+            case "clip_keep_n": return "How many copied clips stay in Recent (pinned clips are extra). Oldest go first.";   // v0.49.0
+            case "clip_cap_k": return "Longest text that is saved when you copy (in thousands of characters).";   // v0.49.0
             case "clip_tidy": return "Clipboard rows as cards: pin on the left, x on the right. OFF = old rows.";   // v0.18.4
             case "clip_img": return "Copied pictures and screenshots show on top of the clipboard. Tap = paste, hold = delete.";
             case "lp_punct": return "Hold , or . and slide over more symbols. Lift without moving = old long-press.";

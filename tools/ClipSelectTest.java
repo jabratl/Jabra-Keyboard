@@ -65,11 +65,11 @@ public class ClipSelectTest {
         ok(s.count() == 1, "prune keeps existing");
         List<ClipList.Item> copy = s.selection(); copy.clear();
         ok(s.count() == 1, "selection() is a copy");
-        // pin limit: 30
+        // pin limit (v0.49.0: ClipList.MAX_PINNED, was 30)
         ClipList d = new ClipList();
-        for (int i = 0; i < 35; i++) d.add("x" + i);
+        for (int i = 0; i < ClipList.MAX_PINNED + 5; i++) d.add("x" + i);
         ClipSelect t = new ClipSelect(); t.enter(); t.selectAll(d.view(""));
-        ok(t.count() == 35 && d.setPinned(t.selection(), true) == ClipList.MAX_PINNED && d.pinnedCount() == ClipList.MAX_PINNED, "pin stops at limit");
+        ok(t.count() == ClipList.MAX_PINNED + 5 && d.setPinned(t.selection(), true) == ClipList.MAX_PINNED && d.pinnedCount() == ClipList.MAX_PINNED, "pin stops at limit");
         t.prune(null);
         ok(t.count() == 0, "prune(null) clears");
         System.out.println(total - fail + "/" + total + " passed");

@@ -38,7 +38,10 @@ import com.mgb.keyboard.typing.PanelLayout   // v0.16.9 (X9)
 class ClipStore(private val prefs: JabraPrefs, private val fmt: ClipFmtStore? = null) {   // v0.17.39 (M6): fmt = remembered html formats (null = none)
     private var list: ClipList = try { ClipList.parse(prefs.str("clips_v1", "")) } catch (_: Throwable) { ClipList() }   // v0.10.10: var (reload after "Clear clipboard history now")
 
-    init { live = this }   // v0.10.10 (W4)
+    init { live = this; applyLimits() }   // v0.10.10 (W4); v0.49.0: + the Settings limits
+
+    /** v0.49.0: gives ClipList the limits from Settings (clip_keep_n, clip_cap_k in thousands). Never throws; any problem = the defaults stay. */
+    private fun applyLimits() { try { ClipList.configure(prefs.int("clip_keep_n", ClipList.MAX_UNPINNED), prefs.int("clip_cap_k", ClipList.MAX_CAPTURE / 1000) * 1000) } catch (_: Throwable) { } }
 
     /** v0.10.10 (W4): re-reads the list from prefs (used after the Privacy page cleared it) and drops meta of clips that are gone. */
     fun reload() { try { list = ClipList.parse(prefs.str("clips_v1", "")); if (meta.prune(list.view(""))) saveMeta(); fmt?.reload(); pruneFmt() } catch (_: Throwable) { } }
@@ -117,9 +120,9 @@ class ClipStore(private val prefs: JabraPrefs, private val fmt: ClipFmtStore? = 
         }
     } catch (_: Throwable) { 0 }
 
-    fun add(t: String) { try { val isNew = !has(t); if (list.add(t)) save(); if (isNew) { meta.made(t, System.currentTimeMillis()); saveMeta() } else if (prefs.bool("clip_sens", false) && ClipSensitive.looksLikeCode(t)) { meta.remake(t, System.currentTimeMillis()); saveMeta() }; expireNow() } catch (_: Throwable) { } }   // v0.4.3: records "made" for new clips
+    fun add(t: String) { try { applyLimits(); val isNew = !has(t); if (list.add(t)) save(); if (isNew) { meta.made(t, System.currentTimeMillis()); saveMeta() } else if (prefs.bool("clip_sens", false) && ClipSensitive.looksLikeCode(t)) { meta.remake(t, System.currentTimeMillis()); saveMeta() }; expireNow() } catch (_: Throwable) { } }   // v0.4.3: records "made" for new clips
     /** v0.16.15 (E3): for text copied in other apps: long texts (up to ClipList.MAX_CAPTURE) are kept. Same bookkeeping as add(). */
-    fun addCaptured(t: String) { try { val isNew = !has(t); if (list.addCaptured(t)) save(); if (isNew && has(t)) { meta.made(t, System.currentTimeMillis()); saveMeta() } else if (!isNew && prefs.bool("clip_sens", false) && ClipSensitive.looksLikeCode(t)) { meta.remake(t, System.currentTimeMillis()); saveMeta() }; expireNow() } catch (_: Throwable) { } }
+    fun addCaptured(t: String) { try { applyLimits(); val isNew = !has(t); if (list.addCaptured(t)) save(); if (isNew && has(t)) { meta.made(t, System.currentTimeMillis()); saveMeta() } else if (!isNew && prefs.bool("clip_sens", false) && ClipSensitive.looksLikeCode(t)) { meta.remake(t, System.currentTimeMillis()); saveMeta() }; expireNow() } catch (_: Throwable) { } }
     /** v0.17.39 (M6): same as addCaptured(t) and remembers the html copied with it (null = plain copy: an old stored format of the same text goes). */
     fun addCaptured(t: String, html: String?) {
         addCaptured(t)

@@ -94,23 +94,23 @@ public class ClipTest {
         q3.addCaptured(big);
         ClipList q3b = ClipList.parse(q3.serialize());
         ok(q3b.size() == 1 && q3b.view("").get(0).text.equals(big), "E3: 15000-char clip survives save / load");
-        ok(ClipList.parse("0," + new String(new char[ClipList.MAX_CAPTURE + 1]).replace('\0', 'x')).size() == 0, "E3: parse skips > MAX_CAPTURE");
+        ok(ClipList.parse("0," + new String(new char[ClipList.CAPTURE_CEIL + 1]).replace('\0', 'x')).size() == 0, "E3: parse skips > CAPTURE_CEIL (v0.49.0: the hard ceiling)");
         ok(ClipList.parse("0," + new String(new char[ClipList.MAX_CAPTURE]).replace('\0', 'x')).size() == 1, "E3: parse keeps MAX_CAPTURE");
         ClipList q4 = new ClipList();
         String last = null;
-        for (int i = 0; i < 12; i++) { last = "n" + i + new String(new char[19990]).replace('\0', 'w'); q4.addCaptured(last); }
+        for (int i = 0; i < 40; i++) { last = "n" + i + new String(new char[19990]).replace('\0', 'w'); q4.addCaptured(last); }
         int tot = 0; for (ClipList.Item i : q4.view("")) tot += i.text.length();
-        ok(tot <= ClipList.MAX_UNPINNED_CHARS && q4.size() == 7, "E3: char budget keeps 7 big clips, got " + q4.size());
+        ok(tot <= ClipList.MAX_UNPINNED_CHARS && q4.size() == ClipList.MAX_UNPINNED_CHARS / 20000, "E3: char budget keeps " + (ClipList.MAX_UNPINNED_CHARS / 20000) + " big clips, got " + q4.size());
         ok(q4.view("").get(0).text.equals(last), "E3: newest big clip is kept");
         ClipList q5 = new ClipList();
         String keep = "KEEP" + new String(new char[19990]).replace('\0', 'p');
         q5.addCaptured(keep); q5.togglePin(q5.view("").get(0));
-        for (int i = 0; i < 12; i++) q5.addCaptured("m" + i + new String(new char[19990]).replace('\0', 'w'));
+        for (int i = 0; i < 40; i++) q5.addCaptured("m" + i + new String(new char[19990]).replace('\0', 'w'));
         boolean kept = false; for (ClipList.Item i : q5.view("")) if (i.pinned && i.text.equals(keep)) kept = true;
         ok(kept, "E3: pinned long clip is never dropped by the budget");
         ClipList q6 = new ClipList();
-        for (int i = 0; i < 100; i++) q6.addCaptured("short" + i);
-        ok(q6.size() == ClipList.MAX_UNPINNED && q6.view("").get(0).text.equals("short99"), "E3: count limit still applies");
+        for (int i = 0; i < ClipList.MAX_UNPINNED + 20; i++) q6.addCaptured("short" + i);
+        ok(q6.size() == ClipList.MAX_UNPINNED && q6.view("").get(0).text.equals("short" + (ClipList.MAX_UNPINNED + 19)), "E3: count limit still applies");
         ClipList.Item big1 = q1.view("").get(0);
         ok(q1.replace(big1, big1.text) == 0 || q1.replace(big1, big1.text) == 2, "E3: replace never throws on a long clip");
         System.out.println((total - fail) + "/" + total + " passed");

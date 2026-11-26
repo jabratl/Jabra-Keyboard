@@ -1,0 +1,21 @@
+HANDOFF - Jabra Keyboard - Clipboard limits - v0.49.0
+
+WHAT: clipboard limits are bigger and adjustable.
+  - Defaults: Recent 100 clips (was 40), pinned 50 (was 30), Add / Edit 20000 chars (was 2000), copied text 100000 chars (was 20000), Recent text budget 300000 chars (was 150000).
+  - Settings > Clipboard & tools: "Clips kept in Recent" (pref clip_keep_n, 10-300) and "Longest copied text (k characters)" (pref clip_cap_k, 5-200).
+  - ClipList.configure(unpinned, capture) sets the limits; ClipStore.applyLimits() calls it on init and before every add() / addCaptured().
+  - Lowering a limit deletes nothing until the next copy. parse() accepts clips up to ClipList.CAPTURE_CEIL (200000), so a lower setting never drops saved clips.
+  - Hard ceilings: UNPINNED_CEIL 300, CAPTURE_CEIL 200000, CHARS_CEIL 600000 (budget = max(300000, 3 x capture), capped).
+
+FILES (same paths, overwrite / add):
+  app/src/main/java/com/mgb/keyboard/clip/ClipList.java
+  app/src/main/java/com/mgb/keyboard/ClipboardFeature.kt        (init + applyLimits + 2 calls)
+  app/src/main/java/com/mgb/keyboard/SettingsGroups.kt          (2 stepper rows)
+  app/src/main/java/com/mgb/keyboard/typing/SectionPlan.java, ChangedPlan.java, HelpPlan.java, SettingsIndex.java   (register the 2 keys)
+  app/build.gradle.kts (0.49.0), CHANGELOG.txt, CHECKLIST.txt (ZL)
+  tools/ClipTest.java, tools/ClipSelectTest.java (limits now use the constants), tools/ClipLimitTest.java (NEW, 22 checks)
+
+CHECKS DONE: ClipLimitTest 22/22, ClipTest 55/55, ClipSelectTest 26/26, ClipEditTest, ClipListHTest, ClipMetaTest, HealthTest, HelpPlanTest, SettingsIndexTest, ChangedPlanTest, ClipFilterTest green.
+  SettingsHelpTest + SectionPlanTest: only the OLD reds remain (auto_pad_select, pad_speed, pad_delay have no settings entry / help line); they also fail on the untouched upload.
+NOT TESTED: Kotlin NOT compiled here. If the GitHub build fails, paste the error log. Likely spots: the 2 stepper lines in SettingsGroups.kt and applyLimits() in ClipboardFeature.kt.
+PHONE TEST: CHECKLIST ZL. Watch the speed of copy / paste with a full history of long Bangla clips (stored URL-encoded).

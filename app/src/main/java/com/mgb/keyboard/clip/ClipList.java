@@ -11,13 +11,43 @@ import java.util.List;
  * Saved format (one string): lines "<0|1>,<url-encoded text>".
  */
 public final class ClipList {
-    public static final int MAX_UNPINNED = 40;
-    public static final int MAX_PINNED = 30;
-    public static final int MAX_LEN = 2000;
-    /** v0.16.15 (E3): texts COPIED in other apps are kept up to this length (the Add / Edit buttons still use MAX_LEN). */
-    public static final int MAX_CAPTURE = 20000;
-    /** v0.16.15 (E3): total characters of all UNPINNED clips; the oldest unpinned clips go first. Pinned clips are never touched. */
-    public static final int MAX_UNPINNED_CHARS = 150000;
+    // v0.49.0: bigger defaults + the two main limits can be changed in Settings (pref clip_keep_n, clip_cap_k).
+    // The MAX_* values are the DEFAULTS. The "current" limits below start with them and are set by configure().
+    public static final int MAX_UNPINNED = 100;   // was 40: clips kept in Recent
+    public static final int MAX_PINNED = 50;      // was 30
+    public static final int MAX_LEN = 20000;      // was 2000: Add / Edit button (same as the Vault)
+    /** v0.16.15 (E3): texts COPIED in other apps are kept up to this length (the Add / Edit buttons use MAX_LEN). v0.49.0: default 100000 (was 20000). */
+    public static final int MAX_CAPTURE = 100000;
+    /** v0.16.15 (E3): total characters of all UNPINNED clips; the oldest unpinned clips go first. Pinned clips are never touched. v0.49.0: default 300000 (was 150000). */
+    public static final int MAX_UNPINNED_CHARS = 300000;
+
+    /** v0.49.0: hard ceilings = what Settings can ask for at most. parse() uses CAPTURE_CEIL so a lower setting never deletes saved clips. */
+    public static final int UNPINNED_CEIL = 300;
+    public static final int CAPTURE_CEIL = 200000;
+    public static final int CHARS_CEIL = 600000;
+
+    private static volatile int curUnpinned = MAX_UNPINNED;
+    private static volatile int curCapture = MAX_CAPTURE;
+    private static volatile int curChars = MAX_UNPINNED_CHARS;
+
+    /**
+     * v0.49.0: sets the limits from the Settings values. unpinned = clips kept in Recent (10..UNPINNED_CEIL),
+     * capture = longest copied text in characters (5000..CAPTURE_CEIL). The total-characters budget follows the capture
+     * limit (3 x, never below the default, never above CHARS_CEIL). Out of range = clamped. Never throws.
+     * Lowering a limit never deletes anything by itself: the list is trimmed the next time a clip is added.
+     */
+    public static void configure(int unpinned, int capture) {
+        int u = unpinned < 10 ? 10 : (unpinned > UNPINNED_CEIL ? UNPINNED_CEIL : unpinned);
+        int c = capture < 5000 ? 5000 : (capture > CAPTURE_CEIL ? CAPTURE_CEIL : capture);
+        long t = Math.max((long) MAX_UNPINNED_CHARS, 3L * c);
+        curUnpinned = u;
+        curCapture = c;
+        curChars = (int) Math.min(t, (long) CHARS_CEIL);
+    }
+
+    public static int maxUnpinned() { return curUnpinned; }
+    public static int maxCapture() { return curCapture; }
+    public static int maxUnpinnedChars() { return curChars; }
 
     public static final class Item {
         public final String text;
@@ -41,7 +71,7 @@ public final class ClipList {
         items.add(0, new Item(t, false));
         int unpinned = 0;
         for (int i = 0; i < items.size(); i++) {
-            if (!items.get(i).pinned && ++unpinned > MAX_UNPINNED) { items.remove(i); i--; }
+            if (!items.get(i).pinned && ++unpinned > curUnpinned) { items.remove(i); i--; }
         }
         return true;
     }
@@ -53,7 +83,7 @@ public final class ClipList {
      * The newest clip is never dropped by the character budget. add() is unchanged (MAX_LEN).
      */
     public boolean addCaptured(String t) {
-        if (t == null || t.trim().length() == 0 || t.length() > MAX_CAPTURE) return false;
+        if (t == null || t.trim().length() == 0 || t.length() > curCapture) return false;
         for (int i = 0; i < items.size(); i++) {
             if (items.get(i).text.equals(t)) {
                 if (i == 0) return false;
@@ -67,9 +97,9 @@ public final class ClipList {
         long chars = 0;
         for (int i = 0; i < items.size(); i++) {
             if (items.get(i).pinned) continue;
-            if (++unpinned > MAX_UNPINNED) { items.remove(i); i--; } else chars += items.get(i).text.length();
+            if (++unpinned > curUnpinned) { items.remove(i); i--; } else chars += items.get(i).text.length();
         }
-        for (int i = items.size() - 1; i > 0 && chars > MAX_UNPINNED_CHARS; i--) {
+        for (int i = items.size() - 1; i > 0 && chars > curChars; i--) {
             Item x = items.get(i);
             if (!x.pinned) { chars -= x.text.length(); items.remove(i); }
         }
@@ -203,7 +233,7 @@ public final class ClipList {
                 int comma = line.indexOf(',');
                 if (comma != 1) continue;
                 String text = URLDecoder.decode(line.substring(2), "UTF-8");
-                if (text.trim().length() == 0 || text.length() > MAX_CAPTURE) continue;   // v0.16.15 (E3): was MAX_LEN, long copied clips must survive a restart
+                if (text.trim().length() == 0 || text.length() > CAPTURE_CEIL) continue;   // v0.16.15 (E3): long copied clips must survive a restart; v0.49.0: hard ceiling, so a lower Settings value never drops saved clips
                 c.items.add(new Item(text, line.charAt(0) == '1'));   // keeps saved order (newest first)
             } catch (Exception e) { /* skip bad line */ }
         }

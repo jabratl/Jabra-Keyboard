@@ -748,6 +748,10 @@ object SettingsGroups {
             level(g, "Clip auto-delete (unpinned)", "clip_expire", 0, com.mgb.keyboard.clip.ClipMeta.EXPIRE_NAMES)   // v0.4.3
             stepper(g, "Undo limit (clips kept, 0 = off)", "clip_undo_n", 0, com.mgb.keyboard.clip.ClipTrash.MAX_LIMIT, 10, "",
                 { com.mgb.keyboard.clip.ClipTrash.sanitize(prefs.int("clip_undo_n", com.mgb.keyboard.clip.ClipTrash.DEFAULT_LIMIT)) }, com.mgb.keyboard.clip.ClipTrash.DEFAULT_LIMIT)   // v0.18.4: Undo / Recently deleted keeps this many clips (default 30)
+            stepper(g, "Clips kept in Recent", "clip_keep_n", 10, com.mgb.keyboard.clip.ClipList.UNPINNED_CEIL, 10, "",
+                { prefs.int("clip_keep_n", com.mgb.keyboard.clip.ClipList.MAX_UNPINNED).coerceIn(10, com.mgb.keyboard.clip.ClipList.UNPINNED_CEIL) }, com.mgb.keyboard.clip.ClipList.MAX_UNPINNED)   // v0.49.0: how many unpinned clips the history keeps (default 100, was a fixed 40)
+            stepper(g, "Longest copied text (k characters)", "clip_cap_k", 5, com.mgb.keyboard.clip.ClipList.CAPTURE_CEIL / 1000, 5, "k",
+                { prefs.int("clip_cap_k", com.mgb.keyboard.clip.ClipList.MAX_CAPTURE / 1000).coerceIn(5, com.mgb.keyboard.clip.ClipList.CAPTURE_CEIL / 1000) }, com.mgb.keyboard.clip.ClipList.MAX_CAPTURE / 1000)   // v0.49.0: longest copied text that is saved (default 100k, was a fixed 20k)
             toggle(g, "Show copied images (screenshots)", "clip_img", true)   // v0.18.1: thumbnails on top of the clipboard; tap = paste, hold = delete; OFF = none stored
             toggle(g, "Stay in clipboard after paste", "clip_stay", true)   // v0.17.37 (M4): OFF = old way, back to letters
             toggle(g, "Paste keeps format (card tap)", "clip_fmt_tap", true)   // v0.17.40 (M7): the Aa tag on a card does the other way
