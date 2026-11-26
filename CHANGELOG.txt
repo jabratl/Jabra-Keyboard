@@ -1,3 +1,15 @@
+v0.51.0 - NEW: cursor pad "mock look" (from cursor-pad-redesign-mock.html): top bar, one big trackpad, D-pad + jump keys, 2 edit rows, live status line
+- SEEN/WHY: owner made a design mock in another chat and asked for exactly that design in the keyboard. Every pad action stays (arrows, Home / End, Word, PgUp / PgDn, Top / Bottom, All, Line, Copy, Cut, Paste, Undo, Redo, Backspace, double / triple tap, auto-open); the look and the grouping change.
+- WHAT (1, TOP BAR): ABC | "Cursor" | speed pill (tap = Slow / Normal / Fast, saved in pref pad_speed, no Settings trip) | Select pill.
+- WHAT (2, TRACKPAD): ONE big pad (dashed outline; solid blue + "Drag to select" while Select is ON). Drag = glide, 2 taps = word, 3 taps = line. It replaces the thin status line that carried the drag before. A ScrollView around the pad can no longer steal the drag.
+- WHAT (3, KEYS): left = D-pad with a ROUND Select key in the middle; right = jump keys in 2 columns (Word left / right, Home / End, PgUp / PgDn, Top / Bottom). Select ON = Select key + pill strong blue, every moving key soft blue (as before).
+- WHAT (4, EDIT): row 1 = All, Line, Copy, Cut, Paste; row 2 = Undo, Redo, Backspace, Backspace Word (NEW, held = word after word), Delete (NEW, forward delete). Red text only on the 3 delete keys.
+- WHAT (5, STATUS LINE): live "Ln 2, Col 7  .  12 chars, 3 words selected" (NEW, follows the cursor; short "Copied" / "Cut" / "Nothing selected" / "Glide: Fast" messages for 0.9 s).
+- CHANGED: the "Clear" key is gone. Turning Select OFF while text is selected now drops the selection (cursor to its right edge), same result as Clear.
+- SETTING: "Cursor pad: extra keys" (pad_extra, default ON) now means Word / PgUp / PgDn / Line / Undo / Redo / Backspace Word; OFF = basic keys only.
+- FILES: PadPanel.kt (rewritten), MgbIme.kt (padIo: delWord / delFwd / info + padPanel.refresh() in onUpdateSelection), NEW typing/PadInfo.java, HelpPlan.java, SettingsIndex.java, SettingsGroups.kt (text only), build.gradle.kts (version).
+- NOT COMPILED HERE (no Kotlin toolchain in the sandbox): build in GitHub Actions. To go back to the old pad: REVERT.txt (v0.50.0).
+
 v0.50.0 - NEW: clipboard "mock look" (from clipboard-compact-redesign-mock.html): underline tabs, one-line pinned strip, one clip = one line, swipe pin / delete, small thumbnails
 - SEEN/WHY: owner made a design mock in another chat and asked for exactly that design in the keyboard. Every old clipboard option stays; only the look changes.
 - WHAT (1, TABS): the Filter / Sort / View pills are replaced by one row of underline tabs with counts (All 12 | Pinned 3 | Text | Links | Numbers); the chosen tab has a line under it. The Undo icon stays at the end of this row. Sort and View moved into the 3-dot menu (they are listed there now).

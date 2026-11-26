@@ -107,6 +107,9 @@ class MgbIme : InputMethodService() {
         override fun edit(kind: String) { this@MgbIme.editAction(kind) }
         override fun jump(top: Boolean, selectOn: Boolean) { this@MgbIme.padJump(top, selectOn) }   // v0.17.36 (M3)
         override fun word(left: Boolean, selectOn: Boolean) { this@MgbIme.padWord(left, selectOn) }   // v0.45.3
+        override fun delWord() { this@MgbIme.padDelWord() }   // v0.51.0: pad key "Backspace Word"
+        override fun delFwd() { this@MgbIme.padDelFwd() }   // v0.51.0: pad key forward Delete
+        override fun info(): IntArray? = this@MgbIme.padInfo()   // v0.51.0: live status line (Ln / Col / selection count)
     }
     private val tbHost = object : ToolbarHost {   // v0.2.1
         override fun makeKey(id: String): Button? = this@MgbIme.toolbarKey(id)
@@ -591,6 +594,7 @@ class MgbIme : InputMethodService() {
             }
         } catch (_: Throwable) { }
         selNowS = newSelStart; selNowE = newSelEnd   // v0.48.0: the auto-pad timer re-checks this when it fires
+        try { if (inPanel && shownPanel == "pad") padPanel.refresh() } catch (_: Throwable) { }   // v0.51.0: the pad's status line follows the cursor
         try { sg.selection(newSelStart, newSelEnd) } catch (_: Throwable) { }   // v0.10.23 (W9): remember the selection (plain assignment)
         try { sg.schedule() } catch (_: Throwable) { }   // v0.10.1 (G2): cursor moved / deleted
         val kind = pendingKind; pendingKind = com.mgb.keyboard.typing.AutoCapGate.E_JUMP   // v0.6.1: consume once; anything we did not type = JUMP
@@ -1427,6 +1431,51 @@ class MgbIme : InputMethodService() {
             }
             if (!selectOn) padWordText(ic, left)
         } catch (_: Throwable) { }
+    }
+
+    /** v0.51.0: pad key "Backspace Word": a selection = delete it, else one word before the cursor. Same rules as the long-hold word delete. */
+    private fun padDelWord() {
+        try {
+            pendingKind = com.mgb.keyboard.typing.AutoCapGate.E_BACKSPACE
+            if (selNowS != selNowE && deleteSelectionNow()) return
+            onBackspaceWord()
+        } catch (_: Throwable) { }
+    }
+
+    /** v0.51.0: pad key forward Delete: a selection = delete it, else the character after the cursor (Delete key; fallback deleteSurroundingText). */
+    private fun padDelFwd() {
+        try {
+            pendingKind = com.mgb.keyboard.typing.AutoCapGate.E_BACKSPACE
+            commitWord()
+            if (selNowS != selNowE && deleteSelectionNow()) return
+            val ic = currentInputConnection ?: return
+            if (!InputSafe.key(ic, KeyEvent.KEYCODE_FORWARD_DEL, 0)) ic.deleteSurroundingTextInCodePoints(0, 1)
+        } catch (_: Throwable) { }
+    }
+
+    /**
+     * v0.51.0: numbers for the pad's status line {line, column, selected chars, selected words} (-1 = not known).
+     * Whole text (getExtractedText, under 100000 chars) gives everything; otherwise the text around the cursor gives the column and the
+     * selection count only. Password fields say nothing. Any problem = null (the pad shows an empty status).
+     */
+    private fun padInfo(): IntArray? {
+        try {
+            if (pwdField) return null
+            val ic = currentInputConnection ?: return null
+            val req = android.view.inputmethod.ExtractedTextRequest()
+            req.hintMaxChars = 100000
+            req.hintMaxLines = 2000
+            val ex = try { ic.getExtractedText(req, 0) } catch (_: Throwable) { null }
+            val t = ex?.text
+            if (ex != null && t != null && ex.selectionStart >= 0 && ex.selectionEnd >= 0 && ex.startOffset == 0 && ex.partialStartOffset < 0 && t.length < 100000) {
+                return com.mgb.keyboard.typing.PadInfo.compute(t, ex.selectionStart, ex.selectionEnd)
+            }
+            val sel = ic.getSelectedText(0)?.toString() ?: ""
+            val before = ic.getTextBeforeCursor(2000, 0)?.toString() ?: return null
+            val nl = before.lastIndexOf('\n')
+            val col = if (nl >= 0) before.length - nl else if (before.length < 2000) before.length + 1 else com.mgb.keyboard.typing.PadInfo.UNKNOWN
+            return intArrayOf(com.mgb.keyboard.typing.PadInfo.UNKNOWN, col, sel.codePointCount(0, sel.length), com.mgb.keyboard.typing.PadInfo.words(sel))
+        } catch (_: Throwable) { return null }
     }
 
     /** v0.45.3: a short fingerprint of the text around the cursor (empty = the app does not say). */

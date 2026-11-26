@@ -1,0 +1,18 @@
+HANDOFF - Jabra Keyboard - Cursor pad mock look - v0.51.0
+
+SOURCE: cursor-pad-redesign-mock.html (design made in another chat). Layout = top bar, trackpad, D-pad + jump keys, 2 edit rows, status line.
+
+FILES TOUCHED (overwrite, same paths):
+  app/build.gradle.kts                                   (appVersionName 0.51.0)
+  app/src/main/java/com/mgb/keyboard/PadPanel.kt          (rewritten: PadIo got delWord / delFwd / info; new make(); refresh())
+  app/src/main/java/com/mgb/keyboard/MgbIme.kt            (padIo: 3 new members; padDelWord / padDelFwd / padInfo; padPanel.refresh() in onUpdateSelection)
+  app/src/main/java/com/mgb/keyboard/SettingsGroups.kt    (comments / texts only)
+  app/src/main/java/com/mgb/keyboard/typing/HelpPlan.java (pad_speed, pad_extra help text)
+  app/src/main/java/com/mgb/keyboard/typing/SettingsIndex.java (same, search text)
+NEW: app/src/main/java/com/mgb/keyboard/typing/PadInfo.java (pure Java: words(), compute(), text())
+     CHANGELOG.txt (entry on top), this file.
+
+RULES KEPT: PadGesture.java (speed, delay, tap counter, glide) and PadState.java are unchanged. Auto-open, forceSelectOn(), reset(), keepSelect all unchanged.
+HEIGHT: every row is a % of host.keyHeightDp(); total about the same as v0.50.0, so capTall() does not add a ScrollView.
+STATUS: padInfo() reads getExtractedText (< 100000 chars) for Ln / Col; else only Col + selection count. Password field = empty status. refresh() is debounced 60 ms.
+NOT COMPILED HERE - build in GitHub Actions, check the "v0.51.0" lines if red.

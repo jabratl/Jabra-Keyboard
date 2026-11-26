@@ -192,8 +192,8 @@ public final class SettingsIndex {
             case "fmt_on": return "Shows the Aa novel formatter button.";
             case "fmt_float": return "Formatter: after Preview, the exact result floats over the screen and updates live. OFF = a small box inside the panel.";   // v0.45.7
             case "pad_delay": return "Cursor pad: auto-open delay - Instant / Short / Normal / Long.";   // v0.48.1
-            case "pad_speed": return "Cursor pad: trackpad (drag) speed - Slow / Normal / Fast.";   // v0.48.0
-            case "pad_extra": return "Cursor pad: extra rows with Word, PgUp / PgDn, Line, Undo, Redo. OFF = the 4 old rows.";   // v0.45.4
+            case "pad_speed": return "Cursor pad: trackpad (drag) speed - Slow / Normal / Fast (also the pill at the top of the pad).";   // v0.48.0
+            case "pad_extra": return "Cursor pad: extra keys Word, PgUp / PgDn, Line, Undo, Redo, Backspace Word. OFF = basic keys only.";   // v0.45.4
             case "clip_lines": return "How many lines of each clip are shown in the clipboard.";
             case "clip_view": return "Clipboard as a list or as 2-column cards.";
             case "clip_order": return "Which group comes first in the clipboard: Pinned or Recent (List and Cards).";   // v0.15.2

@@ -100,8 +100,8 @@ public final class HelpPlan {
             case "clip_fold": return "Clipboard: tap the title to hide the Filter row, tap the arrow before Pinned / Recent to fold it. Select mode and search show all. OFF = nothing folds.";   // v0.43.0
             case "fmt_float": return "Formatter: after you tap Preview, the exact result (or the original) floats over the screen, scrolls, and updates when you change an option. Move it by its title. OFF = a small box inside the panel.";   // v0.45.7
             case "pad_delay": return "Cursor pad: how long selected text must stay selected before the pad opens by itself. Instant = at once, Long = 0.3 s. Longer = fewer accidental opens while reading.";   // v0.48.1
-            case "pad_speed": return "Cursor pad: how fast dragging the status line glides the cursor. Slow = more finger travel per step, Fast = less. Normal = the old speed.";   // v0.48.0
-            case "pad_extra": return "Cursor pad: extra rows with Word left / right, PgUp / PgDn, select Line, Undo and Redo. OFF = the 4 old rows. Open the pad again to see it.";   // v0.45.4
+            case "pad_speed": return "Cursor pad: how fast dragging the big trackpad glides the cursor. Slow = more finger travel per step, Fast = less. Normal = the old speed. The pill at the top of the pad changes it with one tap.";   // v0.48.0
+            case "pad_extra": return "Cursor pad: extra keys = Word left / right, PgUp / PgDn, select Line, Undo, Redo and Backspace Word. OFF = only the basic keys (arrows, Home / End, Top / Bottom, All, Copy, Cut, Paste, Backspace, Delete). Open the pad again to see it.";   // v0.45.4
             case "clip_paste2": return "Select mode: if a selected clip has a format, Paste becomes Aa (with format) and T (plain text). OFF = one Paste button.";   // v0.43.0
             case "clip_float": return "Clipboard: Pin / Delete / Paste / More float as a small pill over the list, only while clips are selected. OFF = slim bar under the list.";   // v0.37.0
             case "clip_slimbar": return "Select mode: lower bottom bar with icon + one word; the count moves into Done. OFF = old bar.";   // v0.35.0 (CC3-A)
