@@ -688,6 +688,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
             refreshTop()
         }
         if (slim) JabraIcons.putThemed(ctx, searchBtn, "search")   // v0.18.7: only the icon-only (slim) button; with words (select mode / searching) Glyphs.dress already drew the icon, a 2nd one doubled it and hid "Search"
+        if (slim && mockOn()) ClipMock.flat(ctx, pf, searchBtn)   // v0.53.1 (CM2): mock icon button = no box
         top.addView(searchBtn)
         if (!selOn) { val addB = btn("Add", 1.0f, tTop) { addFromField() }; top.addView(if (nlOn) ClipBar.on(ctx, pf, addB) else addB) }   // v0.17.58 (C3): Add = the one filled (primary) button
         val manageNew = btn(if (selOn) doneLbl() else if (slim) (if (ovOpen) "\u25B4" else "\u22EF") else "Manage", ClipCompact.weight(ClipCompact.DONE, cp, slim), tTop) {
@@ -697,6 +698,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
             confirmDel = false
             refresh()
         }
+        if (slim && !selOn && mockOn()) ClipMock.flat(ctx, pf, manageNew)   // v0.53.1 (CM2): the \u22EF button = no box
         if (selOn) ClipBar.on(ctx, pf, manageNew)   // v0.17.30 (UI6): select mode is ON = soft blue
         top.addView(manageNew)
         root.addView(top)
@@ -2015,7 +2017,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
         val box = LinearLayout(ctx)
         box.orientation = LinearLayout.HORIZONTAL
         box.gravity = if (open) Gravity.TOP else Gravity.CENTER_VERTICAL
-        box.background = try { UiKit.cardBackground(ctx, pf, picked, false) } catch (_: Throwable) { null }
+        box.background = try { ClipMock.rowBg(ctx, pf, picked) } catch (_: Throwable) { try { UiKit.cardBackground(ctx, pf, picked, false) } catch (_: Throwable) { null } }   // v0.53.1 (CM2): flat mock row, theme colours, no stroke
         box.minimumHeight = dp(sz(38))
         val bar = View(ctx)
         bar.setBackgroundColor(if (picked) ClipMock.accent(pf) else if (item.pinned) ClipMock.gold(pf) else Color.TRANSPARENT)
@@ -2030,11 +2032,11 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
         t.gravity = Gravity.CENTER_VERTICAL
         box.addView(t, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
         try {   // Aa = this clip has a stored format; tap = paste the OTHER way (not in select mode)
-            if (!selOn && store.hasFmt(item.text)) ClipLook.fmtTag(ctx, pf)?.let { ft ->
-                try { ft.textSize = 9f } catch (_: Throwable) { }
+            if (!selOn && store.hasFmt(item.text)) {   // v0.53.1 (CM2): small outlined mock tag (the tap box is as high as the row)
+                val ft = ClipMock.fmtTag(ctx, pf)
                 ft.setOnClickListener { try { host.feedback(ft) } catch (_: Throwable) { }; pasteItem(item, true) }
-                val flp = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT)
-                flp.setMargins(dp(2), 0, dp(4), 0)
+                val flp = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, if (open) dp(26) else LinearLayout.LayoutParams.MATCH_PARENT)
+                flp.setMargins(dp(2), if (open) dp(5) else 0, dp(4), 0)
                 ft.layoutParams = flp
                 box.addView(ft)
             }

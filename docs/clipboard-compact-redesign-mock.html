@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="bn" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Jabra Keyboard – compact clipboard (mock)</title>
+<style>
+  :root, [data-theme="dark"] {
+    --page:#0f1217; --ink:#e6e9ef; --muted:#8e99ab;
+    --kb:#1a1d24; --row:#232730; --hover:#2b303b; --line:#303644;
+    --text:#e6e9ef; --sub:#8e99ab; --pin:#e8b84a; --sel:#6ea8fe; --danger:#ef7a74;
+  }
+  [data-theme="light"] {
+    --page:#e9edf1; --ink:#1c2430; --muted:#5d6b7c;
+    --kb:#f4f6f9; --row:#ffffff; --hover:#eaeef4; --line:#d8dee8;
+    --text:#1c2430; --sub:#6a778a; --pin:#c98d12; --sel:#2f6fe0; --danger:#d4453d;
+  }
+  * { box-sizing:border-box; }
+  html { padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px); }
+  body { margin:0; background:var(--page); color:var(--ink); font:15px/1.45 system-ui,"Noto Sans Bengali",sans-serif; }
+  .wrap { max-width:900px; margin:0 auto; padding:20px 16px 44px; display:grid; gap:22px 32px; grid-template-columns:repeat(auto-fit,minmax(320px,1fr)); align-items:start; }
+  .head { grid-column:1/-1; display:flex; flex-wrap:wrap; gap:10px 16px; align-items:center; }
+  .head h1 { font-size:19px; margin:0; font-weight:650; flex:1 1 280px; }
+  .head h1 small { display:block; font-weight:400; font-size:13.5px; color:var(--muted); margin-top:3px; }
+  .tog { border:1px solid var(--line); background:transparent; color:var(--ink); border-radius:10px; padding:7px 12px; font:inherit; font-size:13px; cursor:pointer; }
+  button:focus-visible, input:focus-visible { outline:2px solid var(--sel); outline-offset:2px; }
+
+  /* ---------- the keyboard panel ---------- */
+  .kb { background:var(--kb); border-radius:18px; padding:8px; width:100%; max-width:380px; color:var(--text); position:relative; overflow:hidden; }
+  .bar { display:flex; align-items:center; gap:6px; }
+  .search { flex:1; display:flex; align-items:center; gap:6px; background:var(--row); border-radius:10px; padding:0 10px; height:34px; min-width:0; }
+  .search svg { flex:none; opacity:.6; }
+  .ttl { flex:1; font-size:15px; font-weight:600; padding-left:6px; }
+  .kb:not(.searching) .search { display:none; }
+  .kb.searching .ttl, .kb.searching #searchBtn, .kb.searching #menuBtn, .kb.searching .done { display:none; }
+  .search .x { flex:none; width:26px; height:26px; border:0; border-radius:8px; background:transparent; color:var(--sub); cursor:pointer; display:grid; place-items:center; }
+  .search .x:hover { background:var(--hover); }
+  .search input { flex:1; min-width:0; background:transparent; border:0; color:inherit; font:inherit; font-size:14px; outline:0; }
+  .search input::placeholder { color:var(--sub); }
+  .ib { flex:none; width:34px; height:34px; border:0; border-radius:10px; background:transparent; color:var(--text); display:grid; place-items:center; cursor:pointer; }
+  .ib:hover { background:var(--hover); }
+  .done { flex:none; border:0; background:transparent; color:var(--sel); font:inherit; font-size:14px; font-weight:600; padding:0 6px; height:34px; cursor:pointer; }
+
+  .tabs { display:flex; gap:16px; padding:8px 4px 0; overflow-x:auto; scrollbar-width:none; }
+  .tabs::-webkit-scrollbar { display:none; }
+  .tab { flex:none; border:0; background:transparent; color:var(--sub); font:inherit; font-size:13px; padding:4px 0 6px; border-bottom:2px solid transparent; cursor:pointer; }
+  .tab[aria-selected="true"] { color:var(--text); border-bottom-color:var(--sel); }
+  .tab i { font-style:normal; opacity:.6; margin-left:3px; font-size:11.5px; }
+
+  .pins { display:flex; gap:6px; overflow-x:auto; padding:8px 0 2px; scrollbar-width:none; }
+  .pins::-webkit-scrollbar { display:none; }
+  .pc { flex:none; max-width:132px; background:var(--row); border-radius:999px; padding:0 12px 0 9px; height:30px; display:flex; align-items:center; gap:6px; font-size:13px; border:0; color:inherit; cursor:pointer; }
+  .pc::before { content:""; width:6px; height:6px; border-radius:50%; background:var(--pin); flex:none; }
+  .pc span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+
+  .list { height:262px; overflow-y:auto; margin-top:6px; display:flex; flex-direction:column; gap:3px; scrollbar-width:thin; }
+  .wrapr { position:relative; border-radius:10px; flex:none; overflow:hidden; }
+  .under { position:absolute; inset:0; display:flex; align-items:center; justify-content:space-between; padding:0 14px; font-size:12.5px; font-weight:600; }
+  .under .l { color:var(--pin); } .under .r { color:var(--danger); }
+  .r1 { position:relative; display:flex; align-items:center; gap:8px; background:var(--row); min-height:38px; padding:0 8px 0 12px; touch-action:pan-y; user-select:none; cursor:pointer; transition:transform .18s; }
+  .r1.drag { transition:none; }
+  .r1 .txt { flex:1; min-width:0; font-size:14px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .r1.open { align-items:flex-start; padding-top:9px; padding-bottom:9px; }
+  .r1.open .txt { white-space:normal; display:-webkit-box; -webkit-line-clamp:6; -webkit-box-orient:vertical; }
+  .r1 .meta { flex:none; font-size:11.5px; color:var(--sub); }
+  .r1 .more { flex:none; width:26px; height:26px; border:0; border-radius:8px; background:transparent; color:var(--sub); cursor:pointer; display:grid; place-items:center; }
+  .r1 .more:hover { background:var(--hover); }
+  .r1.pinned { box-shadow:inset 3px 0 0 var(--pin); }
+  .r1.sel { background:color-mix(in srgb, var(--sel) 18%, var(--row)); box-shadow:inset 3px 0 0 var(--sel); }
+  .tag { flex:none; font-size:10.5px; color:var(--sub); border:1px solid var(--line); border-radius:6px; padding:0 5px; line-height:16px; }
+  .empty { color:var(--sub); font-size:13px; text-align:center; padding:40px 12px; }
+
+  .thumbs { display:flex; gap:6px; padding:2px 0; }
+  .th { width:44px; height:30px; border-radius:7px; background:linear-gradient(135deg,#5b7aa6,#8ea6c9); flex:none; }
+  .th.b { background:linear-gradient(135deg,#6f9a82,#a9c6a8); } .th.c { background:linear-gradient(135deg,#a07a9a,#c9a8c3); }
+
+  .sheet { position:absolute; right:10px; top:48px; background:var(--row); border:1px solid var(--line); border-radius:12px; padding:6px; width:170px; display:none; z-index:5; box-shadow:0 8px 24px rgba(0,0,0,.35); }
+  .sheet.on { display:block; }
+  .sheet button { display:flex; width:100%; justify-content:space-between; border:0; background:transparent; color:var(--text); font:inherit; font-size:13.5px; padding:8px 10px; border-radius:8px; cursor:pointer; }
+  .sheet button:hover { background:var(--hover); }
+  .sheet small { color:var(--sub); }
+
+  .selbar { position:absolute; left:50%; bottom:10px; transform:translate(-50%,16px); opacity:0; pointer-events:none; background:var(--row); border:1px solid var(--line); border-radius:999px; padding:4px; display:flex; gap:2px; align-items:center; box-shadow:0 8px 22px rgba(0,0,0,.4); transition:transform .18s,opacity .18s; white-space:nowrap; }
+  .selbar.on { transform:translate(-50%,0); opacity:1; pointer-events:auto; }
+  .selbar button { border:0; background:transparent; color:var(--text); font:inherit; font-size:13px; height:32px; padding:0 11px; border-radius:999px; cursor:pointer; }
+  .selbar button:hover { background:var(--hover); }
+  .selbar .go { background:var(--sel); color:#fff; font-weight:600; }
+  .selbar .n { font-size:12.5px; color:var(--sub); padding:0 8px; }
+
+  .snack { position:absolute; left:8px; right:8px; bottom:8px; background:var(--text); color:var(--kb); border-radius:10px; padding:0 6px 0 12px; height:38px; display:none; align-items:center; justify-content:space-between; font-size:13px; z-index:6; }
+  .snack.on { display:flex; }
+  .snack button { border:0; background:transparent; color:var(--sel); font:inherit; font-weight:700; padding:0 10px; height:30px; cursor:pointer; }
+  .flash { position:absolute; left:50%; top:46px; transform:translateX(-50%); background:var(--sel); color:#fff; font-size:12.5px; padding:4px 12px; border-radius:999px; opacity:0; transition:opacity .2s; pointer-events:none; z-index:7; }
+  .flash.on { opacity:1; }
+
+  .notes { max-width:420px; font-size:13.5px; color:var(--muted); }
+  .notes h2 { font-size:14px; margin:0 0 8px; color:var(--ink); font-weight:650; }
+  .notes ul { margin:0; padding-left:18px; display:grid; gap:6px; }
+  .notes b { color:var(--ink); font-weight:600; }
+  @media (prefers-reduced-motion:reduce) { * { transition:none !important; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="head">
+    <h1>Compact clipboard<small>Ek line-e ek clip, search shudhu ekta icon, swipe diye pin / delete. Sob kichu try kore dekho.</small></h1>
+    <button class="tog" id="theme" type="button">Light theme</button>
+  </div>
+
+  <section>
+    <div class="kb" id="kb">
+      <div class="bar">
+        <span class="ttl">Clipboard</span>
+        <button class="ib" id="searchBtn" type="button" aria-label="Search clips">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+        </button>
+        <button class="ib" id="menuBtn" type="button" aria-label="Sort, view and more" aria-haspopup="true">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
+        </button>
+        <button class="done" type="button" id="done">Done</button>
+        <label class="search">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+          <input id="q" type="search" placeholder="Search clips" aria-label="Search clips" autocomplete="off">
+          <button class="x" id="qx" type="button" aria-label="Close search">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+          </button>
+        </label>
+      </div>
+
+      <div class="tabs" role="tablist" id="tabs"></div>
+      <div class="pins" id="pins" aria-label="Pinned clips"></div>
+      <div class="thumbs" id="thumbs" aria-label="Copied pictures"><div class="th"></div><div class="th b"></div><div class="th c"></div></div>
+      <div class="list" id="list"></div>
+
+      <div class="sheet" id="sheet" role="menu">
+        <button type="button" data-a="sort">Sort <small id="sortLbl">Newest</small></button>
+        <button type="button" data-a="view">View <small id="viewLbl">Rows</small></button>
+        <button type="button" data-a="undo">Undo delete</button>
+        <button type="button" data-a="clear">Clear unpinned</button>
+      </div>
+      <div class="selbar" id="selbar">
+        <span class="n" id="selN">1</span>
+        <button type="button" class="go" data-s="fmt">Paste Aa</button>
+        <button type="button" data-s="plain">T</button>
+        <button type="button" data-s="pin">Pin</button>
+        <button type="button" data-s="del">Delete</button>
+      </div>
+      <div class="snack" id="snack"><span id="snackTxt">Deleted</span><button type="button" id="undo">Undo</button></div>
+      <div class="flash" id="flash" role="status">Pasted</div>
+    </div>
+  </section>
+
+  <section class="notes">
+    <h2>Ki bodlalo</h2>
+    <ul>
+      <li><b>Search = shudhu ekta icon.</b> Chaple oi row-e search field khule jay (X ba Esc dile abar icon). Sort / view / undo ek ⋯ menu-te. Alada filter pill row nai.</li>
+      <li><b>Filter = chhoto tab,</b> pill na. Selected tab-er niche ekta line. Shob count dekhay.</li>
+      <li><b>Pinned = ek line-er chip strip.</b> Section header nai. Chip chaple paste hoy. Row-ei sonar dag thake.</li>
+      <li><b>Ek clip = ek line,</b> boro clip-e right-e chhoto ⌄ chaple khule jay (6 line porjonto). Age ar “Aa” format tag ek jaygay.</li>
+      <li><b>Swipe:</b> daane = pin, baame = delete, tarpor niche Undo bar. Pin / x button-er jaygay lage na.</li>
+      <li><b>Tap = paste. Dhore rakho = select.</b> Select korle shudhu ekta chhoto pill: Paste Aa, T (plain), Pin, Delete.</li>
+      <li><b>Image thumbnail</b> ekta chhoto line-e, ager moto tap = paste.</li>
+    </ul>
+  </section>
+</div>
+
+<script>
+(function () {
+  var doc = document, $ = function (id) { return doc.getElementById(id); };
+  var seq = 0;
+  function mk(t, mins, o) { o = o || {}; return { id: ++seq, t: t, m: mins, pin: !!o.pin, fmt: !!o.fmt }; }
+  var base = [
+    mk("https://maps.app.goo.gl/Xq8d3Lr2", 1),
+    mk("01712-345678", 4),
+    mk("আগামীকাল সকাল ১০টায় অফিসে মিটিং আছে, এজেন্ডা আগে পাঠিয়ে দেবেন।", 9, { fmt: true }),
+    mk("function add(a, b) { return a + b; }", 22),
+    mk("Dear Rahim, thank you for the update. I will review the attached report tonight and send my notes before the call tomorrow morning. Please keep the second chapter open for changes until then, and let me know if the deadline moves.", 41, { fmt: true }),
+    mk("Rahim Uddin, 14/B Agrabad C/A, Chattogram 4100", 90, { pin: true }),
+    mk("ahmed@example.com", 130, { pin: true }),
+    mk("টাকা পাঠানো হয়েছে, ট্রানজেকশন আইডি ৮৮৪২১৯", 190),
+    mk("https://docs.example.com/guide/getting-started", 260),
+    mk("Reference no. 2026-1127-0042", 400, { pin: true }),
+    mk("সবাইকে ধন্যবাদ, আপনাদের সহযোগিতার জন্য।", 700),
+    mk("npm run build && npm test", 1500)
+  ];
+  var items = base.slice(), selected = {}, filter = "All", q = "", sort = 0, trash = null, snackT, open = {};
+  var isLink = function (t) { return /^https?:\/\//.test(t); };
+  var isBn = function (t) { return /[\u0980-\u09FF]/.test(t); };
+  var isCode = function (t) { return /[{};=]|npm |=>/.test(t); };
+  var tabsDef = [["All", function () { return true; }], ["Pinned", function (c) { return c.pin; }], ["Links", function (c) { return isLink(c.t); }], ["Bangla", function (c) { return isBn(c.t); }], ["Code", function (c) { return isCode(c.t); }], ["Long", function (c) { return c.t.length > 120; }]];
+  function age(m) { return m < 60 ? m + "m" : (m < 1440 ? Math.round(m / 60) + "h" : Math.round(m / 1440) + "d"); }
+  function esc(s) { return s.replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
+  function count(def) { return items.filter(def[1]).length; }
+  function flash(msg) { var f = $("flash"); f.textContent = msg; f.className = "flash on"; clearTimeout(flash.t); flash.t = setTimeout(function () { f.className = "flash"; }, 1100); }
+
+  function visible() {
+    var def = tabsDef.filter(function (d) { return d[0] === filter; })[0];
+    var l = items.filter(def[1]).filter(function (c) { return !q || c.t.toLowerCase().indexOf(q) > -1; });
+    if (sort === 1) l = l.slice().sort(function (a, b) { return b.t.length - a.t.length; });
+    return l;
+  }
+  function renderTabs() {
+    $("tabs").innerHTML = tabsDef.map(function (d) { return '<button class="tab" role="tab" type="button" data-f="' + d[0] + '" aria-selected="' + (d[0] === filter) + '">' + d[0] + '<i>' + count(d) + '</i></button>'; }).join("");
+  }
+  function renderPins() {
+    var p = items.filter(function (c) { return c.pin; });
+    $("pins").style.display = (p.length && filter === "All" && !q) ? "flex" : "none";
+    $("pins").innerHTML = p.map(function (c) { return '<button class="pc" type="button" data-paste="' + c.id + '"><span>' + esc(c.t) + '</span></button>'; }).join("");
+  }
+  function renderList() {
+    var l = visible();
+    $("thumbs").style.display = (filter === "All" && !q) ? "flex" : "none";
+    if (!l.length) { $("list").innerHTML = '<div class="empty">' + (q ? "No clip matches “" + esc(q) + "”." : "Nothing here yet. Copy something and it shows up.") + '</div>'; return; }
+    $("list").innerHTML = l.map(function (c) {
+      var long = c.t.length > 38, o = !!open[c.id];
+      return '<div class="wrapr" data-id="' + c.id + '"><div class="under"><span class="l">' + (c.pin ? "Unpin" : "Pin") + '</span><span class="r">Delete</span></div>' +
+        '<div class="r1' + (c.pin ? " pinned" : "") + (selected[c.id] ? " sel" : "") + (o ? " open" : "") + '" data-id="' + c.id + '">' +
+        '<span class="txt">' + esc(c.t) + '</span>' + (c.fmt ? '<span class="tag">Aa</span>' : "") + '<span class="meta">' + age(c.m) + '</span>' +
+        (long ? '<button class="more" type="button" data-open="' + c.id + '" aria-label="' + (o ? "Collapse" : "Expand") + '"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="transform:rotate(' + (o ? 180 : 0) + 'deg)"><path d="M6 9l6 6 6-6"/></svg></button>' : "") +
+        '</div></div>';
+    }).join("");
+    bindRows();
+  }
+  function selCount() { return Object.keys(selected).length; }
+  function renderSel() { var n = selCount(); $("selbar").className = "selbar" + (n ? " on" : ""); $("selN").textContent = n + " selected"; }
+  function renderAll() { renderTabs(); renderPins(); renderList(); renderSel(); }
+
+  function byId(id) { return items.filter(function (c) { return c.id === +id; })[0]; }
+  function del(ids) {
+    var gone = items.filter(function (c) { return ids.indexOf(c.id) > -1; });
+    if (!gone.length) return;
+    trash = { list: gone, at: items.slice() };
+    items = items.filter(function (c) { return ids.indexOf(c.id) < 0; });
+    ids.forEach(function (i) { delete selected[i]; });
+    $("snackTxt").textContent = gone.length === 1 ? "Clip deleted" : gone.length + " clips deleted";
+    $("snack").className = "snack on"; clearTimeout(snackT); snackT = setTimeout(function () { $("snack").className = "snack"; }, 4500);
+    renderAll();
+  }
+  function undo() { if (!trash) return; items = trash.at; trash = null; $("snack").className = "snack"; renderAll(); }
+  function pin(ids) {
+    var all = ids.map(byId).filter(Boolean), makePin = !all.every(function (c) { return c.pin; });
+    all.forEach(function (c) { c.pin = makePin; });
+    flash(makePin ? "Pinned" : "Unpinned"); renderAll();
+  }
+
+  function bindRows() {
+    Array.prototype.forEach.call($("list").querySelectorAll(".r1"), function (row) {
+      var id = +row.getAttribute("data-id"), sx = 0, dx = 0, down = false, moved = false, lp = null, longDone = false;
+      row.addEventListener("pointerdown", function (e) {
+        if (e.target.closest(".more")) return;
+        down = true; moved = false; longDone = false; sx = e.clientX; dx = 0; row.classList.add("drag");
+        try { row.setPointerCapture(e.pointerId); } catch (x) {}
+        lp = setTimeout(function () { if (!moved) { longDone = true; selected[id] = true; renderList(); renderSel(); } }, 450);
+      });
+      row.addEventListener("pointermove", function (e) {
+        if (!down) return; dx = e.clientX - sx;
+        if (Math.abs(dx) > 6) { moved = true; clearTimeout(lp); }
+        if (moved) row.style.transform = "translateX(" + Math.max(-110, Math.min(110, dx)) + "px)";
+      });
+      function end() {
+        if (!down) return; down = false; clearTimeout(lp); row.classList.remove("drag"); row.style.transform = "";
+        if (longDone) return;
+        if (dx > 80) { pin([id]); return; }
+        if (dx < -80) { del([id]); return; }
+        if (moved) return;
+        if (selCount()) { if (selected[id]) delete selected[id]; else selected[id] = true; renderList(); renderSel(); }
+        else flash("Pasted");
+      }
+      row.addEventListener("pointerup", end); row.addEventListener("pointercancel", function () { down = false; clearTimeout(lp); row.classList.remove("drag"); row.style.transform = ""; });
+    });
+    Array.prototype.forEach.call($("list").querySelectorAll(".more"), function (b) {
+      b.addEventListener("click", function (e) { e.stopPropagation(); var id = b.getAttribute("data-open"); open[id] = !open[id]; renderList(); });
+    });
+  }
+
+  $("tabs").addEventListener("click", function (e) { var b = e.target.closest(".tab"); if (b) { filter = b.getAttribute("data-f"); renderAll(); } });
+  $("pins").addEventListener("click", function () { flash("Pasted"); });
+  function openSearch() { $("kb").classList.add("searching"); $("q").focus(); }
+  function closeSearch() { $("kb").classList.remove("searching"); $("q").value = ""; q = ""; renderPins(); renderList(); }
+  $("searchBtn").addEventListener("click", openSearch);
+  $("qx").addEventListener("click", closeSearch);
+  $("q").addEventListener("keydown", function (e) { if (e.key === "Escape") closeSearch(); });
+  $("q").addEventListener("blur", function () { setTimeout(function () { if (!$("q").value && doc.activeElement !== $("qx")) $("kb").classList.remove("searching"); }, 120); });
+  $("q").addEventListener("input", function (e) { q = e.target.value.trim().toLowerCase(); renderPins(); renderList(); });
+  $("menuBtn").addEventListener("click", function () { $("sheet").classList.toggle("on"); });
+  $("sheet").addEventListener("click", function (e) {
+    var b = e.target.closest("button"); if (!b) return; var a = b.getAttribute("data-a");
+    if (a === "sort") { sort = sort ? 0 : 1; $("sortLbl").textContent = sort ? "Longest" : "Newest"; renderList(); return; }
+    if (a === "view") { flash("Cards view (not in this mock)"); }
+    if (a === "undo") undo();
+    if (a === "clear") del(items.filter(function (c) { return !c.pin; }).map(function (c) { return c.id; }));
+    $("sheet").classList.remove("on");
+  });
+  $("selbar").addEventListener("click", function (e) {
+    var b = e.target.closest("button"); if (!b) return; var a = b.getAttribute("data-s"), ids = Object.keys(selected).map(Number);
+    if (a === "fmt" || a === "plain") { flash(a === "fmt" ? "Pasted with format" : "Pasted as plain text"); selected = {}; renderList(); renderSel(); }
+    if (a === "pin") { pin(ids); selected = {}; renderAll(); }
+    if (a === "del") del(ids);
+  });
+  $("undo").addEventListener("click", undo);
+  $("done").addEventListener("click", function () { if (selCount()) { selected = {}; renderList(); renderSel(); } else flash("Back to letters"); });
+  $("theme").addEventListener("click", function () {
+    var h = doc.documentElement, l = h.getAttribute("data-theme") === "light";
+    h.setAttribute("data-theme", l ? "dark" : "light"); $("theme").textContent = l ? "Light theme" : "Dark theme";
+  });
+  doc.addEventListener("click", function (e) { if (!e.target.closest("#sheet") && !e.target.closest("#menuBtn")) $("sheet").classList.remove("on"); });
+  renderAll();
+})();
+</script>
+</body>
+</html>

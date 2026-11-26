@@ -36,6 +36,57 @@ object ClipMock {
     fun gold(p: JabraPrefs): Int = ClipLook.pinColor(dark(p))
     private fun red(p: JabraPrefs): Int = if (dark(p)) Color.parseColor("#EF7A74") else Color.parseColor("#D4453D")
 
+    // ---- v0.53.1 (CM2): the rows / tag / icon buttons drawn like the mock (flat, no stroke) but in the THEME colours
+
+    private fun blend(a: Int, b: Int, t: Float): Int = Color.argb(Color.alpha(a),
+        (Color.red(a) * (1f - t) + Color.red(b) * t).toInt(), (Color.green(a) * (1f - t) + Color.green(b) * t).toInt(), (Color.blue(a) * (1f - t) + Color.blue(b) * t).toInt())
+
+    /** Mock row: theme card fill, NO stroke, 10 dp corners. Picked = the accent mixed in at 18 % (mock: color-mix(sel 18%, row)). */
+    fun rowBg(ctx: Context, p: JabraPrefs, picked: Boolean): GradientDrawable {
+        val fill = try { JabraTokens.cardFill(p, false) } catch (_: Throwable) { Color.LTGRAY }
+        val g = GradientDrawable()
+        g.setColor(if (picked) blend(fill, accent(p), 0.18f) else fill)
+        g.cornerRadius = dp(ctx, 10).toFloat()
+        return g
+    }
+
+    /** Mock "Aa" tag: 10.5 sp, thin outline, 6 dp corners, 17 dp high. The returned box is the tap target (as high as the row). Caller sets the click. */
+    fun fmtTag(ctx: Context, p: JabraPrefs): FrameLayout {
+        val c = try { JabraTokens.onCardDim(p) } catch (_: Throwable) { Color.GRAY }
+        val t = TextView(ctx)
+        t.text = "Aa"
+        t.textSize = 10.5f
+        t.setTextColor(c)
+        t.maxLines = 1
+        t.gravity = Gravity.CENTER
+        t.setPadding(dp(ctx, 5), 0, dp(ctx, 5), 0)
+        val g = GradientDrawable()
+        g.setColor(Color.TRANSPARENT)
+        g.setStroke(Math.max(1, dp(ctx, 1)), JabraTokens.withAlpha(c, 0x80))
+        g.cornerRadius = dp(ctx, 6).toFloat()
+        t.background = g
+        val box = FrameLayout(ctx)
+        box.addView(t, FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, dp(ctx, 17), Gravity.CENTER))
+        box.isClickable = true
+        box.contentDescription = "Paste the other way (with / without format)"
+        return box
+    }
+
+    /** Mock icon button (.ib): no box, a soft rounded fill only while pressed. */
+    fun flat(ctx: Context, p: JabraPrefs, b: View) {
+        try {
+            val press = GradientDrawable()
+            press.setColor(try { JabraTokens.cardFill(p, false) } catch (_: Throwable) { Color.LTGRAY })
+            press.cornerRadius = dp(ctx, 10).toFloat()
+            val sl = android.graphics.drawable.StateListDrawable()
+            sl.addState(intArrayOf(android.R.attr.state_pressed), press)
+            sl.addState(intArrayOf(), android.graphics.drawable.ColorDrawable(Color.TRANSPARENT))
+            b.background = sl
+            b.backgroundTintList = null
+            b.stateListAnimator = null
+        } catch (_: Throwable) { }
+    }
+
     /** Underline tabs "All 12 | Pinned 3 | ..." (scrolls sideways when too wide). [extra] (the Undo icon) sits at the end, outside the scroll. */
     fun tabs(ctx: Context, p: JabraPrefs, labels: List<String>, counts: List<Int>, selected: Int, textSp: Float, hDp: Int,
              ink: Int, dim: Int, onPick: (Int) -> Unit, extra: View?): View {
@@ -197,6 +248,12 @@ object ClipMock {
             } catch (_: Throwable) { try { reset() } catch (_: Throwable) { } }
             true
         }
+        try {   // mock .wrapr { overflow:hidden; border-radius:10px }: the pin / selection bar and the swipe never leave the rounded row
+            w.outlineProvider = object : android.view.ViewOutlineProvider() {
+                override fun getOutline(v: View, o: android.graphics.Outline) { o.setRoundRect(0, 0, v.width, v.height, dp(ctx, 10).toFloat()) }
+            }
+            w.clipToOutline = true
+        } catch (_: Throwable) { }
         return w
     }
 }

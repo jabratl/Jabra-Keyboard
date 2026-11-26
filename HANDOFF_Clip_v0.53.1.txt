@@ -1,0 +1,8 @@
+HANDOFF - Jabra Keyboard - clipboard mock look = same look as the mock - v0.53.1
+
+WHY THE LOOK DIFFERED: the v0.50.0 mock look reused theme widgets that draw their own stroke / box (UiKit.cardBackground, ClipLook.fmtTag, JabraThemes.style buttons).
+FIX: three small mock helpers in ClipMock.kt (rowBg, fmtTag, flat) + rounded clip in swipeRow; ClipboardFeature.itemRowMock uses them; header search / more button use flat() when slim + mock look.
+Colours = theme (cardFill, onCardDim, accent). Nothing hard-coded.
+CUMULATIVE: this zip also contains the v0.53.0 files (ReplacePanel.kt, HANDOFF_Replace_v0.53.0.txt, docs/replace-redesign-mock.html).
+OPEN POINTS (check on phone): row height / corner clip with the swipe; Aa tap box; pressed fill of the flat buttons in light themes; ABC and Add are still boxed on purpose.
+NOT COMPILED HERE - build in GitHub Actions, check the "v0.53.1" lines if red.

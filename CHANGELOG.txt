@@ -1,3 +1,13 @@
+v0.53.1 - FIX: clipboard mock look now looks like the mock (flat rows, small outlined Aa tag, box-less icon buttons), theme colours kept
+- SEEN/WHY: owner screenshot vs clipboard-compact-redesign-mock.html: same design but different look. Cause = the mock row used the shared theme card (UiKit.cardBackground = fill + STROKE), the Aa tag was the old 28 dp filled box, the search / more buttons used the key-button style. Not an engine problem: CSS can draw anything, the app reuses the theme widgets.
+- WHAT (1, ROW): ClipMock.rowBg = theme card fill, NO stroke, 10 dp corners. Selected row = accent mixed in at 18 % (as the mock). The row + swipe layer is clipped to the rounded shape (mock overflow:hidden), so the pin bar no longer sticks out of the corners.
+- WHAT (2, Aa TAG): ClipMock.fmtTag = 10.5 sp, thin outline, 6 dp corners, 17 dp high. The tap box stays as high as the row (easy to hit). Same action (paste the other way).
+- WHAT (3, ICON BUTTONS): search and the ... button in the header = no box, a soft fill only while pressed (mock .ib). ABC and Add stay as they are (they have no mock twin).
+- THEME: all colours still come from the selected theme (JabraTokens.cardFill / onCardDim / accent). No hard-coded mock colours.
+- FILES: ClipMock.kt (3 new helpers + rounded clip at the end of swipeRow), ClipboardFeature.kt (itemRowMock: background + tag; header: 2 flat buttons), app/build.gradle.kts (0.53.1). This zip ALSO holds the v0.53.0 Find & Replace files, so it works whether or not v0.53.0 was applied.
+- OFF SWITCH: pref clip_mock = false = the old rows exactly (the new code only runs inside the mock look).
+- NOT COMPILED HERE (no Kotlin toolchain in the sandbox): build in GitHub Actions and check the "v0.53.1" lines if red.
+
 v0.53.0 - NEW: Find & Replace "one screen" look (from replace-redesign-mock.html): diff preview, tap a match to skip it, ONE Replace button
 - SEEN/WHY: owner made a design mock in another chat and asked for exactly that design. Every engine rule, set, pair list, Never change list, Recent pairs, Smart, Keep case, List, 3-step Undo, Copy / Paste result and the 2-tap whole-field safety stay. The old views (Slim / Mini / New / classic) are untouched and stay as the fallback.
 - WHAT (1, TOP BAR): ABC | One / Pairs n | scope pill (Selection / Whole field / From cursor / To cursor, red text = whole field) | ... (Sets, Recent, Never change, Help). The scope + tools open as a menu in the stage area.
