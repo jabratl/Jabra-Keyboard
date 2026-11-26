@@ -94,6 +94,7 @@ public final class HelpPlan {
             case "key_press_anim": return "The key shrinks a little while pressed and springs back.";
             case "hold_edit": return "Hold c = copy, v = paste, x = cut. Your own Long-press override for that letter wins.";
             case "clip_undo_n": return "How many deleted clips Undo keeps (Deleted in the \u22EF menu). 0 = off.";   // v0.18.4
+            case "clip_mock": return "Clipboard: underline tabs, one-line pinned strip, one clip per line (arrow opens it), swipe right = pin, left = delete. OFF = old look.";   // v0.50.0 (CM1)
             case "clip_tight": return "Clipboard clips / cards: smaller padding, lower height, small check box, one small info line. OFF = old size.";   // v0.36.0 (CC4)
             case "clip_pop": return "Clipboard: More (select mode) and the 3-dot menu open as a small floating menu, the list does not move. OFF = old tray.";   // v0.35.1 (CC3-B)
             case "clip_fold": return "Clipboard: tap the title to hide the Filter row, tap the arrow before Pinned / Recent to fold it. Select mode and search show all. OFF = nothing folds.";   // v0.43.0

@@ -759,6 +759,7 @@ object SettingsGroups {
             toggle(g, "Compact clipboard header", "clip_compact", true)   // v0.33.0 (CC1): lower top row (ABC / Search / Done), smaller padding; OFF = exactly v0.32.0 (needs Clipboard new look)
             toggle(g, "Compact clipboard filter row", "clip_compact2", true)   // v0.34.0 (CC2): Undo = small icon at the end of the filter row, no count line; OFF = exactly v0.33.0
             toggle(g, "Slim select bar", "clip_slimbar", true)   // v0.35.0 (CC3-A): 34 dp bottom bar, icon + one word, count in Done; OFF = exactly v0.34.0
+            toggle(g, "Clipboard mock look (tabs, pinned strip, one-line swipe rows)", "clip_mock", true)   // v0.50.0 (CM1): underline tabs, one-line pinned chip strip, one-line rows (swipe right = pin, left = delete), small thumbnails; OFF = exactly v0.49.0
             toggle(g, "Tight clip cards", "clip_tight", true)   // v0.36.0 (CC4): smaller padding, lower cards, small check box; OFF = v0.35.1 cards
             toggle(g, "Popup menus (More / 3-dot)", "clip_pop", true)   // v0.35.1 (CC3-B): floating menu for select-mode More + the 3-dot menu; OFF = old trays
             toggle(g, "Collapsible clipboard parts (tap the title / Pinned / Recent)", "clip_fold", true)   // v0.43.0: chevron on the Pinned / Recent headers + the title folds the Filter / Sort / View row; OFF = exactly v0.42.5

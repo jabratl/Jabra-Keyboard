@@ -1,0 +1,22 @@
+HANDOFF - Jabra Keyboard - Clipboard mock look - v0.50.0
+
+WHAT: the clipboard gets the design of clipboard-compact-redesign-mock.html (pref clip_mock, default ON, needs the tidy look; OFF = exactly v0.49.0).
+  - underline tabs with counts instead of the Filter / Sort / View pills (Sort + View now in the 3-dot menu)
+  - one-line strip of pinned clips (tap = paste, hold = select)
+  - one flat list, one clip per line, gold bar = pinned, blue bar = selected, small Aa tag + age, arrow opens a long clip (6 lines)
+  - swipe right = pin / unpin, swipe left = delete (+ normal Undo); tap = paste, hold = select mode
+  - picture thumbnails 44 x 30 dp
+NOT DONE (on purpose, say if you want them): picture strip under the pinned line (it stays above the header), inline search field (search stays the old box + small keyboard), no ABC / Add removal (they stay, all old options stay).
+
+FILES (same paths, overwrite / add):
+  NEW  app/src/main/java/com/mgb/keyboard/ClipMock.kt
+  NEW  app/src/main/java/com/mgb/keyboard/typing/ClipMockPlan.java
+  NEW  tools/ClipMockPlanTest.java
+  PATCH app/src/main/java/com/mgb/keyboard/ClipboardFeature.kt   (search "v0.50.0": mockOn, tabs block, strip block, flat list, itemRowMock)
+  PATCH app/src/main/java/com/mgb/keyboard/ClipImages.kt
+  PATCH app/src/main/java/com/mgb/keyboard/SettingsGroups.kt, typing/SectionPlan.java, ChangedPlan.java, HelpPlan.java, SettingsIndex.java
+  PATCH app/build.gradle.kts (0.50.0), CHANGELOG.txt, CHECKLIST.txt (ZM)
+
+CHECKS DONE: ClipMockPlanTest 25/25, ClipFilterTest, ClipCompactTest, ClipOrderTest, ClipSelectTest, HelpPlanTest, SettingsIndexTest, ChangedPlanTest green. SectionPlanTest / SettingsHelpTest: only the OLD reds (auto_pad_select, pad_speed, pad_delay). Bracket balance of all changed Kotlin files = unchanged / 0.
+NOT TESTED: Kotlin NOT compiled here. If the GitHub build is red, paste the error log. Likely spots: ClipMock.kt swipeRow (touch listener, local vars) and itemRowMock in ClipboardFeature.kt.
+PHONE TEST: CHECKLIST ZM.

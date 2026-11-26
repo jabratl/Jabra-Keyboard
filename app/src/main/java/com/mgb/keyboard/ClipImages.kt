@@ -93,13 +93,14 @@ object ClipImages {
         if (files.isEmpty()) null else {
             val d = ctx.resources.displayMetrics.density
             fun dp(v: Int) = (v * d).toInt()
+            val mock = try { ClipMock.on(prefs) } catch (_: Throwable) { false }   // v0.50.0 (CM1): mock look = small 44 x 30 dp thumbnails on one thin line (tap = paste, hold = delete as before)
             val hs = HorizontalScrollView(ctx)
             hs.isHorizontalScrollBarEnabled = false
             val row = LinearLayout(ctx)
             row.orientation = LinearLayout.HORIZONTAL
-            row.setPadding(dp(6), dp(4), dp(6), dp(4))
+            row.setPadding(dp(6), dp(if (mock) 2 else 4), dp(6), dp(if (mock) 2 else 4))
             for (f in files) {
-                val bmp = thumb(f, dp(64)) ?: continue
+                val bmp = thumb(f, dp(if (mock) 44 else 64)) ?: continue
                 val iv = ImageView(ctx)
                 iv.setImageBitmap(bmp)
                 iv.scaleType = ImageView.ScaleType.CENTER_CROP
@@ -116,7 +117,7 @@ object ClipImages {
                     try { f.delete(); row.removeView(iv); if (row.childCount == 0) hs.visibility = View.GONE } catch (_: Throwable) { }
                     true
                 }
-                val lp = LinearLayout.LayoutParams(dp(64), dp(64))
+                val lp = LinearLayout.LayoutParams(dp(if (mock) 44 else 64), dp(if (mock) 30 else 64))
                 lp.rightMargin = dp(6)
                 row.addView(iv, lp)
             }

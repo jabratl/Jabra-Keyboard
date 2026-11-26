@@ -1450,3 +1450,16 @@ ZL. CLIPBOARD LIMITS (v0.49.0) - test ZK first
  [ ] Pin more than 30 clips: it works up to 50, then "Pinned N of M (limit 50)".
  [ ] Restart the phone: clips and pinned clips are all still there; copying is not slower than before.
  [ ] Backup / restore: the two new settings are restored.
+
+ZM. CLIPBOARD MOCK LOOK (v0.50.0) - test ZL first
+ [ ] Open the clipboard: the filter row is now underline tabs with counts (All / Pinned / Text / Links / Numbers); tap a tab = list filters, the line moves.
+ [ ] On All with pinned clips: ONE line of small chips with a gold dot. Tap a chip = pastes. Hold a chip = select mode with it.
+ [ ] The list is one flat list, no Pinned / Recent headers. Each clip is ONE line; pinned clips have a gold bar on the left.
+ [ ] A long clip has a small arrow at the right: tap = opens up to 6 lines, tap again = closes. Scroll position stays.
+ [ ] Swipe a row to the RIGHT past about 80 dp = pinned (or unpinned); to the LEFT = deleted, then Undo (icon in the tab row) brings it back.
+ [ ] A short drag (less than 80 dp) = the row springs back, nothing happens. Scrolling up / down with the finger still scrolls the list.
+ [ ] Tap a row = pastes. Hold a row = select mode (blue bar); in select mode a tap ticks / unticks and there is no swipe. Floating select pill works as before.
+ [ ] 3-dot menu now has Sort (Newest / Oldest / A-Z / Used) and View (List / Cards) with a tick on the chosen one.
+ [ ] Copied pictures: small thumbnails on one thin line; tap = paste, hold = delete.
+ [ ] Settings > Clipboard & tools > "Clipboard mock look" OFF: exactly the old v0.49.0 look (pills, headers, cards). ON again: the new look.
+ [ ] Dark and light theme both readable (tab text, strip chips, row text, bars).

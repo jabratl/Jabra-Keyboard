@@ -25,6 +25,7 @@ import com.mgb.keyboard.typing.ClipFilter   // v0.16.9 (X9)
 import com.mgb.keyboard.typing.ClipCompact   // v0.33.0 (CC1)
 import com.mgb.keyboard.typing.ClipCopy   // v0.17.58 (C3)
 import com.mgb.keyboard.typing.ClipFold   // v0.43.0
+import com.mgb.keyboard.typing.ClipMockPlan   // v0.50.0 (CM1)
 import com.mgb.keyboard.typing.ClipMultiPaste   // v0.43.0
 import com.mgb.keyboard.typing.PanelLayout   // v0.16.9 (X9)
 
@@ -207,7 +208,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
         refresh()
     }
 
-    fun reset() { try { ClipPopover.dismiss() } catch (_: Throwable) { }; editing = null; confirmSave = false; undoBuf = emptyList(); searching = false; query = ""; confirmClear = false; msg = ""; sel.leave(); confirmDel = false; keepY = -1; fromRefresh = false; fChip = 0; moreOpen = false; pasteMenu = false; ovOpen = false; exporting = false; expMsg = ""; renaming = false; expName = ""; trashOpen = false; trashSure = false; trashMsg = ""; undoSteps = 0 }   // v0.18.4: Recently deleted closed, Undo steps start fresh; v0.17.63 (R3): rename closed + name cleared; v0.16.1 (X1); v0.17.57 (C2): export screen closed; v0.16.9 (X9): chip + More tray start fresh
+    fun reset() { try { ClipPopover.dismiss() } catch (_: Throwable) { }; try { openClips.clear() } catch (_: Throwable) { }; editing = null; confirmSave = false; undoBuf = emptyList(); searching = false; query = ""; confirmClear = false; msg = ""; sel.leave(); confirmDel = false; keepY = -1; fromRefresh = false; fChip = 0; moreOpen = false; pasteMenu = false; ovOpen = false; exporting = false; expMsg = ""; renaming = false; expName = ""; trashOpen = false; trashSure = false; trashMsg = ""; undoSteps = 0 }   // v0.18.4: Recently deleted closed, Undo steps start fresh; v0.17.63 (R3): rename closed + name cleared; v0.16.1 (X1); v0.17.57 (C2): export screen closed; v0.16.9 (X9): chip + More tray start fresh
 
     private fun dp(v: Int): Int = (v * ctx.resources.displayMetrics.density).toInt()
 
@@ -574,7 +575,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
             hdrAnchor = a
             val sortLv = try { JabraPrefs(ctx).int("clip_sort", 0).coerceIn(0, 3) } catch (_: Throwable) { 0 }
             val cardsOn = try { JabraPrefs(ctx).int("clip_view", 0) == 1 } catch (_: Throwable) { false }
-            val pillNow = nl() && !simple() && try { pf.bool("ui_pill", true) } catch (_: Throwable) { true }
+            val pillNow = nl() && !simple() && !mockOn() && try { pf.bool("ui_pill", true) } catch (_: Throwable) { true }   // v0.50.0 (CM1): mock tabs = no Sort / View pills, so the menu holds them
             val lim = try { trash.limit() } catch (_: Throwable) { com.mgb.keyboard.clip.ClipTrash.DEFAULT_LIMIT }
             val delN = try { trash.count() } catch (_: Throwable) { 0 }
             ovOpen = false; confirmClear = false
@@ -617,6 +618,8 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
             "clear" -> { ovOpen = false; confirmClear = true; refresh() }
         }
     }
+    private fun mockOn(): Boolean = try { ClipMock.on(pf) } catch (_: Throwable) { false }   // v0.50.0 (CM1): pref clip_mock (default ON, needs the tidy look) = tabs / pinned strip / one-line swipe rows; OFF = v0.49.0
+    private val openClips = HashSet<String>()   // v0.50.0 (CM1): clips opened with the small arrow (text of the clip)
     private fun compact2On(): Boolean = try { compactOn() && JabraPrefs(ctx).bool("clip_compact2", true) } catch (_: Throwable) { false }   // v0.34.0 (CC2): pref clip_compact2 (default ON, needs the new look) = Undo is a small icon at the end of the filter row, no count line; OFF = exactly v0.33.0 (the Undo line + count line)
     /** v0.34.0 (CC2): small "undo arrow" icon button for the end of the filter row. Any problem = null (the Undo then stays in the info line). */
     private fun undoIconBtn(hDp: Int): View? = try {
@@ -699,7 +702,8 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
         root.addView(top)
 
         // ---- v0.19.1 (dropdown plan S2): pref ui_pill (default ON) = filter / sort / view are 3 dropdown pills in ONE row (instead of the 5 chips + Sort / View rows in the tray); OFF = the old chips
-        val pillOn = nlOn && !simple() && try { pf.bool("ui_pill", true) } catch (_: Throwable) { true }   // v0.19.8: simple look = one flat chip row instead of the 3 dropdown pills
+        val mk = mockOn()   // v0.50.0 (CM1)
+        val pillOn = nlOn && !simple() && !mk && try { pf.bool("ui_pill", true) } catch (_: Throwable) { true }   // v0.50.0 (CM1): mock tabs replace the pills   // v0.19.8: simple look = one flat chip row instead of the 3 dropdown pills
         // v0.34.0 (CC2): which header rows exist + does Undo live in the filter row (pref clip_compact2; OFF = the v0.33.0 rows)
         val c2 = compact2On()
         val filterShown = !(selOn && moreOpen) && (pillOn || !(ovOpen && nlOn)) && !toolsFold   // v0.43.0: && !toolsFold
@@ -738,8 +742,27 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
             if (undoIn) undoIconBtn(t40)?.let { prow.addView(it) }   // v0.34.0 (CC2)
             root.addView(prow)
         }
+        // ---- v0.50.0 (CM1): underline tabs (All 12 | Pinned 3 | ...) instead of the pills / chips; Undo icon at the end
+        var tabsDone = false
+        if (mk && !(selOn && moreOpen) && !(ovOpen && nlOn) && !toolsFold) {
+            try {
+                val allClips = store.pinnedView("") + store.recentView("")
+                val names = List(ClipFilter.COUNT) { c -> ClipFilter.label(c) }
+                val cnts = List(ClipFilter.COUNT) { c -> ClipFilter.filter(allClips, c).size }
+                root.addView(ClipMock.tabs(ctx, pf, names, cnts, fChip, fs(13f), sz(32), ink(), dim(), { c ->
+                    if (c != fChip) {
+                        fChip = c
+                        if (sel.isOn) sel.clear()
+                        confirmDel = false
+                        confirmClear = false
+                        refreshTop()
+                    }
+                }, if (undoIn) undoIconBtn(t40) else null))
+                tabsDone = true
+            } catch (_: Throwable) { tabsDone = false }
+        }
         // ---- filter chips (hidden while the More tray is open: the space goes to the list)
-        if (!pillOn && !(selOn && moreOpen) && !(ovOpen && nlOn) && !toolsFold) {   // v0.43.0: && !toolsFold   // v0.18.8: also hide the chips while the \u22EF menu is open (the space goes to the list)
+        if (!pillOn && !tabsDone && !(selOn && moreOpen) && !(ovOpen && nlOn) && !toolsFold) {   // v0.43.0: && !toolsFold   // v0.18.8: also hide the chips while the \u22EF menu is open (the space goes to the list)
             val chips = row()
             for (c in 0 until ClipFilter.COUNT) {
                 val ch = UiKit.chip(ctx, pf, ClipFilter.label(c), c == fChip, sz(t40), { v -> try { host.feedback(v) } catch (_: Throwable) { } }) {
@@ -883,6 +906,12 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
         val pinnedItems = ClipFilter.filter(store.sorted(store.pinnedView(query), sortLv), fChip)
         val recentItems = ClipFilter.filter(store.sorted(store.recentView(query), sortLv), fChip)
         val visible = pinnedItems + recentItems
+        if (ClipMockPlan.stripShown(mk, fChip, searching, selOn, pinnedItems.size)) {   // v0.50.0 (CM1): one-line strip of pinned clips (tap = paste, hold = select)
+            try {
+                root.addView(ClipMock.pins(ctx, pf, pinnedItems, fs(13f), sz(30), clipHoldMs(),
+                    { c -> pasteItem(c, false) }, { c -> sel.enterWith(c); confirmDel = false; refresh() }, { v -> try { host.feedback(v) } catch (_: Throwable) { } }))
+            } catch (_: Throwable) { }
+        }
         val listH = if (fitOn()) 72 else if (searching) 88 else 176   // fitList() grows the 72 dp list to the letters keyboard height (N1)
         val sv = ScrollView(ctx)
         sv.layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(listH))
@@ -899,7 +928,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
             col.addView(t)
             if (!searching && fChip == 0) col.addView(emptyHint())   // v0.17.42: how to use (first-time help)
         }
-        val showHeaders = ClipOrder.showHeaders(searching, pinnedItems.size, recentItems.size)
+        val showHeaders = ClipOrder.showHeaders(searching, pinnedItems.size, recentItems.size) && !mk   // v0.50.0 (CM1): mock list = one flat list, no Pinned / Recent headers
         val ordMode = try { ClipOrder.sanitize(JabraPrefs(ctx).int("clip_order", 0)) } catch (_: Throwable) { 0 }
         val ordSwap: () -> Unit = { try { JabraPrefs(ctx).setInt("clip_order", ClipOrder.next(ordMode)) } catch (_: Throwable) { }; confirmClear = false; refreshTop() }
         val lines = try { JabraPrefs(ctx).int("clip_lines", 0).coerceIn(0, 2) } catch (_: Throwable) { 0 }
@@ -917,6 +946,11 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
         } else {
             val ordLabels = ClipOrder.labels(ordMode)
             val ordGroups = ClipOrder.groups(pinnedItems, recentItems, ordMode)
+            if (mk) {   // v0.50.0 (CM1): ONE flat list, newest copied first (pinned clips keep their gold bar); other Sort choices keep the sorted order
+                val flat = pinnedItems + recentItems
+                val idx = if (sortLv == 0) ClipMockPlan.order(LongArray(flat.size) { i -> store.madeOf(flat[i].text) }) else IntArray(flat.size) { i -> i }
+                for (i in idx) col.addView(itemRow(flat[i]))
+            } else
             for (gi in 0..1) {
                 val folded = foldable && foldedOf(ordLabels[gi])   // v0.43.0
                 if (showHeaders) {
@@ -1846,6 +1880,7 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
 
     /** v0.10.24 (C1): list row + a thin divider line under it. Any problem = the plain row as before. */
     private fun itemRow(item: ClipList.Item): View {
+        if (mockOn()) { try { return itemRowMock(item) } catch (_: Throwable) { } }   // v0.50.0 (CM1): one-line swipe row; any problem = the row below
         if (tidy()) { try { val tr = itemRowTidy(item); return if (simple()) flatLine(tr) else tr } catch (_: Throwable) { } }   // v0.18.4: tidy card row; any problem = the row below
         val r = itemRowBase(item)
         return try {
@@ -1965,6 +2000,78 @@ class ClipPanel(private val ctx: Context, private val host: JabraHost, private v
             else box.addView(ClipCards.small(ctx, host, "\u2715", "close", iconsOn) { keepUndo(listOf(item)); store.remove(item); msg = ClipCopy.deleted(1); refresh() })
         }
         return box
+    }
+
+    /**
+     * v0.50.0 (CM1): ONE-LINE row of the mock look: [bar] text [Aa] [age] [arrow]. Bar = gold (pinned) / blue (selected).
+     * Tap = paste (select mode: toggle), hold = select mode, swipe right = pin / unpin, swipe left = delete (Undo as always).
+     * Long clips get a small arrow that opens up to 6 lines. Every action runs the same code as the old pin / x buttons.
+     */
+    private fun itemRowMock(item: ClipList.Item): View {
+        val selOn = sel.isOn
+        val picked = selOn && sel.isSelected(item)
+        val open = openClips.contains(item.text)
+        val ink2 = try { JabraTokens.cardText(pf) } catch (_: Throwable) { Color.BLACK }
+        val box = LinearLayout(ctx)
+        box.orientation = LinearLayout.HORIZONTAL
+        box.gravity = if (open) Gravity.TOP else Gravity.CENTER_VERTICAL
+        box.background = try { UiKit.cardBackground(ctx, pf, picked, false) } catch (_: Throwable) { null }
+        box.minimumHeight = dp(sz(38))
+        val bar = View(ctx)
+        bar.setBackgroundColor(if (picked) ClipMock.accent(pf) else if (item.pinned) ClipMock.gold(pf) else Color.TRANSPARENT)
+        box.addView(bar, LinearLayout.LayoutParams(dp(3), LinearLayout.LayoutParams.MATCH_PARENT))
+        val t = TextView(ctx)
+        t.text = if (open) item.text else ClipMockPlan.oneLine(item.text)
+        t.textSize = fs(13.5f)
+        t.setTextColor(ink2)
+        t.maxLines = if (open) ClipMockPlan.OPEN_MAX_LINES else 1
+        t.ellipsize = TextUtils.TruncateAt.END
+        t.setPadding(dp(9), dp(if (open) 9 else 0), dp(6), dp(if (open) 9 else 0))
+        t.gravity = Gravity.CENTER_VERTICAL
+        box.addView(t, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+        try {   // Aa = this clip has a stored format; tap = paste the OTHER way (not in select mode)
+            if (!selOn && store.hasFmt(item.text)) ClipLook.fmtTag(ctx, pf)?.let { ft ->
+                try { ft.textSize = 9f } catch (_: Throwable) { }
+                ft.setOnClickListener { try { host.feedback(ft) } catch (_: Throwable) { }; pasteItem(item, true) }
+                val flp = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT)
+                flp.setMargins(dp(2), 0, dp(4), 0)
+                ft.layoutParams = flp
+                box.addView(ft)
+            }
+        } catch (_: Throwable) { }
+        try {   // age only, dim (pref clip_count OFF = no age)
+            if (JabraPrefs(ctx).bool("clip_count", true)) {
+                val age = com.mgb.keyboard.clip.ClipAge.shortAge(store.madeOf(item.text), System.currentTimeMillis())
+                if (age.isNotEmpty()) {
+                    val m = TextView(ctx)
+                    m.text = age
+                    m.textSize = 11f
+                    m.setTextColor(hush())
+                    m.setPadding(dp(4), dp(if (open) 9 else 0), dp(4), 0)
+                    m.gravity = Gravity.CENTER_VERTICAL
+                    box.addView(m, LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, if (open) LinearLayout.LayoutParams.WRAP_CONTENT else LinearLayout.LayoutParams.MATCH_PARENT))
+                }
+            }
+        } catch (_: Throwable) { }
+        if (ClipMockPlan.expandable(item.text)) {
+            val ar = TextView(ctx)
+            ar.text = if (open) "\u25B4" else "\u25BE"
+            ar.textSize = 13f
+            ar.setTextColor(hush())
+            ar.gravity = Gravity.CENTER
+            ar.contentDescription = if (open) "Show less" else "Show more"
+            ar.isClickable = true
+            ar.setOnClickListener { try { host.feedback(ar) } catch (_: Throwable) { }; if (open) openClips.remove(item.text) else openClips.add(item.text); refresh() }
+            box.addView(ar, LinearLayout.LayoutParams(dp(30), if (open) dp(34) else LinearLayout.LayoutParams.MATCH_PARENT))
+        }
+        val w = ClipMock.swipeRow(ctx, pf, box, if (item.pinned) "Unpin" else "Pin", selOn, clipHoldMs(),
+            { if (sel.isOn) { sel.toggle(item); confirmDel = false; refresh() } else pasteItem(item, false) },
+            { sel.enterWith(item); confirmDel = false; refresh() },
+            { store.togglePin(item); refresh() },
+            { keepUndo(listOf(item)); store.remove(item); msg = ClipCopy.deleted(1); refresh() },
+            { try { host.feedback(box) } catch (_: Throwable) { } })
+        w.layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).also { it.setMargins(dp(3), dp(2), dp(3), dp(1)) }
+        return w
     }
 
     /** v0.16.16 (E2): hold time (ms) from pref clip_hold (level, default 1.5 s); 0 = old system long-click. Broken value = default. */

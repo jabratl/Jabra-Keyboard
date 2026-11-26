@@ -201,6 +201,7 @@ public final class SettingsIndex {
             case "clip_count": return "Shows the number of characters (and paste count) on each clip.";
             case "clip_expire": return "Deletes unpinned clips after this time. Pinned clips are never deleted.";
             case "clip_new_look": return "Neater clipboard: title + count, one filled Add button, a \u22EF menu for Manage / Sort / View / Export all / Clear, clearer empty texts, 1-2 clips delete with Undo. OFF = old panel.";   // v0.17.58 (C3)
+            case "clip_mock": return "Clipboard mock look: underline tabs with counts, one-line pinned strip, one clip per line, swipe right = pin, left = delete, small thumbnails. OFF = old look.";   // v0.50.0 (CM1)
             case "clip_tight": return "Clipboard tight cards: smaller padding and minimum height, small check box (select mode), smaller Aa tag, one small dim info line, so more clips fit. OFF = old card size. Needs the new look.";   // v0.36.0 (CC4)
             case "clip_pop": return "Clipboard popup menus: More in select mode and the 3-dot menu open as a floating menu over the list (nothing is pushed down). OFF = the old in-panel trays. Needs the new look.";   // v0.35.1 (CC3-B)
             case "clip_fold": return "Clipboard: tap the title to hide the Filter row, tap the arrow before Pinned / Recent to fold it. Select mode and search show all. OFF = nothing folds. Needs the new look.";   // v0.43.0

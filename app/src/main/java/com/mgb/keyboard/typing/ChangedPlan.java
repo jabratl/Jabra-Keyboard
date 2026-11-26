@@ -82,7 +82,7 @@ public final class ChangedPlan {
             if (in(key, "hint_custom", "xrow_chars")) return "Custom characters";
         } else if (group.equals("Clipboard & tools")) {
             if (in(key, "clip_on", "clip_count", "clip_stay", "clip_fmt_tap", "clip_undo_n", "clip_keep_n", "clip_cap_k")) return "History";
-            if (in(key, "ui_pill", "clip_simple", "clip_view", "clip_sort", "clip_order", "clip_lines", "clip_fit", "clip_new_look", "clip_tidy", "clip_compact", "clip_compact2", "clip_slimbar", "clip_float", "clip_fold", "clip_paste2", "clip_pop", "clip_tight", "panel_ui", "clip_hold", "clip_btn_pct", "clip_card_pct", "clip_list_pct")) return "Look of clips";
+            if (in(key, "ui_pill", "clip_simple", "clip_view", "clip_sort", "clip_order", "clip_lines", "clip_fit", "clip_new_look", "clip_tidy", "clip_compact", "clip_compact2", "clip_mock", "clip_slimbar", "clip_float", "clip_fold", "clip_paste2", "clip_pop", "clip_tight", "panel_ui", "clip_hold", "clip_btn_pct", "clip_card_pct", "clip_list_pct")) return "Look of clips";
             if (in(key, "clip_expire", "clip_sens", "clip_pwd")) return "Privacy";
         } else if (group.equals("Tools & Panels")) {
             if (in(key, "edit_bar", "tb_vault", "tb_custom", "tb_auto", "tb_fold", "tb_hpct", "tb_ipct", "pad_extra", "pad_speed", "pad_delay")) return "Toolbar";
