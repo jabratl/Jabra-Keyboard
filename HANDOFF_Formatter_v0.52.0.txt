@@ -1,0 +1,17 @@
+HANDOFF - Jabra Keyboard - Formatter one-screen look - v0.52.0
+
+SOURCE: formatter-redesign-mock.html (design made in another chat). Layout = top bar, live preview + change chips, 4 sections, action row.
+
+FILES TOUCHED (overwrite, same paths):
+  app/build.gradle.kts                                        (appVersionName 0.52.0)
+  app/src/main/java/com/mgb/keyboard/FormatterFeature.kt       (FormatterPanel rewritten from "class FormatterPanel" down; FmtIo / ImeFmtIo / FmtStore above it unchanged; new imports)
+NEW:
+  app/src/main/java/com/mgb/keyboard/formatter/FmtChanges.java (pure Java helper)
+  tools/FmtChangesTest.java                                    (java -cp out FmtChangesTest, 25/25)
+  CHANGELOG.txt (entry on top), this file.
+
+NOT TOUCHED: NovelFormatter.java (engine), MgbIme.kt (stretchToLetters still finds the LAST ScrollView = the stage and gives it weight 1), FormatFloatWin.kt, SettingsGroups.kt / HelpPlan.java / SettingsIndex.java (fmt_float text is now stale but harmless).
+HEIGHT: stage ScrollView starts at 112dp; whole panel about the same as v0.51.0 so capTall() should not wrap it. If it wraps, the stage just scrolls inside.
+RULES FORMAT: "find => replace", "re:", "del:", "del-re:", "# comment" as before. NEW: "#off " + rule = switched off.
+OPEN POINTS (check on phone): menus open inside the stage (not floating); chip tap switches to Original view (Result view cannot underline).
+NOT COMPILED HERE - build in GitHub Actions, check the "v0.52.0" lines if red.
