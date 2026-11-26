@@ -98,7 +98,6 @@ public final class HelpPlan {
             case "clip_pop": return "Clipboard: More (select mode) and the 3-dot menu open as a small floating menu, the list does not move. OFF = old tray.";   // v0.35.1 (CC3-B)
             case "clip_fold": return "Clipboard: tap the title to hide the Filter row, tap the arrow before Pinned / Recent to fold it. Select mode and search show all. OFF = nothing folds.";   // v0.43.0
             case "fmt_float": return "Formatter: after you tap Preview, the exact result (or the original) floats over the screen, scrolls, and updates when you change an option. Move it by its title. OFF = a small box inside the panel.";   // v0.45.7
-            case "pad_delay": return "Cursor pad: how long selected text must stay selected before the pad opens by itself. Instant = at once, Long = 0.3 s. Longer = fewer accidental opens while reading.";   // v0.48.1
             case "pad_speed": return "Cursor pad: how fast dragging the status line glides the cursor. Slow = more finger travel per step, Fast = less. Normal = the old speed.";   // v0.48.0
             case "pad_extra": return "Cursor pad: extra rows with Word left / right, PgUp / PgDn, select Line, Undo and Redo. OFF = the 4 old rows. Open the pad again to see it.";   // v0.45.4
             case "clip_paste2": return "Select mode: if a selected clip has a format, Paste becomes Aa (with format) and T (plain text). OFF = one Paste button.";   // v0.43.0

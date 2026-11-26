@@ -189,7 +189,6 @@ public final class SettingsIndex {
             case "clip_on": return "Saves copied text in the clipboard history.";
             case "fmt_on": return "Shows the Aa novel formatter button.";
             case "fmt_float": return "Formatter: after Preview, the exact result floats over the screen and updates live. OFF = a small box inside the panel.";   // v0.45.7
-            case "pad_delay": return "Cursor pad: auto-open delay - Instant / Short / Normal / Long.";   // v0.48.1
             case "pad_speed": return "Cursor pad: trackpad (drag) speed - Slow / Normal / Fast.";   // v0.48.0
             case "pad_extra": return "Cursor pad: extra rows with Word, PgUp / PgDn, Line, Undo, Redo. OFF = the 4 old rows.";   // v0.45.4
             case "clip_lines": return "How many lines of each clip are shown in the clipboard.";
