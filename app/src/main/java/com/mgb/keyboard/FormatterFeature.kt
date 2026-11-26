@@ -16,6 +16,7 @@ import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
 import com.mgb.keyboard.formatter.NovelFormatter
+import com.mgb.keyboard.typing.ClipPickPlan
 import org.json.JSONObject
 
 /*
@@ -555,21 +556,36 @@ class FormatterPanel(private val ctx: Context, private val host: JabraHost, priv
         return if (one.length > 48) one.substring(0, 48) + "..." else one
     }
 
-    /** v0.23.1: list of the clipboard history; tap one = it becomes the source (and is previewed). */
+    /** v0.48.1: smart list of the clipboard history (filter chips, sort, same text once, title + size line); tap one = it becomes the source (and is previewed). */
     private fun clipPicker(col: LinearLayout) {
         val list = try { clips() } catch (_: Throwable) { emptyList() }
-        col.addView(note("Tap a clip to use it as the source. " + list.size + " saved.", true))
+        val texts = list.map { it.first }
+        val htmls = list.map { !it.second.isNullOrEmpty() }
+        val f = ClipPickPlan.sanitizeFilter(prefs.str("fmt_pick_f", "0").toIntOrNull() ?: 0)
+        val srt = ClipPickPlan.sanitizeSort(prefs.str("fmt_pick_s", "0").toIntOrNull() ?: 0)
+        val shown = ClipPickPlan.plan(texts, htmls, f, srt)
+        col.addView(note("Tap a clip to use it as the source. " + ClipPickPlan.count(texts, htmls, ClipPickPlan.F_ALL) + " saved.", true))
         val rt = row()
         val latest = btn("Latest (system clipboard)", 1f, 40) { pickedClip = null; pickedHtml = null; picking = false; preview() }
         if (pickedClip == null) paint(latest, GREEN, WHITE)
         rt.addView(latest)
+        rt.addView(btn("Sort: " + ClipPickPlan.S_NAMES[srt], 0.7f, 40) { prefs.setStr("fmt_pick_s", ClipPickPlan.nextSort(srt).toString()); refresh(false) })
         rt.addView(btn("Back", 0.5f, 40) { picking = false; refresh(false) })
         col.addView(rt)
+        val rf = row()   // filter chips: All / Long / Short / Bangla / HTML, each with how many clips it shows
+        for (i in 0 until ClipPickPlan.F_NAMES.size) {
+            val chip = btn(ClipPickPlan.F_NAMES[i] + " " + ClipPickPlan.count(texts, htmls, i), 1f, 34) { prefs.setStr("fmt_pick_f", i.toString()); refresh(false) }
+            chip.textSize = 11f
+            if (i == f) paint(chip, BLUE, WHITE)
+            rf.addView(chip)
+        }
+        col.addView(rf)
         if (list.isEmpty()) { col.addView(note("No saved clips yet. Turn on clipboard history and copy something.", false)); return }
-        for ((t, h) in list.take(40)) {
-            val b = btn(clipLabel(t) + "  (" + t.length + ")", 1f, 40) { pickedClip = t; pickedHtml = h; picking = false; preview() }
-            try { b.isAllCaps = false; b.gravity = Gravity.START or Gravity.CENTER_VERTICAL; b.maxLines = 2; b.ellipsize = TextUtils.TruncateAt.END } catch (_: Throwable) { }
-            if (t == pickedClip) paint(b, GREEN, WHITE)
+        if (shown.isEmpty()) { col.addView(note("No clip matches this filter. Tap All.", false)); return }
+        for (e in shown) {
+            val b = btn(e.head() + "\n" + e.info(), 1f, 54) { pickedClip = e.text; pickedHtml = list[e.index].second; picking = false; preview() }
+            try { b.isAllCaps = false; b.gravity = Gravity.START or Gravity.CENTER_VERTICAL; b.maxLines = 3; b.ellipsize = TextUtils.TruncateAt.END; b.textSize = 11f; b.setPadding(dp(8), 0, dp(8), 0) } catch (_: Throwable) { }
+            if (e.text == pickedClip) paint(b, GREEN, WHITE)
             val rr = row()
             rr.addView(b)
             col.addView(rr)
