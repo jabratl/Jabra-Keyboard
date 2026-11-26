@@ -790,7 +790,8 @@ object SettingsGroups {
             toggle(g, "Formatter: floating result window", "fmt_float", true)   // v0.45.7: after Preview, the exact result floats over the screen and updates live; OFF = the small box inside the panel
             toggle(g, "Cursor pad: extra keys", "pad_extra", true)   // v0.45.4: Word / Page / Line / Undo / Redo rows under the cursor pad; OFF = the 4 old rows (needs the pad to be opened again)
             toggle(g, "Cursor pad: auto-open on text selection", "auto_pad_select", true)   // v0.47.0: selecting text the normal way (e.g. long-press) switches straight to the cursor pad with Select ON, so arrow/Home/End/word keys keep extending it; OFF = the pad only opens when you tap it yourself
-            level(g, "Cursor pad: trackpad speed", "pad_speed", 1, arrayOf("Slow", "Normal", "Fast"))   // v0.48.0: drag-to-glide step on the pad's status line (Slow 24 dp / Normal 16 dp = as before / Fast 10 dp per step); read at every drag, no need to reopen the pad
+            level(g, "Cursor pad: trackpad speed", "pad_speed", com.mgb.keyboard.typing.PadGesture.SPEED_DEF, arrayOf("Slow", "Normal", "Fast"))   // v0.48.0: drag-to-glide step on the pad's status line (Slow 24 dp / Normal 16 dp = as before / Fast 10 dp per step); read at every drag, no need to reopen the pad
+            level(g, "Cursor pad: auto-open delay", "pad_delay", com.mgb.keyboard.typing.PadGesture.DELAY_DEF, arrayOf("Instant", "Short", "Normal", "Long"))   // v0.48.1: how long a selection must stay before the pad auto-opens (0 / 100 / 180 / 300 ms); Instant = open at once
             if (sink != null) {   // v0.25.0 (R2): "Find & Replace sets" page button (new app screen only); any problem = no button
                 try {
                     val rb = ReplaceSetsPage.button(ctx)

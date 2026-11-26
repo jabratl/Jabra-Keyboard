@@ -20,3 +20,12 @@ FILES TOUCHED (overwrite, same paths):
    autoPadOpen=false. restarting=true is untouched (PanelKeep rule: a pad the user opened stays).
 
 NOT COMPILED HERE (no Kotlin toolchain in the sandbox) - build in GitHub Actions and check the new "v0.48.0" lines if red.
+
+--- v0.48.1 (on top of v0.48.0) ---
+NEW FILE: app/src/main/java/com/mgb/keyboard/typing/PadGesture.java  (pure Java: stepDp, delayMs, TapCounter, Glide)
+ - TRIPLE-TAP on the pad status line = select the whole line (Home, then Shift+End; same as the Line key). Double-tap = word (unchanged).
+   3rd tap upgrades the word selection to the line; a 4th quick tap starts a new sequence.
+ - SETTING "pad_delay" (Instant 0 / Short 100 / Normal 180 / Long 300 ms, default Normal): Tools & Panels. Instant = the pad opens at once, no timer.
+ - PadPanel.attachDrag now only reads touch events; step size, tap counting and drag->steps live in PadGesture.
+ - AUTO_PAD_DELAY_MS constant removed from MgbIme (replaced by the pref).
+Status line text: "drag = glide . 2x word . 3x line".
