@@ -1,15 +1,7 @@
-Fake SMS Prank - local notification prank (nothing is sent over any network).
-
-Build: push to main on GitHub. The APK appears under Releases (tag v<version>-b<run>).
-Phone: app > Check for updates > Update > Install.
-
-IMPORTANT (one time): Android only installs an update over the old app if both are signed with the SAME key.
-GitHub's debug key changes, so make your own key and add 4 secrets
-(Settings > Secrets and variables > Actions): KEYSTORE_B64, KEYSTORE_PASSWORD, KEY_ALIAS, KEY_PASSWORD.
-Make the key on any PC with Java:
-  keytool -genkeypair -v -keystore my.jks -alias prank -keyalg RSA -keysize 2048 -validity 10000
-  base64 -w0 my.jks      (paste this output as KEYSTORE_B64)
-
-Bump version: edit ONLY  def appVersionName = "..."  in app/build.gradle (and put the same number on the first line of CHANGELOG.txt).
-Upload a code zip: name it like  anything_v1_0_1.zip , put it in the repo root, push. The workflow applies it, builds, releases.
-Revert: Actions > Build APK > Run workflow > revert_to = previous | latest | tag | commit.
+Jabra Keyboard - personal Android keyboard (Ridmik-inspired, own code). Offline: no account, no cloud, no tracking.
+Languages: English, Bangলা (phonetic), বাংলা (fixed layout). Panels: clipboard, novel formatter, vault, text tools, Find & Replace (v0.24.0-0.32.0, toolbar key Rp or Gear > Tools, rule sets, optional recent pairs, help with examples, 3-step undo, keep-case, replace in one clip, caret in Find / With, from / to cursor scope, skip / rest, list mode (a | b | c), set preview, long-press peek card, copy a set for the Formatter), profiles, themes + Theme Studio, emoji, number pad, symbols, cursor pad, PC mode, size, settings, health check, backup / restore.
+Build: push to main on GitHub. The APK appears under Releases. On the phone: app screen > Check for updates.
+App screen (version 0.17.15): Home with 7 pages: Typing | Look & Theme | Layout & Size | Keys & Gestures | Clipboard & Tools | Data & About | Tools & Panels. Every page is split into named sections; search, Favourites, per-row reset, "Reset this section / page" with Undo, tap a stepper number to type an exact value, theme grid + custom theme editor, toolbar editor. Panel style "New" (optional): redesigned Clipboard, Vault, Gear panel, More page and Toolbar editor. Optional toolbar edit items: Select word / line, Delete word / line, Line start / end, Duplicate line, Select none. Bangলা key map (Ridmik style) + practice page.
+Docs in this folder: CHANGELOG.txt (every version, newest on top; versions v0.16.16 and older are in docs/ARCHIVE_CHANGELOG.txt), CHECKLIST_SMOKE.txt (10-minute phone test, use this first after an update), CHECKLIST.txt (full phone tests), REVERT.txt (go back to an older version),
+HANDOFF_Jabra-Keyboard_<newest version>.txt (project notes for the next chat; keep ONLY the newest one).
+Keyboard layout editor (plan K, v0.17.1 - v0.17.15): App > Layout & Size > Custom keyboard (default OFF = classic keyboard). The editor changes keys, widths, rows, swipes / long-press, number row, bottom row and symbol pages, warns about duplicate / missing letters, keeps up to 12 saved layouts (export / import as text, included in the backup), has 5 presets and a test pad. Safety net: a damaged layout never leaves you without a keyboard (classic keyboard is used; "Restore last good layout" in the app).
