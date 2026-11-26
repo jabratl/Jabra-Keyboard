@@ -111,6 +111,7 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
         PeekPopup.dismiss()   // v0.32.0
         fwinFail = false   // v0.39.3 (FLOAT F4)
         optsOpen = false   // v0.38.1 (P2)
+        dMenu = 0; dSkip.clear(); dKey = ""   // v0.53.0 (DIFF)
         setPreviewOn = false; setPrev = null; part = 0; partCut = -1; clipIo = null; msg = ""; confirmAll = false; undoStack.clear(); helpPage = 0; typing = 0; padPage = 0; shift = false; step = 0; rprAsk = false
         try { opt = ReplaceEngine.unpack(prefs.int("rp_opt", ReplaceEngine.pack(ReplaceEngine.Opt()))) } catch (_: Throwable) { opt = ReplaceEngine.Opt() }
         loadProtect()   // v0.41.0
@@ -601,6 +602,10 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
 
     /** New look when panel_ui = New; any problem = the classic main view (pattern HistCard.buildModern / buildClassic). */
     private fun mainViewPick(): View {
+        if (diffOn() && !diffFail && !floatSwitch()) {   // v0.53.0: one-screen diff look first (pref rp_diff, default ON); any problem = the views below
+            val keepD = msg
+            try { return mainViewDiff() } catch (_: Throwable) { diffFail = true; msg = keepD }
+        }
         if (miniOn()) {   // v0.38.1 (P2): minimal look first (pref rp_mini, default ON); any problem = the look that was used before
             val keep = msg
             try { return mainViewMini() } catch (_: Throwable) { msg = keep }
@@ -928,6 +933,453 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
             try { fwin?.hide() } catch (_: Throwable) { }
             refresh()
         }
+    }
+
+    // ------------------------------------------------------------------ v0.53.0 (DIFF): ONE-SCREEN Find & Replace with a diff preview (look of docs/replace-redesign-mock.html).
+    // NEW code only: the old views (Slim / Mini / New / classic) are untouched and stay as the fallback (pref rp_diff = false, a floating window, or any exception = the old view).
+    // What is new: tap a match in the preview = skip it, ONE Replace button ("Replace 3 of 4"), Changes | Result preview, locked (Never change) matches shown in the text,
+    // smart suggestion chips ("N inside longer words > Whole word", "Try Smart"), One | Pairs switch, scope menu, Recent chips when Find is empty.
+    private var diffFail = false
+    private var dPairs = false                 // Pairs tab is shown (the engine state is still pairMode / setRules)
+    private val dSkip = HashSet<Int>()         // start offsets (in src) of matches the user tapped off
+    private var dKey = ""                      // when the inputs change, dSkip is cleared
+    private var dView = 0                      // 0 = Changes, 1 = Result
+    private var dMenu = 0                      // 0 none, 1 scope, 2 tools, 3 more
+    private var dScroll = 0                    // preview scroll, kept over the rebuild of a tap
+    private var dRestore = false
+    private var dSv: ScrollView? = null
+
+    private fun diffOn(): Boolean = try { prefs.bool("rp_diff", true) } catch (_: Throwable) { true }
+
+    /** One match of the preview: prot = touches a Never change term (locked), skip = the user tapped it off. */
+    private class DM(val h: ReplaceEngine.Hit, val prot: Boolean, val skip: Boolean) { val live: Boolean get() = !prot && !skip }
+
+    private fun diffMatches(res: ReplaceEngine.Result): List<DM> {
+        if (res.err != null) return emptyList()
+        val live = HashSet<Int>()
+        for (h in res.edits) live.add(h.start)
+        // single Find / With with a Never change list: run once more WITHOUT the list to know where the locked matches are
+        val all: List<ReplaceEngine.Hit> = if (setRules == null && res.skipped > 0) {
+            val o = opt.copy(); o.protect = null
+            try { ReplaceEngine.replaceAll(src, find, repl, o).edits } catch (_: Throwable) { res.edits }
+        } else res.edits
+        return all.map { DM(it, !live.contains(it.start), dSkip.contains(it.start)) }
+    }
+
+    private fun diffSelect(ms: List<DM>, kind: String, curMs: Int): List<ReplaceEngine.Hit> {
+        val live = ms.filter { it.live }
+        val l = when (kind) {
+            "first" -> live.take(1)
+            "this" -> live.filter { ms.indexOf(it) == curMs }
+            "rest" -> live.filter { ms.indexOf(it) >= curMs }
+            else -> live
+        }
+        return l.map { it.h }
+    }
+
+    /** A Result for a part of the matches (skipped / locked ones stay). Same fields the old doReplace reads. */
+    private fun diffResult(res: ReplaceEngine.Result, sel: List<ReplaceEngine.Hit>): ReplaceEngine.Result {
+        val r = ReplaceEngine.Result()
+        val sb = StringBuilder()
+        var pos = 0
+        for (h in sel) { sb.append(src, pos, h.start); sb.append(h.repl); pos = h.end }
+        sb.append(src, pos, src.length)
+        r.out = sb.toString(); r.count = res.count; r.changed = sel.size; r.skipped = res.skipped
+        r.edits.addAll(sel)
+        return r
+    }
+
+    private fun diffRun(res: ReplaceEngine.Result, ms: List<DM>, curMs: Int, kind: String) {
+        if (pairMode && find.isNotEmpty()) { onReplace(res, false); return }   // the old rule: Find has text that is not in the list yet = add it first
+        val sel = diffSelect(ms, kind, curMs)
+        if (sel.isEmpty()) {
+            if (dSkip.isEmpty() && kind == "all") onReplace(res, false) else { msg = "Nothing to replace"; refresh() }   // onReplace gives the usual message (No match / error ...)
+            return
+        }
+        onReplace(if (sel.size == res.edits.size) res else diffResult(res, sel), kind != "all")
+    }
+
+    private fun diffInside(h: ReplaceEngine.Hit): Boolean {
+        val f = h.found
+        if (f.isEmpty()) return false
+        val b = if (h.start > 0) src[h.start - 1] else ' '
+        val a = if (h.end < src.length) src[h.end] else ' '
+        return (b.isLetterOrDigit() && f.first().isLetterOrDigit()) || (a.isLetterOrDigit() && f.last().isLetterOrDigit())
+    }
+
+    private fun dChip(label: String, on: Boolean, onClick: () -> Unit): Button =
+        UiKit.chip(ctx, prefs, label, on, 32, { v -> host.feedback(v) }) { onClick() }
+
+    private fun dScrollRow(r: LinearLayout): View {
+        val h = android.widget.HorizontalScrollView(ctx)
+        h.isHorizontalScrollBarEnabled = false
+        h.addView(r)
+        h.layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
+        return h
+    }
+
+    private fun dText(t: String, warn: Boolean): TextView {
+        val v = TextView(ctx)
+        v.text = t
+        v.textSize = JabraTokens.T_BTN
+        v.setTypeface(v.typeface, Typeface.BOLD)
+        v.maxLines = 1
+        v.gravity = Gravity.CENTER_VERTICAL
+        v.setPadding(dp(6), 0, dp(6), 0)
+        v.setTextColor(if (warn) JabraTokens.WARN else (try { JabraTokens.cardText(prefs) } catch (_: Throwable) { Color.BLACK }))
+        v.layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, dp(30))
+        return v
+    }
+
+    private fun diffToOne() {
+        if (pairMode) {   // the pairs stay in pairRules, they only stop running
+            setRules = null; setName = null; setRun = null; pairMode = false
+            checkAck = false; checkWarn = null; clearAsk = false; editIdx = -1
+        }
+        dPairs = false; confirmAll = false; step = 0; dMenu = 0
+        refresh()
+    }
+
+    private fun diffToPairs() {
+        if (setRules != null && !pairMode) { msg = "A set is loaded. Tap \u2715 Set first, then use Pairs"; refresh(); return }
+        dPairs = true; dMenu = 0; confirmAll = false; step = 0
+        if (!pairMode && pairRules.isNotEmpty()) {
+            val o = opt.copy(); o.mode = ReplaceEngine.MODE_TEXT; o.list = false; o.keepCase = false; o.smart = false
+            setOpt = o; pairMode = true; syncPairs()
+        }
+        refresh()
+    }
+
+    private fun diffScope(sel: Boolean, p: Int) {
+        if (sel && !hasSel) { msg = "Nothing is selected"; dMenu = 0; refresh(); return }
+        usedSel = sel; part = p; partCut = -1
+        confirmAll = false; step = 0; dMenu = 0
+        readSource(false)
+        refresh()
+    }
+
+    private fun diffNav(d: Int, nav: List<Int>, ms: List<DM>) {
+        val n = nav.size
+        if (n == 0) return
+        step = ((step + d) % n + n) % n
+        dRestore = false
+        try {
+            val h = ms[nav[step]].h
+            val off = if (part == 1) partCut else 0
+            if (!usedSel) io.selectRange(h.start + off, h.end + off)
+        } catch (_: Throwable) { }
+        refresh()
+    }
+
+    private fun diffTap(i: Int, nav: List<Int>, ms: List<DM>) {
+        val m = ms.getOrNull(i) ?: return
+        dScroll = try { dSv?.scrollY ?: 0 } catch (_: Throwable) { 0 }
+        dRestore = true
+        confirmAll = false
+        if (m.prot) msg = "Protected by Never change"
+        else { if (dSkip.contains(m.h.start)) dSkip.remove(m.h.start) else dSkip.add(m.h.start); step = nav.indexOf(i).coerceAtLeast(0) }
+        refresh()
+    }
+
+    private fun diffClick(sb: SpannableStringBuilder, a: Int, b: Int, act: () -> Unit) {
+        if (b <= a) return
+        sb.setSpan(object : android.text.style.ClickableSpan() {
+            override fun onClick(w: View) { try { act() } catch (_: Throwable) { } }
+            override fun updateDrawState(ds: android.text.TextPaint) { }
+        }, a, b, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+    }
+
+    /** The preview text. Changes: found text struck out (red) + the new text (green). Result: only the new text. Skipped = dimmed + underlined, locked = dimmed + lock. curOff[0] = where the current match starts. */
+    private fun diffSpan(ms: List<DM>, curMs: Int, result: Boolean, nav: List<Int>, curOff: IntArray): SpannableStringBuilder {
+        val sb = SpannableStringBuilder()
+        val dk = try { JabraTokens.isDark(prefs) } catch (_: Throwable) { false }
+        val delBg = if (dk) 0xFF4A2626.toInt() else 0xFFFBDCDA.toInt()
+        val delInk = if (dk) 0xFFFFB4AE.toInt() else 0xFF8F1F18.toInt()
+        val insBg = if (dk) 0xFF233F2B.toInt() else 0xFFD5F0DA.toInt()
+        val insInk = if (dk) 0xFFB5E8BD.toInt() else 0xFF1D5A2B.toInt()
+        val dimC = try { JabraTokens.cardNote(prefs) } catch (_: Throwable) { Color.GRAY }
+        val ranges = ArrayList<IntArray>()
+        val shownIdx: List<Int>
+        if (src.length <= 3000) { ranges.add(intArrayOf(0, src.length)); shownIdx = ms.indices.toList() }
+        else {   // long text: only a little text around the first matches
+            shownIdx = ms.indices.take(80)
+            for (i in shownIdx) {
+                val a = Math.max(0, ms[i].h.start - 40); val b = Math.min(src.length, ms[i].h.end + 40)
+                val last = ranges.lastOrNull()
+                if (last != null && a <= last[1]) last[1] = Math.max(last[1], b) else ranges.add(intArrayOf(a, b))
+            }
+            if (ranges.isEmpty()) ranges.add(intArrayOf(0, Math.min(src.length, 400)))
+        }
+        var mi = 0
+        for ((ri, rg) in ranges.withIndex()) {
+            if (ri > 0) sb.append("\n\u2026\n")
+            var pos = rg[0]
+            while (mi < shownIdx.size && ms[shownIdx[mi]].h.start < rg[1]) {
+                val i = shownIdx[mi]; mi++
+                val m = ms[i]
+                if (m.h.start < pos) continue
+                sb.append(src, pos, m.h.start); pos = m.h.end
+                val a0 = sb.length
+                if (i == curMs) curOff[0] = a0
+                if (m.prot) {
+                    sb.append(m.h.found).append(" \uD83D\uDD12")
+                    sb.setSpan(android.text.style.UnderlineSpan(), a0, sb.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+                    sb.setSpan(ForegroundColorSpan(dimC), a0, sb.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+                } else if (m.skip) {
+                    sb.append(m.h.found)
+                    sb.setSpan(android.text.style.UnderlineSpan(), a0, sb.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+                    sb.setSpan(ForegroundColorSpan(dimC), a0, sb.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+                } else {
+                    if (!result) {
+                        val d0 = sb.length
+                        sb.append(m.h.found)
+                        sb.setSpan(android.text.style.BackgroundColorSpan(delBg), d0, sb.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+                        sb.setSpan(ForegroundColorSpan(delInk), d0, sb.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+                        sb.setSpan(android.text.style.StrikethroughSpan(), d0, sb.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+                    }
+                    if (m.h.repl.isNotEmpty()) {
+                        val n0 = sb.length
+                        sb.append(m.h.repl)
+                        sb.setSpan(android.text.style.BackgroundColorSpan(insBg), n0, sb.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+                        sb.setSpan(ForegroundColorSpan(insInk), n0, sb.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+                    }
+                    if (i == curMs && sb.length > a0) sb.setSpan(StyleSpan(Typeface.BOLD), a0, sb.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+                }
+                diffClick(sb, a0, sb.length) { diffTap(i, nav, ms) }
+            }
+            sb.append(src, pos, rg[1])
+        }
+        if (mi < shownIdx.size || shownIdx.size < ms.size) sb.append("\n\u2026 +").append((ms.size - mi).toString()).append(" more")
+        return sb
+    }
+
+    private fun diffMenuInto(root: LinearLayout, res: ReplaceEngine.Result, ms: List<DM>, nav: List<Int>, curMs: Int) {
+        val items = ArrayList<Triple<String, String, () -> Unit>>()
+        val title: String
+        when (dMenu) {
+            1 -> {
+                title = "Replace where?"
+                items.add(Triple("Selection", if (hasSel) "the selected text" else "none selected") { diffScope(true, 0) })
+                items.add(Triple("Whole field", "asks to confirm") { diffScope(false, 0) })
+                items.add(Triple("From cursor", "cursor to the end") { diffScope(false, 1) })
+                items.add(Triple("To cursor", "start to the cursor") { diffScope(false, 2) })
+            }
+            2 -> {
+                title = "Tools"
+                items.add(Triple("Sets", "") { dMenu = 0; typing = 3; confirmAll = false; refresh() })
+                items.add(Triple("Recent", "") { dMenu = 0; typing = 4; confirmAll = false; rprAsk = false; refresh() })
+                items.add(Triple("Never change", protectList.size.toString() + " terms") { dMenu = 0; openProtect() })
+                items.add(Triple("Help", "") { dMenu = 0; typing = 5; helpPage = 0; confirmAll = false; refresh() })
+            }
+            else -> {
+                title = "More"
+                items.add(Triple("Only the first", "") { dMenu = 0; diffRun(res, ms, curMs, "first") })
+                items.add(Triple("Only this one", if (nav.isNotEmpty()) (step + 1).toString() + " of " + nav.size else "") { dMenu = 0; diffRun(res, ms, curMs, "this") })
+                items.add(Triple("This one and all after", "") { dMenu = 0; diffRun(res, ms, curMs, "rest") })
+                val sel = diffSelect(ms, "all", curMs)
+                val rr = if (sel.size == res.edits.size) res else diffResult(res, sel)
+                if (copiedOut != null && copiedOut == rr.out) items.add(Triple("Paste copied result", "") { dMenu = 0; pasteCopied() })
+                else items.add(Triple("Copy result", "") { dMenu = 0; copyResult(rr) })
+            }
+        }
+        val hd = row()
+        hd.gravity = Gravity.CENTER_VERTICAL
+        hd.setPadding(dp(8), dp(2), dp(4), 0)
+        val tt = dText(title, false)
+        tt.layoutParams = LinearLayout.LayoutParams(0, dp(30), 1f)
+        hd.addView(tt)
+        hd.addView(dChip("Close", true) { dMenu = 0; refresh() })
+        root.addView(hd)
+        val col = LinearLayout(ctx)
+        col.orientation = LinearLayout.VERTICAL
+        for (it in items) {
+            val b = btn(it.first + (if (it.second.isNotEmpty()) "   \u00B7  " + it.second else ""), 0f, 38) { _ -> it.third() }
+            b.layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(38)).also { lp -> lp.setMargins(dp(6), dp(2), dp(6), dp(2)) }
+            b.gravity = Gravity.CENTER_VERTICAL or Gravity.START
+            b.setPadding(dp(12), 0, dp(8), 0)
+            col.addView(b)
+        }
+        val sv = ScrollView(ctx)
+        try { sv.background = UiKit.cardBackground(ctx, prefs, false, false) } catch (_: Throwable) { }
+        sv.layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(150)).also { it.setMargins(dp(2), dp(2), dp(2), dp(2)) }
+        sv.addView(col)
+        root.addView(sv)   // the LAST ScrollView directly in the panel: MgbIme.stretchToLetters gives it the spare height
+    }
+
+    private fun mainViewDiff(): View {
+        try { ReplaceSlim.closeIfIdle() } catch (_: Throwable) { }   // the slim Options window of the old view must not stay open
+        val root = LinearLayout(ctx)
+        root.orientation = LinearLayout.VERTICAL
+        paintBg(root)
+        root.setPadding(dp(4), dp(4), dp(4), dp(4))
+        valueTv = null
+        keysBox = null
+
+        val res = calc()
+        val shown = msg
+        msg = ""
+        val key = find + "\u0001" + repl + "\u0001" + ReplaceEngine.pack(opt) + "\u0001" + part + "|" + usedSel + "|" + src.hashCode() + "|" + (setName ?: "") + "|" + pairRules.hashCode() + "|" + protectList.size
+        if (key != dKey) { dKey = key; dSkip.clear() }
+        val isSet = setRules != null && !pairMode
+        if (pairMode) dPairs = true
+        if (isSet) dPairs = false
+
+        val ms = diffMatches(res)
+        val nav = ms.indices.filter { !ms[it].prot }
+        step = if (nav.isEmpty()) 0 else step.coerceIn(0, nav.size - 1)
+        val curMs = nav.getOrNull(step) ?: -1
+        val eff = ms.count { it.live }
+        val nProt = ms.count { it.prot }
+        val nSkip = ms.count { it.skip }
+        val nRules = setRules?.count { it.kind != ReplaceRules.K_COMMENT } ?: 0
+
+        // 1) top bar: [ABC] [One] [Pairs n] [scope v] [...]
+        val top = row()
+        top.gravity = Gravity.CENTER_VERTICAL
+        top.addView(small("ABC", 36) { host.showLetters() })
+        top.addView(dChip("One", !dPairs && !isSet) { diffToOne() })
+        top.addView(dChip("Pairs " + pairRules.size, dPairs) { diffToPairs() })
+        val sc = btn(scopeLabel().removePrefix("In: ") + " \u25BE", 1f, 36) { dMenu = if (dMenu == 1) 0 else 1; refresh() }
+        if (!usedSel && part == 0) { try { sc.setTextColor(JabraTokens.WARN) } catch (_: Throwable) { } }   // the whole field is the wide scope: shown in the warning colour
+        top.addView(sc)
+        top.addView(small("\u22EF", 36) { dMenu = if (dMenu == 2) 0 else 2; refresh() })
+        root.addView(top)
+
+        // 2) Find / With (or the loaded Set) in ONE card, swap on the right
+        val io2 = row()
+        io2.gravity = Gravity.CENTER_VERTICAL
+        val card = LinearLayout(ctx)
+        card.orientation = LinearLayout.VERTICAL
+        card.setPadding(dp(10), dp(2), dp(4), dp(2))
+        try { card.background = UiKit.cardBackground(ctx, prefs, false, false) } catch (_: Throwable) { }
+        if (isSet) {
+            card.addView(miniLine("Set", (setName ?: "") + " (" + nRules + ")", { typing = 3; refresh() },
+                listOf(Pair("\u2715 Set") { dropSet(); dPairs = false; refresh() }, Pair("Check") { checkNow() }, Pair("Never") { openProtect() }, Pair("Fmt") { copyForFormatter() })))
+        } else {
+            card.addView(miniLine("Find", find, { startTyping(1) },
+                listOf(Pair("Sel") { take(true, io.selected(), "Nothing is selected") }, Pair("Clip") { take(true, io.clipText(), "Clipboard is empty") })))
+            card.addView(miniDivider())
+            card.addView(miniLine("With", repl, { startTyping(2) },
+                listOf(Pair("Sel") { take(false, io.selected(), "Nothing is selected") }, Pair("Clip") { take(false, io.clipText(), "Clipboard is empty") })))
+        }
+        card.layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).also { it.setMargins(dp(2), dp(4), dp(2), dp(2)) }
+        io2.addView(card)
+        if (!isSet) io2.addView(small("\u21C4", 72) { swap() })
+        root.addView(io2)
+
+        // 3) options: Text | Word | Regex | Aa | Keep | List | Smart | \n | Never change   (not in Pairs: each pair keeps its own mode)
+        if (!isSet && !dPairs) {
+            val orow = row()
+            orow.gravity = Gravity.CENTER_VERTICAL
+            val names = arrayOf("Text", "Word", "Regex")
+            for (i in 0..2) orow.addView(dChip(names[i], opt.mode == i) { opt.mode = i; optChanged() })
+            orow.addView(dChip("Aa", opt.matchCase) { opt.matchCase = !opt.matchCase; if (opt.matchCase) opt.keepCase = false; optChanged() })
+            orow.addView(dChip("Keep case", opt.keepCase) { opt.keepCase = !opt.keepCase; if (opt.keepCase) opt.matchCase = false; optChanged() })
+            if (opt.mode != ReplaceEngine.MODE_REGEX) {
+                orow.addView(dChip("List a | b", opt.list) { opt.list = !opt.list; optChanged() })
+                orow.addView(dChip("Smart", opt.smart) { opt.smart = !opt.smart; optChanged() })
+                orow.addView(dChip("\\n", opt.escapes) { opt.escapes = !opt.escapes; optChanged() })
+            }
+            orow.addView(dChip(if (protectList.isEmpty()) "Never change" else "Never change (" + protectList.size + ")", protectList.isNotEmpty()) { openProtect() })
+            root.addView(dScrollRow(orow))
+        }
+
+        // 4) stage: a menu card, or [pair list + pair buttons] + the preview card
+        if (dMenu != 0) {
+            diffMenuInto(root, res, ms, nav, curMs)
+        } else {
+            if (dPairs) {
+                if (pairRules.isEmpty()) root.addView(UiKit.noteText(ctx, prefs, "No pairs yet. Type Find / With and tap + Pair, or tap + Paste (one find => with per line)."))
+                else root.addView(pairListView())
+                val pr = row()
+                pr.gravity = Gravity.CENTER_VERTICAL
+                if (find.isNotEmpty() || editIdx >= 0) pr.addView(dChip(if (editIdx >= 0) "Update" else "+ Pair", true) { addPair(false) })
+                pr.addView(dChip("+ Paste", false) { pastePairs() })
+                if (pairMode) {
+                    pr.addView(dChip("Check", false) { checkNow() })
+                    pr.addView(dChip("List " + pairRules.size, false) { typing = 8; clearAsk = false; refresh() })
+                    pr.addView(dChip("Save as Set", false) { savePairs() })
+                    pr.addView(dChip("\u2192 Formatter", false) { copyForFormatter() })
+                    pr.addView(dChip(if (clearAsk) "Sure? Clear" else "Clear", false) { clearPairs() })
+                }
+                root.addView(dScrollRow(pr))
+            }
+            // header: [<] k of N [>] ..... Changes | Result
+            val hd = row()
+            hd.gravity = Gravity.CENTER_VERTICAL
+            hd.setPadding(dp(4), dp(2), dp(4), 0)
+            hd.addView(small("\u2039", 30) { diffNav(-1, nav, ms) })
+            hd.addView(dText(if (nav.isEmpty()) "0 of 0" else (step + 1).toString() + " of " + nav.size, false))
+            hd.addView(small("\u203A", 30) { diffNav(1, nav, ms) })
+            val sp = View(ctx)
+            sp.layoutParams = LinearLayout.LayoutParams(0, 1, 1f)
+            hd.addView(sp)
+            hd.addView(dChip("Changes", dView == 0) { dView = 0; dRestore = true; dScroll = try { dSv?.scrollY ?: 0 } catch (_: Throwable) { 0 }; refresh() })
+            hd.addView(dChip("Result", dView == 1) { dView = 1; dRestore = true; dScroll = try { dSv?.scrollY ?: 0 } catch (_: Throwable) { 0 }; refresh() })
+            root.addView(hd)
+            // body: the diff text (tap a match = skip it)
+            val sv = ScrollView(ctx)
+            try { sv.background = UiKit.cardBackground(ctx, prefs, false, false) } catch (_: Throwable) { }
+            sv.layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(if (dPairs) 40 else 46)).also { it.setMargins(dp(2), dp(2), dp(2), dp(2)) }   // small start height, MgbIme.stretchToLetters adds the spare height
+            val pv = TextView(ctx)
+            pv.textSize = 13f
+            pv.setTextColor(try { JabraTokens.cardText(prefs) } catch (_: Throwable) { Color.BLACK })
+            pv.setPadding(dp(10), dp(2), dp(10), dp(4))
+            pv.highlightColor = Color.TRANSPARENT
+            val curOff = intArrayOf(-1)
+            if (io.blocked()) pv.text = "Not available in password fields."
+            else if (src.isEmpty()) pv.text = "No text: select text or type some first"
+            else if (ms.isEmpty()) pv.text = if (src.length > 400) src.substring(0, 400) + "\u2026" else src
+            else { pv.text = diffSpan(ms, curMs, dView == 1, nav, curOff); pv.movementMethod = android.text.method.LinkMovementMethod.getInstance() }
+            sv.addView(pv)
+            dSv = sv
+            val keepY = dScroll; val restore = dRestore
+            dRestore = false
+            pv.post {
+                try {
+                    val lay = pv.layout
+                    if (restore) sv.scrollTo(0, keepY)
+                    else if (lay != null && curOff[0] >= 0) sv.scrollTo(0, Math.max(0, lay.getLineTop(lay.getLineForOffset(Math.min(curOff[0], pv.text.length))) - dp(18)))
+                } catch (_: Throwable) { }
+            }
+            root.addView(sv)
+            // footer: count + suggestion chips
+            val ft = row()
+            ft.gravity = Gravity.CENTER_VERTICAL
+            ft.setPadding(dp(4), 0, dp(4), dp(2))
+            val rr0 = setRun
+            if (res.err != null) ft.addView(dText(res.err ?: "Error", true))
+            else if (setRules != null && rr0 != null && rr0.err != null) ft.addView(dText("Error in a pair", true))
+            else if (ms.isEmpty()) ft.addView(dText(if (setRules == null && find.isEmpty()) "Type what to find" else "No matches", false))
+            else ft.addView(dText(eff.toString() + (if (eff == 1) " match" else " matches") + (if (nProt > 0) "  \u00B7  " + nProt + " \uD83D\uDD12" else "") + (if (nSkip > 0) "  \u00B7  " + nSkip + " skipped" else ""), false))
+            val inside = if (opt.mode == ReplaceEngine.MODE_TEXT && setRules == null) ms.count { it.live && diffInside(it.h) } else 0
+            if (res.err == null && inside > 0) ft.addView(dChip("$inside inside longer words \u2192 Whole word", false) { opt.mode = ReplaceEngine.MODE_WORD; optChanged() })
+            if (res.err == null && ms.isEmpty() && find.isNotEmpty() && setRules == null && !opt.smart && opt.mode != ReplaceEngine.MODE_REGEX) ft.addView(dChip("Try Smart", false) { opt.smart = true; optChanged() })
+            val nShort = ReplaceCheck.shortCount(checkWarn)
+            if (setRules != null && nShort > 0) ft.addView(dChip("Whole word (" + nShort + ")", false) { fixShort() })
+            if (setRules == null && find.isEmpty() && !dPairs) {   // Recent pairs (only when that option is ON): one tap fills Find / With
+                try {
+                    if (prefs.bool(RecentPairs.PREF_ON, false)) for (p in RecentPairs.parse(prefs.str(RecentPairs.PREF_LIST, "")).take(3)) ft.addView(dChip(p.find.take(12) + " \u2192 " + p.with.take(12), false) { usePair(p) })
+                } catch (_: Throwable) { }
+            }
+            root.addView(dScrollRow(ft))
+        }
+        if (shown.isNotEmpty()) root.addView(UiKit.noteText(ctx, prefs, shown))
+
+        // 5) ONE Replace button (+ undo, + more)
+        val act = row()
+        val ask = confirmAll && !usedSel
+        val tot = ms.count { !it.prot }
+        val label = if (ask) "Sure? Replace all" else if (eff == 0) "Replace" else if (eff < tot) "Replace " + eff + " of " + tot else "Replace " + eff
+        val go = btn(label, 2.4f, 44) { diffRun(res, ms, curMs, "all") }
+        accentButton(go, if (ask) JabraTokens.WARN else JabraTokens.ACCENT)
+        peekOn(go) { peekResult(res) }
+        go.alpha = if (res.err == null && eff > 0) 1f else 0.6f
+        act.addView(go)
+        if (undoStack.canUndo()) act.addView(btn("\u21B6 " + ReplaceExtras.undoLabel(undoStack.size()), 1f, 44) { undo() })
+        act.addView(btn("\u22EF", 0.7f, 44) { dMenu = if (dMenu == 3) 0 else 3; refresh() })
+        root.addView(act)
+        return root
     }
 
     private fun miniOn(): Boolean = try { prefs.bool("rp_mini", true) } catch (_: Throwable) { true }

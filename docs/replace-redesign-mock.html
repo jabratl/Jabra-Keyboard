@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="bn" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Jabra Keyboard – Find &amp; Replace (mock)</title>
+<style>
+  :root,[data-theme="dark"]{--page:#0f1217;--ink:#e6e9ef;--muted:#8e99ab;--kb:#1a1d24;--key:#262b35;--hover:#303644;--line:#303644;--sel:#6ea8fe;--selbg:#22385c;--warn:#ef7a74;--field:#12151b;--del:#4a2626;--delink:#ffb4ae;--ins:#233f2b;--insink:#b5e8bd;--lock:#c9a24a}
+  [data-theme="light"]{--page:#e9edf1;--ink:#1c2430;--muted:#5d6b7c;--kb:#f4f6f9;--key:#ffffff;--hover:#e6ebf2;--line:#d8dee8;--sel:#2f6fe0;--selbg:#dbe7fb;--warn:#d4453d;--field:#ffffff;--del:#fbdcda;--delink:#8f1f18;--ins:#d5f0da;--insink:#1d5a2b;--lock:#8a6a14}
+  *{box-sizing:border-box}
+  html{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+  body{margin:0;background:var(--page);color:var(--ink);font:15px/1.45 system-ui,"Noto Sans Bengali",sans-serif}
+  button{font:inherit;color:inherit}
+  button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid var(--sel);outline-offset:2px}
+  .wrap{max-width:940px;margin:0 auto;padding:20px 16px 44px;display:grid;gap:22px 32px;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));align-items:start}
+  .head{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center}
+  .head h1{font-size:19px;margin:0;font-weight:650;flex:1 1 280px}
+  .head h1 small{display:block;font-weight:400;font-size:13.5px;color:var(--muted);margin-top:3px}
+  .tog{border:1px solid var(--line);background:transparent;border-radius:10px;padding:7px 12px;font-size:13px;cursor:pointer}
+
+  .field{background:var(--field);border:1px solid var(--line);border-radius:12px;padding:10px 12px;font-size:13.5px;line-height:1.55;white-space:pre-wrap;word-break:break-word;height:150px;overflow:auto;margin-bottom:8px;user-select:text;cursor:text}
+  .field .s{background:var(--selbg);border-radius:3px}
+  .field .cur{display:inline-block;width:0;border-left:2px solid var(--sel);height:1.1em;vertical-align:text-bottom;margin:0 -1px}
+  .fhint{font-size:12px;color:var(--muted);margin:-2px 2px 8px}
+
+  .kb{background:var(--kb);border-radius:18px;padding:8px;width:100%;max-width:380px;height:420px;display:flex;flex-direction:column;gap:6px;position:relative;touch-action:manipulation}
+  .bar{display:flex;align-items:center;gap:6px;height:32px;flex:none}
+  .fn{flex:none;border:0;border-radius:10px;background:var(--key);height:32px;padding:0 11px;font-size:13px;font-weight:600;cursor:pointer}
+  .grow{flex:1;min-width:0}
+  .seg{display:flex;background:var(--key);border-radius:10px;padding:2px;gap:2px;flex:none}
+  .seg button{border:0;background:transparent;border-radius:8px;height:28px;padding:0 9px;font-size:12px;font-weight:600;color:var(--muted);cursor:pointer;white-space:nowrap}
+  .seg button.on{background:var(--selbg);color:var(--sel)}
+  .pill{border:0;border-radius:10px;background:var(--key);height:32px;padding:0 10px;font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+  .pill.warn{color:var(--lock)}
+  .dots{flex:none;border:0;border-radius:10px;background:var(--key);width:34px;height:32px;font-size:17px;line-height:1;cursor:pointer}
+
+  .io{display:grid;grid-template-columns:1fr 34px;gap:5px;flex:none}
+  .ioin{display:flex;align-items:center;background:var(--key);border-radius:11px;height:34px;padding-left:10px;gap:2px;min-width:0}
+  .ioin input{flex:1;min-width:0;border:0;background:transparent;color:var(--ink);font:inherit;font-size:14px;height:32px;outline-offset:-2px;border-radius:8px}
+  .ioin input::placeholder{color:var(--muted)}
+  .ioin.bad{box-shadow:inset 0 0 0 1.5px var(--warn)}
+  .mini{flex:none;border:0;background:transparent;color:var(--sel);font-size:12px;font-weight:650;height:30px;padding:0 7px;border-radius:8px;cursor:pointer}
+  .mini:hover{background:var(--hover)}
+  .swap{grid-row:1/3;grid-column:2;border:0;border-radius:11px;background:var(--key);font-size:17px;cursor:pointer;color:var(--sel)}
+
+  .opts{display:flex;gap:5px;align-items:center;flex:none;overflow-x:auto;scrollbar-width:none}
+  .opts::-webkit-scrollbar{display:none}
+  .chip{flex:none;border:0;border-radius:999px;background:var(--key);color:var(--muted);height:26px;padding:0 10px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap}
+  .chip.on{background:var(--selbg);color:var(--sel)}
+  .chip.sug{background:transparent;border:1px dashed var(--sel);color:var(--sel)}
+  .chip.go2{background:var(--selbg);color:var(--sel)}
+
+  .stage{flex:1;min-height:0;display:flex;flex-direction:column;gap:5px}
+  .card{background:var(--key);border-radius:14px;flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden}
+  .card.half{flex:0 0 40%}
+  .ch{display:flex;align-items:center;gap:6px;padding:6px 8px 0;flex:none;font-size:11.5px;color:var(--muted)}
+  .ch b{color:var(--ink);font-size:12.5px;font-weight:650;margin-right:auto}
+  .ch .seg{background:var(--kb)}.ch .seg button{height:24px;font-size:11.5px;padding:0 8px}
+  .nav{display:flex;align-items:center;gap:2px;margin-right:auto}
+  .nav button{border:0;background:var(--kb);border-radius:8px;width:26px;height:24px;cursor:pointer;color:var(--sel);font-size:14px}
+  .nav span{font-size:12px;font-weight:650;color:var(--ink);min-width:44px;text-align:center}
+  .pv{flex:1;min-height:0;overflow:auto;padding:6px 10px 8px;font-size:13px;line-height:1.6;white-space:pre-wrap;word-break:break-word;font-family:"Noto Serif Bengali",Georgia,serif}
+  .m{border-radius:4px;cursor:pointer}
+  .m del{background:var(--del);color:var(--delink);text-decoration:line-through;border-radius:3px;padding:0 1px}
+  .m ins,ins{background:var(--ins);color:var(--insink);text-decoration:none;border-radius:3px;padding:0 1px}
+  ins.gone{padding:0;border-left:2px solid var(--insink);margin-left:1px}
+  .m.cur{outline:2px solid var(--sel);outline-offset:1px}
+  .m.skip{opacity:.55;text-decoration:underline dotted;text-underline-offset:3px;cursor:pointer}
+  .m.lock{border-bottom:2px dotted var(--lock);cursor:not-allowed}
+  .m.lock::after{content:"🔒";font-size:9px;margin-left:2px;vertical-align:super}
+  .cf{display:flex;gap:5px;align-items:center;padding:0 8px 7px;flex:none;overflow-x:auto;scrollbar-width:none}
+  .cf::-webkit-scrollbar{display:none}
+  .cnt{flex:none;font-size:12px;font-weight:650;color:var(--ink);padding-right:2px;white-space:nowrap}
+  .cnt.ok{color:var(--sel)}.cnt.err{color:var(--warn)}
+
+  .plist{flex:1;min-height:0;overflow:auto;padding:4px 6px;display:grid;gap:4px;align-content:start}
+  .prow{display:grid;grid-template-columns:auto 1fr auto;gap:8px;align-items:center;background:var(--kb);border-radius:10px;padding:5px 8px;font-size:12.5px;min-width:0}
+  .prow.off{opacity:.55}
+  .prow code{font:inherit;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block}
+  .prow small{color:var(--muted);font-size:11px;white-space:nowrap}
+  .badge{font-size:10px;font-weight:700;color:var(--sel);margin-left:5px}
+  .sw{width:30px;height:18px;border-radius:999px;background:var(--line);border:0;position:relative;cursor:pointer;padding:0}
+  .sw::after{content:"";position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:#fff;transition:left .15s}
+  .sw.on{background:var(--sel)}.sw.on::after{left:14px}
+  .pact{display:flex;gap:5px;padding:0 8px 7px;flex:none;overflow-x:auto;scrollbar-width:none}
+  .pact::-webkit-scrollbar{display:none}
+  textarea.pt{flex:1;min-height:0;margin:4px 8px 4px;border:0;border-radius:10px;background:var(--kb);color:var(--ink);font:12.5px/1.5 ui-monospace,Menlo,Consolas,monospace;padding:8px;resize:none}
+
+  .mbody{padding:6px 8px 8px;overflow:auto;display:grid;gap:5px;align-content:start;min-height:0}
+  .mi{border:0;background:var(--kb);border-radius:10px;text-align:left;padding:8px 10px;font-size:13px;cursor:pointer;display:flex;gap:8px;align-items:center}
+  .mi small{margin-left:auto;color:var(--muted);font-size:11px;text-align:right}
+  .mi.on{color:var(--sel);font-weight:650;background:var(--selbg)}
+  .mi:hover{background:var(--hover)}
+  .mi .x{margin-left:6px;color:var(--warn);font-weight:700}
+  .help{font-size:12.5px;color:var(--muted);line-height:1.5;padding:2px 2px}
+  .help b{color:var(--ink);font-weight:600}
+  .tags{display:flex;flex-wrap:wrap;gap:5px}
+  .tag{border:0;border-radius:999px;background:var(--kb);padding:4px 10px;font-size:12px;cursor:pointer}
+  .tag span{color:var(--warn);margin-left:5px;font-weight:700}
+  .exm{font:11.5px/1.5 ui-monospace,Menlo,Consolas,monospace;color:var(--muted);background:var(--kb);border-radius:8px;padding:6px 8px;white-space:pre-wrap}
+
+  .acts{display:flex;gap:6px;flex:none}
+  .go{flex:1;height:42px;border:0;border-radius:12px;background:var(--sel);color:#fff;font-size:14px;font-weight:700;cursor:pointer}
+  .go.sure{background:var(--warn)}
+  .go[disabled]{opacity:.4;cursor:default}
+  .sub{border:0;border-radius:12px;background:var(--key);height:42px;padding:0 13px;font-size:13px;font-weight:650;cursor:pointer}
+  .flash{position:absolute;left:50%;top:44px;transform:translateX(-50%);background:var(--sel);color:#fff;font-size:12px;padding:3px 12px;border-radius:999px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:9;white-space:nowrap;max-width:94%;overflow:hidden;text-overflow:ellipsis}
+  .flash.on{opacity:1}
+  .kb.pairs .io,.kb.pairs .opts{display:none}
+
+  .notes{max-width:460px;font-size:13.5px;color:var(--muted)}
+  .notes h2{font-size:14px;margin:0 0 8px;color:var(--ink);font-weight:650}
+  .notes h2:not(:first-child){margin-top:16px}
+  .notes ul{margin:0;padding-left:18px;display:grid;gap:6px}
+  .notes b{color:var(--ink);font-weight:600}
+  .new{display:inline-block;font-size:10.5px;font-weight:700;color:#fff;background:var(--sel);border-radius:6px;padding:0 5px;margin-right:4px;line-height:16px}
+  @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="head">
+    <h1>Find &amp; Replace – ek screen, diff preview<small>Try koro: Find / With e likho, match er upor tap kore skip koro, “Whole word” chip chap, Pairs e jao, Never change e naam rakho, field e mouse diye text select koro, Replace chap, Undo chap.</small></h1>
+    <button class="tog" id="theme" type="button">Light theme</button>
+  </div>
+
+  <section>
+    <div class="field" id="field" aria-label="Sample text field"></div>
+    <div class="fhint">Field e text select koro = “Selection” scope. Click korle cursor boshe (From / To cursor er jonno).</div>
+    <div class="kb" id="kb">
+      <div class="flash" id="flash" role="status"></div>
+      <div class="bar" id="top"></div>
+      <div class="io">
+        <div class="ioin" id="fbox"><input id="f" placeholder="Find" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="Find"><button class="mini" data-act="sel" data-v="f" type="button">Sel</button><button class="mini" data-act="clip" data-v="f" type="button">Clip</button></div>
+        <button class="swap" data-act="swap" type="button" aria-label="Swap Find and With">⇄</button>
+        <div class="ioin"><input id="r" placeholder="With (empty = delete)" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="With"><button class="mini" data-act="sel" data-v="r" type="button">Sel</button><button class="mini" data-act="clip" data-v="r" type="button">Clip</button></div>
+      </div>
+      <div class="opts" id="opts"></div>
+      <div class="stage" id="stage"></div>
+      <div class="acts" id="acts"></div>
+    </div>
+  </section>
+
+  <section class="notes">
+    <h2>Ki bodlalo (shob purano feature thake)</h2>
+    <ul>
+      <li><b>Ek screen.</b> Ager moto alada main / typing / Sets / Recent / Never / Help / pair list view nai. Upore Find + With ek jaygay, <b>Sel / Clip</b> field er bhitore, majhkhane <b>⇄</b> swap. Sets, Recent, Never change, Help = ⋯ menu.</li>
+      <li><b>5 ta step button → 1 ta.</b> “Replace all / 1st / &lt; / Skip / Replace this / Rest” er bodole ekta boro <b>Replace 4</b> button. Kon match bad dibe? Preview te oi match e <b>tap</b> koro, se dotted hoye skip hobe, button hobe “Replace 3 of 4”. “Only first / Only this / From this on” = niche ⋯ menu te.</li>
+      <li><b>Diff preview.</b> Ki jacche (lal, kata) → ki boshbe (shobuj) ek-i jaygay dekha jay. Result tab e shudhu final text. Count ar “2 of 4” navigation upore.</li>
+      <li><b>Mode + option = ek line chip.</b> Text | Word | Regex, tarpor Aa, Keep, List (a | b | c), Smart, \n. Regex mode e List / Smart / \n lukiye jay (ager moto).</li>
+      <li><b>Scope = ek pill.</b> Selection / Whole field / From cursor / To cursor. Whole field e Replace chaple lal hoye “Tap again to confirm”. Undo = ↶ 3 level, badge e koyta ache.</li>
+    </ul>
+    <h2>Notun (powerful) idea</h2>
+    <ul>
+      <li><span class="new">NEW</span><b>Tap-to-skip.</b> Step-by-step ghurte hoy na; shob match ek nojore dekhe bad dewa match e tap.</li>
+      <li><span class="new">NEW</span><b>Never change 🔒 preview te.</b> “Mark Twain” list e thakle oi jaygay lock dekhay, ar Mark → Luke oi jaygay jay na. Ager moto Replace-er por jana jay na, ekhon age-i dekha jay.</li>
+      <li><span class="new">NEW</span><b>Smart suggestion chip.</b> “3 inside longer words → Whole word” (market, marker e Mark mile jachche). Ek tap e Word mode. Match na pele “Try Smart” dey.</li>
+      <li><span class="new">NEW</span><b>Pairs mode.</b> Pair list = prottek pair er ON / OFF switch + “N matches”, <b>Edit as text</b> (find =&gt; with, Formatter er rules er same syntax), Paste pairs, Save as set, <b>→ Formatter</b> ek tap. Diff preview shob ON pair ek sathe dekhay.</li>
+      <li><span class="new">NEW</span><b>Recent chips.</b> Find khali thakle focus korlei ager pair gulo chip hoye ashe, ek tap e fill.</li>
+      <li><span class="new">NEW</span><b>Regex error line e.</b> Find box lal, upore bhul ki ta likha. Replace button off.</li>
+      <li>Ager moto thakbe: Text / Word / Regex, Aa, Keep case, List, Smart, \n, Sel / Clip / swap, scope (field / selection / cursor), Sets (+ Formatter bridge), Recent pairs, Never change list, pair list + Check / Whole word, 3-level Undo, Copy / Paste result, 2-tap safety.</li>
+    </ul>
+    <h2>Ekta shotorko note</h2>
+    <ul><li>Pairs preview e shob pair <b>original text</b> er upor ek sathe cholay, dui pair overlap korle prothom pair jite. Asol engine pair gulo ek ek kore cholay ki na ta app e ek-bar mile nite hobe.</li></ul>
+  </section>
+</div>
+
+<script>
+(function () {
+  var $ = function (s, r) { return (r || document).querySelector(s); };
+  var RAW = "Mark went to the market. Mark Twain's book was on the table, and the marker was missing.\n\nHe said teh rain would stop; teh rain didn't stop. Please recieve the package, recieve it today.\n\nআজকের মিটিং সকাল ১০টায়। রহিম বলল, চলো যাই।";
+  var P1 = RAW.indexOf("\n\n"), P2 = RAW.indexOf("\n\n", P1 + 2);
+  var CLIP = "okay => OK\nteh => the\nrecieve | recieved => receive";
+
+  var S = {
+    mode: "one", find: "Mark", repl: "Luke", opt: { m: "text", aa: false, keep: false, list: false, smart: false, esc: false },
+    scope: "sel", doc: RAW, selS: 0, selE: P2, cursor: P1,
+    skip: {}, cur: 0, view: "changes", menu: "", focus: "", confirm: false, undo: [], editText: false,
+    pairs: [], setName: "", copied: "",
+    sets: [{ name: "Typos", text: "teh => the\nrecieve | recieved => receive\nword: i => I" }, { name: "Names", text: "Mark => Luke\nkeep: ann => anna" }],
+    recent: [{ f: "teh", t: "the" }, { f: "recieve", t: "receive" }, { f: "colour", t: "color" }],
+    never: ["Mark Twain"]
+  };
+  var timers = {};
+
+  // ---------- helpers ----------
+  function esc(s) { return s.replace(/[&<>]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]; }); }
+  function escRe(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); }
+  function plural(n, w) { return n + " " + w + (n === 1 ? "" : "es"); }
+  function mk(src, flags) { try { return new RegExp(src, flags + "u"); } catch (e) { return new RegExp(src, flags); } }
+  function smartPat(a) { return a.split(/[\s\-'’]+/).filter(Boolean).map(escRe).join("[\\s\\-'’]*"); }
+  function unesc(s) { return s.replace(/\\n/g, "\n").replace(/\\t/g, "\t"); }
+
+  function keepCase(m, r) {
+    var lo = m.toLowerCase(), up = m.toUpperCase();
+    if (m !== lo && m === up && m.length > 1) return r.toUpperCase();
+    if (m !== lo && m.charAt(0) === m.charAt(0).toUpperCase() && m.slice(1) === m.slice(1).toLowerCase()) return r.charAt(0).toUpperCase() + r.slice(1);
+    return r;
+  }
+
+  // one rule {find,to,m,aa,keep,list,smart,esc} -> {re} | {err}
+  function pat(p) {
+    var f = p.find;
+    if (!f) return {};
+    try {
+      var src;
+      if (p.m === "regex") src = f;
+      else {
+        if (p.esc) f = unesc(f);
+        var alts = [f];
+        if (p.list) { var a = f.split("|").map(function (x) { return x.trim(); }).filter(Boolean); if (a.length > 1) alts = a.sort(function (x, y) { return y.length - x.length; }); }
+        alts = alts.map(function (x) { return p.smart ? smartPat(x) : escRe(x); });
+        src = alts.length > 1 ? "(?:" + alts.join("|") + ")" : alts[0];
+        if (p.m === "word") src = "(?<![\\p{L}\\p{N}_])" + src + "(?![\\p{L}\\p{N}_])";
+      }
+      return { re: mk(src, "g" + (p.aa ? "" : "i")) };
+    } catch (e) { return { err: "Regex: " + String(e.message || e).replace(/^Invalid regular expression: /, "").slice(0, 60) }; }
+  }
+
+  function repOf(p, re, m) {
+    var r = p.to;
+    if (p.m !== "regex" && p.esc) r = unesc(r);
+    if (p.m === "regex") { try { r = m[0].replace(new RegExp(re.source, re.flags.replace("g", "")), r); } catch (e) { } }
+    if (p.keep) r = keepCase(m[0], r);
+    return r;
+  }
+
+  function hasSel() { return S.selE > S.selS; }
+  function range() {
+    var n = S.doc.length;
+    if (S.scope === "sel" && hasSel()) return [S.selS, S.selE];
+    if (S.scope === "from") return [Math.min(S.cursor, n), n];
+    if (S.scope === "to") return [0, Math.min(S.cursor, n)];
+    return [0, n];
+  }
+  function whole() { return !(S.scope === "sel" && hasSel()); }
+
+  function rules() {
+    if (S.mode === "one") {
+      var o = S.opt, rx = o.m === "regex";
+      return [{ find: S.find, to: S.repl, m: o.m, aa: o.aa, keep: o.keep, list: o.list && !rx, smart: o.smart && !rx, esc: o.esc && !rx }];
+    }
+    return S.pairs.filter(function (p) { return p.on; });
+  }
+
+  var LET = /[\p{L}\p{N}]/u;
+  function compute() {
+    var r = range(), text = S.doc.slice(r[0], r[1]), rl = rules(), all = [], err = "", per = [];
+    rl.forEach(function (p, pi) {
+      var q = pat(p);
+      if (q.err) { err = q.err; per.push(0); return; }
+      if (!q.re) { per.push(0); return; }
+      var n = 0, m; q.re.lastIndex = 0;
+      while ((m = q.re.exec(text)) && all.length < 3000) {
+        if (m[0] === "") { q.re.lastIndex++; continue; }
+        all.push({ s: m.index, e: m.index + m[0].length, o: m[0], rep: repOf(p, q.re, m), pi: pi, p: p }); n++;
+      }
+      per.push(n);
+    });
+    all.sort(function (a, b) { return a.s - b.s || a.pi - b.pi; });
+    var items = [], end = -1;
+    all.forEach(function (it) { if (it.s >= end) { items.push(it); end = it.e; } });
+    // never-change ranges
+    var low = text.toLowerCase(), prot = [];
+    S.never.forEach(function (t) { var tl = t.toLowerCase(), i = -1; if (!tl) return; while ((i = low.indexOf(tl, i + 1)) > -1) prot.push([i, i + tl.length]); });
+    var nav = [], inside = 0, nProt = 0, nSkip = 0, eff = 0;
+    items.forEach(function (it, i) {
+      it.prot = prot.some(function (b) { return it.s < b[1] && it.e > b[0]; });
+      it.skip = !it.prot && !!S.skip[r[0] + it.s];
+      it.in = it.p.m === "text" && (LET.test(text.charAt(it.s - 1) || " ") && LET.test(it.o.charAt(0)) || LET.test(text.charAt(it.e) || " ") && LET.test(it.o.charAt(it.o.length - 1)));
+      if (it.prot) nProt++; else { nav.push(i); if (it.skip) nSkip++; else eff++; if (it.in) inside++; }
+    });
+    if (S.cur >= nav.length) S.cur = Math.max(0, nav.length - 1);
+    return { r: r, text: text, items: items, nav: nav, err: err, per: per, inside: inside, nProt: nProt, nSkip: nSkip, eff: eff };
+  }
+
+  // ---------- pairs <-> text ----------
+  function parsePairs(t) {
+    var out = [];
+    t.split("\n").forEach(function (l0) {
+      var l = l0.trim(), on = true;
+      if (/^#off\s/.test(l)) { on = false; l = l.slice(5).trim(); } else if (!l || l.charAt(0) === "#") return;
+      var p = { on: on, find: "", to: "", m: "text", aa: false, keep: false, list: false, smart: false, esc: false }, g;
+      while ((g = l.match(/^(re|word|keep|smart):\s*/i))) { var k = g[1].toLowerCase(); if (k === "re") p.m = "regex"; else if (k === "word") p.m = "word"; else p[k] = true; l = l.slice(g[0].length); }
+      var i = l.indexOf("=>"); if (i < 0) return;
+      p.find = l.slice(0, i).trim(); p.to = l.slice(i + 2).trim();
+      if (p.m !== "regex" && / \| /.test(p.find)) p.list = true;
+      if (p.find) out.push(p);
+    });
+    return out;
+  }
+  function pairsText(ps) {
+    return ps.map(function (p) { return (p.on ? "" : "#off ") + (p.keep ? "keep: " : "") + (p.smart ? "smart: " : "") + (p.m === "regex" ? "re: " : p.m === "word" ? "word: " : "") + p.find + " => " + p.to; }).join("\n");
+  }
+
+  // ---------- render ----------
+  function flash(m) { var f = $("#flash"); f.textContent = m; f.className = "flash on"; clearTimeout(timers.f); timers.f = setTimeout(function () { f.className = "flash"; }, 1300); }
+  var SC = { sel: "Selection", field: "Whole field", from: "From cursor", to: "To cursor" };
+
+  function renderTop() {
+    var sc = SC[S.scope] + (S.scope === "sel" && !hasSel() ? " (none)" : "");
+    $("#top").innerHTML = '<button class="fn" data-act="abc" type="button">ABC</button>' +
+      '<div class="seg"><button class="' + (S.mode === "one" ? "on" : "") + '" data-act="mode" data-v="one" type="button">One</button><button class="' + (S.mode === "pairs" ? "on" : "") + '" data-act="mode" data-v="pairs" type="button">Pairs ' + S.pairs.length + '</button></div>' +
+      '<button class="pill grow' + (whole() && S.scope === "sel" ? " warn" : "") + '" data-act="menu" data-v="scope" type="button">' + sc + ' ▾</button>' +
+      '<button class="dots" data-act="menu" data-v="tools" type="button" aria-label="Sets, recent, never change, help">⋯</button>';
+    $("#kb").className = "kb" + (S.mode === "pairs" ? " pairs" : "");
+  }
+
+  function renderOpts() {
+    var o = S.opt, rx = o.m === "regex";
+    var h = '<div class="seg">' + [["text", "Text"], ["word", "Word"], ["regex", "Regex"]].map(function (a) { return '<button class="' + (o.m === a[0] ? "on" : "") + '" data-act="optm" data-v="' + a[0] + '" type="button">' + a[1] + "</button>"; }).join("") + "</div>";
+    var c = function (k, l) { return '<button class="chip' + (o[k] ? " on" : "") + '" data-act="opt" data-v="' + k + '" type="button">' + l + "</button>"; };
+    h += c("aa", "Aa") + c("keep", "Keep case");
+    if (!rx) h += c("list", "List a | b") + c("smart", "Smart") + c("esc", "\\n");
+    $("#opts").innerHTML = h;
+  }
+
+  function previewHtml(m) {
+    var res = S.view === "result", out = "", pos = 0;
+    m.items.forEach(function (it, i) {
+      out += esc(m.text.slice(pos, it.s)); pos = it.e;
+      var cur = m.nav[S.cur] === i ? " cur" : "";
+      if (it.prot) out += '<span class="m lock" data-i="' + i + '">' + esc(it.o) + "</span>";
+      else if (it.skip) out += '<span class="m skip' + cur + '" data-i="' + i + '">' + esc(it.o) + "</span>";
+      else if (res) out += '<span class="m' + cur + '" data-i="' + i + '">' + (it.rep ? "<ins>" + esc(it.rep) + "</ins>" : '<ins class="gone"></ins>') + "</span>";
+      else out += '<span class="m' + cur + '" data-i="' + i + '"><del>' + esc(it.o) + "</del>" + (it.rep ? "<ins>" + esc(it.rep) + "</ins>" : "") + "</span>";
+    });
+    return out + esc(m.text.slice(pos));
+  }
+
+  function previewCard(m) {
+    var n = m.nav.length, h = '<div class="card' + (S.mode === "pairs" ? " half" : "") + '"><div class="ch">';
+    h += '<div class="nav"><button data-act="nav" data-v="-1" type="button" aria-label="Previous match">‹</button><span>' + (n ? (S.cur + 1) + " of " + n : "0 of 0") + '</span><button data-act="nav" data-v="1" type="button" aria-label="Next match">›</button></div>';
+    h += '<div class="seg"><button class="' + (S.view === "changes" ? "on" : "") + '" data-act="view" data-v="changes" type="button">Changes</button><button class="' + (S.view === "result" ? "on" : "") + '" data-act="view" data-v="result" type="button">Result</button></div></div>';
+    h += '<div class="pv" id="pv">' + (m.text ? previewHtml(m) : "(nothing in this scope)") + "</div>";
+    h += '<div class="cf">';
+    if (m.err) h += '<span class="cnt err">' + esc(m.err) + "</span>";
+    else if (!m.items.length) h += '<span class="cnt">' + (rules().some(function (p) { return p.find; }) ? "No matches" : "Type what to find") + "</span>";
+    else h += '<span class="cnt">' + plural(m.eff, "match") + (m.nProt ? " · " + m.nProt + " 🔒" : "") + (m.nSkip ? " · " + m.nSkip + " skipped" : "") + "</span>";
+    if (!m.err && S.mode === "one" && S.opt.m === "text" && m.inside > 0) h += '<button class="chip sug" data-act="word" type="button">' + m.inside + " inside longer words → Whole word</button>";
+    if (!m.err && S.mode === "one" && !m.items.length && S.find && !S.opt.smart && S.opt.m !== "regex") h += '<button class="chip sug" data-act="smart" type="button">Try Smart</button>';
+    if (S.mode === "pairs" && !m.err) { var sh = S.pairs.filter(function (p) { return p.on && p.m === "text" && p.find.length <= 3; }).length; if (sh) h += '<button class="chip sug" data-act="pword" type="button">Whole word (' + sh + ")</button>"; }
+    if (S.mode === "one" && S.focus && !S.find && S.recent.length) S.recent.slice(0, 3).forEach(function (r, i) { h += '<button class="chip" data-act="userecent" data-v="' + i + '" type="button">' + esc(r.f) + " → " + esc(r.t) + "</button>"; });
+    return h + "</div></div>";
+  }
+
+  function pairsCard(m) {
+    if (S.editText) return '<div class="card"><div class="ch"><b>Pairs as text</b><button class="chip on" data-act="pedit" data-v="done" type="button">Done</button></div><textarea class="pt" id="pt" spellcheck="false" aria-label="Pairs as text">' + esc(pairsText(S.pairs)) + '</textarea><div class="pact"><span class="cnt" style="font-weight:500;color:var(--muted)">find =&gt; with · re: word: keep: smart: · a | b =&gt; c · #off</span></div></div>';
+    var ai = 0, h = '<div class="card"><div class="ch"><b>' + (S.setName ? "Set: " + esc(S.setName) : "Pairs") + '</b><button class="chip" data-act="pedit" data-v="open" type="button">Edit as text</button></div><div class="plist">';
+    if (!S.pairs.length) h += '<div class="help" style="padding:10px 8px">No pairs yet. Tap “+ Paste pairs” (one <b>find =&gt; with</b> per line) or pick a Set from ⋯.</div>';
+    S.pairs.forEach(function (p, i) {
+      var n = p.on ? (m.per[ai++] || 0) : 0;
+      h += '<div class="prow' + (p.on ? "" : " off") + '"><button class="sw' + (p.on ? " on" : "") + '" data-act="ptog" data-v="' + i + '" type="button" aria-label="Pair on / off"></button><code>' + esc(p.find) + " → " + esc(p.to || "∅") + (p.m !== "text" ? '<span class="badge">' + (p.m === "word" ? "Word" : "Re") + "</span>" : "") + (p.keep ? '<span class="badge">Keep</span>' : "") + (p.list ? '<span class="badge">List</span>' : "") + "</code><small>" + (p.on ? n + (n === 1 ? " match" : " matches") : "off") + "</small></div>";
+    });
+    h += '</div><div class="pact"><button class="chip" data-act="ppaste" type="button">+ Paste pairs</button><button class="chip" data-act="psave" type="button">Save as set</button><button class="chip go2" data-act="pfmt" type="button">→ Formatter</button><button class="chip" data-act="pclear" type="button">Clear</button></div></div>';
+    return h;
+  }
+
+  function menuCard() {
+    var t = S.menu, title = { scope: "Replace where?", more: "More", tools: "Tools", sets: "Sets", recent: "Recent", never: "Never change", help: "Help" }[t], b = "";
+    var mi = function (l, sub, act, v, on) { return '<button class="mi' + (on ? " on" : "") + '" data-act="' + act + '" data-v="' + (v == null ? "" : v) + '" type="button">' + l + (sub ? "<small>" + sub + "</small>" : "") + "</button>"; };
+    if (t === "scope") b = mi("Selection", hasSel() ? "the selected text" : "none: nothing selected", "setscope", "sel", S.scope === "sel") + mi("Whole field", "asks to confirm", "setscope", "field", S.scope === "field") + mi("From cursor", "cursor to the end", "setscope", "from", S.scope === "from") + mi("To cursor", "start to the cursor", "setscope", "to", S.scope === "to");
+    if (t === "more") { var m = compute(); b = mi("Only the first", "", "do", "first") + mi("Only this one", m.nav.length ? (S.cur + 1) + " of " + m.nav.length : "", "do", "this") + mi("This one and all after", "", "do", "rest") + mi("Copy result", "", "do", "copy") + (S.copied ? mi("Paste copied result", "", "do", "paste") : ""); }
+    if (t === "tools") b = mi("Sets", S.sets.length + " saved", "tool", "sets") + mi("Recent", S.recent.length + " pairs", "tool", "recent") + mi("Never change", S.never.length + " terms", "tool", "never") + mi("Help", "", "tool", "help");
+    if (t === "sets") { S.sets.forEach(function (s, i) { b += '<button class="mi" data-act="useset" data-v="' + i + '" type="button">' + esc(s.name) + "<small>" + parsePairs(s.text).length + ' pairs · use <span class="x" data-act="delset" data-v="' + i + '">✕</span></small></button>'; }); if (!S.sets.length) b = '<div class="help">No sets yet. Make pairs, then “Save as set”.</div>'; b += '<div class="exm">' + esc(S.sets.length ? S.sets[0].name + ":\n" + S.sets[0].text : "") + "</div>"; }
+    if (t === "recent") { S.recent.forEach(function (r, i) { b += mi(esc(r.f) + " → " + esc(r.t), "fill", "userecent", i); }); if (!S.recent.length) b = '<div class="help">Replace something and it shows up here.</div>'; }
+    if (t === "never") { b = '<div class="help">Matches that touch these terms are left alone. Locked in the preview.</div><div class="tags">' + S.never.map(function (x, i) { return '<button class="tag" data-act="neverdel" data-v="' + i + '" type="button">' + esc(x) + "<span>✕</span></button>"; }).join("") + (S.never.length ? "" : '<span class="help">(empty)</span>') + '</div><div class="tags"><button class="chip" data-act="neveradd" data-v="find" type="button">+ Find</button><button class="chip" data-act="neveradd" data-v="sel" type="button">+ Selection</button><button class="chip" data-act="neveradd" data-v="clip" type="button">+ Clipboard</button></div>'; }
+    if (t === "help") b = '<div class="help"><b>Tap a match</b> in the preview to skip it. Tap again to include it.<br><b>Word</b> = whole words only. <b>Keep case</b>: hello → world, Hello → World, HELLO → WORLD. <b>List</b>: a | b | c → one fix. <b>Smart</b>: space, hyphen, apostrophe don’t matter.<br><b>Pairs</b>: many rules at once, same <b>find =&gt; with</b> lines as the Formatter rules.</div>';
+    return '<div class="card"><div class="ch"><b>' + title + '</b><button class="chip on" data-act="closemenu" type="button">Close</button></div><div class="mbody">' + b + "</div></div>";
+  }
+
+  function renderStage() {
+    var m = compute(), st = $("#stage");
+    st.innerHTML = S.menu ? menuCard() : (S.mode === "pairs" ? pairsCard(m) : "") + (S.editText && S.mode === "pairs" ? "" : previewCard(m));
+    $("#fbox").className = "ioin" + (m.err && S.mode === "one" ? " bad" : "");
+    return m;
+  }
+
+  function renderActs(m) {
+    m = m || compute();
+    var ask = S.confirm && whole(), n = m.eff, tot = m.nav.length;
+    var label = ask ? "Tap again to confirm" : n === 0 ? "Replace" : (n < tot ? "Replace " + n + " of " + tot : "Replace " + n);
+    $("#acts").innerHTML = '<button class="go' + (ask ? " sure" : "") + '" data-act="go" type="button"' + (n === 0 ? " disabled" : "") + ">" + label + "</button>" +
+      (S.undo.length ? '<button class="sub" data-act="undo" type="button">↶ ' + S.undo.length + "</button>" : "") +
+      '<button class="sub" data-act="menu" data-v="more" type="button" aria-label="More">⋯</button>';
+  }
+
+  function renderField() {
+    var d = S.doc, h;
+    if (S.scope === "sel" && hasSel()) h = esc(d.slice(0, S.selS)) + '<span class="s">' + esc(d.slice(S.selS, S.selE)) + "</span>" + esc(d.slice(S.selE));
+    else h = esc(d.slice(0, S.cursor)) + '<span class="cur"></span>' + esc(d.slice(S.cursor));
+    $("#field").innerHTML = h;
+  }
+
+  function draw() { renderTop(); renderOpts(); var m = renderStage(); renderActs(m); renderField(); }
+  function drawLight() { var m = renderStage(); renderActs(m); renderTop(); }
+
+  // ---------- actions ----------
+  function reset() { S.skip = {}; S.cur = 0; S.confirm = false; }
+  function mapPos(pos, r, applied) { var d = 0; applied.forEach(function (it) { if (r[0] + it.e <= pos) d += it.rep.length - (it.e - it.s); }); return pos + d; }
+
+  function apply(kind) {
+    var m = compute(), list = m.items.filter(function (it) { return !it.prot && !it.skip; });
+    var curIt = m.items[m.nav[S.cur]];
+    if (kind === "first") list = list.slice(0, 1);
+    if (kind === "this") list = curIt && !curIt.skip ? [curIt] : [];
+    if (kind === "rest") list = list.filter(function (it) { return curIt && it.s >= curIt.s; });
+    if (!list.length) { flash("Nothing to replace"); return; }
+    if (kind === "all" && whole() && !S.confirm) { S.confirm = true; clearTimeout(timers.c); timers.c = setTimeout(function () { S.confirm = false; renderActs(); }, 3000); renderActs(); return; }
+    clearTimeout(timers.c); S.confirm = false;
+    S.undo.push({ doc: S.doc, selS: S.selS, selE: S.selE, cursor: S.cursor }); if (S.undo.length > 3) S.undo.shift();
+    var out = "", pos = 0;
+    list.forEach(function (it) { out += m.text.slice(pos, it.s) + it.rep; pos = it.e; });
+    out += m.text.slice(pos);
+    var nS = mapPos(S.selS, m.r, list), nE = mapPos(S.selE, m.r, list), nC = mapPos(S.cursor, m.r, list);
+    S.doc = S.doc.slice(0, m.r[0]) + out + S.doc.slice(m.r[1]);
+    S.selS = nS; S.selE = nE; S.cursor = nC;
+    if (S.mode === "one" && S.find) { S.recent = S.recent.filter(function (r) { return !(r.f === S.find && r.t === S.repl); }); S.recent.unshift({ f: S.find, t: S.repl }); S.recent = S.recent.slice(0, 5); }
+    reset(); draw(); flash("Replaced " + list.length + " · ↶ to undo");
+  }
+
+  function undo() { var u = S.undo.pop(); if (!u) return; S.doc = u.doc; S.selS = u.selS; S.selE = u.selE; S.cursor = u.cursor; reset(); draw(); flash("Undone"); }
+
+  function setVal(id, v) { $("#" + id).value = v; if (id === "f") S.find = v; else S.repl = v; reset(); }
+
+  $("#kb").addEventListener("mousedown", function (e) { if (e.target.closest("button")) e.preventDefault(); });
+  $("#kb").addEventListener("click", function (e) {
+    var mt = e.target.closest(".m");
+    if (mt && mt.dataset.i != null) {
+      var m0 = compute(), it = m0.items[+mt.dataset.i];
+      if (!it) return;
+      if (it.prot) { flash("Protected by Never change"); return; }
+      var k = m0.r[0] + it.s; if (S.skip[k]) delete S.skip[k]; else S.skip[k] = 1;
+      S.cur = Math.max(0, m0.nav.indexOf(+mt.dataset.i)); S.confirm = false; drawLight(); return;
+    }
+    var b = e.target.closest("[data-act]"); if (!b) return;
+    var a = b.dataset.act, v = b.dataset.v;
+    if (a === "abc") flash("Back to letters");
+    else if (a === "mode") { S.mode = v; S.menu = ""; S.editText = false; reset(); draw(); }
+    else if (a === "menu") { S.menu = S.menu === v ? "" : v; drawLight(); }
+    else if (a === "closemenu") { S.menu = ""; drawLight(); }
+    else if (a === "setscope") { S.scope = v; S.menu = ""; reset(); draw(); }
+    else if (a === "optm") { S.opt.m = v; reset(); renderOpts(); drawLight(); }
+    else if (a === "opt") { S.opt[v] = !S.opt[v]; if (v === "keep" && S.opt.keep) S.opt.aa = false; if (v === "aa" && S.opt.aa) S.opt.keep = false; reset(); renderOpts(); drawLight(); }
+    else if (a === "swap") { var t = S.find; setVal("f", S.repl); setVal("r", t); drawLight(); }
+    else if (a === "sel") { var s = S.doc.slice(S.selS, S.selE).trim(); if (!s || s.length > 40 || /\n/.test(s)) flash(hasSel() ? "Select a short word first" : "Nothing is selected"); else { setVal(v, s); drawLight(); } }
+    else if (a === "clip") { var c = CLIP.split("\n")[0].split("=>")[0].trim(); setVal(v, c); drawLight(); flash("From clipboard"); }
+    else if (a === "view") { S.view = v; drawLight(); }
+    else if (a === "nav") { var n = compute().nav.length; if (n) { S.cur = (S.cur + +v + n) % n; S.view = S.view; drawLight(); var el = $(".m.cur"); if (el && el.scrollIntoView) el.scrollIntoView({ block: "nearest" }); } }
+    else if (a === "word") { S.opt.m = "word"; reset(); renderOpts(); drawLight(); flash("Whole word on"); }
+    else if (a === "smart") { S.opt.smart = true; reset(); renderOpts(); drawLight(); }
+    else if (a === "go") apply("all");
+    else if (a === "undo") undo();
+    else if (a === "do") { S.menu = ""; if (v === "copy") { S.copied = compute().text; var mm = compute(); var o = "", p = 0; mm.items.forEach(function (it) { if (it.prot || it.skip) return; o += mm.text.slice(p, it.s) + it.rep; p = it.e; }); S.copied = o + mm.text.slice(p); drawLight(); flash("Result copied"); } else if (v === "paste") { S.menu = ""; drawLight(); flash("Pasted (mock)"); } else { drawLight(); apply(v); } }
+    else if (a === "tool") { S.menu = v; drawLight(); }
+    else if (a === "userecent") { var r = S.recent[+v]; if (r) { S.mode = "one"; S.menu = ""; setVal("f", r.f); setVal("r", r.t); draw(); } }
+    else if (a === "useset") { if (e.target.closest("[data-act=delset]")) { S.sets.splice(+v, 1); drawLight(); return; } var st = S.sets[+v]; S.pairs = parsePairs(st.text); S.setName = st.name; S.mode = "pairs"; S.menu = ""; reset(); draw(); flash("Set loaded"); }
+    else if (a === "delset") { }
+    else if (a === "ptog") { S.pairs[+v].on = !S.pairs[+v].on; reset(); drawLight(); }
+    else if (a === "pedit") { if (v === "open") { S.editText = true; drawLight(); } else { S.pairs = parsePairs($("#pt").value); S.editText = false; reset(); draw(); } }
+    else if (a === "ppaste") { S.pairs = S.pairs.concat(parsePairs(CLIP)); S.setName = ""; reset(); draw(); flash("Pasted 3 pairs"); }
+    else if (a === "psave") { if (!S.pairs.length) { flash("No pairs to save"); return; } var nm = "Set " + (S.sets.length + 1); S.sets.push({ name: nm, text: pairsText(S.pairs) }); S.setName = nm; drawLight(); flash("Saved as " + nm); }
+    else if (a === "pfmt") { flash(S.pairs.length ? "Copied for Formatter Rules" : "No pairs to copy"); }
+    else if (a === "pclear") { S.pairs = []; S.setName = ""; reset(); draw(); }
+    else if (a === "pword") { S.pairs.forEach(function (p) { if (p.on && p.m === "text" && p.find.length <= 3) p.m = "word"; }); reset(); drawLight(); flash("Short finds are whole-word now"); }
+    else if (a === "neveradd") { var t2 = v === "find" ? S.find : v === "sel" ? S.doc.slice(S.selS, S.selE).trim() : CLIP.split("\n")[0].trim(); if (!t2 || t2.length > 60 || /\n/.test(t2)) flash("Nothing short to add"); else if (S.never.some(function (x) { return x.toLowerCase() === t2.toLowerCase(); })) flash("Already in the list"); else { S.never.push(t2); drawLight(); } }
+    else if (a === "neverdel") { S.never.splice(+v, 1); drawLight(); }
+  });
+
+  $("#f").addEventListener("input", function (e) { S.find = e.target.value; reset(); drawLight(); });
+  $("#r").addEventListener("input", function (e) { S.repl = e.target.value; reset(); drawLight(); });
+  $("#f").addEventListener("focus", function () { S.focus = "f"; drawLight(); });
+  $("#f").addEventListener("blur", function () { S.focus = ""; setTimeout(drawLight, 0); });
+
+  // select text in the field = Selection scope, click = cursor
+  function offsetIn(node, off) { var r = document.createRange(); r.setStart($("#field"), 0); r.setEnd(node, off); return r.toString().length; }
+  $("#field").addEventListener("mouseup", function () {
+    var g = window.getSelection(); if (!g || !g.rangeCount) return;
+    var rg = g.getRangeAt(0); if (!$("#field").contains(rg.commonAncestorContainer)) return;
+    var a = offsetIn(rg.startContainer, rg.startOffset), b = offsetIn(rg.endContainer, rg.endOffset);
+    if (b > a) { S.selS = a; S.selE = b; S.scope = "sel"; } else { S.cursor = a; S.selS = S.selE = 0; if (S.scope === "sel") S.scope = "field"; }
+    reset(); draw();
+  });
+
+  $("#theme").addEventListener("click", function () { var h = document.documentElement, l = h.getAttribute("data-theme") === "light"; h.setAttribute("data-theme", l ? "dark" : "light"); $("#theme").textContent = l ? "Light theme" : "Dark theme"; });
+
+  $("#f").value = S.find; $("#r").value = S.repl;
+  draw();
+})();
+</script>
+</body>
+</html>

@@ -1,3 +1,18 @@
+v0.53.0 - NEW: Find & Replace "one screen" look (from replace-redesign-mock.html): diff preview, tap a match to skip it, ONE Replace button
+- SEEN/WHY: owner made a design mock in another chat and asked for exactly that design. Every engine rule, set, pair list, Never change list, Recent pairs, Smart, Keep case, List, 3-step Undo, Copy / Paste result and the 2-tap whole-field safety stay. The old views (Slim / Mini / New / classic) are untouched and stay as the fallback.
+- WHAT (1, TOP BAR): ABC | One / Pairs n | scope pill (Selection / Whole field / From cursor / To cursor, red text = whole field) | ... (Sets, Recent, Never change, Help). The scope + tools open as a menu in the stage area.
+- WHAT (2, FIND / WITH): one card, Sel / Clip on each line, one swap button on the right. Tap a line = the small typing keyboard (same as before).
+- WHAT (3, OPTIONS, ONE LINE): Text | Word | Regex, Aa, Keep case, List, Smart, \n, Never change (n). Regex hides List / Smart / \n.
+- WHAT (4, DIFF PREVIEW, NEW): the text itself with every match drawn as old (red, struck out) + new (green). Changes | Result switch (Result = only the final text). [<] k of N [>] moves through the matches and selects the match in the field when the app allows it.
+- WHAT (5, TAP TO SKIP, NEW): tap a match in the preview = it is left out (dimmed, underlined), tap again = back in. The button says "Replace 3 of 4". No more step-by-step walking.
+- WHAT (6, NEVER CHANGE IN THE PREVIEW, NEW): a match that touches a Never change term is shown dimmed with a lock and is never replaced (before: only a count after the run).
+- WHAT (7, SUGGESTION CHIPS, NEW): "N inside longer words -> Whole word" (Text mode), "Try Smart" (no match), "Whole word (N)" in Pairs after Check, and the last 3 Recent pairs while Find is empty (only when the Recent pairs option is ON).
+- WHAT (8, ONE REPLACE BUTTON): [Replace N of M] [Undo n] [...]. The ... menu = Only the first, Only this one, This one and all after, Copy / Paste result. Whole field = 2 taps ("Sure? Replace all") as before.
+- WHAT (9, PAIRS): the Pairs tab keeps the old pair list (tap a pair = edit, x = remove) + chips + Paste, Check, List, Save as Set, -> Formatter, Clear. The preview runs the pair list.
+- PREF: rp_diff (default ON). Set it to false, or switch the floating window ON, and the old view is used. Any exception while drawing = old view.
+- FILES: ReplacePanel.kt (new block "v0.53.0 (DIFF)" + 2 small hooks: mainViewPick, reset), app/build.gradle.kts (0.53.0). No engine change.
+- NOT COMPILED HERE (no Kotlin toolchain in the sandbox): build in GitHub Actions and check the "v0.53.0" lines if red.
+
 v0.52.0 - NEW: Formatter "one screen" look (from formatter-redesign-mock.html): live preview, change chips, 4 sections, one Replace button
 - SEEN/WHY: owner made a design mock in another chat and asked for exactly that design. Every old option, rule, preset, Undo and the 2-tap safety stay; the 6 tabs (Run / Para / Keep / Clean / Rules / Presets) and the Preview button are gone.
 - WHAT (1, TOP BAR): ABC | preset button (name + a dot when you changed it after picking + v) | Text / Clip / HTML source.

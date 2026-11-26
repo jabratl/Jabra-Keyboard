@@ -1,0 +1,15 @@
+HANDOFF - Jabra Keyboard - Find & Replace one-screen look - v0.53.0
+
+SOURCE: replace-redesign-mock.html (design made in another chat). Copy is in docs/replace-redesign-mock.html.
+
+FILES TOUCHED (overwrite, same paths):
+  app/build.gradle.kts                                   (appVersionName 0.53.0)
+  app/src/main/java/com/mgb/keyboard/ReplacePanel.kt     (new block "v0.53.0 (DIFF)" before miniOn(): mainViewDiff + helpers; mainViewPick tries it first; reset() clears dMenu / dSkip)
+  CHANGELOG.txt (entry on top), this file, docs/replace-redesign-mock.html.
+NOT TOUCHED: ReplaceEngine.java and all typing/Replace*.java, ReplaceSlim.kt, ReplaceFloat*.kt, MgbIme.kt.
+
+HOW IT WORKS: matches come from calc().edits (single Find / With) or from the set / pair run (setRun edits). With a Never change list the engine is run once more WITHOUT it to find the locked matches. Tap-to-skip = dSkip (start offsets in src), cleared when Find / With / options / scope / text / pairs change (dKey). A partial replace builds a Result from the chosen Hit objects (diffResult) and goes through the old onReplace / doReplace, so Undo, format-keeping edits, the whole-field 2-tap and the Check warning of pair lists all stay.
+HEIGHT: preview + menu ScrollViews are the LAST ScrollViews directly in the panel, so MgbIme.stretchToLetters gives them the spare height. If the panel is taller than the letters keyboard, capTall() wraps it in a scroll.
+FALLBACK: pref rp_diff = false, floating window ON, or any exception = old Slim / Mini view.
+OPEN POINTS (check on phone): tap on a match keeps the preview scroll position; ClickableSpan taps inside a ScrollView; panel height on small phones; Pairs preview uses the pair run edits (check that a pair list with overlapping pairs shows what is really replaced); lock marks are not shown for a loaded Set (only for single Find / With).
+NOT COMPILED HERE - build in GitHub Actions, check the "v0.53.0" lines if red.
