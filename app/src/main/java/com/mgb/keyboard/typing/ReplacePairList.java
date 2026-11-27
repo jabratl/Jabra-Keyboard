@@ -40,6 +40,11 @@ public final class ReplacePairList {
             int e = with.length();
             while (e > 0 && Character.isWhitespace(with.charAt(e - 1))) e--;
             with = with.substring(0, e);
+            if (with.trim().isEmpty() && mode != ReplaceEngine.MODE_REGEX && find.indexOf("=>") > 0) {   // v0.58.8: one line "Gaam;geme;gome => game" typed in Find (With empty) = Find + With
+                int k = find.indexOf("=>");
+                with = find.substring(k + 2).trim();
+                find = find.substring(0, k).trim();
+            }
             if (find.isEmpty()) return err("Type what to find first");
             if (find.indexOf('\n') >= 0 || find.indexOf('\r') >= 0 || with.indexOf('\n') >= 0 || with.indexOf('\r') >= 0)
                 return err("A pair cannot hold a line break (use the \\n switch and type \\n)");

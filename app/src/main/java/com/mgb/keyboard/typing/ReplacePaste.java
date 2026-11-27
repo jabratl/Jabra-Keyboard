@@ -85,6 +85,10 @@ public final class ReplacePaste {
                 ReplaceRules.Parsed p = ReplaceRules.parse(norm);
                 if (p.rules.size() != 1 || !p.bad.isEmpty()) { bad(res, i + 1); continue; }
                 ReplaceRules.Rule r = p.rules.get(0);
+                if (r.kind == ReplaceRules.K_TEXT && r.find.indexOf(';') >= 0 && ReplaceRules.variants(r.find).isEmpty()) {   // v0.58.8: "Gaam;geme;gome;gggo => game" = many wrong forms, one right form (same as the Find box)
+                    ReplacePairList.Made mk = ReplacePairList.make(r.find, r.with, r.word ? ReplaceEngine.MODE_WORD : ReplaceEngine.MODE_TEXT, r.keep, false, r.smart);
+                    if (mk.rule != null) r = mk.rule;
+                }
                 if (r.kind != ReplaceRules.K_TEXT && r.kind != ReplaceRules.K_REGEX) { bad(res, i + 1); continue; }
                 if (r.kind == ReplaceRules.K_REGEX) {
                     try { Pattern.compile(r.find); } catch (PatternSyntaxException e) { bad(res, i + 1); continue; }

@@ -1,3 +1,12 @@
+v0.58.8 - IMPROVE: many wrong forms + one right form in ONE line ("Gaam;geme;gome;gggo=>game")
+- WHY: owner wants to add a pair like Gaam;geme;gome;gggo => game in one go and have every wrong form replaced.
+- WHAT: (1) Replace > Find box: typing  wrong;forms=>right  (With empty) is split into Find + With when you tap Add pair (also used by Fix terms). (2) Replace > Pairs > Paste: lines like  Gaam;geme;gome;gggo => game  (also  a;b=>c  without spaces, TAB, ->) become ONE variants rule (a | b | c => game). Before, a pasted line kept the ";" as literal text and matched nothing. word: / keep: / smart: in front still work.
+- NOT changed: the two-box way (Find = a;b;c, With = x), a single ";" piece (e.g. &amp;) stays plain text, Regex mode, saved sets, ReplaceRules.parse (a saved set line with ";" is still literal), engine, storage keys.
+- WHAT BROKE: nothing known. Only new: a Find that contains => and an empty With used to give the error "Find cannot contain =>"; now it is read as Find => With.
+- TESTED here: NEW tools/InlinePairTest (15 checks) green; whole tools/run_tests.sh 185/187 green. The 2 red ones (SectionPlanTest, SettingsHelpTest: auto_pad_select / pad_speed / pad_delay) are red in the ORIGINAL zip too, not from this change. Kotlin NOT compiled, phone NOT tested (no Kotlin file was touched).
+- Code: PATCH typing/ReplacePairList.java (make), typing/ReplacePaste.java (parse), app/build.gradle.kts (0.58.8), CHANGELOG.txt. NEW tools/InlinePairTest.java.
+- Rollback: restore those 2 Java files + version 0.58.7, delete tools/InlinePairTest.java.
+
 v0.58.7 - FIX: "+ Add novel" now works (the name is typed with the keyboard's own small keys)
 - SEEN: in Replace > Fix names > Novels (and the old Novels list), "+ Add novel" did not create a new novel, so no new wrong -> right list could be started.
 - CAUSE: the name box was an AlertDialog opened with the keyboard's context. A keyboard has no window token, so Android refused to show it (BadTokenException). The old Novels list caught that and said "Could not add novel"; the Fix names screen did not catch it.
