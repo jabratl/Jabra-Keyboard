@@ -10,6 +10,7 @@ import android.text.SpannableStringBuilder
 import android.text.Spanned
 import android.text.TextUtils
 import android.text.style.BackgroundColorSpan
+import android.text.style.RelativeSizeSpan
 import android.text.style.ForegroundColorSpan
 import android.text.style.StrikethroughSpan
 import android.text.style.StyleSpan
@@ -32,6 +33,7 @@ import com.mgb.keyboard.typing.NovelBook
  *        One term: Wrong, Correct, "Remember for next chapters" checkbox (default on, saves the pair when you tap Fix), button "Fix n".
  *        Whole list: tick list of the terms found in the text (x times each, untick = skip), button "Fix all . n". Opens on Whole list by itself when the text has fixes.
  *  Terms = terms found in the text first, each with its own "Fix n" button; the rest dim ("not in text"). The "Raw names" switch sits above the list.
+ *  Layout rule: the list of each tab is a ScrollView straight in root (the host gives it the spare height), the primary button + toast sit under it.
  *  Keep as is = type a name + Add, chips (tap x to remove), and "Seen in your text" suggestions (Elder Mo ...).
  *  After a fix a toast with Undo shows at the bottom.   More = Import from plugin, How it works.
  * Wrong / Correct / Keep / search boxes open the usual mini keyboard of Replace (api.type), Done brings you back here.
@@ -259,7 +261,8 @@ class FixNamesUi(private val ctx: Context, private val prefs: JabraPrefs, privat
         root.addView(header(st))
         root.addView(docBox(st))
         root.addView(tabs(st))
-        root.addView(when (tab) { 2 -> termsTab(st); 3 -> keepTab(st); else -> fixTab(st) })
+        // the middle part of every tab adds its own views to root; its list is a ScrollView straight in root (MgbIme.stretchToLetters gives the LAST one the spare height)
+        when (tab) { 2 -> termsTab(root, st); 3 -> keepTab(root, st); else -> fixTab(root, st) }
         val t = toastRow()
         if (t != null) root.addView(t)
         return root
@@ -276,14 +279,48 @@ class FixNamesUi(private val ctx: Context, private val prefs: JabraPrefs, privat
         return h
     }
 
+    /** The rounded container of the mock's tabs / toggle. */
+    private fun segBar(): LinearLayout {
+        val c = LinearLayout(ctx)
+        c.orientation = LinearLayout.HORIZONTAL
+        c.gravity = Gravity.CENTER_VERTICAL
+        try { c.background = UiKit.cardBackground(ctx, prefs, false, false) } catch (_: Throwable) { }
+        c.setPadding(dp(3), dp(3), dp(3), dp(3))
+        c.layoutParams = lp(MATCH, WRAP, 0f, 2, 4, 2, 6)
+        return c
+    }
+
+    /** One flat button inside a segBar. on = filled (accent for tabs, soft accent for the toggle). */
+    private fun segBtn(text: CharSequence, on: Boolean, soft: Boolean, click: (View) -> Unit): TextView {
+        val t = TextView(ctx)
+        t.text = text
+        t.textSize = 14f
+        t.gravity = Gravity.CENTER
+        t.setTypeface(t.typeface, Typeface.BOLD)
+        t.maxLines = 1
+        t.isClickable = true
+        if (on) t.background = pill(if (soft) JabraTokens.ACCENT_SOFT else acc, 10) else t.setBackgroundColor(Color.TRANSPARENT)
+        t.setTextColor(if (on) (if (soft) JabraTokens.ON_ACCENT_SOFT else Color.WHITE) else dim())
+        t.setOnClickListener { v -> fb(v); click(v) }
+        return t
+    }
+
     private fun tabs(st: St): View {
-        val r = UiKit.row(ctx)
+        val bar = segBar()
         val left = st.listSc?.hits ?: 0
-        val names = listOf("Fix", "Terms " + st.groups.size, "Keep as is " + st.protect.size)
+        val names = listOf("Fix", "Terms", "Keep as is")
+        val counts = listOf("", st.groups.size.toString(), st.protect.size.toString())
         for (i in 0..2) {
-            val b = UiKit.chip(ctx, prefs, names[i], tab == i + 1, 34, { v -> fb(v) }) { tab = i + 1; api.clearToast(); api.refresh() }
+            val sb = SpannableStringBuilder(names[i])
+            if (counts[i].isNotEmpty()) {
+                sb.append(" ")
+                val a = sb.length
+                sb.append(counts[i])
+                sb.setSpan(RelativeSizeSpan(0.85f), a, sb.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+            }
+            val b = segBtn(sb, tab == i + 1, false) { tab = i + 1; api.clearToast(); api.refresh() }
             val fl = FrameLayout(ctx)
-            fl.addView(b, FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.WRAP_CONTENT))
+            fl.addView(b, FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, dp(36)))
             // red number on Fix = how many fixes are still left in the text
             if (i == 0 && left > 0 && tab != 1) {
                 val d = label(left.toString(), 10f, Color.WHITE, true)
@@ -295,16 +332,18 @@ class FixNamesUi(private val ctx: Context, private val prefs: JabraPrefs, privat
                 dl.setMargins(0, dp(1), dp(3), 0)
                 fl.addView(d, dl)
             }
-            fl.layoutParams = lp(0, WRAP, 1f, 2, 4, 2, 4)
-            r.addView(fl)
+            fl.layoutParams = lp(0, WRAP, 1f, 1, 0, 1, 0)
+            bar.addView(fl)
         }
-        return r
+        return bar
     }
 
     // ---------------------------------------------------------------- live text box
     private fun docBox(st: St): View {
         val fl = FrameLayout(ctx)
-        fl.layoutParams = lp(MATCH, dp(96), 0f, 0, 4, 0, 2)
+        // adaptive: about 11% of the screen height, 64..104 dp (a short screen / landscape = a smaller box, more room for the list)
+        val hDp = try { (ctx.resources.displayMetrics.heightPixels / ctx.resources.displayMetrics.density * 0.11f).toInt().coerceIn(64, 104) } catch (_: Throwable) { 88 }
+        fl.layoutParams = lp(MATCH, dp(hDp), 0f, 0, 4, 0, 4)
         val sc = if (mode == 2 && st.listSc != null) st.listSc else st.fieldSc
         fl.addView(preview(st.shown, sc, st.text.isEmpty()), FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT))
         if (api.canUndo()) {
@@ -392,14 +431,14 @@ class FixNamesUi(private val ctx: Context, private val prefs: JabraPrefs, privat
 
     // ---------------------------------------------------------------- tab 1: Fix
     private fun seg(st: St, lm: Boolean): View {
-        val r = UiKit.row(ctx)
+        val bar = segBar()
         val hits = st.listSc?.hits ?: 0
-        val a = UiKit.chip(ctx, prefs, "One term", !lm, 34, { v -> fb(v) }) { mode = 1; api.clearToast(); api.refresh() }
-        val b = UiKit.chip(ctx, prefs, "Whole list" + (if (hits > 0) " · $hits" else ""), lm, 34, { v -> fb(v) }) { if (st.listSc != null) { mode = 2; api.clearToast(); api.refresh() } }
-        a.layoutParams = lp(0, WRAP, 1f, 2, 2, 2, 4)
-        b.layoutParams = lp(0, WRAP, 1f, 2, 2, 2, 4)
-        r.addView(a); r.addView(b)
-        return r
+        val a = segBtn("One term", !lm, true) { mode = 1; api.clearToast(); api.refresh() }
+        val b = segBtn("Whole list" + (if (hits > 0) " · $hits" else ""), lm, true) { if (st.listSc != null) { mode = 2; api.clearToast(); api.refresh() } }
+        a.layoutParams = lp(0, dp(34), 1f, 1, 0, 1, 0)
+        b.layoutParams = lp(0, dp(34), 1f, 1, 0, 1, 0)
+        bar.addView(a); bar.addView(b)
+        return bar
     }
 
     private fun numField(n: Int, hint: String, value: String, which: Int): View {
@@ -415,20 +454,28 @@ class FixNamesUi(private val ctx: Context, private val prefs: JabraPrefs, privat
         return r
     }
 
-    private fun fixTab(st: St): View {
-        val col = LinearLayout(ctx)
-        col.orientation = LinearLayout.VERTICAL
+    /** A list area = a ScrollView straight in root. baseDp is its height when nobody stretches it. */
+    private fun scrollArea(baseDp: Int): ScrollView {
+        val sv = ScrollView(ctx)
+        sv.layoutParams = lp(MATCH, dp(baseDp), 0f, 0, 0, 0, 6)
+        return sv
+    }
+
+    private fun fixTab(root: LinearLayout, st: St) {
         val lm = mode == 2 && st.listSc != null
         val n = if (lm) (st.listSc?.hits ?: 0) else st.fieldSc.draftHits
-        col.addView(seg(st, lm))
+        root.addView(seg(st, lm))
 
         var rule: com.mgb.keyboard.typing.ReplaceRules.Rule? = null
         var saveIt = false
         if (lm) {
-            col.addView(wholeList(st))
+            root.addView(wholeList(st))
         } else {
-            col.addView(numField(1, "Wrong term (what is in the text)", api.find(), 1))
-            col.addView(numField(2, "Correct term", api.repl(), 2))
+            val sv = scrollArea(112)
+            val box = LinearLayout(ctx)
+            box.orientation = LinearLayout.VERTICAL
+            box.addView(numField(1, "Wrong term (what is in the text)", api.find(), 1))
+            box.addView(numField(2, "Correct term", api.repl(), 2))
             val exists = st.novel.isNotEmpty() && st.forms.isNotEmpty() && st.to.isNotEmpty() &&
                 st.rows.any { r -> r.to.equals(st.to, true) && st.forms.all { f -> r.forms.any { it.equals(f, true) } } }
             val canSave = st.novel.isNotEmpty() && st.forms.isNotEmpty() && st.to.isNotEmpty() && !exists
@@ -442,16 +489,19 @@ class FixNamesUi(private val ctx: Context, private val prefs: JabraPrefs, privat
                 checkTint(cb)
                 cb.setOnCheckedChangeListener { _, c -> remember = c }
                 cb.layoutParams = lp(MATCH, WRAP, 0f, 0, 0, 0, 4)
-                col.addView(cb)
+                box.addView(cb)
                 saveIt = remember
             } else if (st.forms.isNotEmpty() && st.to.isNotEmpty() && st.novel.isEmpty()) {
-                col.addView(hint("No novel yet: tap the novel name above to remember pairs."))
+                box.addView(hint("No novel yet: tap the novel name above to remember pairs."))
             } else if (exists) {
-                col.addView(hint("Already in your list."))
+                box.addView(hint("Already in your list."))
             } else {
-                col.addView(hint("Tip: tap a term in Terms to edit it. Several wrong spellings? Use ;"))
+                box.addView(hint("Tip: tap a term in Terms to edit it. Several wrong spellings? Use ;"))
             }
+            if (st.novel.isEmpty()) box.addView(hint("No novel yet. Tap the novel button above, then Import from plugin (...)."))
             rule = FixNames.draftRule(st.forms, st.to)
+            sv.addView(box)
+            root.addView(sv)
         }
 
         val btnText = when {
@@ -463,7 +513,8 @@ class FixNamesUi(private val ctx: Context, private val prefs: JabraPrefs, privat
         }
         val r0 = rule
         val save = saveIt
-        val go = UiKit.btn(ctx, prefs, btnText, 0f, 46, JabraTokens.T_BODY, { v -> fb(v) }) {
+        // the one primary button: pinned under the scroll area, never scrolls away
+        val go = UiKit.btn(ctx, prefs, btnText, 0f, 48, JabraTokens.T_BODY, { v -> fb(v) }) {
             mode = 0
             if (lm) {
                 api.fix(FixNames.activeRules(st.rows, none))
@@ -472,16 +523,13 @@ class FixNamesUi(private val ctx: Context, private val prefs: JabraPrefs, privat
             }
         }
         fill(go, n > 0)
-        go.layoutParams = lp(MATCH, dp(46), 0f, 0, 2, 0, 0)
-        col.addView(go)
-        if (st.novel.isEmpty()) col.addView(hint("No novel yet. Tap the novel button above, then Import from plugin (...)."))
-        return col
+        go.layoutParams = lp(MATCH, dp(48), 0f, 0, 2, 0, 0)
+        root.addView(go)
     }
 
     /** Whole list: the terms found in the text, tick = fix, untick = skip. */
     private fun wholeList(st: St): View {
-        val sv = ScrollView(ctx)
-        sv.layoutParams = lp(MATCH, dp(116), 0f, 0, 0, 0, 6)
+        val sv = scrollArea(72)
         val box = LinearLayout(ctx)
         box.orientation = LinearLayout.VERTICAL
         var any = false
@@ -496,7 +544,7 @@ class FixNamesUi(private val ctx: Context, private val prefs: JabraPrefs, privat
             row.gravity = Gravity.CENTER_VERTICAL
             try { row.background = UiKit.cardBackground(ctx, prefs, false, false) } catch (_: Throwable) { }
             row.setPadding(dp(10), dp(6), dp(12), dp(6))
-            row.layoutParams = lp(MATCH, WRAP, 0f, 0, 0, 0, 5)
+            row.layoutParams = lp(MATCH, WRAP, 0f, 0, 0, 0, 6)
             row.alpha = if (on) 1f else 0.55f
             val cb = CheckBox(ctx)
             cb.isChecked = on
@@ -507,7 +555,7 @@ class FixNamesUi(private val ctx: Context, private val prefs: JabraPrefs, privat
             row.addView(twoLines(t.to, "← " + t.forms.joinToString(", "), true))
             val cnt = label(c.toString() + "×", 12f, JabraTokens.ON_ACCENT_SOFT, true)
             cnt.setPadding(dp(8), dp(2), dp(8), dp(2))
-            cnt.background = pill(JabraTokens.ACCENT_SOFT, 10)
+            cnt.background = pill(JabraTokens.ACCENT_SOFT, 12)
             row.addView(cnt, lp(WRAP, WRAP))
             row.isClickable = true
             row.setOnClickListener { v ->
@@ -521,7 +569,7 @@ class FixNamesUi(private val ctx: Context, private val prefs: JabraPrefs, privat
             val e = label("Nothing from the list is left in this text.", 13f, dim())
             e.gravity = Gravity.CENTER
             e.setPadding(dp(10), dp(18), dp(10), dp(18))
-            e.background = outline(Color.TRANSPARENT, strokeInk(), 10)
+            e.background = outline(Color.TRANSPARENT, strokeInk(), 12)
             box.addView(e)
         }
         sv.addView(box)
@@ -529,9 +577,7 @@ class FixNamesUi(private val ctx: Context, private val prefs: JabraPrefs, privat
     }
 
     // ---------------------------------------------------------------- tab 2: Terms
-    private fun termsTab(st: St): View {
-        val col = LinearLayout(ctx)
-        col.orientation = LinearLayout.VERTICAL
+    private fun termsTab(root: LinearLayout, st: St) {
         val bar = UiKit.row(ctx)
         bar.gravity = Gravity.CENTER_VERTICAL
         val sb = fieldBox("Search terms", api.query(), 12)
@@ -539,17 +585,16 @@ class FixNamesUi(private val ctx: Context, private val prefs: JabraPrefs, privat
         bar.addView(sb)
         bar.addView(UiKit.btn(ctx, prefs, "+ Add", 0f, 42, JabraTokens.T_BTN, { v -> fb(v) }) { tab = 1; mode = 1; api.clearToast(); api.type(1) })
         bar.layoutParams = lp(MATCH, WRAP, 0f, 0, 0, 0, 4)
-        col.addView(bar)
+        root.addView(bar)
 
         // "Raw names" sits right above the list (it used to be inside the ... menu)
         val rawRow = UiKit.row(ctx)
         val rc = UiKit.chip(ctx, prefs, "Raw names " + (if (showRaw) "on" else "off"), showRaw, 30, { v -> fb(v) }) { showRaw = !showRaw; api.refresh() }
         rc.layoutParams = lp(WRAP, WRAP, 0f, 2, 0, 2, 4)
         rawRow.addView(rc)
-        col.addView(rawRow)
+        root.addView(rawRow)
 
-        val sv = ScrollView(ctx)
-        sv.layoutParams = lp(MATCH, dp(124))
+        val sv = scrollArea(72)
         val list = LinearLayout(ctx)
         list.orientation = LinearLayout.VERTICAL
         val q = api.query().trim().lowercase()
@@ -565,7 +610,7 @@ class FixNamesUi(private val ctx: Context, private val prefs: JabraPrefs, privat
             row.gravity = Gravity.CENTER_VERTICAL
             try { row.background = UiKit.cardBackground(ctx, prefs, false, false) } catch (_: Throwable) { }
             row.setPadding(dp(12), dp(6), dp(10), dp(6))
-            row.layoutParams = lp(MATCH, WRAP, 0f, 0, 0, 0, 5)
+            row.layoutParams = lp(MATCH, WRAP, 0f, 0, 0, 0, 6)
             val mid = LinearLayout(ctx)
             mid.orientation = LinearLayout.VERTICAL
             mid.addView(label(t.to, 15f, ink(), true))
@@ -581,6 +626,7 @@ class FixNamesUi(private val ctx: Context, private val prefs: JabraPrefs, privat
                 val rules = t.idx.map { st.rows[it].rule }
                 val b = UiKit.btn(ctx, prefs, "Fix $c", 0f, 32, JabraTokens.T_BTN, { v -> fb(v) }) { mode = 0; api.fix(rules) }
                 fill(b)
+                try { b.background = pill(acc, 16) } catch (_: Throwable) { }   // round pill like the mock's small button
                 row.addView(b, lp(WRAP, dp(32)))
             } else {
                 row.alpha = 0.55f
@@ -590,8 +636,7 @@ class FixNamesUi(private val ctx: Context, private val prefs: JabraPrefs, privat
         }
         if (items.isEmpty()) list.addView(hint(if (st.novel.isEmpty()) "No novel yet. Tap the novel button above." else if (q.isNotEmpty()) "No match." else "No terms yet. Add one in Fix with Remember on."))
         sv.addView(list)
-        col.addView(sv)
-        return col
+        root.addView(sv)
     }
 
     // ---------------------------------------------------------------- tab 3: Keep as is
@@ -609,9 +654,7 @@ class FixNamesUi(private val ctx: Context, private val prefs: JabraPrefs, privat
         return box
     }
 
-    private fun keepTab(st: St): View {
-        val col = LinearLayout(ctx)
-        col.orientation = LinearLayout.VERTICAL
+    private fun keepTab(root: LinearLayout, st: St) {
         val bar = UiKit.row(ctx)
         bar.gravity = Gravity.CENTER_VERTICAL
         val kb = fieldBox("Name to keep as is", api.keepInput(), 13)
@@ -622,10 +665,9 @@ class FixNamesUi(private val ctx: Context, private val prefs: JabraPrefs, privat
             if (n.isEmpty()) api.type(13) else api.addKeep(n)
         })
         bar.layoutParams = lp(MATCH, WRAP, 0f, 0, 0, 0, 4)
-        col.addView(bar)
+        root.addView(bar)
 
-        val sv = ScrollView(ctx)
-        sv.layoutParams = lp(MATCH, dp(124))
+        val sv = scrollArea(72)
         val all = LinearLayout(ctx)
         all.orientation = LinearLayout.VERTICAL
         if (st.protect.isEmpty()) all.addView(hint("Nothing kept yet."))
@@ -646,8 +688,7 @@ class FixNamesUi(private val ctx: Context, private val prefs: JabraPrefs, privat
         }
         all.addView(hint("Replace never touches these, even when a rule matches part of them."))
         sv.addView(all)
-        col.addView(sv)
-        return col
+        root.addView(sv)
     }
 
     // ---------------------------------------------------------------- sheets: More / Import / Novels / How it works
