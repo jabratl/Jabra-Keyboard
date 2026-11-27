@@ -1,3 +1,18 @@
+v0.64.0 - CLEAN: one simple Replace screen (design = replace-tool-mock.html); includes everything of v0.63.0
+- WHY: the owner wants the Replace tool simple, arranged and compact: one top line, one Find / With card, one mode line, one action line.
+- WHAT: new look "Clean" (ReplacePanel.mainViewClean), the FIRST look the panel tries (pref rp_clean, default ON).
+  1) Line 1: [ABC] [Project: A v] [Fix] [...]. The Project chip opens the project screen, Fix = Fix with project (only while a project is active). [...] opens one extra line: Recent, Never n, List, \n, Help (the closing sign is a cross).
+  2) One card: Find (Sel, Clip) and With (swap). Tap a line = the small keyboard (as before).
+  3) Line: [Text | Word | Regex] + chips Aa (match case) and Smart.
+  4) Line: [< n/N >] [This] [Rest] [Replace all] (Replace all asks a second tap, as before).
+  5) One note line with Undo (or Paste back / Copy), tap the left text = the scope (field / selection / from cursor / to cursor).
+  The separate Project row on top is not added for this look (the chip and Fix are in line 1).
+- Built from the same parts as the Slim look (cards, step row, note line), so every action, the peek card, the Undo stack and the confirm tap are the old ones. Nothing in the engine changed.
+- Falls back to the older looks (nothing is lost): when a set is loaded (for example from Recent), a pair list exists, or the floating test is on; or when anything throws.
+- NOT tested: Kotlin NOT compiled, phone NOT tested. If the Kotlin build is red, the new place is ReplacePanel.kt: search "v0.64.0" (mainViewClean, mainViewPick, mainViewPick0).
+- Code: PATCH ReplacePanel.kt, app/build.gradle.kts (0.64.0), CHANGELOG.txt (plus the v0.63.0 files: ProjectStore.kt, ProjectPage.kt, SettingsGroups.kt, AppHome.kt; DELETE.txt).
+- Rollback: set pref rp_clean = false is not in the UI; restore ReplacePanel.kt and app/build.gradle.kts from v0.63.0.
+
 v0.63.0 - PROJECT 2: Project is the main thing; Sets and +Paste buttons removed from Replace; Projects can be edited in the main app
 - WHY: the owner uses Project as the ONE way to keep terms. Sets can already be edited in the main app, so the Sets button and the +Paste button of Replace are not needed any more. Projects must be editable in the main app too (with the phone's normal keyboard, so Bangla can be typed freely).
 - WHAT:

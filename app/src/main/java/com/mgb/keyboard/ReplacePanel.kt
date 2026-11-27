@@ -611,15 +611,22 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
     /** New look when panel_ui = New; any problem = the classic main view (pattern HistCard.buildModern / buildClassic). */
     /** v0.62.0 (PROJECT): every Replace look gets the Project row on top. Any problem = the look without it. */
     private fun mainViewPick(): View {
+        cleanBuilt = false
         val v = mainViewPick0()
-        try {
-            val ll = v as? LinearLayout
-            if (ll != null) ll.addView(projectBar(), 0)
-        } catch (_: Throwable) { }
+        if (!cleanBuilt) {   // v0.64.0: the Clean look has the Project chip and Fix inside its own top line
+            try {
+                val ll = v as? LinearLayout
+                if (ll != null) ll.addView(projectBar(), 0)
+            } catch (_: Throwable) { }
+        }
         return v
     }
 
     private fun mainViewPick0(): View {
+        if (cleanOn()) {   // v0.64.0 (CLEAN): the one simple Replace screen (pref rp_clean, default ON); a set / pair list / floating test = the older looks below
+            val keepC = msg
+            try { return mainViewClean() } catch (_: Throwable) { msg = keepC; cleanBuilt = false }
+        }
         if (diffOn() && !diffFail && !floatSwitch()) {   // v0.53.0: one-screen diff look first (pref rp_diff, default ON); any problem = the views below
             val keepD = msg
             try { return mainViewDiff() } catch (_: Throwable) { diffFail = true; msg = keepD }
@@ -1733,6 +1740,102 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
             val fAct = floatActions(res, shown)
             root.post { floatSync(root, fSnap, fTab, fAct) }
         }
+        return root
+    }
+
+    // ------------------------------------------------------------------ v0.64.0 (CLEAN): the simple Replace screen (design = replace-tool-mock.html)
+    // Line 1: [ABC] [Project: A v] [Fix] [...]   Line 2: Find / With card   Line 3: [Text | Word | Regex] [Aa] [Smart]
+    // Line 4: [< n/N >] [This] [Rest] [Replace all]   Line 5: note + Undo.   The "..." line holds Recent, Never, List, \n, Help.
+    // Built from the same parts as the Slim look (cards, step row, note line), so every action and the Undo stack are the old ones.
+    // A loaded set, a pair list or the floating test use the older looks (this throws, the caller falls back).
+    private var cleanMenu = false
+    private var cleanBuilt = false
+    private fun cleanOn(): Boolean = try { prefs.bool("rp_clean", true) } catch (_: Throwable) { true }
+
+    private fun mainViewClean(): View {
+        if (setRules != null || pairMode || floatSwitch() || floatOn()) throw IllegalStateException("clean look: set / pair list / float use the older looks")
+        val root = LinearLayout(ctx)
+        root.orientation = LinearLayout.VERTICAL
+        paintBg(root)
+        root.setPadding(dp(4), dp(4), dp(4), dp(4))
+        valueTv = null
+        keysBox = null
+        ReplaceSlim.closeIfIdle()
+
+        val res = calc()
+        val shown = msg
+        msg = ""
+
+        // 1) one top line
+        val top = row()
+        top.gravity = Gravity.CENTER_VERTICAL
+        top.addView(small("ABC", 38) { host.showLetters() })
+        val nm = if (novelCur.length > 14) novelCur.substring(0, 13) + "\u2026" else novelCur
+        val pc = UiKit.chip(ctx, prefs, if (novelCur.isEmpty()) "Project  \u25BE" else "Project: " + nm + "  \u25BE", novelCur.isNotEmpty(), 38, { v -> host.feedback(v) }) { openFixNames() }
+        pc.layoutParams = LinearLayout.LayoutParams(0, dp(38), 1f).also { it.setMargins(dp(2), dp(2), dp(2), dp(2)) }
+        top.addView(pc)
+        if (novelCur.isNotEmpty()) {
+            val fb = small("Fix", 38) { runProject() }
+            try { accentButton(fb, JabraTokens.ACCENT) } catch (_: Throwable) { }
+            top.addView(fb)
+        }
+        top.addView(small(if (cleanMenu) "\u2715" else "\u22EF", 38) { cleanMenu = !cleanMenu; refresh() })
+        root.addView(top)
+
+        // 1b) the "..." line (closed by default)
+        if (cleanMenu) {
+            val mr = row()
+            mr.gravity = Gravity.CENTER_VERTICAL
+            mr.addView(btn("Recent", 1f, 34) { cleanMenu = false; typing = 4; confirmAll = false; rprAsk = false; refresh() })
+            mr.addView(btn("Never " + protectList.size, 1f, 34) { cleanMenu = false; openProtect() })
+            mr.addView(btn((if (opt.list) "\u2713 " else "") + "List", 0.9f, 34) { opt.list = !opt.list; optChanged() })
+            mr.addView(btn((if (opt.escapes) "\u2713 " else "") + "\\n", 0.8f, 34) { opt.escapes = !opt.escapes; optChanged() })
+            mr.addView(btn("Help", 0.9f, 34) { cleanMenu = false; typing = 5; helpPage = 0; confirmAll = false; refresh() })
+            root.addView(mr)
+        }
+
+        // 2) Find / With in ONE card
+        val card = ReplaceSlim.slimCard(ctx, prefs)
+        card.addView(ReplaceSlim.slimLine(ctx, prefs, host, "Find", find, "Type the word to find", shortVal(find), { startTyping(1) },
+            listOf(Pair("Sel") { take(true, io.selected(), "Nothing is selected") }, Pair("Clip") { take(true, io.clipText(), "Clipboard is empty") })))
+        card.addView(ReplaceSlim.slimDivider(ctx, prefs))
+        card.addView(ReplaceSlim.slimLine(ctx, prefs, host, "With", repl, "Replace with", shortVal(repl), { startTyping(2) },
+            listOf(Pair("\u21C4") { swap() })))
+        root.addView(card)
+
+        // 3) mode + the two options that matter
+        val mode = row()
+        mode.gravity = Gravity.CENTER_VERTICAL
+        val seg = ReplaceSlim.segmented(ctx, prefs, host, opt.mode) { i -> opt.mode = i; optChanged() }
+        seg.layoutParams = LinearLayout.LayoutParams(0, dp(34), 1f).also { it.setMargins(dp(2), dp(2), dp(2), dp(2)) }
+        mode.addView(seg)
+        mode.addView(UiKit.chip(ctx, prefs, "Aa", opt.matchCase, 34, { v -> host.feedback(v) }) { opt.matchCase = !opt.matchCase; optChanged() })
+        mode.addView(UiKit.chip(ctx, prefs, "Smart", opt.smart, 34, { v -> host.feedback(v) }) { opt.smart = !opt.smart; optChanged() })
+        root.addView(mode)
+
+        // 4) step + actions
+        val ask = confirmAll && !usedSel
+        val nHits = res.hits.size
+        val plan = ReplaceSlimPlan.step(nHits, res.count, step, res.err != null, res.blank, false, false, find.isEmpty(), pairRules.size, ask)
+        if (nHits > 0) step = step.coerceIn(0, nHits - 1)
+        root.addView(ReplaceSlim.stepRow(ctx, prefs, host, plan,
+            { if (nHits > 0) { step = if (step <= 0) nHits - 1 else step - 1; showStep(res) } },
+            { if (nHits > 0) { step = if (step >= nHits - 1) 0 else step + 1; showStep(res) } },
+            { showStep(res) },
+            { onReplace(ReplaceEngine.run(src, find, repl, opt, step + 1, Int.MAX_VALUE), true) },
+            { onReplace(ReplaceEngine.replaceNth(src, find, repl, opt, step + 1), true) },
+            { onReplace(res, false) },
+            { b -> accentButton(b, if (ask) JabraTokens.WARN else JabraTokens.ACCENT); peekOn(b) { peekResult(res) } }))
+
+        // 5) one note line: message or scope (tap = scope), link on the right: Undo / Paste back / Copy
+        val canPasteBack = copiedOut != null && copiedOut == res.out
+        val note = ReplaceSlimPlan.note(shown, scopeWord(), src.length, undoStack.canUndo(), ReplaceExtras.undoLabel(undoStack.size()), canPasteBack)
+        root.addView(ReplaceSlim.noteLine(ctx, prefs, host, note, { toggleScope() }, {
+            if (note.rightKind == ReplaceSlimPlan.R_UNDO) undo()
+            else if (note.rightKind == ReplaceSlimPlan.R_PASTE_BACK) pasteCopied()
+            else copyResult(res)
+        }))
+        cleanBuilt = true
         return root
     }
 
