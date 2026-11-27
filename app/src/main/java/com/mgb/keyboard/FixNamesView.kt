@@ -25,6 +25,7 @@ import android.widget.ScrollView
 import android.widget.TextView
 import com.mgb.keyboard.typing.FixNames
 import com.mgb.keyboard.typing.NovelBook
+import com.mgb.keyboard.typing.ReplaceRules
 
 /**
  * v0.60.0 (FT1): "Fix terms" = the ONE place for a novel's wrong -> right terms, its Keep as is (Never change) names and the novel list.
@@ -78,6 +79,8 @@ class FixNamesUi(private val ctx: Context, private val prefs: JabraPrefs, privat
         fun keepClearAsk(): Boolean
         fun pasteTerms()                         // v0.60.0: Paste list: lines "wrong;forms => right" from the clipboard are saved to the novel
         fun clearToast()
+        fun sets(ready: Boolean): List<Pair<String, String>>   // v0.61.0: plain sets (name, rules text): My sets / Ready-made
+        fun openSet(name: String, ready: Boolean)               // v0.61.0: load a set in the Replace view (for its Advanced rules)
         fun newNovelInput(): String              // the name typed for a new novel
         fun addNovel(name: String): String       // create a new empty novel and make it active
     }
@@ -89,7 +92,10 @@ class FixNamesUi(private val ctx: Context, private val prefs: JabraPrefs, privat
     private var remember = true                   // "Remember for next chapters" (default on, like the mock)
 
     /** Called when the screen is opened from the Replace panel. */
-    fun open() { tab = 1; sheet = 0; mode = 0 }
+    private var src = 0                           // v0.61.0: Terms source: 0 = novel terms, 1 = My sets, 2 = Ready-made
+    private var setSel = ""                       // v0.61.0: the set shown in Terms when src != 0
+
+    fun open() { tab = 1; sheet = 0; mode = 0; src = 0 }
 
     /** Open straight on the Novels list (the old Novels menu item). */
     fun showNovels() { sheet = 3 }
@@ -277,11 +283,11 @@ class FixNamesUi(private val ctx: Context, private val prefs: JabraPrefs, privat
     private fun header(st: St): View {
         val h = UiKit.row(ctx)
         h.gravity = Gravity.CENTER_VERTICAL
-        h.addView(UiKit.btn(ctx, prefs, "<", 0f, 36, JabraTokens.T_BTN, { v -> fb(v) }) { api.back() })
-        h.addView(label("Fix terms", 15f, ink(), true), lp(WRAP, WRAP, 0f, 6, 0, 0, 0))
+        // v0.61.0 (MERGE step 1): [Replace | Terms] instead of "<" + "Fix terms"; Replace = back to the Replace view
+        h.addView(try { ReplaceModeBar.compact(ctx, prefs, host, true, { api.back() }, { }) } catch (_: Throwable) { UiKit.btn(ctx, prefs, "<", 0f, 36, JabraTokens.T_BTN, { v -> fb(v) }) { api.back() } })
         h.addView(spacer())
         // no novel yet: one clear "+ New novel" button; with a novel: its name (tap = novels list) and a visible "+" next to it
-        h.addView(UiKit.chip(ctx, prefs, if (st.novel.isEmpty()) "+ New novel" else st.novel + "  ▾", true, 34, { v -> fb(v) }) { sheet = 3; api.refresh() })
+        h.addView(UiKit.chip(ctx, prefs, if (st.novel.isEmpty()) "+ New novel" else (if (st.novel.length > 12) st.novel.substring(0, 11) + "\u2026" else st.novel) + " \u25BE", true, 34, { v -> fb(v) }) { sheet = 3; api.refresh() })
         if (st.novel.isNotEmpty()) h.addView(UiKit.btn(ctx, prefs, "+", 0f, 36, JabraTokens.T_BTN, { v -> fb(v) }) { sheet = 3; api.refresh() })
         h.addView(UiKit.btn(ctx, prefs, "?", 0f, 36, JabraTokens.T_BTN, { v -> fb(v) }) { sheet = 4; api.refresh() })
         return h
@@ -591,7 +597,131 @@ class FixNamesUi(private val ctx: Context, private val prefs: JabraPrefs, privat
     }
 
     // ---------------------------------------------------------------- tab 2: Terms
+    /** v0.61.0 (MERGE step 2): [Novel] [My sets n] [Ready-made n] */
+    private fun sourceRow(): View {
+        val hs = android.widget.HorizontalScrollView(ctx)
+        hs.isHorizontalScrollBarEnabled = false
+        val r = UiKit.row(ctx)
+        val my = try { api.sets(false).size } catch (_: Throwable) { 0 }
+        val rd = try { api.sets(true).size } catch (_: Throwable) { 0 }
+        r.addView(UiKit.chip(ctx, prefs, "Novel", src == 0, 34, { v -> fb(v) }) { src = 0; api.clearToast(); api.refresh() })
+        r.addView(UiKit.chip(ctx, prefs, "My sets  $my", src == 1, 34, { v -> fb(v) }) { src = 1; setSel = ""; api.clearToast(); api.refresh() })
+        if (rd > 0) r.addView(UiKit.chip(ctx, prefs, "Ready-made  $rd", src == 2, 34, { v -> fb(v) }) { src = 2; setSel = ""; api.clearToast(); api.refresh() })
+        hs.addView(r)
+        hs.layoutParams = lp(MATCH, WRAP, 0f, 0, 0, 0, 4)
+        return hs
+    }
+
+    /** v0.61.0 (MERGE step 2): the terms of one set, same rows as novel terms (Fix n per term). Regex / delete rules = Advanced, opened in Replace. */
+    private fun setsTerms(root: LinearLayout, st: St) {
+        val ready = src == 2
+        val all = try { api.sets(ready) } catch (_: Throwable) { ArrayList<Pair<String, String>>() }
+        if (all.isEmpty()) {
+            val sv0 = scrollArea(72)
+            val l0 = LinearLayout(ctx); l0.orientation = LinearLayout.VERTICAL
+            l0.addView(hint(if (ready) "No ready-made sets available." else "No sets yet. Make one in Replace (Sets)."))
+            sv0.addView(l0); root.addView(sv0); return
+        }
+        if (setSel.isEmpty() || all.none { it.first == setSel }) setSel = all[0].first
+        val text = all.first { it.first == setSel }.second
+
+        val hs = android.widget.HorizontalScrollView(ctx)
+        hs.isHorizontalScrollBarEnabled = false
+        val chips = UiKit.row(ctx)
+        for (p in all) {
+            val n = try { ReplaceRules.parse(p.second).active() } catch (_: Throwable) { 0 }
+            chips.addView(UiKit.chip(ctx, prefs, p.first + "  " + n, p.first == setSel, 34, { v -> fb(v) }) { setSel = p.first; api.clearToast(); api.refresh() })
+        }
+        hs.addView(chips)
+        hs.layoutParams = lp(MATCH, WRAP, 0f, 0, 0, 0, 4)
+        root.addView(hs)
+
+        val sb = fieldBox("Search terms", api.query(), 12)
+        sb.layoutParams = lp(MATCH, dp(42), 0f, 2, 0, 2, 4)
+        root.addView(sb)
+
+        val rows = FixNames.rowsOfSet(setSel, text)
+        val sc = FixNames.scan(st.shown, rows, none, st.protect, ArrayList<String>(), "")
+        val m = LinkedHashMap<String, Term>()
+        for (i in rows.indices) {
+            val r = rows[i]
+            val t = m.getOrPut(r.to.lowercase()) { Term(r.to, ArrayList<String>(), ArrayList<Int>()) }
+            t.idx.add(i)
+            for (f in r.forms) if (t.forms.none { it.equals(f, true) }) t.forms.add(f)
+        }
+        fun cnt(t: Term): Int { var n = 0; for (i in t.idx) if (i < sc.counts.size) n += sc.counts[i]; return n }
+        val q = api.query().trim().lowercase()
+        val items = m.values
+            .filter { t -> q.isEmpty() || (t.to + " " + t.forms.joinToString(" ")).lowercase().indexOf(q) >= 0 }
+            .map { t -> Pair(t, cnt(t)) }
+            .sortedByDescending { it.second > 0 }
+
+        val sv = scrollArea(72)
+        val list = LinearLayout(ctx)
+        list.orientation = LinearLayout.VERTICAL
+
+        // whole set in one tap + open the set in Replace
+        val top = UiKit.row(ctx)
+        top.gravity = Gravity.CENTER_VERTICAL
+        if (sc.hits > 0) {
+            val fb1 = UiKit.btn(ctx, prefs, "Fix all  \u00B7  " + sc.hits, 0f, 38, JabraTokens.T_BTN, { v -> fb(v) }) { mode = 0; api.fix(FixNames.activeRules(rows, none)) }
+            fill(fb1)
+            top.addView(fb1, lp(WRAP, dp(38), 0f, 0, 0, 6, 0))
+        } else top.addView(label("Nothing to fix in the text", 13f, dim()), lp(WRAP, WRAP, 0f, 4, 0, 8, 0))
+        top.addView(spacer())
+        top.addView(UiKit.btn(ctx, prefs, "Open in Replace", 0f, 38, JabraTokens.T_BTN, { v -> fb(v) }) { api.openSet(setSel, ready) })
+        top.layoutParams = lp(MATCH, WRAP, 0f, 0, 0, 0, 6)
+        list.addView(top)
+
+        for (p in items) {
+            val t = p.first
+            val c = p.second
+            val row = LinearLayout(ctx)
+            row.orientation = LinearLayout.HORIZONTAL
+            row.gravity = Gravity.CENTER_VERTICAL
+            try { row.background = UiKit.cardBackground(ctx, prefs, false, false) } catch (_: Throwable) { }
+            row.setPadding(dp(12), dp(6), dp(10), dp(6))
+            row.layoutParams = lp(MATCH, WRAP, 0f, 0, 0, 0, 6)
+            val mid = LinearLayout(ctx)
+            mid.orientation = LinearLayout.VERTICAL
+            mid.addView(label(t.to, 15f, ink(), true))
+            val w = label("\u2190 " + t.forms.joinToString(", "), 13f, dim())
+            w.maxLines = 1; w.ellipsize = TextUtils.TruncateAt.END
+            mid.addView(w)
+            mid.layoutParams = lp(0, WRAP, 1f)
+            mid.isClickable = true
+            mid.setOnClickListener { v -> fb(v); mode = 1; tab = 1; api.loadPair(t.forms.joinToString("; "), t.to) }
+            row.addView(mid)
+            if (c > 0) {
+                val rules = t.idx.map { rows[it].rule }
+                val b = UiKit.btn(ctx, prefs, "Fix $c", 0f, 32, JabraTokens.T_BTN, { v -> fb(v) }) { mode = 0; api.fix(rules) }
+                fill(b)
+                try { b.background = pill(acc, 16) } catch (_: Throwable) { }
+                row.addView(b, lp(WRAP, dp(32)))
+            } else {
+                row.alpha = 0.55f
+                row.addView(label("not in text", 12f, dim()), lp(WRAP, WRAP))
+            }
+            list.addView(row)
+        }
+        if (items.isEmpty()) list.addView(hint(if (q.isNotEmpty()) "No match." else "This set has no plain terms."))
+
+        // Advanced: regex / delete rules are not terms; they stay in Replace
+        val adv = FixNames.advancedCount(text)
+        if (adv > 0) {
+            list.addView(sub("Advanced"))
+            val ac = card()
+            ac.addView(label("$adv regex / delete rule" + (if (adv == 1) "" else "s") + " in this set", 14f, ink(), false))
+            ac.addView(hint("They are not terms. Open the set in Replace to run them."))
+            list.addView(ac)
+        }
+        sv.addView(list)
+        root.addView(sv)
+    }
+
     private fun termsTab(root: LinearLayout, st: St) {
+        root.addView(sourceRow())
+        if (src != 0) { setsTerms(root, st); return }
         val bar = UiKit.row(ctx)
         bar.gravity = Gravity.CENTER_VERTICAL
         val sb = fieldBox("Search terms", api.query(), 12)

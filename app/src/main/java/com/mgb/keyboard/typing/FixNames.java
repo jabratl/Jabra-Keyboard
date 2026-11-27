@@ -103,6 +103,38 @@ public final class FixNames {
         return out;
     }
 
+    /**
+     * v0.61.0 (MERGE step 2): the term rows of ONE plain set (My sets / Ready-made) so Sets show in Terms like novel terms.
+     * Plain-text rules only (wrong forms => right form). Regex / delete rules are not terms: see advancedCount. At most MAX_ROWS. Never throws.
+     */
+    public static List<Row> rowsOfSet(String name, String text) {
+        List<Row> out = new ArrayList<Row>();
+        try {
+            if (text == null) return out;
+            ReplaceRules.Parsed p = ReplaceRules.parse(text);
+            for (int i = 0; i < p.rules.size(); i++) {
+                ReplaceRules.Rule r = p.rules.get(i);
+                if (r.kind != ReplaceRules.K_TEXT || out.size() >= MAX_ROWS) continue;
+                Row w = new Row();
+                w.set = name == null ? "" : name; w.idx = i; w.mine = false; w.rule = r; w.topic = ""; w.to = r.with;
+                List<String> vs = ReplaceRules.variants(r.find);
+                if (vs.isEmpty()) w.forms.add(r.find); else w.forms.addAll(vs);
+                out.add(w);
+            }
+        } catch (RuntimeException e) { /* what was read stays */ }
+        return out;
+    }
+
+    /** v0.61.0: how many rules of a set are NOT plain terms (regex, delete, delete-regex). They stay in Replace as "Advanced". */
+    public static int advancedCount(String text) {
+        int n = 0;
+        try {
+            if (text == null) return 0;
+            for (ReplaceRules.Rule r : ReplaceRules.parse(text).rules) if (r.kind != ReplaceRules.K_TEXT && r.kind != ReplaceRules.K_COMMENT) n++;
+        } catch (RuntimeException e) { /* what was counted stays */ }
+        return n;
+    }
+
     /** Topics that have rows, in order of first appearance. */
     public static List<String> topicsOf(List<Row> rows) {
         List<String> out = new ArrayList<String>();
