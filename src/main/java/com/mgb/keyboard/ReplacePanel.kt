@@ -539,6 +539,7 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
         val head = row()
         head.addView(btn("\u2190 Back", 1f, 34) { typing = 0; refresh() })
         head.addView(btn((if (setPreviewOn) "\u2713 " else "") + "Preview", 1.2f, 34) { setPreviewOn = !setPreviewOn; setPrev = null; refresh() })   // v0.31.0
+        head.addView(btn("Novels", 1.2f, 34) { openNovels() })
         val hint = TextView(ctx)
         hint.text = if (setPreviewOn) "Tap a set to preview it" else "Pick a set. Edit: app > Tools & Panels"
         hint.textSize = 12f
@@ -1185,7 +1186,8 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
             }
             2 -> {
                 title = "Tools"
-                items.add(Triple("Terms", "novels, terms, keep as is") { dMenu = 0; openFixNames() })   // v0.61.0: Fix terms is the Terms mode of Replace
+                items.add(Triple("Novels", if (novelCur.isEmpty()) "none active" else novelCur) { dMenu = 0; openNovels() })   // v0.55.0 (NV1)
+                items.add(Triple("Fix terms", "novels, terms, keep as is") { dMenu = 0; openFixNames() })   // v0.57.0 (FX1)
                 items.add(Triple("Sets", "") { dMenu = 0; typing = 3; confirmAll = false; refresh() })
                 items.add(Triple("Recent", "") { dMenu = 0; typing = 4; confirmAll = false; rprAsk = false; refresh() })
                 items.add(Triple("Never change", protectList.size.toString() + (if (novelCur.isEmpty()) " terms" else " terms \u00B7 " + novelCur)) { dMenu = 0; openProtect() })
@@ -1763,6 +1765,7 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
         val topScroll = android.widget.HorizontalScrollView(ctx)
         topScroll.isHorizontalScrollBarEnabled = false
         val top = row()
+        top.addView(UiKit.chip(ctx, prefs, if (novelCur.isEmpty()) "Fix terms" else "Fix terms  \u00B7  " + novelCur, novelCur.isNotEmpty(), 36, { v -> host.feedback(v) }) { openFixNames() })   // v0.60.0: novels, terms and Keep as is = ONE place
         top.addView(UiKit.chip(ctx, prefs, "Preview", setPreviewOn, 36, { v -> host.feedback(v) }) { setPreviewOn = !setPreviewOn; setPrev = null; refresh() })
         topScroll.addView(top)
         root.addView(topScroll)
@@ -1794,7 +1797,7 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
             }
         } catch (_: Throwable) { }
         if (tiles.isEmpty()) {
-            val emptyText = if (topicChip == NovelBook.READY) "No ready-made sets available." else "No custom sets yet. Novel pairs are managed in Terms."
+            val emptyText = if (topicChip == NovelBook.READY) "No ready-made sets available." else "No custom sets yet. Novel pairs are managed in Fix terms."
             root.addView(UiKit.noteText(ctx, prefs, emptyText))
         }
         sv.addView(PanelKit.tileGrid(ctx, prefs, host, 1, tiles))
@@ -1946,21 +1949,6 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
                 find = ""; repl = ""; caretPos = 0
             }
             fnToast = m; fnRefresh(); return m
-        }
-        // v0.61.0 (MERGE step 2): plain sets (My sets / Ready-made) are shown in Terms
-        override fun sets(ready: Boolean): List<Pair<String, String>> = try {
-            if (ready) ReplaceStore.ready().map { Pair(it.key, it.value.rules) }
-            else {
-                val saved = ReplaceStore.load(prefs)
-                val known = NovelBook.all(NovelBook.parse(prefs.str("rp_novels", "")), saved.keys)
-                saved.filterKeys { n -> !NovelBook.isMine(n) && known.none { NovelBook.belongs(n, it) } }.map { Pair(it.key, it.value.rules) }
-            }
-        } catch (_: Throwable) { ArrayList<Pair<String, String>>() }
-        override fun openSet(name: String, ready: Boolean) {
-            try {
-                val d = (if (ready) ReplaceStore.ready() else ReplaceStore.load(prefs))[name]
-                if (d != null) { fnToast = ""; pickSet(name, d) } else fnRefresh()
-            } catch (_: Throwable) { fnRefresh() }
         }
         override fun keepInput(): String = fnKeepIn
         override fun newNovelInput(): String = novelNameBuf
@@ -2185,7 +2173,7 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
                 num++
             }
             ReplaceStore.save(prefs, all)
-            msg = "Saved to " + novelCur + ": " + added + " new" + (if (updated > 0) ", " + updated + " updated" else "") + (if (pending.isNotEmpty()) ". " + pending.size + " did not fit: delete old sets" else "") + ". Manage them in Terms"
+            msg = "Saved to " + novelCur + ": " + added + " new" + (if (updated > 0) ", " + updated + " updated" else "") + (if (pending.isNotEmpty()) ". " + pending.size + " did not fit: delete old sets" else "") + ". Manage them in Fix terms"
         } catch (_: Throwable) { msg = "Could not save" }
         refresh()
     }
