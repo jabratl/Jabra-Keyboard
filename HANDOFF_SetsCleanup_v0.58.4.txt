@@ -1,0 +1,30 @@
+Jabra Keyboard v0.58.4 — Sets UI cleanup
+
+Goal:
+- Novel-wise Wrong -> Right pairs are managed in Fix terms only, avoiding the duplicate Sets listing.
+- Keep the existing saved-rule engine and custom Sets behavior.
+
+Changes:
+- Sets screen now has compact Novel / Fix terms / Preview controls.
+- When a novel is active, shows a small Novel pairs count shortcut into Fix terms.
+- Sets screen filters to user-created custom sets and Ready-made sets; glossary/import-derived sets and My pairs are hidden, not deleted.
+- My sets and Ready-made filters replace glossary topic chips.
+- Custom sets retain tap-to-load, long-press preview, and Preview mode.
+- Never change remains accessible for the active novel.
+- Save-to-Novel status now directs the user to Fix terms.
+
+Data safety:
+- No saved set data is deleted or migrated.
+- My pairs remain stored as internal Replace sets so Fix terms' Use novel list can run them through the existing Replace engine, Never change, and Undo behavior.
+- Ready-made and custom sets are unchanged.
+
+Files changed:
+- app/src/main/java/com/mgb/keyboard/ReplacePanel.kt
+- app/build.gradle.kts
+- CHANGELOG.txt
+- HANDOFF_SetsCleanup_v0.58.4.txt
+
+Verification:
+- Source-level review performed.
+- Pure Java tests attempted where dependencies permit.
+- Android Gradle/APK build not run in this environment.
