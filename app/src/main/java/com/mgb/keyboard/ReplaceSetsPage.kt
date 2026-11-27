@@ -17,6 +17,7 @@ import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
 import com.mgb.keyboard.typing.AppTokens
+import com.mgb.keyboard.typing.NovelBook   // v0.55.0 (NV1)
 import com.mgb.keyboard.typing.ReplaceEngine
 import com.mgb.keyboard.typing.ReplaceRules
 import com.mgb.keyboard.typing.ReplaceSets
@@ -28,7 +29,9 @@ import org.json.JSONObject
  */
 object ReplaceStore {
     const val KEY = "rp_sets"
-    const val MAX = 40   // v0.54.0 (GL1): was 20; a big glossary becomes several sets of 50 rules
+    const val MAX = 40   // v0.55.0 (NV1): the limit of the user's OWN sets (v0.54.0: 40 for everything). Glossary sets are counted per novel (NovelBook.MAX_SETS_PER_NOVEL)
+    const val MAX_ALL = NovelBook.MAX_ALL_SETS   // hard cap of the stored map (own sets + sets of all novels)
+    fun userCount(m: Map<String, Def>): Int = try { NovelBook.userCount(m.keys) } catch (_: Throwable) { m.size }
 
     class Def(var rules: String, var matchCase: Boolean, var word: Boolean) {
         fun opt(): ReplaceEngine.Opt {
@@ -45,10 +48,10 @@ object ReplaceStore {
             if (s.isBlank()) return out
             val j = JSONObject(s)
             val it = j.keys()
-            while (it.hasNext() && out.size < MAX) {
+            while (it.hasNext() && out.size < MAX_ALL) {
                 val n = it.next()
                 val o = j.optJSONObject(n) ?: continue
-                out[n.take(40)] = Def(o.optString("r", ""), o.optInt("c", 0) == 1, o.optInt("w", 0) == 1)
+                out[n.take(64)] = Def(o.optString("r", ""), o.optInt("c", 0) == 1, o.optInt("w", 0) == 1)
             }
         } catch (_: Throwable) { }
         return out
@@ -262,7 +265,7 @@ object ReplaceSetsPage {
             if (readOnly) {
                 row.addView(act("Copy as my set") {
                     val m = ReplaceStore.load(prefs)
-                    if (m.size >= ReplaceStore.MAX) { toast(ReplaceStore.MAX.toString() + " sets is the limit"); return@act }
+                    if (ReplaceStore.userCount(m) >= ReplaceStore.MAX) { toast(ReplaceStore.MAX.toString() + " sets is the limit"); return@act }
                     var n = (origName ?: "Set") + " (mine)"
                     var k = 2
                     while (m.containsKey(n)) { n = (origName ?: "Set") + " (mine " + k + ")"; k++ }
@@ -278,7 +281,7 @@ object ReplaceSetsPage {
                     val m = ReplaceStore.load(prefs)
                     if (origName == null || n != origName) {
                         if (m.containsKey(n)) { toast("That name is already used"); return@act }
-                        if (origName == null && m.size >= ReplaceStore.MAX) { toast(ReplaceStore.MAX.toString() + " sets is the limit"); return@act }
+                        if (origName == null && ReplaceStore.userCount(m) >= ReplaceStore.MAX) { toast(ReplaceStore.MAX.toString() + " sets is the limit"); return@act }
                     }
                     // keep the order: rebuild the map with the changed entry in place
                     val out = LinkedHashMap<String, ReplaceStore.Def>()
@@ -311,14 +314,14 @@ object ReplaceSetsPage {
             body.removeAllViews()
             body.addView(label("Rules run from top to bottom. In the keyboard: Rp > Sets, tap a set, then Replace all. Same one-line syntax as the Formatter rules.", dim))
             val mine = ReplaceStore.load(prefs)
-            body.addView(label("My sets (" + mine.size + " / " + ReplaceStore.MAX + ")", text))
+            body.addView(label("My sets (" + ReplaceStore.userCount(mine) + " / " + ReplaceStore.MAX + ")", text))
             if (mine.isEmpty()) body.addView(label("None yet. Tap New set, or copy a ready-made set below.", dim))
             for ((n, d) in mine) {
                 val c = ReplaceRules.parse(d.rules).active()
                 body.addView(act(n + "  ·  " + c + (if (c == 1) " rule" else " rules")) { edit(n, d, false) })
             }
             body.addView(act("+ New set") {
-                if (mine.size >= ReplaceStore.MAX) toast(ReplaceStore.MAX.toString() + " sets is the limit") else edit(null, ReplaceStore.Def("", false, false), false)
+                if (ReplaceStore.userCount(mine) >= ReplaceStore.MAX) toast(ReplaceStore.MAX.toString() + " sets is the limit") else edit(null, ReplaceStore.Def("", false, false), false)
             })
             val io = LinearLayout(ctx)
             io.orientation = LinearLayout.HORIZONTAL
@@ -338,7 +341,7 @@ object ReplaceSetsPage {
                     val m = ReplaceStore.load(prefs)
                     var added = 0
                     for ((k, v) in inc) {
-                        if (m.size >= ReplaceStore.MAX) break
+                        if (ReplaceStore.userCount(m) >= ReplaceStore.MAX || m.size >= ReplaceStore.MAX_ALL) break
                         var n = k; var i = 2
                         while (m.containsKey(n)) { n = k + " (" + i + ")"; i++ }
                         m[n] = v; added++

@@ -1,0 +1,9 @@
+HANDOFF - Jabra Keyboard - Novels and topics - v0.55.0
+
+FLOW: plugin "Copy for keyboard" > keyboard Replace > Sets > Novels > "Paste glossary". Novel = glossary title. Active novel decides which sets show and which Never change list is used.
+PREFS: rp_novels (one novel per line), rp_novel_cur (active, "" = none), rp_nv_<hex hash of lower-case name> (Never change of that novel), rp_protect (general list, used when no novel is active), rp_sets (all sets, glossary sets named "G <novel> · <topic> · wrong|raw [n]").
+FORMAT v2 (typing/GlossaryImport.java): "## jabra-glossary v2 | <novel> | <chapter>", sections "## wrong forms | <Type>", "## raw to English | <Type>", "## never change". No "| Type" = old names, topic "Terms".
+CODE: typing/NovelBook.java (pure: registry, visibility, topics, keys), ReplacePanel.kt (state novelCur / topicChip, pickNovel, deleteNovel, novelsView typing == 9, setsViewNew chips, loadProtect / saveProtect per novel, glossaryImport(back)), ReplaceSetsPage.kt (ReplaceStore.MAX = own sets, MAX_ALL, userCount).
+TESTS: tools/NovelBookTest.java (60 checks), tools/GlossaryImportTest.java (28, unchanged).
+OPEN POINTS (phone): chip row and tile heights in the Sets view, Novels list height (150 dp), toast + note length, delete wording.
+NOT COMPILED HERE - build in GitHub Actions, check the "v0.55.0" lines if red.
