@@ -1,3 +1,15 @@
+v0.63.0 - PROJECT 2: Project is the main thing; Sets and +Paste buttons removed from Replace; Projects can be edited in the main app
+- WHY: the owner uses Project as the ONE way to keep terms. Sets can already be edited in the main app, so the Sets button and the +Paste button of Replace are not needed any more. Projects must be editable in the main app too (with the phone's normal keyboard, so Bangla can be typed freely).
+- WHAT:
+  1) Replace (all 4 looks): the Sets button is gone (top bar of New / Mini / Slim, the Sets row of New, the Sets item of the Diff Tools menu). The +Paste button is gone (top bar of New and Slim, the + Paste chip of the Diff pair list, the Paste button of the pair row). Recent, Never, ?, Float, Project row and Fix with project stay.
+  2) NEW main-app page "Replace projects" (ProjectPage.kt): a card on Home and a button in the Tools & Panels settings, next to "Find & Replace sets". Projects list + New project, then per project: Make active, Delete (2 taps), tab Terms (Add box "gaam; geme; gome => game", tap a row = edit, X = delete with a second tap, Paste list, Whole words, Search) and tab Keep as is (type, + Clipboard, X, Clear with a second tap). Saved at once.
+  3) NEW ProjectStore.kt: all project reads / writes straight from the prefs, the SAME prefs the keyboard uses (rp_novels, rp_novel_cur, rp_sets My pairs sets, never key, rp_proj_word). So the app page and Replace > Project always show the same data. The keyboard reads them every time Replace is opened.
+  4) REMOVED the unused files FixNamesView.kt and ReplaceModeBar.kt (DELETE.txt in the zip).
+- NOT changed: engine, ReplaceRules, FixNames.java, stored sets / projects / Keep as is lists (no migration), the saved sets page of the app (Find & Replace sets), the Set cards that show only while a set is loaded (for example from Recent).
+- NOT tested: Kotlin NOT compiled (no kotlinc here), phone NOT tested. If the Kotlin build is red, the new places are ProjectStore.kt and ProjectPage.kt (whole files), and ReplacePanel.kt / SettingsGroups.kt / AppHome.kt (search "v0.63.0").
+- Code: NEW ProjectStore.kt, ProjectPage.kt; PATCH ReplacePanel.kt, SettingsGroups.kt, AppHome.kt, app/build.gradle.kts (0.63.0), CHANGELOG.txt; DELETE FixNamesView.kt, ReplaceModeBar.kt (DELETE.txt).
+- Rollback: restore ReplacePanel.kt, SettingsGroups.kt, AppHome.kt, app/build.gradle.kts from v0.62.0, delete ProjectStore.kt and ProjectPage.kt.
+
 v0.62.0 - PROJECT: Replace stays ONE normal screen; "Fix terms" screen removed; new Project option (terms list per project, "Fix with project")
 - WHY: the owner wants only the Replace tool: normal Find & Replace as the main screen, plus a Project option. Create a project (empty), open it, add terms as lines "gaam; geme; gome => game" (several wrong forms, one right form), edit / delete them, then in Replace pick the project and fix the chapter smartly.
 - WHAT:

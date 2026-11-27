@@ -290,7 +290,6 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
 
         // v0.25.0 (R2): sets + step through the matches
         val r4 = row()
-        r4.addView(btn("Sets", 1f, 32) { typing = 3; confirmAll = false; refresh() })
         r4.addView(btn("Recent", 1f, 32) { typing = 4; confirmAll = false; rprAsk = false; refresh() })   // v0.26.0 (R3)
         r4.addView(btn("Never", 1f, 32) { openProtect() })   // v0.41.0: never-change list
         r4.addView(btn("?", 0.5f, 32) { typing = 5; helpPage = 0; confirmAll = false; refresh() })   // v0.28.0 (R3b): help
@@ -786,7 +785,6 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
         val top = row()
         top.gravity = Gravity.CENTER_VERTICAL
         top.addView(small("ABC", 40) { host.showLetters() })
-        top.addView(small("Sets", 40) { typing = 3; confirmAll = false; refresh() })
         top.addView(small("Recent", 40) { typing = 4; confirmAll = false; rprAsk = false; refresh() })
         top.addView(small("?", 40) { typing = 5; helpPage = 0; confirmAll = false; refresh() })   // v0.28.0 (R3b): help
         top.addView(small("Never", 40) { openProtect() })   // v0.41.0: never-change list
@@ -1186,7 +1184,6 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
             2 -> {
                 title = "Tools"
                 items.add(Triple("Project", if (novelCur.isEmpty()) "none" else novelCur) { dMenu = 0; openFixNames() })   // v0.62.0
-                items.add(Triple("Sets", "") { dMenu = 0; typing = 3; confirmAll = false; refresh() })
                 items.add(Triple("Recent", "") { dMenu = 0; typing = 4; confirmAll = false; rprAsk = false; refresh() })
                 items.add(Triple("Never change", protectList.size.toString() + (if (novelCur.isEmpty()) " terms" else " terms \u00B7 " + novelCur)) { dMenu = 0; openProtect() })
                 items.add(Triple("Help", "") { dMenu = 0; typing = 5; helpPage = 0; confirmAll = false; refresh() })
@@ -1309,12 +1306,11 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
             diffMenuInto(root, res, ms, nav, curMs)
         } else {
             if (dPairs) {
-                if (pairRules.isEmpty()) root.addView(UiKit.noteText(ctx, prefs, "No pairs yet. Type Find / With and tap + Pair, or tap + Paste (one find => with per line)."))
+                if (pairRules.isEmpty()) root.addView(UiKit.noteText(ctx, prefs, "No pairs yet. Type Find / With and tap + Pair."))
                 else root.addView(pairListView())
                 val pr = row()
                 pr.gravity = Gravity.CENTER_VERTICAL
                 if (find.isNotEmpty() || editIdx >= 0) pr.addView(dChip(if (editIdx >= 0) "Update" else "+ Pair", true) { addPair(false) })
-                pr.addView(dChip("+ Paste", false) { pastePairs() })
                 if (pairMode) {
                     pr.addView(dChip("Check", false) { checkNow() })
                     pr.addView(dChip("List " + pairRules.size, false) { typing = 8; clearAsk = false; refresh() })
@@ -1466,11 +1462,9 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
         val top = row()
         top.gravity = Gravity.CENTER_VERTICAL
         top.addView(small("ABC", 38) { host.showLetters() })
-        top.addView(small("Sets", 38) { typing = 3; confirmAll = false; refresh() })
         top.addView(small("Recent", 38) { typing = 4; confirmAll = false; rprAsk = false; refresh() })
         top.addView(small("?", 38) { typing = 5; helpPage = 0; confirmAll = false; refresh() })
         if (pairMode || (setRules == null && find.isNotEmpty())) { if (find.isEmpty()) editIdx = -1; top.addView(small(if (editIdx >= 0) "Update" else "+Pair", 38) { addPair(false) }) }   // v0.40.0
-        else if (setRules == null) top.addView(small("+Paste", 38) { pastePairs() })   // v0.41.0: Find is empty and no list yet: paste many pairs at once
         val sp = View(ctx)
         sp.layoutParams = LinearLayout.LayoutParams(0, 1, 1f)
         top.addView(sp)
@@ -1549,7 +1543,6 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
                 val pr = row()
                 pr.gravity = Gravity.CENTER_VERTICAL
                 if (pairMode) pr.addView(btn("Check", 0.8f, 34) { checkNow() })
-                if (pairMode) pr.addView(btn("Paste", 0.8f, 34) { pastePairs() })   // v0.41.0: add many pairs from the clipboard
                 if (pairMode) pr.addView(btn("List " + pairRules.size, 0.9f, 34) { typing = 8; clearAsk = false; refresh() })   // v0.41.1: view / edit / remove / clear the pairs
                 if (nShort > 0) pr.addView(btn("Whole word (" + nShort + ")", 1.5f, 34) { fixShort() })
                 if (pairMode) {
@@ -1642,12 +1635,10 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
         val top = row()
         top.gravity = Gravity.CENTER_VERTICAL
         top.addView(small("ABC", 38) { host.showLetters() })
-        top.addView(small("Sets", 38) { typing = 3; confirmAll = false; refresh() })
         top.addView(small("Recent", 38) { typing = 4; confirmAll = false; rprAsk = false; refresh() })
         if (pairMode && find.isEmpty()) editIdx = -1
         val pb = ReplaceSlimPlan.pairButton(pairMode, setLoaded, find.isEmpty(), editIdx)
-        if (pb == "+Paste") top.addView(small(pb, 38) { pastePairs() })
-        else if (pb.isNotEmpty()) top.addView(small(pb, 38) { addPair(false) })
+        if (pb.isNotEmpty() && pb != "+Paste") top.addView(small(pb, 38) { addPair(false) })   // v0.63.0: no +Paste button any more (terms are added in Project)
         val sp = View(ctx)
         sp.layoutParams = LinearLayout.LayoutParams(0, 1, 1f)
         top.addView(sp)

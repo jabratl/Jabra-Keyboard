@@ -144,6 +144,7 @@ object AppHome {
         customBox.orientation = LinearLayout.VERTICAL
         col.addView(customBox)
         try { ReplaceSetsPage.homeCard(act)?.let { col.addView(it) } } catch (_: Throwable) { }   // v0.28.0 (R3): Find & Replace shortcut card (not a page tile: no PagePlan / tile_order change)
+        try { ProjectPage.homeCard(act)?.let { col.addView(it) } } catch (_: Throwable) { }   // v0.63.0 (PROJECT 2): Replace projects shortcut card (same pattern as the Find & Replace card)
 
         // ---- Quick looks ----
         col.addView(label(act, "Quick looks", dp(AppTokens.S4)))

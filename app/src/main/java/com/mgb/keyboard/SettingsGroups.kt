@@ -805,6 +805,14 @@ object SettingsGroups {
                     try { sink?.rows?.add(SinkRow("rp_sets", "Find & Replace sets", "Tools & Panels", "Rule sets for the Rp panel: edit, test, export. Words: replace find regex", rb, { false }, { "" })) } catch (_: Throwable) { }   // v0.28.0 (R3): the global search on Home finds the button
                 } catch (_: Throwable) { }
             }
+            if (sink != null) {   // v0.63.0 (PROJECT 2): "Replace projects" page button (same projects as Replace > Project in the keyboard); any problem = no button
+                try {
+                    val pb = ProjectPage.button(ctx)
+                    pb.tag = "secreset"   // same rule as the sets button: not counted as a row, hidden while searching
+                    g.addView(pb)
+                    try { sink?.rows?.add(SinkRow("rp_projects", "Replace projects", "Tools & Panels", "Projects for Replace: terms (wrong => right), names to keep, make active. Words: project novel terms keep fix", pb, { false }, { "" })) } catch (_: Throwable) { }
+                } catch (_: Throwable) { }
+            }
             level(g, "Vault sort", "vault_sort", 0, arrayOf("Newest", "A-Z", "Used"))   // v0.15.4 (N4)
             cycle(g, "Vault save folder", "vault_dest", { arrayOf("Unfiled") + vaultFolders().toTypedArray() },   // v0.15.4 (N4): folder used by "To Vault" (index 0 = Unfiled)
                 { val d = prefs.str("vault_dest", ""); if (d.isEmpty()) 0 else vaultFolders().indexOf(d) + 1 },
