@@ -273,7 +273,9 @@ class FixNamesUi(private val ctx: Context, private val prefs: JabraPrefs, privat
         h.addView(UiKit.btn(ctx, prefs, "<", 0f, 36, JabraTokens.T_BTN, { v -> fb(v) }) { api.back() })
         h.addView(label("Fix terms", 15f, ink(), true), lp(WRAP, WRAP, 0f, 6, 0, 0, 0))
         h.addView(spacer())
-        h.addView(UiKit.chip(ctx, prefs, (if (st.novel.isEmpty()) "Pick a novel" else st.novel) + "  ▾", true, 34, { v -> fb(v) }) { sheet = 3; api.refresh() })
+        // no novel yet: one clear "+ New novel" button; with a novel: its name (tap = novels list) and a visible "+" next to it
+        h.addView(UiKit.chip(ctx, prefs, if (st.novel.isEmpty()) "+ New novel" else st.novel + "  ▾", true, 34, { v -> fb(v) }) { sheet = 3; api.refresh() })
+        if (st.novel.isNotEmpty()) h.addView(UiKit.btn(ctx, prefs, "+", 0f, 36, JabraTokens.T_BTN, { v -> fb(v) }) { sheet = 3; api.refresh() })
         h.addView(UiKit.btn(ctx, prefs, "?", 0f, 36, JabraTokens.T_BTN, { v -> fb(v) }) { sheet = 4; api.refresh() })
         return h
     }
@@ -491,13 +493,19 @@ class FixNamesUi(private val ctx: Context, private val prefs: JabraPrefs, privat
                 box.addView(cb)
                 saveIt = remember
             } else if (st.forms.isNotEmpty() && st.to.isNotEmpty() && st.novel.isEmpty()) {
-                box.addView(hint("No novel yet: tap the novel name above and create one to remember pairs."))
+                box.addView(hint("No novel yet: tap + New novel above to remember pairs."))
             } else if (exists) {
                 box.addView(hint("Already in your list."))
             } else {
                 box.addView(hint("Tip: tap a term in Terms to edit it. Several wrong spellings? Use ;"))
             }
-            if (st.novel.isEmpty()) box.addView(hint("No novel yet. Tap the novel button above and create one."))
+            if (st.novel.isEmpty()) {
+                box.addView(hint("No novel yet. Pairs are saved per novel."))
+                val nn = UiKit.btn(ctx, prefs, "+ New novel", 0f, 40, JabraTokens.T_BTN, { v -> fb(v) }) { sheet = 3; api.refresh() }
+                fill(nn)
+                nn.layoutParams = lp(MATCH, dp(40), 0f, 2, 2, 2, 4)
+                box.addView(nn)
+            }
             rule = FixNames.draftRule(st.forms, st.to)
             sv.addView(box)
             root.addView(sv)
@@ -625,7 +633,7 @@ class FixNamesUi(private val ctx: Context, private val prefs: JabraPrefs, privat
             }
             list.addView(row)
         }
-        if (items.isEmpty()) list.addView(hint(if (st.novel.isEmpty()) "No novel yet. Tap the novel button above to create one." else if (q.isNotEmpty()) "No match." else "No terms yet. Add one in Fix with Remember on."))
+        if (items.isEmpty()) list.addView(hint(if (st.novel.isEmpty()) "No novel yet. Tap + New novel above." else if (q.isNotEmpty()) "No match." else "No terms yet. Add one in Fix with Remember on."))
         sv.addView(list)
         root.addView(sv)
     }
