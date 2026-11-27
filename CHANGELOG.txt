@@ -1,3 +1,10 @@
+v0.64.1 - CLEAN FIX: the Clean look now also works when Float is ON (it used to fall back to the old Slim look)
+- WHY: the owner saw no change. The panel had the Float switch ON (rp_float), and v0.64.0 handed that case to the older look without a word.
+- WHAT: Clean look now supports Float: the Float toggle moved into the ... line (next to Recent / Never / List / \n / Help), the floating window feed and the inline float test card are the same as in the Slim look. Only a loaded set or a pair list still use the older looks. If the Clean look fails for any other reason, the note line now says "Clean look error: ..." instead of silently showing the old look.
+- NOT tested: Kotlin NOT compiled, phone NOT tested. New place: ReplacePanel.kt, search "v0.64".
+- Code: PATCH ReplacePanel.kt, app/build.gradle.kts (0.64.1), CHANGELOG.txt (plus the v0.63.0 / v0.64.0 files, DELETE.txt).
+- Rollback: restore ReplacePanel.kt and app/build.gradle.kts from v0.64.0.
+
 v0.64.0 - CLEAN: one simple Replace screen (design = replace-tool-mock.html); includes everything of v0.63.0
 - WHY: the owner wants the Replace tool simple, arranged and compact: one top line, one Find / With card, one mode line, one action line.
 - WHAT: new look "Clean" (ReplacePanel.mainViewClean), the FIRST look the panel tries (pref rp_clean, default ON).

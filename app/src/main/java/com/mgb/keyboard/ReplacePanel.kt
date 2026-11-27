@@ -625,7 +625,7 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
     private fun mainViewPick0(): View {
         if (cleanOn()) {   // v0.64.0 (CLEAN): the one simple Replace screen (pref rp_clean, default ON); a set / pair list / floating test = the older looks below
             val keepC = msg
-            try { return mainViewClean() } catch (_: Throwable) { msg = keepC; cleanBuilt = false }
+            try { return mainViewClean() } catch (e: Throwable) { msg = if (e is IllegalStateException) keepC else "Clean look error: " + e.toString().take(90); cleanBuilt = false }
         }
         if (diffOn() && !diffFail && !floatSwitch()) {   // v0.53.0: one-screen diff look first (pref rp_diff, default ON); any problem = the views below
             val keepD = msg
@@ -1753,7 +1753,7 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
     private fun cleanOn(): Boolean = try { prefs.bool("rp_clean", true) } catch (_: Throwable) { true }
 
     private fun mainViewClean(): View {
-        if (setRules != null || pairMode || floatSwitch() || floatOn()) throw IllegalStateException("clean look: set / pair list / float use the older looks")
+        if (setRules != null || pairMode) throw IllegalStateException("clean look: a set or a pair list uses the older looks")
         val root = LinearLayout(ctx)
         root.orientation = LinearLayout.VERTICAL
         paintBg(root)
@@ -1765,6 +1765,7 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
         val res = calc()
         val shown = msg
         msg = ""
+        val fcard: View? = if (floatOn() && !floatSwitch()) (try { floatCard(res, shown) } catch (_: Throwable) { null }) else null   // same float test card as the Slim look
 
         // 1) one top line
         val top = row()
@@ -1791,6 +1792,7 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
             mr.addView(btn((if (opt.list) "\u2713 " else "") + "List", 0.9f, 34) { opt.list = !opt.list; optChanged() })
             mr.addView(btn((if (opt.escapes) "\u2713 " else "") + "\\n", 0.8f, 34) { opt.escapes = !opt.escapes; optChanged() })
             mr.addView(btn("Help", 0.9f, 34) { cleanMenu = false; typing = 5; helpPage = 0; confirmAll = false; refresh() })
+            if (floatSwitch()) mr.addView(btn(if (winShows()) "\u2713 Float" else "Float", 1f, 34) { cleanMenu = false; toggleFloat() })   // the Float button now lives in the ... line
             root.addView(mr)
         }
 
@@ -1818,7 +1820,7 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
         val nHits = res.hits.size
         val plan = ReplaceSlimPlan.step(nHits, res.count, step, res.err != null, res.blank, false, false, find.isEmpty(), pairRules.size, ask)
         if (nHits > 0) step = step.coerceIn(0, nHits - 1)
-        root.addView(ReplaceSlim.stepRow(ctx, prefs, host, plan,
+        if (fcard != null) root.addView(fcard) else root.addView(ReplaceSlim.stepRow(ctx, prefs, host, plan,
             { if (nHits > 0) { step = if (step <= 0) nHits - 1 else step - 1; showStep(res) } },
             { if (nHits > 0) { step = if (step >= nHits - 1) 0 else step + 1; showStep(res) } },
             { showStep(res) },
@@ -1835,6 +1837,12 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
             else if (note.rightKind == ReplaceSlimPlan.R_PASTE_BACK) pasteCopied()
             else copyResult(res)
         }))
+        if (floatSwitch() && fcard == null) {   // floating window feed (same as the Slim look)
+            val fSnap = ReplaceFloat.snap(src, res, step, false, floatLines(res), ReplaceFloat.WIN_MAX_ROWS, null)
+            val fTab = ReplaceFloat.sanitizeTab(prefs.int("rp_float_tab", 0))
+            val fAct = floatActions(res, shown)
+            root.post { floatSync(root, fSnap, fTab, fAct) }
+        }
         cleanBuilt = true
         return root
     }
