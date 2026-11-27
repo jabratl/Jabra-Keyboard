@@ -1,3 +1,16 @@
+v0.62.0 - PROJECT: Replace stays ONE normal screen; "Fix terms" screen removed; new Project option (terms list per project, "Fix with project")
+- WHY: the owner wants only the Replace tool: normal Find & Replace as the main screen, plus a Project option. Create a project (empty), open it, add terms as lines "gaam; geme; gome => game" (several wrong forms, one right form), edit / delete them, then in Replace pick the project and fix the chapter smartly.
+- WHAT:
+  1) Replace (all 4 looks: New, Diff, Mini, Slim): a Project row on top. [Project: A v] opens the project screen. [Fix with project] runs ALL terms of the active project on the field (or the selection).
+  2) Project screen (new ProjectView.kt, class ProjectUi): Projects list + "+ Create" (name typed with the keyboard's own keys, empty project, opens at once), No project, Delete (2 taps). One project: Add box (typing 15, one line, several wrong forms with ; or |), term list (tap = edit, X = delete with a second tap), Whole words switch, Paste list (many lines from the clipboard), search, and a second tab Keep as is (+ Selection, + Clipboard, Clear, chips).
+  3) Smart fix = whole words (switch, default ON), the case look is kept (Gaam > Game), small spelling gaps match (smart matching), Keep as is names are never touched. Undo works as in Replace.
+  4) REMOVED: the old Fix terms screen (tabs Fix / Terms / Keep as is, One term / Whole list, live text box, Sets source) = FixNamesView.kt, and ReplaceModeBar.kt (v0.61 only). Sets button of Replace stays (load a whole set into Replace). Never / Never change buttons open Project > Keep as is.
+- Typing codes of the mini keyboard: 12 search, 13 new project name, 14 name to keep, 15 the pair line.
+- NOT changed: engine, ReplaceRules, FixNames.java, NovelBook, stored sets / novels / Never change lists (a project = the old novel; no migration).
+- NOT tested: Kotlin NOT compiled (no kotlinc here), phone NOT tested. If the Kotlin build is red, the new places are ProjectView.kt (whole file) and ReplacePanel.kt (search "v0.62.0").
+- Code: NEW app/src/main/java/com/mgb/keyboard/ProjectView.kt; PATCH ReplacePanel.kt, app/build.gradle.kts (0.62.0), tools/FixTermsMergeTest.java, tools/NovelNameTypingTest.java, CHANGELOG.txt. DELETE (by hand in GitHub, a zip cannot delete): app/src/main/java/com/mgb/keyboard/FixNamesView.kt and ReplaceModeBar.kt (if present). They are not used any more.
+- Rollback: restore ReplacePanel.kt, FixNamesView.kt, app/build.gradle.kts from v0.60.0, delete ProjectView.kt.
+
 v0.60.0 - MERGE: Fix terms + Replace panel = ONE place for novel terms (old Novels screen and old Never change screen removed)
 - WHY: Replace had several screens doing nearly the same job as Fix terms (Novels list, Never change list, pair saving). Owner asked to merge them: keep the best feature of each, one better design, remove the old ones.
 - WHAT (one screen, Replace > Fix terms; every old entry point now opens it):

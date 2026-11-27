@@ -5,7 +5,7 @@ import java.util.regex.*;
 import com.mgb.keyboard.typing.*;
 
 /** v0.60.0 (FT1): guard for the merge of Fix terms with the Replace panel.
- *  1) WIRING (reads the REAL Kotlin sources, run from the repo root): every FixNamesUi.Api function is implemented by ReplacePanel and every api.xxx() the view calls exists;
+ *  1) WIRING (reads the REAL Kotlin sources, run from the repo root): every ProjectUi.Api function is implemented by ReplacePanel and every api.xxx() the view calls exists;
  *     the old Novels screen and the old Never change screen are gone, their entry points open Fix terms; typing 13 = new novel name, 14 = name to keep; braces balance.
  *  2) LOGIC of "Terms > Paste" (real Java classes): lines "wrong;forms => right" become one saved pair with several wrong forms, shown as one term row. */
 public class FixTermsMergeTest {
@@ -36,10 +36,10 @@ public class FixTermsMergeTest {
 
     public static void main(String[] a) throws Exception {
         String rp = read("app/src/main/java/com/mgb/keyboard/ReplacePanel.kt");
-        String fv = read("app/src/main/java/com/mgb/keyboard/FixNamesView.kt");
+        String fv = read("app/src/main/java/com/mgb/keyboard/ProjectView.kt");
 
         // ---- wiring
-        int i0 = fv.indexOf("interface Api {"), i1 = fv.indexOf("// state that lives");
+        int i0 = fv.indexOf("interface Api {"), i1 = fv.indexOf("var tab = 1");
         ok(i0 > 0 && i1 > i0, "Api interface found");
         String iface = i0 > 0 && i1 > i0 ? fv.substring(i0, i1) : "";
         Set<String> decl = all(Pattern.compile("fun (\\w+)\\("), iface, 1);
@@ -57,16 +57,16 @@ public class FixTermsMergeTest {
         ok(!has(rp, "fun novelsView()") && !has(rp, "fun protectView()"), "old Novels and Never change screens are removed");
         ok(!has(rp, "typing == 7) protectView()") && !has(rp, "typing == 9) novelsView()"), "dispatcher no longer knows typing 7 / 9");
         ok(!has(rp, "typing = 7;") && !has(rp, "typing = 9;"), "nothing opens the removed screens");
-        ok(has(rp, "private fun openProtect() {") && has(rp, "fnUi.tab = 3; typing = 10"), "Never / Never change buttons open Fix terms > Keep as is");
+        ok(has(rp, "private fun openProtect() {") && has(rp, "fnUi.tab = 2; typing = 10"), "Never / Never change buttons open Fix terms > Keep as is");
         ok(has(rp, "fnUi.showNovels(); typing = 10"), "Novels menu opens Fix terms > Novels");
         ok(!has(rp, "fnKeepBack") && !has(rp, "openKeep"), "the old 'open Never change from Fix terms' hop is gone");
 
         // ---- typing codes
-        ok(has(fv, "fieldBox(\"New novel name\", api.newNovelInput(), 13)") && has(fv, "api.type(13)"), "view: new novel name = typing 13");
+        ok(has(fv, "fieldBox(\"New project name\", api.newNovelInput(), 13)") && has(fv, "api.type(13)"), "view: new novel name = typing 13");
         ok(has(fv, "fieldBox(\"Name to keep as is\", api.keepInput(), 14)") && has(fv, "api.type(14)"), "view: name to keep = typing 14");
         ok(has(rp, "if (typing == 14) head.addView(btn(\"Add\", 1.4f, 34) { commitKeepName() })"), "typeView: Add button for the Keep box");
-        ok(has(rp, "else if (typing == 14) fnKeepIn = v else if (typing == 13) novelNameBuf = v else repl = v"), "setCur knows typing 14");
-        ok(has(rp, "else if (typing == 14) 14 else if (typing == 13) 13 else 1;"), "paste picker returns to the Keep box");
+        ok(has(rp, "else if (typing == 14) fnKeepIn = v else if (typing == 15) fnPairIn = v else if (typing == 13) novelNameBuf = v else repl = v"), "setCur knows typing 14");
+        ok(has(rp, "else if (typing == 14) 14 else if (typing == 15) 15 else if (typing == 13) 13 else 1;"), "paste picker returns to the Keep box");
         ok(has(rp, "typing = if (fnBack) 10 else 0;"), "Done goes back to Fix terms");
 
         // ---- best-of-both features are in the view
@@ -74,9 +74,16 @@ public class FixTermsMergeTest {
         ok(has(fv, "api.pasteTerms()"), "Terms: Paste list (from Pairs > Paste)");
         ok(has(fv, "api.pickNovel(\"\")"), "Novels: No novel (from the old Novels list)");
 
+        // ---- v0.62.0 PROJECT: one screen next to Replace
+        ok(has(rp, "ll.addView(projectBar(), 0)"), "every Replace look gets the Project row");
+        ok(has(rp, "private fun runProject()") && has(rp, "fnFix(FixNames.activeRules(rows, null), true)"), "Fix with project runs all terms smartly");
+        ok(has(rp, "else if (typing == 15) head.addView(btn(") && has(rp, "private fun commitPairLine()") && has(rp, "private fun fnDeleteTerm("), "pair line (typing 15), edit and delete exist");
+        ok(has(fv, "fieldBox(\"wrong; wrong => right\", api.pairInput(), 15)") && has(fv, "api.deleteTerm(") && has(fv, "api.editTerm("), "view: add box, edit and delete");
+        ok(!has(rp, "FixNamesUi") && !has(rp, "ReplaceModeBar"), "the old Fix terms screen and the mode bar are not used any more");
+
         // ---- syntax guard (no Kotlin compiler in the test box)
         ok(balanced(rp), "ReplacePanel.kt: braces, brackets and parentheses balance");
-        ok(balanced(fv), "FixNamesView.kt: braces, brackets and parentheses balance");
+        ok(balanced(fv), "ProjectView.kt: braces, brackets and parentheses balance");
 
         // ---- logic of Terms > Paste
         ReplacePaste.Result res = ReplacePaste.parse("Gaam;geme;gome => game\nLin Fen => Lin Feng\n# comment\nbad line", new ArrayList<ReplaceRules.Rule>(), 200);
