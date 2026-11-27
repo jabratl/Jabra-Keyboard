@@ -23,12 +23,12 @@ import com.mgb.keyboard.typing.ReplaceSets
 import org.json.JSONObject
 
 /*
- * v0.25.0 (R2) SAVED SETS of Find & Replace rules. Pref rp_sets = JSON {name: {r: rules text, c: matchCase 0/1, w: word 0/1}}, up to 20 sets.
+ * v0.25.0 (R2) SAVED SETS of Find & Replace rules. Pref rp_sets = JSON {name: {r: rules text, c: matchCase 0/1, w: word 0/1}}, up to 40 sets (v0.54.0; was 20).
  * Goes into Backup / Restore with all other prefs (it is the user's own data, not typing history). Pure rules = typing/ReplaceRules.java.
  */
 object ReplaceStore {
     const val KEY = "rp_sets"
-    const val MAX = 20
+    const val MAX = 40   // v0.54.0 (GL1): was 20; a big glossary becomes several sets of 50 rules
 
     class Def(var rules: String, var matchCase: Boolean, var word: Boolean) {
         fun opt(): ReplaceEngine.Opt {
@@ -262,7 +262,7 @@ object ReplaceSetsPage {
             if (readOnly) {
                 row.addView(act("Copy as my set") {
                     val m = ReplaceStore.load(prefs)
-                    if (m.size >= ReplaceStore.MAX) { toast("20 sets is the limit"); return@act }
+                    if (m.size >= ReplaceStore.MAX) { toast(ReplaceStore.MAX.toString() + " sets is the limit"); return@act }
                     var n = (origName ?: "Set") + " (mine)"
                     var k = 2
                     while (m.containsKey(n)) { n = (origName ?: "Set") + " (mine " + k + ")"; k++ }
@@ -278,7 +278,7 @@ object ReplaceSetsPage {
                     val m = ReplaceStore.load(prefs)
                     if (origName == null || n != origName) {
                         if (m.containsKey(n)) { toast("That name is already used"); return@act }
-                        if (origName == null && m.size >= ReplaceStore.MAX) { toast("20 sets is the limit"); return@act }
+                        if (origName == null && m.size >= ReplaceStore.MAX) { toast(ReplaceStore.MAX.toString() + " sets is the limit"); return@act }
                     }
                     // keep the order: rebuild the map with the changed entry in place
                     val out = LinkedHashMap<String, ReplaceStore.Def>()
@@ -318,7 +318,7 @@ object ReplaceSetsPage {
                 body.addView(act(n + "  ·  " + c + (if (c == 1) " rule" else " rules")) { edit(n, d, false) })
             }
             body.addView(act("+ New set") {
-                if (mine.size >= ReplaceStore.MAX) toast("20 sets is the limit") else edit(null, ReplaceStore.Def("", false, false), false)
+                if (mine.size >= ReplaceStore.MAX) toast(ReplaceStore.MAX.toString() + " sets is the limit") else edit(null, ReplaceStore.Def("", false, false), false)
             })
             val io = LinearLayout(ctx)
             io.orientation = LinearLayout.HORIZONTAL

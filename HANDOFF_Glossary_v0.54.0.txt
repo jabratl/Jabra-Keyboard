@@ -1,0 +1,10 @@
+HANDOFF - Jabra Keyboard - glossary (plugin) + Replace - v0.54.0
+
+FLOW: plugin Glossary tab > "Copy for keyboard" (plugin v1.1.0) > keyboard Replace > Sets > "Paste glossary".
+FORMAT (typing/GlossaryImport.java): header "## jabra-glossary v1 | <project> | <chapter>", sections "## wrong forms", "## raw to English", "## never change". Rule lines = normal Replace syntax. "#" lines are comments.
+KEYBOARD: ReplacePanel.glossaryImport() reads io.clipText(), removes saved sets that start with "<prefix> · " (old copy), saves the new sets in ReplaceStore (rp_sets), adds never-change terms with ReplaceProtect.addAll, shows a Toast and opens Sets.
+LIMITS: 50 rules per set (ReplaceRules.MAX_RULES), 40 saved sets (ReplaceStore.MAX, was 20), 100 never-change terms (ReplaceProtect.MAX_TERMS), set names 40 chars. Never change is add-only: removing a term is done by hand in Never change.
+TESTS: tools/GlossaryImportTest.java (28 checks, includes a real run of the generated set with a never-change term). Run: concatenate with typing/Replace*.java into one file (see CHANGELOG v0.54.0) or compile with javac in CI.
+NOT TOUCHED: ReplaceEngine / ReplaceRules, the Vault Glossary kind (Term + Meaning) stays a separate lookup.
+OPEN POINTS (phone): Toast text length, Sets grid with many glossary sets, "Paste glossary" chip position in the Sets header, clipboard read permission on Android 10+ (same as Paste pairs).
+NOT COMPILED HERE - build in GitHub Actions, check the "v0.54.0" lines if red.

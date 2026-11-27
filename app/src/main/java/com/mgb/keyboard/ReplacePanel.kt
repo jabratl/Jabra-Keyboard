@@ -16,6 +16,7 @@ import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
 import com.mgb.keyboard.clip.ClipList   // v0.38.0 (P1)
+import com.mgb.keyboard.typing.GlossaryImport   // v0.54.0 (GL1)
 import com.mgb.keyboard.typing.LookColors
 import com.mgb.keyboard.typing.PanelLayout
 import com.mgb.keyboard.typing.QuickPaste   // v0.38.0 (P1)
@@ -530,6 +531,7 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
         val head = row()
         head.addView(btn("\u2190 Back", 1f, 34) { typing = 0; refresh() })
         head.addView(btn((if (setPreviewOn) "\u2713 " else "") + "Preview", 1.2f, 34) { setPreviewOn = !setPreviewOn; setPrev = null; refresh() })   // v0.31.0
+        head.addView(btn("Glossary", 1.2f, 34) { glossaryImport() })   // v0.54.0 (GL1)
         val hint = TextView(ctx)
         hint.text = if (setPreviewOn) "Tap a set to preview it" else "Pick a set. Edit: app > Tools & Panels"
         hint.textSize = 12f
@@ -1167,6 +1169,7 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
             2 -> {
                 title = "Tools"
                 items.add(Triple("Sets", "") { dMenu = 0; typing = 3; confirmAll = false; refresh() })
+                items.add(Triple("Paste glossary", "from the plugin") { dMenu = 0; glossaryImport() })   // v0.54.0 (GL1)
                 items.add(Triple("Recent", "") { dMenu = 0; typing = 4; confirmAll = false; rprAsk = false; refresh() })
                 items.add(Triple("Never change", protectList.size.toString() + " terms") { dMenu = 0; openProtect() })
                 items.add(Triple("Help", "") { dMenu = 0; typing = 5; helpPage = 0; confirmAll = false; refresh() })
@@ -1734,12 +1737,13 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
         root.addView(UiKit.noteText(ctx, prefs, if (setPreviewOn) "Tap a set to preview it" else "Pick a set. Edit: app > Tools & Panels"))
         val pr = row()
         pr.addView(UiKit.chip(ctx, prefs, "Preview", setPreviewOn, 36, { v -> host.feedback(v) }) { setPreviewOn = !setPreviewOn; setPrev = null; refresh() })   // v0.31.0
+        pr.addView(UiKit.chip(ctx, prefs, "Paste glossary", false, 36, { v -> host.feedback(v) }) { glossaryImport() })   // v0.54.0 (GL1): sets + Never change from the Jabra Novel Assistant plugin
         root.addView(pr)
         previewBox()?.let { root.addView(it) }
         val sv = ScrollView(ctx)
         sv.layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(if (setPrev != null) 100 else 170))
         val tiles = ArrayList<PanelKit.Tile>()
-        try { for ((n, d) in ReplaceStore.load(prefs)) tiles.add(PanelKit.Tile("\u2605 " + n, "saved", n == setName) { tapSet(n, d) }.also { t -> t.onLong = { a -> peekSetAt(a, n, d) } }) } catch (_: Throwable) { }
+        try { for ((n, d) in ReplaceStore.load(prefs)) tiles.add(PanelKit.Tile("\u2605 " + n, if (GlossaryImport.isGlossarySet(n)) "glossary" else "saved", n == setName) { tapSet(n, d) }.also { t -> t.onLong = { a -> peekSetAt(a, n, d) } }) } catch (_: Throwable) { }
         try { for ((n, d) in ReplaceStore.ready()) tiles.add(PanelKit.Tile(n, "ready-made", n == setName) { tapSet(n, d) }.also { t -> t.onLong = { a -> peekSetAt(a, n, d) } }) } catch (_: Throwable) { }
         sv.addView(PanelKit.tileGrid(ctx, prefs, host, 2, tiles))
         root.addView(sv)
@@ -1853,6 +1857,41 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
             ReplaceStore.save(prefs, all)
             msg = "Saved as set \"" + name + "\" (Sets > \u2605). Rename it in app > Tools & Panels" + (if (setOpt.escapes) "  \u00B7  the \\n switch is not kept in sets" else "")
         } catch (_: Throwable) { msg = "Could not save the set" }
+        refresh()
+    }
+
+    /**
+     * v0.54.0 (GL1): "Paste glossary". The clipboard holds the text of the plugin's "Copy for keyboard". The wrong-forms and raw-term rules become saved sets
+     * (names "G Novel A · wrong", "G Novel A · raw 1" ...; 50 rules per set), the "never change" terms are added to the Never change list.
+     * Pasting again REPLACES the sets of the same glossary (same names), so an updated glossary never piles up. Logic = typing/GlossaryImport.java (tested).
+     */
+    private fun glossaryImport() {
+        var note = ""
+        try {
+            confirmAll = false
+            if (io.blocked()) { note = "Not available in password fields." }
+            else {
+                val text = io.clipText() ?: ""
+                if (!GlossaryImport.looksLike(text)) note = "Nothing to paste. In the plugin: Glossary tab > Copy for keyboard, then come back here"
+                else {
+                    val all = ReplaceStore.load(prefs)
+                    val prefix = GlossaryImport.parse(text, 0).prefix + GlossaryImport.SEP
+                    all.keys.removeAll { it.startsWith(prefix) }   // the old copy of this glossary
+                    val plan = GlossaryImport.parse(text, ReplaceStore.MAX - all.size)
+                    for (i in plan.setNames.indices) all[plan.setNames[i]] = ReplaceStore.Def(plan.setTexts[i], plan.setCase[i], false)
+                    ReplaceStore.save(prefs, all)
+                    var added = 0; var dup = 0; var full = 0
+                    if (plan.never.isNotEmpty()) {
+                        val n = ReplaceProtect.addAll(protectList, plan.never.joinToString("\n"))
+                        added = n[0]; dup = n[1]; full = n[2]
+                        if (added > 0) protectChanged()
+                    }
+                    note = GlossaryImport.summary(plan, added, dup, full)
+                }
+            }
+        } catch (_: Throwable) { note = "Could not read the glossary" }
+        try { android.widget.Toast.makeText(ctx, note, android.widget.Toast.LENGTH_LONG).show() } catch (_: Throwable) { }
+        typing = 3
         refresh()
     }
 
