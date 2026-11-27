@@ -161,14 +161,8 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
         return ReplacePeek.forResult(src, res, 3, 24)
     }
 
-    /** Card of a set (Sets view). */
-    private fun peekSet(name: String, d: ReplaceStore.Def): ReplacePeek.Peek =
         if (io.blocked()) ReplacePeek.message(name, "Not available in password fields.") else ReplacePeek.forSet(name, d.rules, dOpt(d), src)
 
-    /** Long press on a set: card above; when no card can be shown = FALLBACK = the v0.31.0 inline preview box. */
-    private fun peekSetAt(a: View, name: String, d: ReplaceStore.Def) {
-        try { if (!PeekPopup.show(a, prefs, peekSet(name, d), host)) { setPrev = Pair(name, d); refresh() } } catch (_: Throwable) { }
-    }
 
     /** Long click + release listener on a button. Long click is consumed (true) = no click after a long press. */
     private fun peekOn(v: View, make: () -> ReplacePeek.Peek) {
@@ -227,7 +221,7 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
         return try { ReplaceEngine.replaceAll(src, find, repl, opt) } catch (_: Throwable) { ReplaceEngine.Result() }
     }
 
-    fun build(): View? = try { PeekPopup.dismiss(); fnRedirect(); if (typing != 0) { try { fwin?.hide() } catch (_: Throwable) { } }; if (typing == 3) setsViewPick() else if (typing == 4) recentView() else if (typing == 5) helpView() else if (typing == 6) replacePicker() else if (typing == 7) protectView() else if (typing == 8) pairsView() else if (typing == 9) novelsView() else if (typing == 10) fnView() else if (typing != 0) typeView() else mainViewPick() } catch (_: Throwable) { null }   // v0.26.0 (R3): 4 = Recent pairs; Pick = new look when panel_ui = New, else the classic view
+    fun build(): View? = try { PeekPopup.dismiss(); fnRedirect(); if (typing != 0) { try { fwin?.hide() } catch (_: Throwable) { } }; if (typing == 4) recentView() else if (typing == 5) helpView() else if (typing == 6) replacePicker() else if (typing == 7) protectView() else if (typing == 8) pairsView() else if (typing == 10) fnView() else if (typing != 0) typeView() else mainViewPick() } catch (_: Throwable) { null }   // v0.26.0 (R3): 4 = Recent pairs; Pick = new look when panel_ui = New, else the classic view
 
     // ------------------------------------------------------------------ main view
 
@@ -532,80 +526,9 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
 
     // ------------------------------------------------------------------ sets view (v0.25.0 R2)
 
-    private fun setsView(): View {
-        val root = LinearLayout(ctx)
-        root.orientation = LinearLayout.VERTICAL
-        paintBg(root)
-        root.setPadding(dp(2), dp(4), dp(2), dp(4))
-        val head = row()
-        head.addView(btn("\u2190 Back", 1f, 34) { typing = 0; refresh() })
-        head.addView(btn((if (setPreviewOn) "\u2713 " else "") + "Preview", 1.2f, 34) { setPreviewOn = !setPreviewOn; setPrev = null; refresh() })   // v0.31.0
-        head.addView(btn("Novels", 1.2f, 34) { openNovels() })   // v0.55.0 (NV1): was "Glossary" (Paste glossary lives in the Novels view now)
-        val hint = TextView(ctx)
-        hint.text = if (setPreviewOn) "Tap a set to preview it" else "Pick a set. Edit: app > Tools & Panels"
-        hint.textSize = 12f
-        hint.setTextColor(dim())
-        hint.gravity = android.view.Gravity.CENTER_VERTICAL
-        hint.layoutParams = LinearLayout.LayoutParams(0, dp(34), 2f)
-        head.addView(hint)
-        root.addView(head)
-        previewBox()?.let { root.addView(it) }
-        val sv = ScrollView(ctx)
-        sv.layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(if (setPrev != null) 100 else 170))
-        val col = LinearLayout(ctx)
-        col.orientation = LinearLayout.VERTICAL
-        sv.addView(col)
-        val all = ArrayList<Pair<String, ReplaceStore.Def>>()
-        try { for ((n, d) in ReplaceStore.load(prefs)) if (NovelBook.visible(n, false, novelCur, NovelBook.ALL)) all.add(Pair("\u2605 " + n, d)) } catch (_: Throwable) { }   // v0.55.0: only the active novel's glossary sets
-        try { for ((n, d) in ReplaceStore.ready()) if (NovelBook.visible(n, true, novelCur, NovelBook.ALL)) all.add(Pair(n, d)) } catch (_: Throwable) { }
-        var i = 0
-        while (i < all.size) {
-            val r = row()
-            for (j in 0..1) {
-                val e = all.getOrNull(i + j)
-                if (e == null) { val sp = View(ctx); sp.layoutParams = LinearLayout.LayoutParams(0, dp(36), 1f); r.addView(sp); continue }
-                val sb = btn(e.first, 1f, 36) { tapSet(e.first.removePrefix("\u2605 "), e.second) }
-                try { sb.setOnLongClickListener { a -> peekSetAt(a, e.first.removePrefix("\u2605 "), e.second); true }; PeekPopup.watchRelease(sb) } catch (_: Throwable) { }   // v0.32.0
-                r.addView(sb)
-            }
-            col.addView(r)
-            i += 2
-        }
-        root.addView(sv)
-        return root
-    }
 
-    /** v0.31.0: tap on a set: Preview ON = show what it would do on the current text (nothing loaded), else load it as before. */
-    private fun tapSet(name: String, d: ReplaceStore.Def) { if (setPreviewOn) { setPrev = Pair(name, d); refresh() } else pickSet(name, d) }
 
-    private fun previewBox(): View? {
-        val sp = setPrev ?: return null
-        val box = LinearLayout(ctx)
-        box.orientation = LinearLayout.VERTICAL
-        val tv = TextView(ctx)
-        tv.textSize = 12f
-        tv.setTextColor(ink())
-        tv.setPadding(dp(8), dp(2), dp(8), dp(2))
-        tv.text = ReplaceExtras.setPreview(sp.first, sp.second.rules, dOpt(sp.second), src)
-        box.addView(tv)
-        val r = row()
-        r.addView(btn("Use this set", 1.3f, 34) { pickSet(sp.first, sp.second) })
-        r.addView(btn("Close", 0.8f, 34) { setPrev = null; refresh() })
-        box.addView(r)
-        return box
-    }
 
-    private fun pickSet(name: String, d: ReplaceStore.Def) {
-        val p = ReplaceRules.parse(d.rules)
-        if (p.active() == 0) { msg = "That set has no rules"; typing = 0; refresh(); return }
-        val hadPairs = pairMode && pairRules.isNotEmpty()
-        pairMode = false; pairRules.clear(); checkAck = false; checkWarn = null; clearAsk = false   // v0.40.0: loading a set replaces the pair list
-        setRules = p.rules; setOpt = dOpt(d); setName = name; setRun = null; setPrev = null
-        typing = 0; confirmAll = false; step = 0
-        msg = "Set loaded: " + name + (if (p.bad.isNotEmpty()) " (" + p.bad.size + " unreadable lines skipped)" else "") + (if (hadPairs) "  \u00B7  pair list replaced" else "")
-        readSource(false)
-        refresh()
-    }
 
     // ------------------------------------------------------------------ v0.26.0 (R3): NEW LOOK (pref panel_ui = 1), Recent pairs view
 
@@ -628,10 +551,6 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
         return mainView()
     }
 
-    private fun setsViewPick(): View {
-        if (newLook()) { try { return setsViewNew() } catch (_: Throwable) { } }
-        return setsView()
-    }
 
     private fun small(label: String, hDp: Int, onClick: (Button) -> Unit): Button {
         val b = btn(label, 0f, hDp, onClick)
@@ -1737,58 +1656,6 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
         return root
     }
 
-    private fun setsViewNew(): View {
-        val root = LinearLayout(ctx)
-        root.orientation = LinearLayout.VERTICAL
-        paintBg(root)
-        root.setPadding(dp(2), dp(4), dp(2), dp(4))
-        root.addView(PanelKit.header(ctx, prefs, host, "Sets", "<", emptyList()) { typing = 0; refresh() })
-        // v0.55.1: ONE top row = the novel (tap to switch / paste) + Preview. Nothing else competes for attention.
-        val pr = row()
-        pr.addView(UiKit.chip(ctx, prefs, if (novelCur.isEmpty()) "Novel: none  \u25BE" else novelCur + "  \u25BE", novelCur.isNotEmpty(), 36, { v -> host.feedback(v) }) { openNovels() })
-        pr.addView(UiKit.chip(ctx, prefs, "Fix names", false, 36, { v -> host.feedback(v) }) { openFixNames() })   // v0.57.0 (FX1)
-        pr.addView(UiKit.chip(ctx, prefs, "Preview", setPreviewOn, 36, { v -> host.feedback(v) }) { setPreviewOn = !setPreviewOn; setPrev = null; refresh() })
-        root.addView(pr)
-        val saved = try { ReplaceStore.load(prefs) } catch (_: Throwable) { LinkedHashMap<String, ReplaceStore.Def>() }
-        val ready = try { ReplaceStore.ready() } catch (_: Throwable) { LinkedHashMap<String, ReplaceStore.Def>() }
-        if (novelCur.isNotEmpty()) {   // v0.55.1: topic chips only (All, Characters, Places ...), Mine / Ready-made only when they exist
-            try {
-                val chips = ArrayList<Pair<String, Int>>()
-                chips.add(Pair(NovelBook.ALL, NovelBook.setsOf(saved.keys, novelCur).size))
-                for ((t, c) in NovelBook.topics(saved.keys, novelCur)) chips.add(Pair(t, c))
-                val mineN = NovelBook.userCount(saved.keys)
-                if (mineN > 0) chips.add(Pair(NovelBook.MINE, mineN))
-                if (ready.isNotEmpty()) chips.add(Pair(NovelBook.READY, ready.size))
-                if (chips.none { it.first.equals(topicChip, true) }) topicChip = NovelBook.ALL
-                val hs = android.widget.HorizontalScrollView(ctx)
-                hs.isHorizontalScrollBarEnabled = false
-                val cr = row()
-                for ((t, c) in chips) cr.addView(UiKit.chip(ctx, prefs, t + " " + c, t.equals(topicChip, true), 34, { v -> host.feedback(v) }) { topicChip = t; setPrev = null; refresh() })
-                hs.addView(cr)
-                root.addView(hs)
-            } catch (_: Throwable) { topicChip = NovelBook.ALL }
-        }
-        previewBox()?.let { root.addView(it) }
-        val sv = ScrollView(ctx)
-        sv.layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(if (setPrev != null) 100 else 170))
-        val tiles = ArrayList<PanelKit.Tile>()
-        val showTopic = topicChip == NovelBook.ALL
-        try {
-            for ((n, d) in saved) if (NovelBook.visible(n, false, novelCur, topicChip)) {
-                val g = GlossaryImport.isGlossarySet(n) && novelCur.isNotEmpty()
-                val rules = try { ReplaceRules.parse(d.rules).active() } catch (_: Throwable) { 0 }
-                tiles.add(PanelKit.Tile(if (g) NovelBook.title(n, showTopic) else n, rules.toString() + (if (rules == 1) " rule" else " rules"), n == setName) { tapSet(n, d) }.also { t -> t.onLong = { a -> peekSetAt(a, n, d) } })
-            }
-        } catch (_: Throwable) { }
-        try {
-            for ((n, d) in ready) if (NovelBook.visible(n, true, novelCur, topicChip)) tiles.add(PanelKit.Tile(n, "ready-made", n == setName) { tapSet(n, d) }.also { t -> t.onLong = { a -> peekSetAt(a, n, d) } })
-        } catch (_: Throwable) { }
-        if (novelCur.isNotEmpty() && topicChip == NovelBook.ALL) tiles.add(PanelKit.Tile("Never change", protectList.size.toString() + (if (protectList.size == 1) " name" else " names") + " \u00B7 not replaced") { openProtect() })
-        if (tiles.isEmpty()) root.addView(UiKit.noteText(ctx, prefs, if (novelCur.isEmpty()) "No sets yet." else "Nothing here. Tap the novel name above to paste a glossary."))
-        sv.addView(PanelKit.tileGrid(ctx, prefs, host, 1, tiles))   // ONE column: the full name is readable
-        root.addView(sv)
-        return root
-    }
 
     // ------------------------------------------------------------------ v0.55.0 (NV1): NOVELS (one glossary per novel)
     private fun novelNames(): List<String> = try { NovelBook.all(NovelBook.parse(prefs.str("rp_novels", "")), ReplaceStore.load(prefs).keys) } catch (_: Throwable) { emptyList() }
@@ -1832,42 +1699,6 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
         refresh()
     }
 
-    /** typing == 9: the Novels list. Tap a novel = active. Paste glossary creates or updates the novel named in the copied text. */
-    private fun novelsView(): View {
-        val root = LinearLayout(ctx)
-        root.orientation = LinearLayout.VERTICAL
-        paintBg(root)
-        root.setPadding(dp(2), dp(4), dp(2), dp(4))
-        root.addView(PanelKit.header(ctx, prefs, host, "Novels", "<", emptyList()) { typing = 3; novelDelAsk = false; refresh() })
-        val names = novelNames()
-        // v0.55.1: ONE clear main action on top, then the list. Messages only appear when there is something to say.
-        val top = row()
-        top.addView(btn("+ Paste glossary", 1f, 40) { glossaryImport(9) })
-        root.addView(top)
-        if (names.isEmpty()) {
-            root.addView(UiKit.noteText(ctx, prefs, "No novel yet. In the plugin tap Glossary > Copy for keyboard, then tap Paste glossary here."))
-        } else {
-            val sv = ScrollView(ctx)
-            sv.layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(130))
-            val tiles = ArrayList<PanelKit.Tile>()
-            val keys = try { ReplaceStore.load(prefs).keys.toList() } catch (_: Throwable) { emptyList<String>() }
-            for (n in names) {
-                val on = n.equals(novelCur, true)
-                val sets = NovelBook.setsOf(keys, n).size
-                val never = try { ReplaceProtect.parse(prefs.str(NovelBook.neverKey(n), "")).size } catch (_: Throwable) { 0 }
-                tiles.add(PanelKit.Tile((if (on) "\u2713 " else "") + n, NovelBook.rowSub(sets, never), on) { pickNovel(n) })
-            }
-            sv.addView(PanelKit.tileGrid(ctx, prefs, host, 1, tiles))
-            root.addView(sv)
-            val r = row()
-            if (novelCur.isNotEmpty()) r.addView(btn(if (novelDelAsk) "Sure? Delete " + novelCur else "Delete " + novelCur, 1.4f, 34) { deleteNovel() })
-            else r.addView(UiKit.noteText(ctx, prefs, "No novel active: all sets show."))
-            if (novelCur.isNotEmpty()) r.addView(btn("No novel", 0.8f, 34) { pickNovel("") })
-            root.addView(r)
-        }
-        if (novelNote.isNotEmpty()) root.addView(UiKit.noteText(ctx, prefs, novelNote))
-        return root
-    }
 
     // ------------------------------------------------------------------ v0.57.0 (FX1): ONE SCREEN "Fix names, per novel" (design = Fix_names_per_novel_mock.html)
     // UI = FixNamesView.kt (class FixNamesUi), logic = typing/FixNames.java (tested). typing == 10 = the screen (tabs Fix names | Novels), typing == 12 = typing in its search box.
@@ -2191,57 +2022,6 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
         refresh()
     }
 
-    /**
-     * v0.54.0 (GL1): "Paste glossary". The clipboard holds the text of the plugin's "Copy for keyboard". The wrong-forms and raw-term rules become saved sets
-     * (names "G Novel A · wrong", "G Novel A · raw 1" ...; 50 rules per set), the "never change" terms are added to the Never change list.
-     * Pasting again REPLACES the sets of the same glossary (same names), so an updated glossary never piles up. Logic = typing/GlossaryImport.java (tested).
-     */
-    private fun glossaryImport(back: Int = 3) {
-        var note = ""
-        var shortNote = ""   // v0.55.1: one short line for the Novels view (the toast keeps the full summary)
-        try {
-            confirmAll = false
-            if (io.blocked()) { note = "Not available in password fields." }
-            else {
-                val text = io.clipText() ?: ""
-                if (!GlossaryImport.looksLike(text)) note = "Nothing to paste. In the plugin: Glossary tab > Copy for keyboard, then come back here"
-                else {
-                    val all = ReplaceStore.load(prefs)
-                    val head = GlossaryImport.parse(text, 0)
-                    val prefix = head.prefix + GlossaryImport.SEP
-                    val novel = head.novel
-                    val known = NovelBook.has(novelNames(), novel)   // v0.55.0 (NV1): a novel seen before (registry or old glossary sets)
-                    all.keys.removeAll { it.startsWith(prefix) && !NovelBook.isMine(it) }   // the old copy of this glossary (v0.56.0: the pairs you saved stay)
-                    val plan = GlossaryImport.parse(text, minOf(NovelBook.MAX_SETS_PER_NOVEL - NovelBook.setsOf(all.keys, novel).size, ReplaceStore.MAX_ALL - all.size))   // sets are counted per novel
-                    for (i in plan.setNames.indices) all[plan.setNames[i]] = ReplaceStore.Def(plan.setTexts[i], plan.setCase[i], false)
-                    ReplaceStore.save(prefs, all)
-                    if (novel.isNotEmpty()) {
-                        val reg = NovelBook.parse(prefs.str("rp_novels", ""))
-                        if (NovelBook.add(reg, novel)) prefs.setStr("rp_novels", NovelBook.text(reg))
-                        val key = NovelBook.neverKey(novel)
-                        if (!known && prefs.str(key, "").isEmpty()) prefs.setStr(key, prefs.str("rp_protect", ""))   // a new novel starts with a copy of your general Never change list
-                        novelCur = novel; topicChip = NovelBook.ALL; prefs.setStr("rp_novel_cur", novel)
-                        loadProtect()   // the Never change list of THIS novel
-                        setRun = null; checkAck = false; checkWarn = null; step = 0
-                        val sn = setName
-                        if (sn != null && GlossaryImport.isGlossarySet(sn) && !NovelBook.belongs(sn, novel)) dropSet()
-                    }
-                    var added = 0; var dup = 0; var full = 0
-                    if (plan.never.isNotEmpty()) {
-                        val n = ReplaceProtect.addAll(protectList, plan.never.joinToString("\n"))
-                        added = n[0]; dup = n[1]; full = n[2]
-                        if (added > 0) protectChanged()
-                    }
-                    note = GlossaryImport.summary(plan, added, dup, full) + (if (novel.isNotEmpty()) ". " + novel + " is active" else "")
-                    shortNote = (if (novel.isNotEmpty()) novel else "Glossary") + " updated \u00B7 " + plan.setNames.size + (if (plan.setNames.size == 1) " set" else " sets") + (if (added > 0) " \u00B7 +" + added + " never change" else "") + (if (plan.droppedSets > 0) " \u00B7 " + plan.droppedSets + " did not fit" else "")
-                }
-            }
-        } catch (_: Throwable) { note = "Could not read the glossary" }
-        try { android.widget.Toast.makeText(ctx, note, android.widget.Toast.LENGTH_LONG).show() } catch (_: Throwable) { }
-        novelNote = if (shortNote.isNotEmpty()) shortNote else note
-        typing = back
-        refresh()
-    }
 
     /** The pair list inside the panel: one line per pair ("3x cat -> dog", a warning mark after a Check), tap = edit, x = remove. */
     private fun pairListView(): View {
