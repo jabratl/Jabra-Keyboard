@@ -1,0 +1,29 @@
+HANDOFF - Jabra Keyboard - Independent Novel-wise Wrong -> Right lists - v0.58.1
+
+GOAL
+Replace's Fix terms workflow no longer depends on the Novel Assistant plugin or pasted glossaries. The user manually adds a novel name and saves multiple wrong forms -> one right form as pairs.
+
+CHANGES
+- FixNamesView.kt: More only has How it works; Novel picker/list has + Add novel dialog; plugin import and raw-name UI removed. Terms list contains only the manually saved My pairs, grouped by right form.
+- ReplacePanel.kt: Novel registry comes only from rp_novels; manual novel creation; Fix terms data is filtered to My pairs; old Novels page also has Add novel; plugin glossary import routine removed; imported glossary rows are not displayed in the Replace sets list.
+- app/build.gradle.kts: versionName 0.58.1.
+- tools/NovelManualPairsTest.java: test novel registry and saved Wrong -> Right pairs.
+
+STORAGE / COMPATIBILITY
+- Uses existing rp_novels, rp_novel_cur, My pairs sets, and per-novel Never change prefs. No new storage format.
+- Existing user-saved My pairs are preserved. Old imported glossary sets are left in storage but are not shown in Fix terms / user Replace set lists.
+- Novel cap remains NovelBook.MAX_NOVELS. Pair/set capacity remains existing limits.
+- Replace engine and preview/fix/undo/never-change paths were not intentionally changed.
+
+TESTS
+- FixNamesTest: 50 / 50.
+- NovelManualPairsTest: new regression test.
+- No Android Gradle build or phone test was possible in this environment (no Gradle wrapper/Android SDK).
+
+PATCH FILES
+app/src/main/java/com/mgb/keyboard/FixNamesView.kt
+app/src/main/java/com/mgb/keyboard/ReplacePanel.kt
+app/build.gradle.kts
+CHANGELOG.txt
+tools/NovelManualPairsTest.java
+HANDOFF_Replace_NovelPairs_v0.58.1.txt
