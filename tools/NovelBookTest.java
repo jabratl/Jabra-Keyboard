@@ -83,11 +83,17 @@ public class NovelBookTest {
         eq("vis own topic yes", NovelBook.visible(saga, false, "Cultivation Saga", "Places"), true);
         eq("vis own topic no", NovelBook.visible(saga, false, "Cultivation Saga", "Skills"), false);
         eq("vis other novel", NovelBook.visible(station, false, "Cultivation Saga", NovelBook.ALL), false);
-        eq("vis mine in All", NovelBook.visible("Pairs 1", false, "Cultivation Saga", NovelBook.ALL), true);
+        eq("vis mine not in All", NovelBook.visible("Pairs 1", false, "Cultivation Saga", NovelBook.ALL), false);
         eq("vis mine chip", NovelBook.visible("Pairs 1", false, "Cultivation Saga", NovelBook.MINE), true);
         eq("vis mine in topic", NovelBook.visible("Pairs 1", false, "Cultivation Saga", "Places"), false);
         eq("vis ready chip", NovelBook.visible("Quotes", true, "Cultivation Saga", NovelBook.READY), true);
         eq("vis ready in topic", NovelBook.visible("Quotes", true, "Cultivation Saga", "Places"), false);
+        eq("vis ready not in All", NovelBook.visible("Quotes", true, "Cultivation Saga", NovelBook.ALL), false);
+        eq("title wrong", NovelBook.title(p.setNames.get(0), false), "Fix wrong names");
+        eq("title raw topic", NovelBook.title(p.setNames.get(3), true), "Skills \u00B7 Raw to English");
+        eq("title part", NovelBook.title("G Big" + S + "Characters" + S + "raw 3", true), "Characters \u00B7 Raw to English #3");
+        eq("title legacy", NovelBook.title("G Novel A" + S + "wrong", true), "Terms \u00B7 Fix wrong names");
+        eq("title user set", NovelBook.title("Pairs 1", true), "Pairs 1");
         eq("no novel = all", NovelBook.visible(station, false, "", NovelBook.ALL), true);
         eq("row sub", NovelBook.rowSub(6, 12), "6 sets \u00B7 12 never change");
         eq("row sub 1", NovelBook.rowSub(1, 0), "1 set \u00B7 0 never change");

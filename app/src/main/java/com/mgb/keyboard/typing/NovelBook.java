@@ -107,15 +107,26 @@ public final class NovelBook {
 
     /**
      * Should a saved set show in the Sets screen? novel "" = no active novel: everything shows.
-     * With an active novel: its own sets (topic filter applies), the user's own sets and ready-made sets (chips Mine / Ready-made); sets of OTHER novels never show.
+     * With an active novel: its own sets (All or its topic chip); the user's own sets only under Mine, ready-made sets only under Ready-made; sets of OTHER novels never show.
      * chip: ALL, a topic, MINE or READY. isReady = the set is a ready-made one (not saved by the user).
      */
     public static boolean visible(String setName, boolean isReady, String novel, String chip) {
         if (novel == null || novel.isEmpty()) return true;
-        if (isReady) return ALL.equals(chip) || READY.equals(chip);
-        if (!GlossaryImport.isGlossarySet(setName)) return ALL.equals(chip) || MINE.equals(chip);
+        if (isReady) return READY.equals(chip);                                   // v0.55.1: ready-made and own sets only under their own chip, so "All" is just this novel
+        if (!GlossaryImport.isGlossarySet(setName)) return MINE.equals(chip);
         if (!belongs(setName, novel)) return false;
         return ALL.equals(chip) || GlossaryImport.topicOf(setName).equalsIgnoreCase(chip);
+    }
+
+    /** Plain words for a glossary set: "Fix wrong names", "Raw to English", with the part number when the topic has several ("#2") and the topic in front when withTopic. */
+    public static String title(String setName, boolean withTopic) {
+        if (!GlossaryImport.isGlossarySet(setName)) return setName == null ? "" : setName;
+        String base = "raw".equals(GlossaryImport.kindOf(setName)) ? "Raw to English" : "Fix wrong names";
+        String last = setName.substring(setName.lastIndexOf(GlossaryImport.SEP) + GlossaryImport.SEP.length()).trim();
+        int i = last.length();
+        while (i > 0 && Character.isDigit(last.charAt(i - 1))) i--;
+        if (i < last.length() && i > 0) base += " #" + last.substring(i);
+        return withTopic ? GlossaryImport.topicOf(setName) + " \u00B7 " + base : base;
     }
 
     /** "5 sets · 12 never change" for a novel row. */
