@@ -477,7 +477,9 @@ class FixNamesUi(private val ctx: Context, private val prefs: JabraPrefs, privat
             .setPositiveButton("Add") { _, _ ->
                 val result = try { api.addNovel(input.text?.toString() ?: "") } catch (_: Throwable) { "Could not add novel. Please try again." }
                 sheet = 3
-                api.refresh()
+                // A UI refresh failure must not overwrite a successful storage result with
+                // a generic "Could not add novel" message.
+                try { api.refresh() } catch (_: Throwable) { }
                 try { android.widget.Toast.makeText(ctx, result, android.widget.Toast.LENGTH_SHORT).show() } catch (_: Throwable) { }
             }.show()
     }

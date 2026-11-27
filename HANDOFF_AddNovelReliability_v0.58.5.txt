@@ -1,0 +1,16 @@
+PROJECT: Jabra Keyboard
+STEP: Add Novel reliability fix
+VERSION: 0.58.5
+
+Changes:
+- Novel registry save is read-back verified; returns a storage-specific error if it was not persisted.
+- Removed duplicate panel refresh from the FixNames API addNovel callback.
+- Dialog callback refresh is guarded, so refresh exceptions do not mask the add result.
+
+Files in patch:
+- app/src/main/java/com/mgb/keyboard/ReplacePanel.kt
+- app/src/main/java/com/mgb/keyboard/FixNamesView.kt
+- app/build.gradle.kts
+- CHANGELOG.txt
+
+Build validation: Android Gradle build not run in this environment.

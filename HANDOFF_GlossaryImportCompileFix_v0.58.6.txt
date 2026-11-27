@@ -1,0 +1,24 @@
+PROJECT: Jabra Keyboard
+STEP: Sets cleanup compile fix
+VERSION: 0.58.6
+
+Problem:
+- ReplacePanel.kt referenced GlossaryImport.isGlossarySet in setsViewNew(), but no Kotlin import was present, producing the reported unresolved reference.
+
+Fix:
+- Filter saved custom sets using existing NovelBook API.
+- Exclude My pairs and novel-owned sets from the Custom Sets list.
+- Removed direct GlossaryImport reference from ReplacePanel.kt.
+- Version bumped to 0.58.6.
+
+Files:
+- app/src/main/java/com/mgb/keyboard/ReplacePanel.kt
+- app/build.gradle.kts
+- CHANGELOG.txt
+- HANDOFF_GlossaryImportCompileFix_v0.58.6.txt
+
+Validation:
+- Verified no GlossaryImport code reference remains in ReplacePanel.kt.
+- Android Gradle build not run here; validate with GitHub Actions.
+
+Apply over v0.58.5 (which includes the Add Novel reliability fix) and Sets cleanup. Do not overwrite with earlier ReplacePanel.kt versions afterward.

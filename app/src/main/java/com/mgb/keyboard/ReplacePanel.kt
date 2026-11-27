@@ -1741,50 +1741,68 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
         val root = LinearLayout(ctx)
         root.orientation = LinearLayout.VERTICAL
         paintBg(root)
-        root.setPadding(dp(2), dp(4), dp(2), dp(4))
+        root.setPadding(dp(3), dp(4), dp(3), dp(4))
         root.addView(PanelKit.header(ctx, prefs, host, "Sets", "<", emptyList()) { typing = 0; refresh() })
-        // v0.55.1: ONE top row = the novel (tap to switch / paste) + Preview. Nothing else competes for attention.
-        val pr = row()
-        pr.addView(UiKit.chip(ctx, prefs, if (novelCur.isEmpty()) "Novel: none  \u25BE" else novelCur + "  \u25BE", novelCur.isNotEmpty(), 36, { v -> host.feedback(v) }) { openNovels() })
-        pr.addView(UiKit.chip(ctx, prefs, "Fix names", false, 36, { v -> host.feedback(v) }) { openFixNames() })   // v0.57.0 (FX1)
-        pr.addView(UiKit.chip(ctx, prefs, "Preview", setPreviewOn, 36, { v -> host.feedback(v) }) { setPreviewOn = !setPreviewOn; setPrev = null; refresh() })
-        root.addView(pr)
+
+        // v0.58.4: Novel-wise pairs are managed only in Fix terms. Sets shows custom sets and ready-made rules.
         val saved = try { ReplaceStore.load(prefs) } catch (_: Throwable) { LinkedHashMap<String, ReplaceStore.Def>() }
         val ready = try { ReplaceStore.ready() } catch (_: Throwable) { LinkedHashMap<String, ReplaceStore.Def>() }
-        if (novelCur.isNotEmpty()) {   // v0.55.1: topic chips only (All, Characters, Places ...), Mine / Ready-made only when they exist
-            try {
-                val chips = ArrayList<Pair<String, Int>>()
-                chips.add(Pair(NovelBook.ALL, NovelBook.setsOf(saved.keys, novelCur).size))
-                for ((t, c) in NovelBook.topics(saved.keys, novelCur)) chips.add(Pair(t, c))
-                val mineN = NovelBook.userCount(saved.keys)
-                if (mineN > 0) chips.add(Pair(NovelBook.MINE, mineN))
-                if (ready.isNotEmpty()) chips.add(Pair(NovelBook.READY, ready.size))
-                if (chips.none { it.first.equals(topicChip, true) }) topicChip = NovelBook.ALL
-                val hs = android.widget.HorizontalScrollView(ctx)
-                hs.isHorizontalScrollBarEnabled = false
-                val cr = row()
-                for ((t, c) in chips) cr.addView(UiKit.chip(ctx, prefs, t + " " + c, t.equals(topicChip, true), 34, { v -> host.feedback(v) }) { topicChip = t; setPrev = null; refresh() })
-                hs.addView(cr)
-                root.addView(hs)
-            } catch (_: Throwable) { topicChip = NovelBook.ALL }
+        // v0.58.6: filter NovelBook-owned sets through the existing API.
+        val knownNovels = NovelBook.all(NovelBook.parse(prefs.str("rp_novels", "")), saved.keys)
+        val custom = saved.filterKeys { name -> !NovelBook.isMine(name) && knownNovels.none { NovelBook.belongs(name, it) } }
+        val novelPairs = if (novelCur.isNotEmpty()) try {
+            val mine = saved.filterKeys { NovelBook.isMine(it) && NovelBook.belongs(it, novelCur) }
+            FixNames.rows(novelCur, ArrayList(mine.keys), mine.values.map { it.rules }).size
+        } catch (_: Throwable) { 0 } else 0
+
+        // Compact top controls; long novel names can scroll instead of forcing other buttons off-screen.
+        val topScroll = android.widget.HorizontalScrollView(ctx)
+        topScroll.isHorizontalScrollBarEnabled = false
+        val top = row()
+        top.addView(UiKit.chip(ctx, prefs, if (novelCur.isEmpty()) "Choose novel  ▾" else novelCur + "  ▾", novelCur.isNotEmpty(), 36, { v -> host.feedback(v) }) { openNovels() })
+        top.addView(UiKit.chip(ctx, prefs, "Fix terms", false, 36, { v -> host.feedback(v) }) { openFixNames() })
+        top.addView(UiKit.chip(ctx, prefs, "Preview", setPreviewOn, 36, { v -> host.feedback(v) }) { setPreviewOn = !setPreviewOn; setPrev = null; refresh() })
+        topScroll.addView(top)
+        root.addView(topScroll)
+
+        // Novel pairs are deliberately not duplicated in this screen: this shortcut opens their single manager.
+        if (novelCur.isNotEmpty()) {
+            val pairShortcut = btn("Novel pairs  ·  $novelPairs  ·  Manage in Fix terms", 1f, 34) { openFixNames() }
+            root.addView(pairShortcut)
         }
+
+        // Two clear categories, not glossary/topic chips. My pairs and imported glossary sets stay stored but hidden here.
+        val chipScroll = android.widget.HorizontalScrollView(ctx)
+        chipScroll.isHorizontalScrollBarEnabled = false
+        val chips = row()
+        val myCount = custom.size
+        val readyCount = ready.size
+        if (topicChip != NovelBook.MINE && topicChip != NovelBook.READY || topicChip == NovelBook.READY && readyCount == 0) topicChip = NovelBook.MINE
+        chips.addView(UiKit.chip(ctx, prefs, "My sets  $myCount", topicChip == NovelBook.MINE, 34, { v -> host.feedback(v) }) { topicChip = NovelBook.MINE; setPrev = null; refresh() })
+        if (readyCount > 0) chips.addView(UiKit.chip(ctx, prefs, "Ready-made  $readyCount", topicChip == NovelBook.READY, 34, { v -> host.feedback(v) }) { topicChip = NovelBook.READY; setPrev = null; refresh() })
+        chipScroll.addView(chips)
+        root.addView(chipScroll)
+
         previewBox()?.let { root.addView(it) }
         val sv = ScrollView(ctx)
-        sv.layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(if (setPrev != null) 100 else 170))
+        sv.layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(if (setPrev != null) 104 else 174))
         val tiles = ArrayList<PanelKit.Tile>()
-        val showTopic = topicChip == NovelBook.ALL
         try {
-            for ((n, d) in saved) if (NovelBook.isMine(n) && NovelBook.visible(n, false, novelCur, topicChip)) {
-                val rules = try { ReplaceRules.parse(d.rules).active() } catch (_: Throwable) { 0 }
-                tiles.add(PanelKit.Tile(n, rules.toString() + (if (rules == 1) " rule" else " rules"), n == setName) { tapSet(n, d) }.also { t -> t.onLong = { a -> peekSetAt(a, n, d) } })
+            if (topicChip == NovelBook.MINE) {
+                for ((n, d) in custom) {
+                    val rules = try { ReplaceRules.parse(d.rules).active() } catch (_: Throwable) { 0 }
+                    tiles.add(PanelKit.Tile(n, rules.toString() + (if (rules == 1) " rule" else " rules"), n == setName) { tapSet(n, d) }.also { t -> t.onLong = { a -> peekSetAt(a, n, d) } })
+                }
+            } else if (topicChip == NovelBook.READY) {
+                for ((n, d) in ready) tiles.add(PanelKit.Tile(n, "ready-made", n == setName) { tapSet(n, d) }.also { t -> t.onLong = { a -> peekSetAt(a, n, d) } })
             }
         } catch (_: Throwable) { }
-        try {
-            for ((n, d) in ready) if (NovelBook.visible(n, true, novelCur, topicChip)) tiles.add(PanelKit.Tile(n, "ready-made", n == setName) { tapSet(n, d) }.also { t -> t.onLong = { a -> peekSetAt(a, n, d) } })
-        } catch (_: Throwable) { }
-        if (novelCur.isNotEmpty() && topicChip == NovelBook.ALL) tiles.add(PanelKit.Tile("Never change", protectList.size.toString() + (if (protectList.size == 1) " name" else " names") + " \u00B7 not replaced") { openProtect() })
-        if (tiles.isEmpty()) root.addView(UiKit.noteText(ctx, prefs, if (novelCur.isEmpty()) "No saved pairs yet." else "No saved pairs for this novel yet."))
-        sv.addView(PanelKit.tileGrid(ctx, prefs, host, 1, tiles))   // ONE column: the full name is readable
+        if (novelCur.isNotEmpty() && topicChip == NovelBook.MINE) tiles.add(PanelKit.Tile("Never change", protectList.size.toString() + (if (protectList.size == 1) " name" else " names") + " · not replaced") { openProtect() })
+        if (tiles.isEmpty()) {
+            val emptyText = if (topicChip == NovelBook.READY) "No ready-made sets available." else "No custom sets yet. Novel pairs are managed in Fix terms."
+            root.addView(UiKit.noteText(ctx, prefs, emptyText))
+        }
+        sv.addView(PanelKit.tileGrid(ctx, prefs, host, 1, tiles))
         root.addView(sv)
         return root
     }
@@ -1817,7 +1835,10 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
                 return "Novel already exists — selected it."
             }
             if (!NovelBook.add(reg, clean)) return "Novel limit reached (${NovelBook.MAX_NOVELS})."
+            // Verify the registry write instead of trusting the prefs wrapper (which intentionally swallows errors).
             prefs.setStr("rp_novels", NovelBook.text(reg))
+            val saved = NovelBook.parse(prefs.str("rp_novels", ""))
+            if (!NovelBook.has(saved, clean)) return "Could not save novel. Storage write failed."
             pickNovel(clean)
             "Added " + clean + "."
         } catch (e: Throwable) {
@@ -1927,7 +1948,10 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
         override fun back() { typing = 0; fnToast = ""; fnRefresh() }
         override fun novels(): List<FixNamesUi.NovelRow> = fnNovelRows()
         override fun pickNovel(name: String) { fnToast = name + " is active."; fnPick(name) }
-        override fun addNovel(name: String): String { fnToast = fnAddNovel(name); fnRefresh(); return fnToast }
+        // Do not refresh the panel from inside the dialog callback. The UI refreshes once
+        // after the dialog closes; refreshing here could throw and falsely report failure
+        // even when the novel was already saved.
+        override fun addNovel(name: String): String { fnToast = fnAddNovel(name); return fnToast }
         override fun deleteAsk(): Boolean = novelDelAsk
         override fun deleteNovel() { fnToast = ""; fnDelete() }
         override fun removeLock(term: String) { fnRemoveLock(term) }
@@ -2082,7 +2106,7 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
 
     /**
      * v0.56.0 (NV2): "Save to <novel>". The pairs of the list (Find = wrong forms split by ";", With = the right name) are kept in the "My pairs" sets of the ACTIVE novel,
-     * so they are there next time (Sets > novel > My pairs). Same Find = updated, new = added (50 rules per set, then a new set). A new glossary paste never removes them.
+     * so they are saved for the novel and managed in Fix terms. Same Find = updated, new = added (50 rules per set, then a new set). A new glossary paste never removes them.
      */
     private fun saveToNovel() {
         try {
@@ -2110,7 +2134,7 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
                 num++
             }
             ReplaceStore.save(prefs, all)
-            msg = "Saved to " + novelCur + ": " + added + " new" + (if (updated > 0) ", " + updated + " updated" else "") + (if (pending.isNotEmpty()) ". " + pending.size + " did not fit: delete old sets" else "") + ". Find them in Sets > My pairs"
+            msg = "Saved to " + novelCur + ": " + added + " new" + (if (updated > 0) ", " + updated + " updated" else "") + (if (pending.isNotEmpty()) ". " + pending.size + " did not fit: delete old sets" else "") + ". Manage them in Fix terms"
         } catch (_: Throwable) { msg = "Could not save" }
         refresh()
     }
