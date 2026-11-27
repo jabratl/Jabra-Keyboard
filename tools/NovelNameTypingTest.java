@@ -33,10 +33,11 @@ public class NovelNameTypingTest {
         ok(has(rp, "if (typing == 13) head.addView(btn(\"Add novel\""), "typeView has the Add novel button");
         ok(has(rp, "fun commitNovelName()"), "commitNovelName exists");
         ok(has(rp, "val r = fnAddNovel(novelNameBuf)"), "commit uses the tested fnAddNovel (NovelBook.add + verified save)");
-        ok(has(rp, "typing = if (typing == 13) (if (fnBack) 10 else 9)"), "Done leaves the name box to the Novels list / Fix names");
+        ok(has(rp, "typing = if (fnBack) 10 else 0;"), "Done leaves the name / keep box back to Fix terms (v0.60.0: no old Novels list any more)");
         ok(has(rp, "else if (typing == 13) 13 else 1"), "paste picker returns to the name box");
         ok(has(rp, "if (which == 13) novelNameBuf = \"\""), "api.type(13) starts with an empty name");
-        ok(has(rp, "try { novelNameBuf = \"\"; fnBack = false; startTyping(13) }"), "old Novels list opens the same box");
+        ok(!has(rp, "fun showNovelNameDialog()") && !has(rp, "fun novelsView()"), "v0.60.0: the old Novels screen and its dialog starter are gone");
+        ok(has(rp, "else if (typing == 14) fnKeepIn else if (typing == 13) novelNameBuf else repl"), "cur() also knows typing 14 (Keep as is box)");
 
         System.out.println("NovelNameTypingTest " + (total - fail) + "/" + total + (fail == 0 ? " OK" : " FAILED"));
         if (fail > 0) System.exit(1);

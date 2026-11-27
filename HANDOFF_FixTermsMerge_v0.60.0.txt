@@ -1,0 +1,12 @@
+HANDOFF - Jabra Keyboard - Fix terms merge (Replace + Fix terms = one place) - v0.60.0
+
+GOAL (owner): Replace had screens that did almost the same as Fix terms. Merge: best feature of each, one better design, old screens removed.
+RESULT: Fix terms (typing == 10, FixNamesView.kt, class FixNamesUi) is the only place for: novel list, terms (wrong forms -> right), Keep as is (= Never change list).
+CODE: FixNamesView.kt = UI only (FX3 design), talks to the panel through interface Api; ReplacePanel.kt block "v0.57.0 (FX1)" = fnApi + fn* helpers (logic is the OLD tested code: fnFix, fnAddPair, protectChanged, pickNovel, deleteNovel); typing/FixNames.java = pure logic (unchanged).
+ENTRY POINTS: openFixNames() (tab Fix), openNovels() (Novels sheet), openProtect() (tab Keep as is). All old buttons (Novels, Never, Never change, Sets > Fix terms chip, menu "Fix terms") call these three.
+TYPING CODES (mini keyboard): 1 Find, 2 With, 12 search, 13 new novel name (novelNameBuf, [Add novel] button -> commitNovelName), 14 name to keep (fnKeepIn, [Add] button -> commitKeepName). Done returns to Fix terms (fnBack).
+REMOVED: novelsView / showNovelNameDialog (typing 9), protectView / protectRemove (typing 7). Storage keys untouched (rp_novels, rp_novel_cur, rp_protect, NovelBook.neverKey(novel), saved sets).
+KEPT ON PURPOSE: Sets screen (My sets / Ready-made = not novel pairs), the temporary pair list (One | Pairs, Check, Save as Set, Save to novel), Recent pairs, Help.
+TESTS: tools/FixTermsMergeTest.java (wiring + Paste-list logic), NovelNameTypingTest.java (updated), FixNamesTest, InlinePairTest. SectionPlanTest + SettingsHelpTest red since before v0.56.0.
+KNOWN: Kotlin not compiled here, not phone-tested. Root folder src/ (old v0.59 copy) is stray and not built: delete it.
+IDEAS (not done): edit / delete one term from the Terms tab, topic chips and raw names (logic is still in FixNames.java), more "Seen in your text" patterns than Master / Elder / Lord / Sect.

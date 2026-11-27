@@ -93,7 +93,7 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
     // v0.41.0: NEVER-CHANGE list (typing/ReplaceProtect.java). Pref rp_protect = one term per line (the user's own list, written only when the user adds / removes a term). typing == 7 = its view.
     private val protectList = ArrayList<String>()
     private var protectAsk = false                            // Clear needs two taps
-    // v0.55.0 (NV1): ONE GLOSSARY PER NOVEL. novelCur = active novel ("" = none: all sets + the general Never change list, as before). typing == 9 = the Novels view.
+    // v0.55.0 (NV1): ONE GLOSSARY PER NOVEL. novelCur = active novel ("" = none: all sets + the general Never change list, as before). the Novels list is now inside Fix terms (v0.60.0).
     // Prefs: rp_novels (registry, one name per line), rp_novel_cur, rp_nv_<hash> (Never change list of one novel). Logic = typing/NovelBook.java (tested).
     private var novelCur = ""
     private var topicChip = NovelBook.ALL                     // topic chip of the Sets view
@@ -226,7 +226,7 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
         return try { ReplaceEngine.replaceAll(src, find, repl, opt) } catch (_: Throwable) { ReplaceEngine.Result() }
     }
 
-    fun build(): View? = try { PeekPopup.dismiss(); if (typing != 0) { try { fwin?.hide() } catch (_: Throwable) { } }; if (typing == 3) setsViewPick() else if (typing == 4) recentView() else if (typing == 5) helpView() else if (typing == 6) replacePicker() else if (typing == 7) protectView() else if (typing == 8) pairsView() else if (typing == 9) novelsView() else if (typing == 10) fnView() else if (typing != 0) typeView() else mainViewPick() } catch (_: Throwable) { null }   // v0.26.0 (R3): 4 = Recent pairs; Pick = new look when panel_ui = New, else the classic view
+    fun build(): View? = try { PeekPopup.dismiss(); if (typing != 0) { try { fwin?.hide() } catch (_: Throwable) { } }; if (typing == 3) setsViewPick() else if (typing == 4) recentView() else if (typing == 5) helpView() else if (typing == 6) replacePicker() else if (typing == 8) pairsView() else if (typing == 10) fnView() else if (typing != 0) typeView() else mainViewPick() } catch (_: Throwable) { null }   // v0.26.0 (R3): 4 = Recent pairs; Pick = new look when panel_ui = New, else the classic view
 
     // ------------------------------------------------------------------ main view
 
@@ -1177,7 +1177,7 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
             2 -> {
                 title = "Tools"
                 items.add(Triple("Novels", if (novelCur.isEmpty()) "none active" else novelCur) { dMenu = 0; openNovels() })   // v0.55.0 (NV1)
-                items.add(Triple("Fix names", "one screen") { dMenu = 0; openFixNames() })   // v0.57.0 (FX1)
+                items.add(Triple("Fix terms", "novels, terms, keep as is") { dMenu = 0; openFixNames() })   // v0.57.0 (FX1)
                 items.add(Triple("Sets", "") { dMenu = 0; typing = 3; confirmAll = false; refresh() })
                 items.add(Triple("Recent", "") { dMenu = 0; typing = 4; confirmAll = false; rprAsk = false; refresh() })
                 items.add(Triple("Never change", protectList.size.toString() + (if (novelCur.isEmpty()) " terms" else " terms \u00B7 " + novelCur)) { dMenu = 0; openProtect() })
@@ -1750,26 +1750,15 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
         // v0.58.6: filter NovelBook-owned sets through the existing API.
         val knownNovels = NovelBook.all(NovelBook.parse(prefs.str("rp_novels", "")), saved.keys)
         val custom = saved.filterKeys { name -> !NovelBook.isMine(name) && knownNovels.none { NovelBook.belongs(name, it) } }
-        val novelPairs = if (novelCur.isNotEmpty()) try {
-            val mine = saved.filterKeys { NovelBook.isMine(it) && NovelBook.belongs(it, novelCur) }
-            FixNames.rows(novelCur, ArrayList(mine.keys), mine.values.map { it.rules }).size
-        } catch (_: Throwable) { 0 } else 0
 
         // Compact top controls; long novel names can scroll instead of forcing other buttons off-screen.
         val topScroll = android.widget.HorizontalScrollView(ctx)
         topScroll.isHorizontalScrollBarEnabled = false
         val top = row()
-        top.addView(UiKit.chip(ctx, prefs, if (novelCur.isEmpty()) "Choose novel  ▾" else novelCur + "  ▾", novelCur.isNotEmpty(), 36, { v -> host.feedback(v) }) { openNovels() })
-        top.addView(UiKit.chip(ctx, prefs, "Fix terms", false, 36, { v -> host.feedback(v) }) { openFixNames() })
+        top.addView(UiKit.chip(ctx, prefs, if (novelCur.isEmpty()) "Fix terms" else "Fix terms  \u00B7  " + novelCur, novelCur.isNotEmpty(), 36, { v -> host.feedback(v) }) { openFixNames() })   // v0.60.0: novels, terms and Keep as is = ONE place
         top.addView(UiKit.chip(ctx, prefs, "Preview", setPreviewOn, 36, { v -> host.feedback(v) }) { setPreviewOn = !setPreviewOn; setPrev = null; refresh() })
         topScroll.addView(top)
         root.addView(topScroll)
-
-        // Novel pairs are deliberately not duplicated in this screen: this shortcut opens their single manager.
-        if (novelCur.isNotEmpty()) {
-            val pairShortcut = btn("Novel pairs  ·  $novelPairs  ·  Manage in Fix terms", 1f, 34) { openFixNames() }
-            root.addView(pairShortcut)
-        }
 
         // Two clear categories, not glossary/topic chips. My pairs and imported glossary sets stay stored but hidden here.
         val chipScroll = android.widget.HorizontalScrollView(ctx)
@@ -1797,7 +1786,6 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
                 for ((n, d) in ready) tiles.add(PanelKit.Tile(n, "ready-made", n == setName) { tapSet(n, d) }.also { t -> t.onLong = { a -> peekSetAt(a, n, d) } })
             }
         } catch (_: Throwable) { }
-        if (novelCur.isNotEmpty() && topicChip == NovelBook.MINE) tiles.add(PanelKit.Tile("Never change", protectList.size.toString() + (if (protectList.size == 1) " name" else " names") + " · not replaced") { openProtect() })
         if (tiles.isEmpty()) {
             val emptyText = if (topicChip == NovelBook.READY) "No ready-made sets available." else "No custom sets yet. Novel pairs are managed in Fix terms."
             root.addView(UiKit.noteText(ctx, prefs, emptyText))
@@ -1810,7 +1798,11 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
     // ------------------------------------------------------------------ NOVELS (independent saved wrong -> right lists)
     private fun novelNames(): List<String> = try { NovelBook.parse(prefs.str("rp_novels", "")) } catch (_: Throwable) { emptyList() }
 
-    private fun openNovels() { typing = 9; novelDelAsk = false; novelNote = ""; confirmAll = false; setPrev = null; refresh() }
+    /** v0.60.0 (FT1): the old Novels screen is gone; the novel list is the Novels sheet of Fix terms. */
+    private fun openNovels() {
+        try { fnToast = ""; fnUi.open(); fnUi.showNovels(); typing = 10; novelDelAsk = false; confirmAll = false; setPrev = null; novelNote = ""; readSource(false) } catch (_: Throwable) { typing = 0 }
+        refresh()
+    }
 
     /** Makes a novel active (name "" = none). Its sets and its Never change list load together; other novels stay untouched. */
     private fun pickNovel(name: String) {
@@ -1869,11 +1861,14 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
         refresh()
     }
 
-    /** typing == 9: the Novels list. Tap a novel = active; add manually. */
-    private fun showNovelNameDialog() {
-        // v0.58.7: was an AlertDialog. A keyboard has no window token, so the dialog could not open ("Could not add novel").
-        // Now the name is typed with the panel's own small keys (typing == 13), like Find / With.
-        try { novelNameBuf = ""; fnBack = false; startTyping(13) } catch (_: Throwable) { novelNote = "Could not add novel"; refresh() }
+    /** v0.60.0: [Add] in the Keep as is box: adds the name and goes back to Fix terms. An empty box keeps the box open. */
+    private fun commitKeepName() {
+        try {
+            val n = fnKeepIn.trim()
+            if (n.isEmpty()) { note("Type the name first"); return }
+            typing = 10; fnBack = false; valueTv = null; keysBox = null
+            fnApi.addKeep(n)
+        } catch (_: Throwable) { note("Could not add") }
     }
 
     /** v0.58.7: [Add novel] in the name box. Adds (or selects the existing) novel and goes back to the screen it came from. A problem keeps the box open so the name is not lost. */
@@ -1883,57 +1878,20 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
             if (r.startsWith("Added") || r.startsWith("Novel already")) {
                 novelNameBuf = ""
                 fnToast = r; novelNote = r
-                typing = if (fnBack) 10 else 9
+                typing = 10   // v0.60.0: the novel list lives in Fix terms
                 fnBack = false; valueTv = null; keysBox = null
                 refresh()
             } else note(r)
         } catch (_: Throwable) { note("Could not add novel") }
     }
 
-    private fun novelsView(): View {
-        val root = LinearLayout(ctx)
-        root.orientation = LinearLayout.VERTICAL
-        paintBg(root)
-        root.setPadding(dp(2), dp(4), dp(2), dp(4))
-        root.addView(PanelKit.header(ctx, prefs, host, "Novels", "<", emptyList()) { typing = 3; novelDelAsk = false; refresh() })
-        val names = novelNames()
-        // v0.58.1: manual novel creation; no glossary import.
-        val top = row()
-        top.addView(btn("+ Add novel", 1f, 40) { showNovelNameDialog() })
-        root.addView(top)
-        if (names.isEmpty()) {
-            root.addView(UiKit.noteText(ctx, prefs, "No novel yet. Add a novel to create its own saved wrong → right pairs."))
-        } else {
-            val sv = ScrollView(ctx)
-            sv.layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(130))
-            val tiles = ArrayList<PanelKit.Tile>()
-            val saved = try { ReplaceStore.load(prefs) } catch (_: Throwable) { LinkedHashMap<String, ReplaceStore.Def>() }
-            for (n in names) {
-                val on = n.equals(novelCur, true)
-                val mine = saved.filterKeys { NovelBook.isMine(it) && NovelBook.belongs(it, n) }
-                val pairCount = FixNames.rows(n, ArrayList(mine.keys), mine.values.map { it.rules }).size
-                val never = try { ReplaceProtect.parse(prefs.str(NovelBook.neverKey(n), "")).size } catch (_: Throwable) { 0 }
-                tiles.add(PanelKit.Tile((if (on) "\u2713 " else "") + n, "${pairCount}${if (pairCount == 1) " pair" else " pairs"} · ${never} kept", on, { pickNovel(n) }))
-            }
-            sv.addView(PanelKit.tileGrid(ctx, prefs, host, 1, tiles))
-            root.addView(sv)
-            val r = row()
-            if (novelCur.isNotEmpty()) r.addView(btn(if (novelDelAsk) "Sure? Delete " + novelCur else "Delete " + novelCur, 1.4f, 34) { deleteNovel() })
-            else r.addView(UiKit.noteText(ctx, prefs, "No novel active: all novels’ pairs show."))
-            if (novelCur.isNotEmpty()) r.addView(btn("No novel", 0.8f, 34) { pickNovel("") })
-            root.addView(r)
-        }
-        if (novelNote.isNotEmpty()) root.addView(UiKit.noteText(ctx, prefs, novelNote))
-        return root
-    }
-
     // ------------------------------------------------------------------ v0.57.0 (FX1): ONE SCREEN "Fix names, per novel" (design = Fix_names_per_novel_mock.html)
     // UI = FixNamesView.kt (class FixNamesUi), logic = typing/FixNames.java (tested). typing == 10 = the screen (tabs Fix names | Novels), typing == 12 = typing in its search box.
     // Everything below uses the OLD code (undo stack, never-change list, glossary paste, delete novel, doReplace). If the screen cannot be built, fnView() falls back to the old Sets screen.
     private var fnToast = ""
-    private var fnKeepBack = false                        // v0.58.0 (FX2): the Never change screen was opened from Fix terms (Keep as is > + Add): back returns there
     private var fnBack = false                                // true while Find / With / search is typed from this screen: Done returns here
     private var fnQuery = ""                                  // search box of this screen (memory only)
+    private var fnKeepIn = ""                                 // v0.60.0 (FT1): typing == 14 = the name typed in the Keep as is box of Fix terms
     private var novelNameBuf = ""                             // v0.58.7: typing == 13 = the name of a NEW novel, typed with the small keys (an AlertDialog cannot open from a keyboard)
 
     private val fnUi: FixNamesUi by lazy { FixNamesUi(ctx, prefs, host, fnApi) }
@@ -1955,11 +1913,12 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
         override fun toast(): String = if (fnToast.isNotEmpty()) fnToast else novelNote
         override fun back() { typing = 0; fnToast = ""; fnRefresh() }
         override fun novels(): List<FixNamesUi.NovelRow> = fnNovelRows()
-        override fun pickNovel(name: String) { fnToast = name + " is active."; fnPick(name) }
-        // Do not refresh the panel from inside the dialog callback. The UI refreshes once
-        // after the dialog closes; refreshing here could throw and falsely report failure
-        // even when the novel was already saved.
-        override fun addNovel(name: String): String { fnToast = fnAddNovel(name); return fnToast }
+        override fun pickNovel(name: String) { fnToast = if (name.isEmpty()) "No novel active." else name + " is active."; fnPick(name) }
+        override fun addNovel(name: String): String {
+            val r = fnAddNovel(name)
+            if (r.startsWith("Added") || r.startsWith("Novel already")) novelNameBuf = ""
+            fnToast = r; fnRefresh(); return r
+        }
         override fun deleteAsk(): Boolean = novelDelAsk
         override fun deleteNovel() { fnToast = ""; fnDelete() }
         override fun removeLock(term: String) { fnRemoveLock(term) }
@@ -1967,7 +1926,69 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
         // v0.58.0 (FX2): Fix terms screen
         override fun clearFields() { find = ""; repl = ""; caretPos = 0; fnRefresh() }
         override fun loadPair(forms: String, to: String) { find = forms; repl = to; caretPos = 0; fnToast = ""; fnRefresh() }
-        override fun openKeep() { fnKeepBack = true; fnUi.tab = 3; openProtect() }
+        // v0.60.0 (FT1): the merged Fix terms screen (FX3 design + the best of the old Pairs / Novels / Never change screens)
+        override fun fixOne(rule: ReplaceRules.Rule, forms: List<String>, to: String, save: Boolean): String {
+            var m = fnFix(listOf(rule))
+            if (m.startsWith("Fixed")) {
+                val head = m.substringBefore(".")
+                m = head
+                if (save) {
+                    val s = fnAddPair(forms, to, NovelBook.MY_TOPIC)
+                    m = if (s.startsWith("Saved") || s.startsWith("Updated")) head + " \u00B7 saved to list" else head + " \u00B7 " + s
+                }
+                find = ""; repl = ""; caretPos = 0
+            }
+            fnToast = m; fnRefresh(); return m
+        }
+        override fun keepInput(): String = fnKeepIn
+        override fun newNovelInput(): String = novelNameBuf
+        override fun clearToast() { fnToast = ""; novelNote = ""; protectAsk = false }
+        override fun addKeep(name: String) {
+            val n = name.trim()
+            if (n.isNotEmpty()) {
+                try {
+                    val c = ReplaceProtect.addAll(protectList, n)
+                    if (c[0] > 0) { protectChanged(); fnToast = "Kept as is: " + n }
+                    else if (c[1] > 0) fnToast = "Already kept: " + n
+                    else if (c[2] > 0) fnToast = "The list is full (" + ReplaceProtect.MAX_TERMS + ")"
+                    else fnToast = "Nothing to add"
+                } catch (_: Throwable) { fnToast = "Could not add" }
+                if (n.equals(fnKeepIn.trim(), true)) fnKeepIn = ""
+            }
+            fnRefresh()
+        }
+        override fun keepSelection() { protectAdd(try { io.selected() } catch (_: Throwable) { null }, "Nothing is selected"); fnToast = msg; msg = ""; fnRefresh() }
+        override fun keepClipboard() { protectAddLines(try { io.clipText() } catch (_: Throwable) { null }); fnToast = msg; msg = ""; fnRefresh() }
+        override fun keepClearAsk(): Boolean = protectAsk
+        override fun keepClear() {
+            if (protectList.size >= 2 && !protectAsk) { protectAsk = true; fnToast = "Tap again to clear all " + protectList.size + " names"; fnRefresh(); return }
+            try { protectList.clear(); protectChanged(); fnToast = "Keep as is cleared" } catch (_: Throwable) { fnToast = "Could not clear" }
+            fnRefresh()
+        }
+        override fun pasteTerms() {
+            var m = "Could not paste"
+            try {
+                if (novelCur.isEmpty()) m = "Pick a novel first: tap + New novel."
+                else {
+                    val res = ReplacePaste.parse(io.clipText() ?: "", ArrayList<ReplaceRules.Rule>(), 200)
+                    if (res.changed() == 0) m = res.summary()
+                    else {
+                        val keepFind = find; val keepRepl = repl; val keepCaret = caretPos
+                        var ok = 0; var skipped = 0
+                        for (r in res.rules) {
+                            if (r.kind != ReplaceRules.K_TEXT || r.with.isEmpty()) { skipped++; continue }
+                            val vs = ReplaceRules.variants(r.find)
+                            val forms: List<String> = if (vs.isEmpty()) listOf(r.find) else vs
+                            val sv = fnAddPair(forms, r.with, NovelBook.MY_TOPIC)
+                            if (sv.startsWith("Saved") || sv.startsWith("Updated")) ok++ else skipped++
+                        }
+                        find = keepFind; repl = keepRepl; caretPos = keepCaret
+                        m = "Added " + ok + " to " + novelCur + (if (skipped > 0) " \u00B7 " + skipped + " skipped" else "")
+                    }
+                }
+            } catch (_: Throwable) { }
+            fnToast = m; fnRefresh()
+        }
 
     }
 
@@ -2383,7 +2404,11 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
     /** A saved set's options + the never-change list. */
     private fun dOpt(d: ReplaceStore.Def): ReplaceEngine.Opt { val o = d.opt(); o.protect = protectList; return o }
 
-    private fun openProtect() { typing = 7; protectAsk = false; confirmAll = false; refresh() }
+    /** v0.60.0 (FT1): the old Never change screen is gone; the list is the Keep as is tab of Fix terms (same list, same storage keys). */
+    private fun openProtect() {
+        try { fnToast = ""; fnUi.open(); fnUi.tab = 3; typing = 10; protectAsk = false; confirmAll = false; setPrev = null; novelNote = ""; readSource(false) } catch (_: Throwable) { typing = 0 }
+        refresh()
+    }
 
     /** The list changed: save it, and the running list / set must be checked and counted again. */
     private fun protectChanged() {
@@ -2413,77 +2438,10 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
         refresh()
     }
 
-    private fun protectRemove(i: Int) {
-        if (i in protectList.indices) { protectList.removeAt(i); protectChanged(); msg = "Removed" }
-        refresh()
-    }
-
     private fun protectClear() {
         if (protectList.size >= 2 && !protectAsk) { protectAsk = true; msg = "Tap again to clear all " + protectList.size + " words"; refresh(); return }
         protectList.clear(); protectChanged(); msg = "List cleared"
         refresh()
-    }
-
-    /** typing == 7: the never-change list. Add from Find / the selection / the clipboard (one word or name per line), x removes one. */
-    private fun protectView(): View {
-        val root = LinearLayout(ctx)
-        root.orientation = LinearLayout.VERTICAL
-        paintBg(root)
-        root.setPadding(dp(2), dp(4), dp(2), dp(4))
-        val shown = msg
-        msg = ""
-        val back: () -> Unit = { typing = if (fnKeepBack) 10 else 0; fnKeepBack = false; protectAsk = false; refresh() }   // v0.58.0 (FX2): back to Fix terms when opened from there
-        val title = ReplaceProtect.label(protectList.size) + (if (novelCur.isEmpty()) "" else " \u00B7 " + novelCur)   // v0.55.0 (NV1): the list belongs to the active novel
-        val clearLabel = if (protectAsk) "Sure? Clear" else "Clear"
-        val acts: List<Pair<String, () -> Unit>> = if (protectList.isEmpty()) emptyList() else listOf(Pair(clearLabel) { protectClear() })
-        var newHead: View? = null
-        if (newLook()) { try { newHead = PanelKit.header(ctx, prefs, host, title, "<", acts) { back() } } catch (_: Throwable) { newHead = null } }
-        val headView: View = newHead ?: run {
-            val h = row()
-            h.addView(btn("\u2190 Back", 1f, 34) { back() })
-            val hint = TextView(ctx)
-            hint.text = title
-            hint.textSize = 12f
-            hint.setTextColor(dim())
-            hint.gravity = Gravity.CENTER_VERTICAL
-            hint.layoutParams = LinearLayout.LayoutParams(0, dp(34), 2f)
-            h.addView(hint)
-            if (protectList.isNotEmpty()) h.addView(btn(clearLabel, 1.2f, 34) { protectClear() })
-            h
-        }
-        root.addView(headView)
-        val ar = row()
-        ar.addView(btn("+ Find", 1f, 38) { protectAdd(find, "Find is empty: type the word in Find first") })
-        ar.addView(btn("+ Selection", 1.2f, 38) { protectAdd(try { io.selected() } catch (_: Throwable) { null }, "Nothing is selected") })
-        ar.addView(btn("+ Clipboard", 1.3f, 38) { protectAddLines(try { io.clipText() } catch (_: Throwable) { null }) })
-        root.addView(ar)
-        root.addView(UiKit.noteText(ctx, prefs, if (shown.isNotEmpty()) shown else "Replace skips these words, even inside a longer match. Clipboard: one word per line."))
-        if (protectList.isEmpty()) return root
-        val sv = ScrollView(ctx)
-        sv.layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(128))
-        try { sv.background = UiKit.cardBackground(ctx, prefs, false, false) } catch (_: Throwable) { }
-        val col = LinearLayout(ctx)
-        col.orientation = LinearLayout.VERTICAL
-        for ((i, t0) in protectList.withIndex()) {
-            val line = LinearLayout(ctx)
-            line.orientation = LinearLayout.HORIZONTAL
-            line.gravity = Gravity.CENTER_VERTICAL
-            val t = TextView(ctx)
-            t.text = t0
-            t.textSize = 13f
-            t.maxLines = 1
-            t.ellipsize = android.text.TextUtils.TruncateAt.END
-            t.gravity = Gravity.CENTER_VERTICAL
-            t.setTextColor(try { JabraTokens.cardText(prefs) } catch (_: Throwable) { Color.BLACK })
-            t.setPadding(dp(10), 0, dp(4), 0)
-            t.layoutParams = LinearLayout.LayoutParams(0, dp(30), 1f)
-            line.addView(t)
-            line.addView(small("\u2715", 30) { protectRemove(i) })
-            col.addView(line)
-        }
-        sv.addView(col)
-        root.addView(sv)
-        return root
     }
 
     // ------------------------------------------------------------------ v0.28.0 (R3b): Formatter bridge + help view
@@ -2659,12 +2617,12 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
 
     // ------------------------------------------------------------------ typing view (small keyboard)
 
-    private fun cur(): String = if (typing == 1) find else if (typing == 12) fnQuery else if (typing == 13) novelNameBuf else repl   // v0.57.0 (FX1): 12 = the search box of Fix names
-    private fun setCur(v: String) { if (typing == 1) find = v else if (typing == 12) fnQuery = v else if (typing == 13) novelNameBuf = v else repl = v; confirmAll = false }
+    private fun cur(): String = if (typing == 1) find else if (typing == 12) fnQuery else if (typing == 14) fnKeepIn else if (typing == 13) novelNameBuf else repl   // v0.57.0 (FX1): 12 = the search box of Fix names
+    private fun setCur(v: String) { if (typing == 1) find = v else if (typing == 12) fnQuery = v else if (typing == 14) fnKeepIn = v else if (typing == 13) novelNameBuf = v else repl = v; confirmAll = false }
 
     private fun showValue() {
         val v = cur()
-        valueTv?.text = (if (typing == 1) "Find: " else if (typing == 13) "Novel: " else "With: ") + ReplacePads.view(v, caretPos, 60)   // v0.29.0: caret can move (surrogate-safe window)
+        valueTv?.text = (if (typing == 1) "Find: " else if (typing == 13) "Novel: " else if (typing == 14) "Keep: " else if (typing == 12) "Search: " else "With: ") + ReplacePads.view(v, caretPos, 60)   // v0.29.0: caret can move (surrogate-safe window)
     }
 
     private fun typeText(s: String) {
@@ -2708,7 +2666,8 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
         valueTv = tv
         if (miniOn()) { try { tv.background = UiKit.cardBackground(ctx, prefs, false, false); tv.setPadding(dp(10), 0, dp(6), 0) } catch (_: Throwable) { } }   // v0.38.1 (P2): the typed text sits in a card
         head.addView(btn("Clear", 1f, 34) { setCur(""); caretPos = 0; showValue() })
-        if (typing == 13) head.addView(btn("Add novel", 1.4f, 34) { commitNovelName() })   // v0.58.7
+        if (typing == 14) head.addView(btn("Add", 1.4f, 34) { commitKeepName() })   // v0.60.0: Keep as is box
+        else if (typing == 13) head.addView(btn("Add novel", 1.4f, 34) { commitNovelName() })   // v0.58.7
         else head.addView(btn(if (typing == 1) "Next: With" else "Next: Find", 1.4f, 34) { typing = if (typing == 1) 2 else 1; padPage = 0; shift = false; caretPos = cur().length; refresh() })
         root.addView(head)
         showValue()
@@ -2755,7 +2714,7 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
         pasteCur(s)
     }
 
-    private fun openPicker() { pasteBack = if (typing == 2) 2 else if (typing == 12) 12 else if (typing == 13) 13 else 1; pasteTab = 0; typing = 6; refresh() }
+    private fun openPicker() { pasteBack = if (typing == 2) 2 else if (typing == 12) 12 else if (typing == 14) 14 else if (typing == 13) 13 else 1; pasteTab = 0; typing = 6; refresh() }
 
     /** The paste list (typing == 6): Recent (latest copy first) / Pinned. A tap puts the text at the cursor and goes back to the typing view. */
     private fun replacePicker(): View {
@@ -2785,7 +2744,7 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
         bot.addView(btn("\u25B6", 0.8f, 34) { caretPos = ReplacePads.right(cur(), caretPos); showValue() })
         bot.addView(btn("\u2423", 2.2f, 34) { typeText(" ") })
         bot.addView(btn("\u232B", 1.3f, 34) { backKey() })
-        val doneB = btn("\u2713 Done", 1.4f, 34) { typing = if (typing == 13) (if (fnBack) 10 else 9) else if (fnBack) 10 else 0; fnBack = false; valueTv = null; keysBox = null; readSource(false); refresh() }   // v0.57.0 (FX1): Fix names gets you back; v0.58.7: the novel name box goes back to the Novels list
+        val doneB = btn("\u2713 Done", 1.4f, 34) { typing = if (fnBack) 10 else 0; fnBack = false; valueTv = null; keysBox = null; readSource(false); refresh() }   // v0.57.0 (FX1): Fix names gets you back; v0.58.7: the novel name box goes back to the Novels list
         if (miniOn()) accentButton(doneB, JabraTokens.ACCENT)   // v0.38.1 (P2)
         bot.addView(doneB)
         box.addView(bot)

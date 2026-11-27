@@ -1,3 +1,22 @@
+v0.60.0 - MERGE: Fix terms + Replace panel = ONE place for novel terms (old Novels screen and old Never change screen removed)
+- WHY: Replace had several screens doing nearly the same job as Fix terms (Novels list, Never change list, pair saving). Owner asked to merge them: keep the best feature of each, one better design, remove the old ones.
+- WHAT (one screen, Replace > Fix terms; every old entry point now opens it):
+  1) Design = the FX3 "easy" layout: live text box with Undo, tabs [Fix] [Terms n] [Keep as is n], Fix = One term | Whole list (tick list, "Fix all . n"), "Remember for next chapters", terms grouped by the correct term, one Fix button per term, red badge = fixes left.
+  2) Best of the old Never change screen moved in: Keep as is has + Selection, + Clipboard (one name per line), Clear (2 taps), typed name + Add, chips with x, "Seen in your text" suggestions. Same list, same storage keys (rp_protect / per-novel never key).
+  3) Best of Pairs > Paste moved in: Terms > Paste reads many clipboard lines ("Gaam;geme;gome => game", also a;b=>c, TAB, ->) and saves each as ONE term with several wrong forms to the active novel.
+  4) Best of the old Novels list moved in: novel list with counts, + Create (typed with the keyboard's own keys, v0.58.7 fix kept), Delete (2 taps), and "No novel".
+  5) REMOVED: the old Novels screen (typing 9, showNovelNameDialog) and the old Never change screen (typing 7, protectView, protectRemove). Replace > Novels / Never / Never change buttons open Fix terms (Novels sheet / Keep as is tab). The Sets screen lost its duplicate "Choose novel", "Novel pairs" shortcut and "Never change" tile; its "Fix terms" chip stays (My sets / Ready-made sets are NOT duplicates and stay).
+  6) Menu item "Fix names / one screen" is now "Fix terms" (same screen).
+- Typing codes of the mini keyboard: 13 = new novel name (unchanged), 14 = name to keep (new), 12 = search, 1 / 2 = Find / With.
+- NOT changed: engine, ReplaceRules, FixNames.java (logic), NovelBook, stored sets / novels / Never change lists (no migration needed), the temporary Pairs list of Replace (One | Pairs) and its "Save to novel" (it now feeds Fix terms), Sets (My sets / Ready-made), Recent pairs, Help.
+- DROPPED on purpose vs v0.58.0 view: the raw-names switch and topic chips are not shown (the logic stays in FixNames.java). Glossary import was already gone in v0.58.1.
+- WHAT BROKE: nothing known. Note: FixNamesView.kt is replaced as a whole (the FX3 design); the old FX2 layout is gone.
+- STRAY FILES: the repo root has a folder src/ (FixNamesView.kt, ReplacePanel.kt = an old v0.59 branch copied to the wrong place). It is NOT built (only app/ is). It is superseded by this version: delete the root src/ folder.
+- TESTED here: NEW tools/FixTermsMergeTest (39 checks: Api wiring, removed screens, typing codes, merged features, brace balance, Paste-list logic with the real Java classes) green; NovelNameTypingTest updated (17) green; FixNamesTest 50, InlinePairTest 16 green. tools/run_tests.sh 186/188 green; the 2 red (SectionPlanTest, SettingsHelpTest) are red in the original zip too.
+- NOT tested: Kotlin NOT compiled (no kotlinc here), phone NOT tested. If the Kotlin build is red, the new places are FixNamesView.kt (whole file) and ReplacePanel.kt (search "v0.60.0").
+- Code: PATCH app/src/main/java/com/mgb/keyboard/ReplacePanel.kt, REPLACE FixNamesView.kt, app/build.gradle.kts (0.60.0), tools/NovelNameTypingTest.java, CHANGELOG.txt. NEW tools/FixTermsMergeTest.java, HANDOFF_FixTermsMerge_v0.60.0.txt.
+- Rollback: restore ReplacePanel.kt, FixNamesView.kt, NovelNameTypingTest.java, app/build.gradle.kts from v0.58.8, delete tools/FixTermsMergeTest.java.
+
 v0.58.8 - IMPROVE: many wrong forms + one right form in ONE line ("Gaam;geme;gome;gggo=>game")
 - WHY: owner wants to add a pair like Gaam;geme;gome;gggo => game in one go and have every wrong form replaced.
 - WHAT: (1) Replace > Find box: typing  wrong;forms=>right  (With empty) is split into Find + With when you tap Add pair (also used by Fix terms). (2) Replace > Pairs > Paste: lines like  Gaam;geme;gome;gggo => game  (also  a;b=>c  without spaces, TAB, ->) become ONE variants rule (a | b | c => game). Before, a pasted line kept the ";" as literal text and matched nothing. word: / keep: / smart: in front still work.
