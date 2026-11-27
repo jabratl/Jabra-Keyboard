@@ -1900,7 +1900,6 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
         override fun back() { typing = 0; fnToast = ""; fnRefresh() }
         override fun novels(): List<FixNamesUi.NovelRow> = fnNovelRows()
         override fun pickNovel(name: String) { fnToast = name + " is active."; fnPick(name) }
-        override fun pasteGlossary() { fnToast = ""; glossaryImport(10) }
         override fun deleteAsk(): Boolean = novelDelAsk
         override fun deleteNovel() { fnToast = ""; fnDelete() }
         override fun removeLock(term: String) { fnRemoveLock(term) }
@@ -1948,15 +1947,6 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
             } catch (_: Throwable) { fnToast = "Could not add the novel"; fnRefresh() }
         }
         override fun clearToast() { fnToast = ""; novelNote = "" }
-        override fun clipInfo(): String = try {
-            if (io.blocked()) "" else {
-                val t = io.clipText() ?: ""
-                if (!GlossaryImport.looksLike(t)) "" else {
-                    val g = GlossaryImport.parse(t, 0)
-                    (if (g.novel.isNotEmpty()) g.novel else "Glossary") + " \u00B7 " + g.wrong + " terms to fix \u00B7 " + g.never.size + " to keep as is"
-                }
-            }
-        } catch (_: Throwable) { "" }
     }
 
     private fun fnRefresh() { refresh() }
