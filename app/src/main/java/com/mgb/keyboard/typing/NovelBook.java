@@ -14,7 +14,7 @@ import java.util.Map;
 public final class NovelBook {
     private NovelBook() { }
 
-    public static final int MAX_NOVELS = 12;
+    public static final int MAX_NOVELS = 200;
     public static final int MAX_SETS_PER_NOVEL = 40;   // sets of ONE novel (a set holds 50 rules); the old 40 for everything is gone for glossary sets
     public static final int MAX_USER_SETS = 40;        // the user's own (non glossary) sets
     public static final int MAX_ALL_SETS = 400;        // hard cap of the stored map

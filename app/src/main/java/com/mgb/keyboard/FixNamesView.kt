@@ -475,9 +475,10 @@ class FixNamesUi(private val ctx: Context, private val prefs: JabraPrefs, privat
         AlertDialog.Builder(ctx).setTitle("Add novel").setView(input)
             .setNegativeButton("Cancel", null)
             .setPositiveButton("Add") { _, _ ->
-                api.addNovel(input.text?.toString() ?: "")
+                val result = try { api.addNovel(input.text?.toString() ?: "") } catch (_: Throwable) { "Could not add novel. Please try again." }
                 sheet = 3
                 api.refresh()
+                try { android.widget.Toast.makeText(ctx, result, android.widget.Toast.LENGTH_SHORT).show() } catch (_: Throwable) { }
             }.show()
     }
 

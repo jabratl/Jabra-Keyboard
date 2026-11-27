@@ -1808,14 +1808,21 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
 
     /** v0.58.1: manually create an independent novel pair list. */
     private fun fnAddNovel(name: String): String {
-        val clean = name.trim()
-        if (clean.isEmpty()) return "Enter a novel name."
-        val reg = NovelBook.parse(prefs.str("rp_novels", ""))
-        if (NovelBook.has(reg, clean)) { pickNovel(reg.first { it.equals(clean, true) }); return "Novel already exists." }
-        if (!NovelBook.add(reg, clean)) return "Novel limit reached (${NovelBook.MAX_NOVELS})."
-        prefs.setStr("rp_novels", NovelBook.text(reg))
-        pickNovel(clean)
-        return "Added " + clean + "."
+        return try {
+            val clean = name.trim()
+            if (clean.isEmpty()) return "Enter a novel name."
+            val reg = NovelBook.parse(prefs.str("rp_novels", ""))
+            if (NovelBook.has(reg, clean)) {
+                pickNovel(reg.first { it.equals(clean, true) })
+                return "Novel already exists — selected it."
+            }
+            if (!NovelBook.add(reg, clean)) return "Novel limit reached (${NovelBook.MAX_NOVELS})."
+            prefs.setStr("rp_novels", NovelBook.text(reg))
+            pickNovel(clean)
+            "Added " + clean + "."
+        } catch (e: Throwable) {
+            "Could not save novel. Please try again."
+        }
     }
 
     /** Deletes the active novel with its saved pairs and Never change list (two taps). Other novels are not touched. */

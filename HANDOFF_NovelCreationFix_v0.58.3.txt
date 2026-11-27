@@ -1,0 +1,17 @@
+# Jabra Keyboard v0.58.3 — Novel creation fix
+## Patch scope
+Only changed:
+- app/src/main/java/com/mgb/keyboard/ReplacePanel.kt
+- app/src/main/java/com/mgb/keyboard/FixNamesView.kt
+- app/src/main/java/com/mgb/keyboard/typing/NovelBook.java
+- app/build.gradle.kts
+- CHANGELOG.txt
+
+## Fix
+The Novel registry had a hard limit of 12. Raise it to 200 so an existing full registry does not prevent manual novel creation. The Add Novel handler now catches storage/runtime failures and reports a clear result; the Fix terms Add Novel dialog shows that result as a toast.
+
+## Preserve
+Do not change Replace engine, Preview, Undo, Never Change, text formatting, or pair storage.
+
+## Verification limitation
+Static source review only; Android Gradle build and on-device UI test were not run in this environment.
