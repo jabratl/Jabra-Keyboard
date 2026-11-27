@@ -87,6 +87,9 @@ class FixNamesUi(private val ctx: Context, private val prefs: JabraPrefs, privat
     /** Called when the screen is opened from the Replace panel. */
     fun open() { tab = 1; sheet = 0; mode = 0 }
 
+    /** Open straight on the Novels list (the old Novels menu item). */
+    fun showNovels() { sheet = 3 }
+
     private val none = HashSet<String>()          // Row.key() values that are unticked in Whole list
 
     private fun dp(v: Int): Int = JabraTokens.dp(ctx, v)

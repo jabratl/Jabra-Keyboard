@@ -227,7 +227,7 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
         return try { ReplaceEngine.replaceAll(src, find, repl, opt) } catch (_: Throwable) { ReplaceEngine.Result() }
     }
 
-    fun build(): View? = try { PeekPopup.dismiss(); if (typing != 0) { try { fwin?.hide() } catch (_: Throwable) { } }; if (typing == 3) setsViewPick() else if (typing == 4) recentView() else if (typing == 5) helpView() else if (typing == 6) replacePicker() else if (typing == 7) protectView() else if (typing == 8) pairsView() else if (typing == 9) novelsView() else if (typing == 10) fnView() else if (typing != 0) typeView() else mainViewPick() } catch (_: Throwable) { null }   // v0.26.0 (R3): 4 = Recent pairs; Pick = new look when panel_ui = New, else the classic view
+    fun build(): View? = try { PeekPopup.dismiss(); fnRedirect(); if (typing != 0) { try { fwin?.hide() } catch (_: Throwable) { } }; if (typing == 3) setsViewPick() else if (typing == 4) recentView() else if (typing == 5) helpView() else if (typing == 6) replacePicker() else if (typing == 7) protectView() else if (typing == 8) pairsView() else if (typing == 9) novelsView() else if (typing == 10) fnView() else if (typing != 0) typeView() else mainViewPick() } catch (_: Throwable) { null }   // v0.26.0 (R3): 4 = Recent pairs; Pick = new look when panel_ui = New, else the classic view
 
     // ------------------------------------------------------------------ main view
 
@@ -291,7 +291,7 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
 
         // v0.25.0 (R2): sets + step through the matches
         val r4 = row()
-        r4.addView(btn("Sets", 1f, 32) { typing = 3; confirmAll = false; refresh() })
+        r4.addView(btn("Fix terms", 1f, 32) { typing = 3; confirmAll = false; refresh() })
         r4.addView(btn("Recent", 1f, 32) { typing = 4; confirmAll = false; rprAsk = false; refresh() })   // v0.26.0 (R3)
         r4.addView(btn("Never", 1f, 32) { openProtect() })   // v0.41.0: never-change list
         r4.addView(btn("?", 0.5f, 32) { typing = 5; helpPage = 0; confirmAll = false; refresh() })   // v0.28.0 (R3b): help
@@ -778,7 +778,7 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
         val top = row()
         top.gravity = Gravity.CENTER_VERTICAL
         top.addView(small("ABC", 40) { host.showLetters() })
-        top.addView(small("Sets", 40) { typing = 3; confirmAll = false; refresh() })
+        top.addView(small("Fix terms", 40) { typing = 3; confirmAll = false; refresh() })
         top.addView(small("Recent", 40) { typing = 4; confirmAll = false; rprAsk = false; refresh() })
         top.addView(small("?", 40) { typing = 5; helpPage = 0; confirmAll = false; refresh() })   // v0.28.0 (R3b): help
         top.addView(small("Never", 40) { openProtect() })   // v0.41.0: never-change list
@@ -1178,8 +1178,7 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
             2 -> {
                 title = "Tools"
                 items.add(Triple("Novels", if (novelCur.isEmpty()) "none active" else novelCur) { dMenu = 0; openNovels() })   // v0.55.0 (NV1)
-                items.add(Triple("Fix names", "one screen") { dMenu = 0; openFixNames() })   // v0.57.0 (FX1)
-                items.add(Triple("Sets", "") { dMenu = 0; typing = 3; confirmAll = false; refresh() })
+                items.add(Triple("Fix terms", "wrong > right, per novel") { dMenu = 0; openFixNames() })   // v0.57.0 (FX1)
                 items.add(Triple("Recent", "") { dMenu = 0; typing = 4; confirmAll = false; rprAsk = false; refresh() })
                 items.add(Triple("Never change", protectList.size.toString() + (if (novelCur.isEmpty()) " terms" else " terms \u00B7 " + novelCur)) { dMenu = 0; openProtect() })
                 items.add(Triple("Help", "") { dMenu = 0; typing = 5; helpPage = 0; confirmAll = false; refresh() })
@@ -1459,7 +1458,7 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
         val top = row()
         top.gravity = Gravity.CENTER_VERTICAL
         top.addView(small("ABC", 38) { host.showLetters() })
-        top.addView(small("Sets", 38) { typing = 3; confirmAll = false; refresh() })
+        top.addView(small("Fix terms", 38) { typing = 3; confirmAll = false; refresh() })
         top.addView(small("Recent", 38) { typing = 4; confirmAll = false; rprAsk = false; refresh() })
         top.addView(small("?", 38) { typing = 5; helpPage = 0; confirmAll = false; refresh() })
         if (pairMode || (setRules == null && find.isNotEmpty())) { if (find.isEmpty()) editIdx = -1; top.addView(small(if (editIdx >= 0) "Update" else "+Pair", 38) { addPair(false) }) }   // v0.40.0
@@ -1635,7 +1634,7 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
         val top = row()
         top.gravity = Gravity.CENTER_VERTICAL
         top.addView(small("ABC", 38) { host.showLetters() })
-        top.addView(small("Sets", 38) { typing = 3; confirmAll = false; refresh() })
+        top.addView(small("Fix terms", 38) { typing = 3; confirmAll = false; refresh() })
         top.addView(small("Recent", 38) { typing = 4; confirmAll = false; rprAsk = false; refresh() })
         if (pairMode && find.isEmpty()) editIdx = -1
         val pb = ReplaceSlimPlan.pairButton(pairMode, setLoaded, find.isEmpty(), editIdx)
@@ -1951,12 +1950,19 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
 
     private fun fnRefresh() { refresh() }
 
+    /** v0.59.3: the old Sets screen (typing 3) and the old Novels screen (typing 9, Paste glossary) are gone: both open Fix terms (Novels = its novel list). Nothing else is deleted. */
+    private fun fnRedirect() {
+        if (typing != 3 && typing != 9) return
+        val novels = typing == 9
+        try { fnToast = ""; fnUi.open(); if (novels) fnUi.showNovels(); typing = 10; confirmAll = false; setPrev = null; novelNote = ""; readSource(false) } catch (_: Throwable) { typing = 0 }
+    }
+
     private fun openFixNames() {
         try { fnToast = ""; fnUi.open(); typing = 10; confirmAll = false; setPrev = null; novelNote = ""; readSource(false) } catch (_: Throwable) { typing = 0 }
         refresh()
     }
 
-    private fun fnView(): View = try { fnUi.build() } catch (_: Throwable) { typing = 3; setsViewNew() }
+    private fun fnView(): View = try { fnUi.build() } catch (_: Throwable) { typing = 0; mainViewPick() }
 
     private fun fnPick(name: String) { pickNovel(name) }
     private fun fnDelete() { deleteNovel() }
