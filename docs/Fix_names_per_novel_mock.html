@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Fix names, per novel</title>
+<style>
+:root{--bg:#f3f5f9;--ink:#1b2333;--dim:#5b667c;--line:#d5dbe7;--card:#fff;--acc:#2f6fd0;
+ --k-bg:#101a33;--k-row:#1b2745;--k-ink:#e8edf8;--k-dim:#93a1c2;--k-acc:#9cc4f0;--k-line:#2b3a62;--k-red:#ef7a74;
+ --del-bg:#4a2626;--del-ink:#ffb4ae;--ins-bg:#233f2b;--ins-ink:#b5e8bd;--lock:#e8c887;
+ box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);color-scheme:light}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0d1118;--ink:#e6eaf2;--dim:#9aa6bd;--line:#273045;--card:#161c28;--acc:#8db8f5;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0d1118;--ink:#e6eaf2;--dim:#9aa6bd;--line:#273045;--card:#161c28;--acc:#8db8f5;color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:460px;margin:0 auto;padding:16px 14px 40px}
+h1{font-size:19px;margin:6px 0 4px;line-height:1.25}
+.lead{color:var(--dim);margin:0 0 14px;font-size:14px}
+.steps{display:flex;gap:6px;margin-bottom:12px}
+.steps button{flex:1;border:1px solid var(--line);background:var(--card);color:var(--dim);border-radius:10px;padding:8px 6px;font:inherit;font-size:13px;cursor:pointer}
+.steps button[aria-selected="true"]{color:var(--ink);border-color:var(--acc);box-shadow:inset 0 -3px 0 var(--acc);font-weight:600}
+button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+.kb{background:var(--k-bg);color:var(--k-ink);border-radius:16px;padding:10px;font-size:13px}
+.bar{display:flex;align-items:center;gap:6px;padding:0 0 8px}
+.sp{flex:1}
+.novel{border:0;background:var(--k-row);color:var(--k-ink);border-radius:10px;padding:8px 12px;font:inherit;font-weight:600;cursor:pointer;max-width:70%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ib{border:0;background:transparent;color:var(--k-ink);border-radius:10px;padding:7px 10px;font:inherit;cursor:pointer}
+.ib:disabled{color:var(--k-dim);cursor:default}
+.ib.red{color:var(--k-red)}
+.pri{border:0;background:var(--k-acc);color:#0c1730;border-radius:10px;padding:10px 14px;font:inherit;font-weight:600;cursor:pointer}
+.pri.wide{width:100%;margin-top:8px;padding:12px}
+.pri:disabled{opacity:.45;cursor:default}
+.pv{background:var(--k-row);border-radius:10px;padding:10px;line-height:1.9;font-size:14px;margin-bottom:8px}
+.d{background:var(--del-bg);color:var(--del-ink);text-decoration:line-through;border-radius:4px;padding:0 2px}
+.n{background:var(--ins-bg);color:var(--ins-ink);border-radius:4px;padding:0 2px;margin-left:2px}
+.dr{outline:1px dashed var(--k-acc);outline-offset:1px}
+.lk{color:var(--lock);text-decoration:underline dotted}
+.add{background:var(--k-row);border-radius:10px;padding:8px;margin-bottom:8px}
+.add input,.srch{width:100%;border:1px solid var(--k-line);background:transparent;color:var(--k-ink);border-radius:8px;padding:8px 10px;font:inherit;font-size:14px}
+.add input+input{margin-top:6px}
+::placeholder{color:var(--k-dim)}
+.vars{display:flex;flex-wrap:wrap;gap:4px;margin:6px 0 0;min-height:4px}
+.vars span{background:var(--del-bg);color:var(--del-ink);border-radius:6px;padding:1px 7px;font-size:12px}
+.addrow{display:flex;gap:6px;align-items:center;margin-top:8px}
+.chips{display:flex;gap:6px;overflow-x:auto;padding:0 0 8px}
+.addrow .chips{padding:0;flex:1}
+.chip{border:1px solid var(--k-line);background:transparent;color:var(--k-ink);border-radius:14px;padding:4px 10px;font:inherit;font-size:12px;white-space:nowrap;cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--k-acc);border-color:var(--k-acc);color:#0c1730;font-weight:600}
+.list{max-height:210px;overflow-y:auto;margin-top:6px}
+.row{background:var(--k-row);border-radius:10px;padding:8px 10px;margin-bottom:4px;display:flex;align-items:center;gap:8px}
+.row.off{opacity:.5}
+.row.none .cnt{background:transparent;color:var(--k-dim)}
+.g{flex:1;min-width:0}
+.g b{display:block;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.g small,.kb small{color:var(--k-dim);font-size:12px;display:block}
+.cnt{background:var(--k-acc);color:#0c1730;font-weight:700;border-radius:10px;padding:0 8px;font-size:12px;min-width:24px;text-align:center}
+.sw{width:34px;height:20px;border-radius:10px;border:0;background:var(--k-line);position:relative;cursor:pointer;flex:none}
+.sw::after{content:"";position:absolute;top:3px;left:3px;width:14px;height:14px;border-radius:50%;background:var(--k-ink);transition:left .15s}
+.sw[aria-checked="true"]{background:var(--k-acc)}
+.sw[aria-checked="true"]::after{left:17px;background:#0c1730}
+.toast{margin-top:8px;color:var(--k-acc);min-height:18px}
+.nrow{width:100%;border:0;color:inherit;font:inherit;text-align:left;cursor:pointer}
+.dot{width:12px;height:12px;border-radius:50%;border:2px solid var(--k-dim);flex:none}
+.on .dot{border-color:var(--k-acc);background:var(--k-acc)}
+.on{outline:1px solid var(--k-acc)}
+.why{margin-top:14px;padding:12px 14px;background:var(--card);border:1px solid var(--line);border-radius:12px;font-size:13.5px}
+.why p{margin:0 0 6px}.why p:last-child{margin:0}
+[hidden]{display:none!important}
+@media (prefers-reduced-motion:reduce){.sw::after{transition:none}}
+</style>
+</head>
+<body>
+<main>
+<h1>One screen: type the wrong forms, see the fix, keep it</h1>
+<p class="lead">Everything for the active novel sits on one screen. Try it: type <i>Lin Fan; Lin Fan Wu</i> in the first box and <i>Lin Feng</i> in the second.</p>
+
+<div class="steps" role="tablist">
+ <button role="tab" aria-selected="true" data-s="1">Fix names</button>
+ <button role="tab" aria-selected="false" data-s="2">Novels</button>
+</div>
+
+<section id="s1">
+ <div class="kb">
+  <div class="bar"><button class="novel" id="nv">Cultivation Saga ▾</button><span class="sp"></span><button class="ib" id="undo" disabled>Undo</button></div>
+  <div class="pv" id="pv"></div>
+
+  <div class="add">
+   <input id="f" placeholder="Wrong forms, split by ;" autocomplete="off">
+   <div class="vars" id="vars"></div>
+   <input id="w" placeholder="Right form" autocomplete="off">
+   <div class="addrow">
+    <div class="chips" id="tp" role="group" aria-label="Topic"></div>
+    <button class="pri" id="add">Add pair</button>
+   </div>
+  </div>
+
+  <input class="srch" id="q" placeholder="Search this novel" autocomplete="off" aria-label="Search this novel">
+  <div class="chips" id="chips" role="group" aria-label="Filter" style="margin-top:8px"></div>
+  <div class="list" id="list"></div>
+
+  <button class="pri wide" id="fix"></button>
+  <div class="toast" id="t1" role="status"></div>
+ </div>
+</section>
+
+<section id="s2" hidden>
+ <div class="kb">
+  <div class="bar"><span style="font-weight:600;font-size:14px">Novels</span><span class="sp"></span><button class="pri" id="paste">Paste glossary</button></div>
+  <div id="nl"></div>
+  <div class="bar" style="padding-top:6px"><button class="ib red" id="del"></button></div>
+  <div class="toast" id="t2" role="status"></div>
+ </div>
+</section>
+
+<div class="why">
+ <p><b>Why this is simpler</b> The pair list, the Never change list and the sets of a novel are one list. A pair is a row, a locked name is a row, topics are chips.</p>
+ <p><b>What you see before you tap</b> Each row shows how many times it hits the text now. Rows with hits come first, rows with none fade.</p>
+ <p><b>Keeping a pair</b> “Add pair” already saves it to the novel. No second step, no separate Save screen.</p>
+ <p><b>Power</b> Switch a row off to skip it, undo the last fix, search by any form, filter by topic.</p>
+</div>
+</main>
+<script>
+(function(){
+ var TOPICS=['Characters','Places','Skills'];
+ var D={
+  'Cultivation Saga':{text:'Lin Fen bowed at Lin Fen Pavilion. Lin Fong smiled, and Lin Fan left for Blue Peek. Master Wu used Sword Chi twice.',
+   pairs:[{v:['Lin Fen','Lin Fong'],to:'Lin Feng',t:'Characters'},{v:['Blue Peek'],to:'Blue Peak',t:'Places'},{v:['Sword Chi'],to:'Sword Qi',t:'Skills'}],locks:['Lin Fen Pavilion']},
+  'Space Station Z':{text:'Cmdr Voss waved. Commander Vos left through Dock Seven.',
+   pairs:[{v:['Cmdr Voss','Commander Vos'],to:'Commander Voss',t:'Characters'}],locks:[]}
+ };
+ var cur='Cultivation Saga',chip='All',topic='Characters',undoStack=[],delAsk=false;
+ var $=function(i){return document.getElementById(i)};
+ function el(t,c,x){var e=document.createElement(t);if(c)e.className=c;if(x!=null)e.textContent=x;return e}
+ function esc(s){return s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')}
+ function say(id,m){$(id).textContent=m}
+
+ var tabs=document.querySelectorAll('.steps button');
+ function show(n){tabs.forEach(function(b){b.setAttribute('aria-selected',String(b.dataset.s===n))});$('s1').hidden=n!=='1';$('s2').hidden=n!=='2'}
+ tabs.forEach(function(b){b.addEventListener('click',function(){show(b.dataset.s)})});
+
+ function variants(){
+  var out=[];$('f').value.split(';').forEach(function(x){x=x.trim();if(x&&out.map(function(o){return o.toLowerCase()}).indexOf(x.toLowerCase())<0)out.push(x)});return out;
+ }
+ // finds non-overlapping matches: locks win, then saved pairs, then the pair being typed
+ function scan(text,n,draft){
+  var m=[];
+  n.locks.forEach(function(l){var r=new RegExp(esc(l),'gi'),x;while((x=r.exec(text)))m.push({i:x.index,len:x[0].length,k:'lock',p:0})});
+  n.pairs.forEach(function(p,pi){if(p.off)return;p.v.forEach(function(v){var r=new RegExp(esc(v),'gi'),x;while((x=r.exec(text)))m.push({i:x.index,len:x[0].length,k:'hit',p:pi,to:p.to})})});
+  if(draft&&draft.v.length&&draft.to)draft.v.forEach(function(v){var r=new RegExp(esc(v),'gi'),x;while((x=r.exec(text)))m.push({i:x.index,len:x[0].length,k:'hit',p:-1,to:draft.to,dr:1})});
+  m.sort(function(a,b){return a.i-b.i||b.len-a.len});
+  var out=[],end=0;m.forEach(function(x){if(x.i>=end){out.push(x);end=x.i+x.len}});return out;
+ }
+ function render(){
+  var n=D[cur],text=n.text;
+  var draft={v:variants(),to:$('w').value.trim()};
+  var ms=scan(text,n,draft),pv=$('pv');pv.innerHTML='';var pos=0,hits=0,counts={};
+  ms.forEach(function(x){
+   if(x.i>pos)pv.appendChild(document.createTextNode(text.slice(pos,x.i)));
+   var raw=text.substr(x.i,x.len);
+   if(x.k==='lock')pv.appendChild(el('span','lk',raw+' \uD83D\uDD12'));
+   else{if(x.p>=0){hits++;counts[x.p]=(counts[x.p]||0)+1}
+    pv.appendChild(el('span','d'+(x.dr?' dr':''),raw));pv.appendChild(el('span','n'+(x.dr?' dr':''),x.to))}
+   pos=x.i+x.len});
+  if(pos<text.length)pv.appendChild(document.createTextNode(text.slice(pos)));
+  // variant chips under the first box
+  var vs=$('vars');vs.innerHTML='';variants().forEach(function(v){vs.appendChild(el('span',null,v))});
+  // topic picker for new pair
+  var tp=$('tp');tp.innerHTML='';TOPICS.forEach(function(t){var b=el('button','chip',t);b.type='button';b.setAttribute('aria-pressed',String(t===topic));b.onclick=function(){topic=t;render()};tp.appendChild(b)});
+  // filter chips
+  var ch=$('chips');ch.innerHTML='';var f=['All'].concat(TOPICS.filter(function(t){return n.pairs.some(function(p){return p.t===t})}));if(n.locks.length)f.push('Locked');
+  if(f.indexOf(chip)<0)chip='All';
+  f.forEach(function(t){var c=t==='All'?n.pairs.length:t==='Locked'?n.locks.length:n.pairs.filter(function(p){return p.t===t}).length;
+   var b=el('button','chip',t+' '+c);b.type='button';b.setAttribute('aria-pressed',String(t===chip));b.onclick=function(){chip=t;render()};ch.appendChild(b)});
+  // list
+  var q=$('q').value.trim().toLowerCase(),list=$('list');list.innerHTML='';
+  if(chip==='Locked'){
+   n.locks.filter(function(l){return !q||l.toLowerCase().indexOf(q)>=0}).forEach(function(l,i){
+    var r=el('div','row'),g=el('div','g');g.appendChild(el('b',null,l));g.appendChild(el('small',null,'never changed'));r.appendChild(g);
+    var x=el('button','ib','Remove');x.type='button';x.onclick=function(){n.locks.splice(n.locks.indexOf(l),1);render()};r.appendChild(x);list.appendChild(r)});
+  }else{
+   var rows=n.pairs.map(function(p,i){return {p:p,i:i,c:counts[i]||0}}).filter(function(o){
+    return (chip==='All'||o.p.t===chip)&&(!q||(o.p.v.join(' ')+' '+o.p.to).toLowerCase().indexOf(q)>=0)});
+   rows.sort(function(a,b){return (b.c>0)-(a.c>0)});
+   rows.forEach(function(o){
+    var r=el('div','row'+(o.p.off?' off':'')+(o.c===0?' none':'')),g=el('div','g');
+    g.appendChild(el('b',null,o.p.v.join('; ')));g.appendChild(el('small',null,'to '+o.p.to+(chip==='All'?' \u00B7 '+o.p.t:'')));
+    r.appendChild(g);r.appendChild(el('span','cnt',o.c?String(o.c):'0'));
+    var s=el('button','sw');s.type='button';s.setAttribute('role','switch');s.setAttribute('aria-label','Use '+o.p.v[0]);s.setAttribute('aria-checked',String(!o.p.off));
+    s.onclick=function(){o.p.off=!o.p.off;render()};r.appendChild(s);list.appendChild(r)});
+   if(!rows.length)list.appendChild(el('div','toast','Nothing here yet. Type wrong forms above, then tap Add pair.'));
+  }
+  var fb=$('fix');fb.textContent=hits?'Fix '+hits+' in text':'Nothing to fix';fb.disabled=!hits;
+  $('undo').disabled=!undoStack.length;
+ }
+ function nameList(){
+  var l=$('nl');l.innerHTML='';
+  Object.keys(D).forEach(function(k){
+   var n=D[k],b=el('button','row nrow'+(k===cur?' on':''));b.type='button';b.appendChild(el('span','dot'));
+   var g=el('span','g');g.appendChild(el('b',null,k));g.appendChild(el('small',null,n.pairs.length+' pairs \u00B7 '+n.locks.length+' locked'));b.appendChild(g);
+   b.onclick=function(){cur=k;chip='All';delAsk=false;undoStack=[];say('t2',k+' is active.');$('nv').textContent=k+' ▾';nameList();render()};l.appendChild(b)});
+  $('del').textContent=delAsk?'Sure? Delete '+cur:'Delete '+cur;$('del').disabled=Object.keys(D).length<2;
+ }
+ $('add').onclick=function(){
+  var v=variants(),w=$('w').value.trim();
+  if(!v.length){say('t1','Type the wrong forms first.');return}
+  if(!w){say('t1','Type the right form.');return}
+  var n=D[cur],ex=n.pairs.filter(function(p){return p.v.some(function(x){return v.some(function(y){return x.toLowerCase()===y.toLowerCase()})})})[0];
+  if(ex){v.forEach(function(y){if(ex.v.map(function(a){return a.toLowerCase()}).indexOf(y.toLowerCase())<0)ex.v.push(y)});ex.to=w;ex.t=topic;say('t1','Updated, saved to '+cur+'.')}
+  else{n.pairs.unshift({v:v,to:w,t:topic});say('t1','Saved to '+cur+'.')}
+  $('f').value='';$('w').value='';chip='All';render();nameList();
+ };
+ $('fix').onclick=function(){
+  var n=D[cur],ms=scan(n.text,n,null),out='',pos=0,c=0;undoStack.push(n.text);
+  ms.forEach(function(x){out+=n.text.slice(pos,x.i);if(x.k==='lock')out+=n.text.substr(x.i,x.len);else{out+=x.to;c++}pos=x.i+x.len});
+  n.text=out+n.text.slice(pos);say('t1','Fixed '+c+'. Tap Undo to go back.');render();
+ };
+ $('undo').onclick=function(){if(!undoStack.length)return;D[cur].text=undoStack.pop();say('t1','Undone.');render()};
+ ['f','w','q'].forEach(function(i){$(i).addEventListener('input',render)});
+ $('nv').onclick=function(){show('2')};
+ $('paste').onclick=function(){say('t2','Reads the copied glossary: creates or updates the novel named in it. Your own pairs stay.')};
+ $('del').onclick=function(){
+  if(!delAsk){delAsk=true;nameList();return}
+  var gone=cur;delete D[gone];cur=Object.keys(D)[0];chip='All';delAsk=false;undoStack=[];$('nv').textContent=cur+' ▾';
+  say('t2','Deleted '+gone+' with its pairs and locked names.');nameList();render();
+ };
+ nameList();render();
+})();
+</script>
+</body>
+</html>

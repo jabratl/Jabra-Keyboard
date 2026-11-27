@@ -16,6 +16,7 @@ import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
 import com.mgb.keyboard.clip.ClipList   // v0.38.0 (P1)
+import com.mgb.keyboard.typing.FixNames   // v0.57.0 (FX1)
 import com.mgb.keyboard.typing.GlossaryImport   // v0.54.0 (GL1)
 import com.mgb.keyboard.typing.LookColors
 import com.mgb.keyboard.typing.NovelBook   // v0.55.0 (NV1)
@@ -120,6 +121,7 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
         fwinFail = false   // v0.39.3 (FLOAT F4)
         optsOpen = false   // v0.38.1 (P2)
         dMenu = 0; dSkip.clear(); dKey = ""   // v0.53.0 (DIFF)
+        fnBack = false; fnToast = ""   // v0.57.0 (FX1)
         setPreviewOn = false; setPrev = null; part = 0; partCut = -1; clipIo = null; msg = ""; confirmAll = false; undoStack.clear(); helpPage = 0; typing = 0; padPage = 0; shift = false; step = 0; rprAsk = false
         try { opt = ReplaceEngine.unpack(prefs.int("rp_opt", ReplaceEngine.pack(ReplaceEngine.Opt()))) } catch (_: Throwable) { opt = ReplaceEngine.Opt() }
         loadProtect()   // v0.41.0
@@ -225,7 +227,7 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
         return try { ReplaceEngine.replaceAll(src, find, repl, opt) } catch (_: Throwable) { ReplaceEngine.Result() }
     }
 
-    fun build(): View? = try { PeekPopup.dismiss(); if (typing != 0) { try { fwin?.hide() } catch (_: Throwable) { } }; if (typing == 3) setsViewPick() else if (typing == 4) recentView() else if (typing == 5) helpView() else if (typing == 6) replacePicker() else if (typing == 7) protectView() else if (typing == 8) pairsView() else if (typing == 9) novelsView() else if (typing != 0) typeView() else mainViewPick() } catch (_: Throwable) { null }   // v0.26.0 (R3): 4 = Recent pairs; Pick = new look when panel_ui = New, else the classic view
+    fun build(): View? = try { PeekPopup.dismiss(); if (typing != 0) { try { fwin?.hide() } catch (_: Throwable) { } }; if (typing == 3) setsViewPick() else if (typing == 4) recentView() else if (typing == 5) helpView() else if (typing == 6) replacePicker() else if (typing == 7) protectView() else if (typing == 8) pairsView() else if (typing == 9) novelsView() else if (typing == 10) fnView() else if (typing != 0) typeView() else mainViewPick() } catch (_: Throwable) { null }   // v0.26.0 (R3): 4 = Recent pairs; Pick = new look when panel_ui = New, else the classic view
 
     // ------------------------------------------------------------------ main view
 
@@ -1176,6 +1178,7 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
             2 -> {
                 title = "Tools"
                 items.add(Triple("Novels", if (novelCur.isEmpty()) "none active" else novelCur) { dMenu = 0; openNovels() })   // v0.55.0 (NV1)
+                items.add(Triple("Fix names", "one screen") { dMenu = 0; openFixNames() })   // v0.57.0 (FX1)
                 items.add(Triple("Sets", "") { dMenu = 0; typing = 3; confirmAll = false; refresh() })
                 items.add(Triple("Recent", "") { dMenu = 0; typing = 4; confirmAll = false; rprAsk = false; refresh() })
                 items.add(Triple("Never change", protectList.size.toString() + (if (novelCur.isEmpty()) " terms" else " terms \u00B7 " + novelCur)) { dMenu = 0; openProtect() })
@@ -1744,6 +1747,7 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
         // v0.55.1: ONE top row = the novel (tap to switch / paste) + Preview. Nothing else competes for attention.
         val pr = row()
         pr.addView(UiKit.chip(ctx, prefs, if (novelCur.isEmpty()) "Novel: none  \u25BE" else novelCur + "  \u25BE", novelCur.isNotEmpty(), 36, { v -> host.feedback(v) }) { openNovels() })
+        pr.addView(UiKit.chip(ctx, prefs, "Fix names", false, 36, { v -> host.feedback(v) }) { openFixNames() })   // v0.57.0 (FX1)
         pr.addView(UiKit.chip(ctx, prefs, "Preview", setPreviewOn, 36, { v -> host.feedback(v) }) { setPreviewOn = !setPreviewOn; setPrev = null; refresh() })
         root.addView(pr)
         val saved = try { ReplaceStore.load(prefs) } catch (_: Throwable) { LinkedHashMap<String, ReplaceStore.Def>() }
@@ -1864,6 +1868,131 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
         }
         if (novelNote.isNotEmpty()) root.addView(UiKit.noteText(ctx, prefs, novelNote))
         return root
+    }
+
+    // ------------------------------------------------------------------ v0.57.0 (FX1): ONE SCREEN "Fix names, per novel" (design = Fix_names_per_novel_mock.html)
+    // UI = FixNamesView.kt (class FixNamesUi), logic = typing/FixNames.java (tested). typing == 10 = the screen (tabs Fix names | Novels), typing == 12 = typing in its search box.
+    // Everything below uses the OLD code (undo stack, never-change list, glossary paste, delete novel, doReplace). If the screen cannot be built, fnView() falls back to the old Sets screen.
+    private var fnToast = ""
+    private var fnBack = false                                // true while Find / With / search is typed from this screen: Done returns here
+    private var fnQuery = ""                                  // search box of this screen (memory only)
+
+    private val fnUi: FixNamesUi by lazy { FixNamesUi(ctx, prefs, host, fnApi) }
+
+    private val fnApi = object : FixNamesUi.Api {
+        override fun novel(): String = novelCur
+        override fun text(): String = src
+        override fun find(): String = find
+        override fun repl(): String = repl
+        override fun query(): String = fnQuery
+        override fun protect(): List<String> = ArrayList(protectList)
+        override fun setNames(): List<String> = try { ArrayList(ReplaceStore.load(prefs).keys) } catch (_: Throwable) { ArrayList<String>() }
+        override fun setTexts(): List<String> = try { ReplaceStore.load(prefs).values.map { it.rules } } catch (_: Throwable) { ArrayList<String>() }
+        override fun type(which: Int) { fnBack = true; startTyping(which) }
+        override fun addPair(forms: List<String>, to: String, topic: String): String { fnToast = fnAddPair(forms, to, topic); fnRefresh(); return fnToast }
+        override fun fix(rules: List<ReplaceRules.Rule>): String { fnToast = fnFix(rules); fnRefresh(); return fnToast }
+        override fun undo() { fnUndo() }
+        override fun canUndo(): Boolean = undoStack.canUndo()
+        override fun toast(): String = if (fnToast.isNotEmpty()) fnToast else novelNote
+        override fun back() { typing = 0; fnToast = ""; fnRefresh() }
+        override fun novels(): List<FixNamesUi.NovelRow> = fnNovelRows()
+        override fun pickNovel(name: String) { fnToast = name + " is active."; fnPick(name) }
+        override fun pasteGlossary() { fnToast = ""; glossaryImport(10) }
+        override fun deleteAsk(): Boolean = novelDelAsk
+        override fun deleteNovel() { fnToast = ""; fnDelete() }
+        override fun removeLock(term: String) { fnRemoveLock(term) }
+        override fun refresh() { fnRefresh() }
+    }
+
+    private fun fnRefresh() { refresh() }
+
+    private fun openFixNames() {
+        try { fnToast = ""; fnUi.tab = 1; typing = 10; confirmAll = false; setPrev = null; novelNote = ""; readSource(false) } catch (_: Throwable) { typing = 0 }
+        refresh()
+    }
+
+    private fun fnView(): View = try { fnUi.build() } catch (_: Throwable) { typing = 3; setsViewNew() }
+
+    private fun fnPick(name: String) { pickNovel(name) }
+    private fun fnDelete() { deleteNovel() }
+    private fun fnUndo() { fnToast = ""; undo() }
+
+    private fun fnRemoveLock(term: String) {
+        try {
+            val i = protectList.indexOf(term)
+            if (i >= 0) { protectList.removeAt(i); protectChanged(); fnToast = "Removed from Never change: " + term }
+        } catch (_: Throwable) { fnToast = "Could not remove" }
+        refresh()
+    }
+
+    private fun fnNovelRows(): List<FixNamesUi.NovelRow> = try {
+        val sets = ReplaceStore.load(prefs)
+        val names = ArrayList<String>(sets.keys)
+        val texts = sets.values.map { it.rules }
+        novelNames().map { n ->
+            val never = try { ReplaceProtect.parse(prefs.str(NovelBook.neverKey(n), "")).size } catch (_: Throwable) { 0 }
+            FixNamesUi.NovelRow(n, FixNames.rows(n, names, texts).size, never, n.equals(novelCur, true))
+        }
+    } catch (_: Throwable) { ArrayList<FixNamesUi.NovelRow>() }
+
+    /** "Add pair" = saved to the active novel at once (its My pairs set, under the topic). Same Find = updated in place. Nothing else is stored. */
+    private fun fnAddPair(forms: List<String>, to: String, topic: String): String {
+        try {
+            if (novelCur.isEmpty()) return "Pick a novel first: tap the novel name."
+            if (forms.isEmpty()) return "Type the wrong forms first."
+            if (to.isEmpty()) return "Type the right form."
+            val m = ReplacePairList.make(forms.joinToString("; "), to, ReplaceEngine.MODE_TEXT, false, false)
+            val r = m.rule ?: return m.error ?: "Could not add this pair"
+            val line = ReplacePairList.text(listOf(r)).trim()
+            val key = line.substringBefore("=>").trim()
+            val all = ReplaceStore.load(prefs)
+            val mine = all.keys.filter { NovelBook.belongs(it, novelCur) && NovelBook.isMine(it) }
+            var target: String? = null
+            for (n in mine) {
+                val d = all[n] ?: continue
+                if (d.rules.split("\n").any { l -> val t = l.trim(); t.isNotEmpty() && t[0] != '#' && t.substringBefore("=>").trim() == key }) { target = n; break }
+            }
+            if (target == null) for (n in mine) {
+                val d = all[n] ?: continue
+                if (ReplaceRules.parse(d.rules).active() < NovelBook.RULES_PER_SET) { target = n; break }
+            }
+            var updated = false
+            val tg = target
+            if (tg != null) {
+                val d = all[tg] ?: return "Could not save"
+                val mg = FixNames.mergeWithTopic(d.rules, line, topic, NovelBook.RULES_PER_SET)
+                all[tg] = ReplaceStore.Def(mg.text, d.matchCase, false)
+                updated = mg.updated > 0
+            } else {
+                if (NovelBook.setsOf(all.keys, novelCur).size >= NovelBook.MAX_SETS_PER_NOVEL || all.size >= ReplaceStore.MAX_ALL) return "No room for a new set: delete old sets first."
+                var num = mine.size + 1
+                var nm = NovelBook.mySetName(novelCur, num)
+                while (all.containsKey(nm)) { num++; nm = NovelBook.mySetName(novelCur, num) }
+                val mg = FixNames.mergeWithTopic("# " + nm + " (pairs saved by me)\n", line, topic, NovelBook.RULES_PER_SET)
+                all[nm] = ReplaceStore.Def(mg.text, false, false)
+            }
+            ReplaceStore.save(prefs, all)
+            find = ""; repl = ""; caretPos = 0
+            return (if (updated) "Updated, saved to " else "Saved to ") + novelCur + "."
+        } catch (_: Throwable) { return "Could not save" }
+    }
+
+    /** "Fix N in text": the pairs that are switched on run through the OLD set code (never-change list, edits match by match, Undo stack). */
+    private fun fnFix(rules: List<ReplaceRules.Rule>): String {
+        try {
+            if (io.blocked()) return "Not available in password fields."
+            readSource(false)
+            if (rules.isEmpty() || src.isEmpty()) return "Nothing to fix"
+            val o = opt.copy(); o.mode = ReplaceEngine.MODE_TEXT; o.list = false; o.keepCase = false; o.smart = false; o.matchCase = false; o.protect = protectList
+            setRules = ArrayList(rules); setOpt = o; setName = "Fix names"; setRun = null; pairMode = false
+            val r = calc()
+            dropSet()
+            if (r.changed == 0 || r.out == src) return if (r.skipped > 0) "Nothing to change: " + r.skipped + " kept (never change)" else "Nothing to fix"
+            doReplace(r)
+            dropSet()
+            readSource(false)
+            return "Fixed " + r.changed + ". Tap Undo to go back."
+        } catch (_: Throwable) { try { dropSet() } catch (_: Throwable) { }; return "Could not fix" }
     }
 
     // ------------------------------------------------------------------ v0.40.0: PAIR LIST ("+Pair"), Check pairs, Save as Set
@@ -2514,8 +2643,8 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
 
     // ------------------------------------------------------------------ typing view (small keyboard)
 
-    private fun cur(): String = if (typing == 1) find else repl
-    private fun setCur(v: String) { if (typing == 1) find = v else repl = v; confirmAll = false }
+    private fun cur(): String = if (typing == 1) find else if (typing == 12) fnQuery else repl   // v0.57.0 (FX1): 12 = the search box of Fix names
+    private fun setCur(v: String) { if (typing == 1) find = v else if (typing == 12) fnQuery = v else repl = v; confirmAll = false }
 
     private fun showValue() {
         val v = cur()
@@ -2609,7 +2738,7 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
         pasteCur(s)
     }
 
-    private fun openPicker() { pasteBack = if (typing == 2) 2 else 1; pasteTab = 0; typing = 6; refresh() }
+    private fun openPicker() { pasteBack = if (typing == 2) 2 else if (typing == 12) 12 else 1; pasteTab = 0; typing = 6; refresh() }
 
     /** The paste list (typing == 6): Recent (latest copy first) / Pinned. A tap puts the text at the cursor and goes back to the typing view. */
     private fun replacePicker(): View {
@@ -2639,7 +2768,7 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
         bot.addView(btn("\u25B6", 0.8f, 34) { caretPos = ReplacePads.right(cur(), caretPos); showValue() })
         bot.addView(btn("\u2423", 2.2f, 34) { typeText(" ") })
         bot.addView(btn("\u232B", 1.3f, 34) { backKey() })
-        val doneB = btn("\u2713 Done", 1.4f, 34) { typing = 0; valueTv = null; keysBox = null; readSource(false); refresh() }
+        val doneB = btn("\u2713 Done", 1.4f, 34) { typing = if (fnBack) 10 else 0; fnBack = false; valueTv = null; keysBox = null; readSource(false); refresh() }   // v0.57.0 (FX1): Fix names gets you back
         if (miniOn()) accentButton(doneB, JabraTokens.ACCENT)   // v0.38.1 (P2)
         bot.addView(doneB)
         box.addView(bot)

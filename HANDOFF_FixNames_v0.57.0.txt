@@ -1,0 +1,10 @@
+HANDOFF - Jabra Keyboard - Fix names, per novel (one screen) - v0.57.0
+
+SOURCE: docs/Fix_names_per_novel_mock.html (design from another chat). The screen is built exactly like the mock: tabs Fix names | Novels; bar [novel v] + Undo; live preview; new pair box (wrong forms ;, right form, topic chips, Add pair = saved); search + filter chips; one list (pairs with hit count + switch, locked names); one "Fix N in text" button.
+CODE: FixNamesView.kt (class FixNamesUi, UI only, talks to the panel through interface Api), typing/FixNames.java (pure logic, tools/FixNamesTest.java), ReplacePanel.kt block "v0.57.0 (FX1)" (fnApi, openFixNames, fnAddPair, fnFix ...).
+STATES in ReplacePanel: typing == 10 = the screen (FixNamesUi.tab 1 = Fix names, 2 = Novels), typing == 12 = typing in its search box (cur / setCur use fnQuery), fnBack = true while a box is typed from this screen (Done returns to 10).
+DATA: rows = "wrong" glossary sets of the active novel + its My pairs sets (plain text rules only). Topic of a plugin row = set topic; topic of a My pairs row = the last "# topic: X" comment line above it (none = My pairs). Add pair writes into the first My pairs set that already has the same Find, else the first with room (< 50 rules), else a new My pairs set (max 40 sets per novel).
+FIX: fnFix runs the switched-on rows as a temporary set through calc() + doReplace() (same as Replace all of a set: Never change list, match-by-match edits, Undo stack), then dropSet().
+PREVIEW: same engine (ReplaceRules.run per row; edits = positions). Case-insensitive like the glossary sets. The lock marks are plain case-insensitive finds of the Never change terms.
+NOT DONE / IDEAS: edit a row (tap = load into the boxes), delete a pair, remember the switches, preview of text > 3000 characters beyond its start, raw-to-English rows.
+KNOWN: Kotlin not compiled here, not phone-tested. SectionPlanTest + SettingsHelpTest red since before v0.56.0.
