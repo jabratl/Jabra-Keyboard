@@ -52,7 +52,7 @@ class FixNamesUi(private val ctx: Context, private val prefs: JabraPrefs, privat
         fun protect(): List<String>              // Never change list of the active novel
         fun setNames(): List<String>
         fun setTexts(): List<String>             // same order as setNames
-        fun type(which: Int)                     // 1 = wrong forms, 2 = right form, 12 = search, 13 = name to keep
+        fun type(which: Int)                     // 1 = wrong forms, 2 = right form, 12 = search, 13 = name to keep, 14 = new novel name
         fun addPair(forms: List<String>, to: String, topic: String): String
         fun fix(rules: List<com.mgb.keyboard.typing.ReplaceRules.Rule>): String
         fun undo()
@@ -75,6 +75,8 @@ class FixNamesUi(private val ctx: Context, private val prefs: JabraPrefs, privat
         fun keepInput(): String                  // the name typed in the Keep as is box
         fun addKeep(name: String)                // add a name to Keep as is (typed or suggested)
         fun clearToast()
+        fun newNovelInput(): String             // v0.59.1: the name typed for a new novel
+        fun addNovel(name: String)               // v0.59.1: create a new empty novel and make it active
     }
 
     // state that lives as long as the panel (memory only, like the mock)
@@ -492,13 +494,13 @@ class FixNamesUi(private val ctx: Context, private val prefs: JabraPrefs, privat
                 box.addView(cb)
                 saveIt = remember
             } else if (st.forms.isNotEmpty() && st.to.isNotEmpty() && st.novel.isEmpty()) {
-                box.addView(hint("No novel yet: tap the novel name above to remember pairs."))
+                box.addView(hint("No novel yet: tap the novel name above and create one to remember pairs."))
             } else if (exists) {
                 box.addView(hint("Already in your list."))
             } else {
                 box.addView(hint("Tip: tap a term in Terms to edit it. Several wrong spellings? Use ;"))
             }
-            if (st.novel.isEmpty()) box.addView(hint("No novel yet. Tap the novel button above, then Import from plugin (...)."))
+            if (st.novel.isEmpty()) box.addView(hint("No novel yet. Tap the novel button above: + Create a new one, or Import from plugin."))
             rule = FixNames.draftRule(st.forms, st.to)
             sv.addView(box)
             root.addView(sv)
@@ -634,7 +636,7 @@ class FixNamesUi(private val ctx: Context, private val prefs: JabraPrefs, privat
             }
             list.addView(row)
         }
-        if (items.isEmpty()) list.addView(hint(if (st.novel.isEmpty()) "No novel yet. Tap the novel button above." else if (q.isNotEmpty()) "No match." else "No terms yet. Add one in Fix with Remember on."))
+        if (items.isEmpty()) list.addView(hint(if (st.novel.isEmpty()) "No novel yet. Tap the novel button above to create one." else if (q.isNotEmpty()) "No match." else "No terms yet. Add one in Fix with Remember on."))
         sv.addView(list)
         root.addView(sv)
     }
@@ -731,13 +733,25 @@ class FixNamesUi(private val ctx: Context, private val prefs: JabraPrefs, privat
             }
             3 -> {
                 root.addView(sheetHeader("Novels", 0))
+                // new novel: type a name, tap Create (empty novel, active at once; add terms in Fix with Remember on, or Import later)
+                val nb = UiKit.row(ctx)
+                nb.gravity = Gravity.CENTER_VERTICAL
+                val nf = fieldBox("New novel name", api.newNovelInput(), 14)
+                nf.layoutParams = lp(0, dp(42), 1f, 2, 0, 4, 0)
+                nb.addView(nf)
+                nb.addView(UiKit.btn(ctx, prefs, "+ Create", 0f, 42, JabraTokens.T_BTN, { v -> fb(v) }) {
+                    val nn = api.newNovelInput().trim()
+                    if (nn.isEmpty()) api.type(14) else { sheet = 0; tab = 1; mode = 0; api.addNovel(nn) }
+                })
+                nb.layoutParams = lp(MATCH, WRAP, 0f, 0, 0, 0, 6)
+                root.addView(nb)
                 val paste = UiKit.btn(ctx, prefs, "Import from plugin", 0f, 40, JabraTokens.T_BTN, { v -> fb(v) }) { sheet = 2; api.refresh() }
                 fill(paste)
                 paste.layoutParams = lp(MATCH, dp(40), 0f, 0, 0, 0, 6)
                 root.addView(paste)
                 val list = api.novels()
                 val sv = ScrollView(ctx)
-                sv.layoutParams = lp(MATCH, dp(150))
+                sv.layoutParams = lp(MATCH, dp(100))
                 val box = LinearLayout(ctx)
                 box.orientation = LinearLayout.VERTICAL
                 for (n in list) {
@@ -751,7 +765,7 @@ class FixNamesUi(private val ctx: Context, private val prefs: JabraPrefs, privat
                     row.setOnClickListener { v -> fb(v); sheet = 0; tab = 1; mode = 0; api.pickNovel(n.name) }
                     box.addView(row)
                 }
-                if (list.isEmpty()) box.addView(hint("No novel yet. In the plugin tap Glossary > Copy for keyboard, then Import here."))
+                if (list.isEmpty()) box.addView(hint("No novel yet. Type a name above and tap Create, or in the plugin tap Glossary > Copy for keyboard, then Import."))
                 sv.addView(box)
                 root.addView(sv)
                 val cur = api.novel()

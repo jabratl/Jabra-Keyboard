@@ -1877,6 +1877,7 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
     private var fnKeepBack = false                        // v0.58.0 (FX2): the Never change screen was opened from Fix terms (Keep as is > + Add): back returns there
     private var fnBack = false                                // true while Find / With / search is typed from this screen: Done returns here
     private var fnQuery = ""                                  // search box of this screen (memory only)
+    private var fnNewNovel = ""                              // v0.59.1 (FX3): the name typed for a new novel (typing == 14)
     private var fnKeepIn = ""                                 // v0.59.0 (FX3): the name typed in the Keep as is box (typing == 13)
 
     private val fnUi: FixNamesUi by lazy { FixNamesUi(ctx, prefs, host, fnApi) }
@@ -1930,6 +1931,21 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
                 if (n.equals(fnKeepIn.trim(), true)) fnKeepIn = ""
             }
             fnRefresh()
+        }
+        override fun newNovelInput(): String = fnNewNovel
+        override fun addNovel(name: String) {
+            val n = name.replace(Regex("[\\r\\n=|]"), " ").replace("\u00B7", "-").replace(Regex("\\s+"), " ").trim().take(40)
+            if (n.isEmpty()) { fnToast = "Type the novel name first."; fnRefresh(); return }
+            try {
+                val known = novelNames().firstOrNull { it.equals(n, true) }
+                if (known != null) { fnNewNovel = ""; fnToast = known + " is active."; fnPick(known); return }
+                val reg = NovelBook.parse(prefs.str("rp_novels", ""))
+                if (!NovelBook.add(reg, n)) { fnToast = "Novel list is full (" + NovelBook.MAX_NOVELS + "). Delete one first."; fnRefresh(); return }
+                prefs.setStr("rp_novels", NovelBook.text(reg))
+                fnNewNovel = ""
+                fnToast = "New novel: " + n
+                fnPick(n)
+            } catch (_: Throwable) { fnToast = "Could not add the novel"; fnRefresh() }
         }
         override fun clearToast() { fnToast = ""; novelNote = "" }
         override fun clipInfo(): String = try {
@@ -2682,12 +2698,12 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
 
     // ------------------------------------------------------------------ typing view (small keyboard)
 
-    private fun cur(): String = if (typing == 1) find else if (typing == 12) fnQuery else if (typing == 13) fnKeepIn else repl   // v0.57.0 (FX1): 12 = the search box of Fix names
-    private fun setCur(v: String) { if (typing == 1) find = v else if (typing == 12) fnQuery = v else if (typing == 13) fnKeepIn = v else repl = v; confirmAll = false }
+    private fun cur(): String = if (typing == 1) find else if (typing == 12) fnQuery else if (typing == 13) fnKeepIn else if (typing == 14) fnNewNovel else repl   // v0.57.0 (FX1): 12 = the search box of Fix names
+    private fun setCur(v: String) { if (typing == 1) find = v else if (typing == 12) fnQuery = v else if (typing == 13) fnKeepIn = v else if (typing == 14) fnNewNovel = v else repl = v; confirmAll = false }
 
     private fun showValue() {
         val v = cur()
-        valueTv?.text = (if (typing == 1) "Find: " else if (typing == 13) "Keep: " else if (typing == 12) "Search: " else "With: ") + ReplacePads.view(v, caretPos, 60)   // v0.29.0: caret can move (surrogate-safe window)
+        valueTv?.text = (if (typing == 1) "Find: " else if (typing == 13) "Keep: " else if (typing == 14) "Novel: " else if (typing == 12) "Search: " else "With: ") + ReplacePads.view(v, caretPos, 60)   // v0.29.0: caret can move (surrogate-safe window)
     }
 
     private fun typeText(s: String) {
@@ -2731,7 +2747,7 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
         valueTv = tv
         if (miniOn()) { try { tv.background = UiKit.cardBackground(ctx, prefs, false, false); tv.setPadding(dp(10), 0, dp(6), 0) } catch (_: Throwable) { } }   // v0.38.1 (P2): the typed text sits in a card
         head.addView(btn("Clear", 1f, 34) { setCur(""); caretPos = 0; showValue() })
-        if (typing != 13) head.addView(btn(if (typing == 1) "Next: With" else "Next: Find", 1.4f, 34) { typing = if (typing == 1) 2 else 1; padPage = 0; shift = false; caretPos = cur().length; refresh() })   // v0.59.0 (FX3): the Keep as is box has no next field
+        if (typing != 13 && typing != 14) head.addView(btn(if (typing == 1) "Next: With" else "Next: Find", 1.4f, 34) { typing = if (typing == 1) 2 else 1; padPage = 0; shift = false; caretPos = cur().length; refresh() })   // v0.59.0 (FX3): the Keep as is box has no next field
         root.addView(head)
         showValue()
 
@@ -2777,7 +2793,7 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
         pasteCur(s)
     }
 
-    private fun openPicker() { pasteBack = if (typing == 2) 2 else if (typing == 12) 12 else if (typing == 13) 13 else 1; pasteTab = 0; typing = 6; refresh() }
+    private fun openPicker() { pasteBack = if (typing == 2) 2 else if (typing == 12) 12 else if (typing == 13) 13 else if (typing == 14) 14 else 1; pasteTab = 0; typing = 6; refresh() }
 
     /** The paste list (typing == 6): Recent (latest copy first) / Pinned. A tap puts the text at the cursor and goes back to the typing view. */
     private fun replacePicker(): View {
