@@ -1911,7 +1911,42 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
         pairMode = true
         syncPairs()
         find = ""; repl = ""; caretPos = 0
-        msg = (if (idx >= 0 || upd) "Pair updated" else "Pair " + pairRules.size + " added") + (if (fromReplace) ". Tap Replace all to run the list" else "") + note
+        msg = (if (idx >= 0 || upd) "Pair updated" else "Pair " + pairRules.size + " added") + (if (fromReplace) ". Tap Replace all to run the list" else "") + note + (if (novelCur.isNotEmpty()) "  \u00B7  keep it: Pairs > Save to " + novelCur else "")
+        refresh()
+    }
+
+    /**
+     * v0.56.0 (NV2): "Save to <novel>". The pairs of the list (Find = wrong forms split by ";", With = the right name) are kept in the "My pairs" sets of the ACTIVE novel,
+     * so they are there next time (Sets > novel > My pairs). Same Find = updated, new = added (50 rules per set, then a new set). A new glossary paste never removes them.
+     */
+    private fun saveToNovel() {
+        try {
+            if (novelCur.isEmpty()) { msg = "Pick a novel first: Sets > novel name"; refresh(); return }
+            var pending: List<String> = ReplacePairList.text(pairRules).split("\n").map { it.trim() }.filter { it.isNotEmpty() }
+            if (pending.isEmpty()) { msg = "No pairs to save"; refresh(); return }
+            val all = ReplaceStore.load(prefs)
+            var added = 0; var updated = 0
+            val names = all.keys.filter { NovelBook.belongs(it, novelCur) && NovelBook.isMine(it) }
+            for (n in names) {
+                if (pending.isEmpty()) break
+                val d = all[n] ?: continue
+                val m = NovelBook.merge(d.rules, pending, NovelBook.RULES_PER_SET)
+                all[n] = ReplaceStore.Def(m.text, d.matchCase, false)
+                added += m.added; updated += m.updated; pending = ArrayList(m.overflow)
+            }
+            var num = names.size + 1
+            while (pending.isNotEmpty()) {
+                if (NovelBook.setsOf(all.keys, novelCur).size >= NovelBook.MAX_SETS_PER_NOVEL || all.size >= ReplaceStore.MAX_ALL) break
+                var nm = NovelBook.mySetName(novelCur, num)
+                while (all.containsKey(nm)) { num++; nm = NovelBook.mySetName(novelCur, num) }
+                val m = NovelBook.merge("# " + nm + " (pairs saved by me)\n", pending, NovelBook.RULES_PER_SET)
+                all[nm] = ReplaceStore.Def(m.text, setOpt.matchCase, false)
+                added += m.added; updated += m.updated; pending = ArrayList(m.overflow)
+                num++
+            }
+            ReplaceStore.save(prefs, all)
+            msg = "Saved to " + novelCur + ": " + added + " new" + (if (updated > 0) ", " + updated + " updated" else "") + (if (pending.isNotEmpty()) ". " + pending.size + " did not fit: delete old sets" else "") + ". Find them in Sets > My pairs"
+        } catch (_: Throwable) { msg = "Could not save" }
         refresh()
     }
 
@@ -1996,8 +2031,8 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
                     val prefix = head.prefix + GlossaryImport.SEP
                     val novel = head.novel
                     val known = NovelBook.has(novelNames(), novel)   // v0.55.0 (NV1): a novel seen before (registry or old glossary sets)
-                    all.keys.removeAll { it.startsWith(prefix) }   // the old copy of this glossary
-                    val plan = GlossaryImport.parse(text, minOf(NovelBook.MAX_SETS_PER_NOVEL, ReplaceStore.MAX_ALL - all.size))   // sets are counted per novel
+                    all.keys.removeAll { it.startsWith(prefix) && !NovelBook.isMine(it) }   // the old copy of this glossary (v0.56.0: the pairs you saved stay)
+                    val plan = GlossaryImport.parse(text, minOf(NovelBook.MAX_SETS_PER_NOVEL - NovelBook.setsOf(all.keys, novel).size, ReplaceStore.MAX_ALL - all.size))   // sets are counted per novel
                     for (i in plan.setNames.indices) all[plan.setNames[i]] = ReplaceStore.Def(plan.setTexts[i], plan.setCase[i], false)
                     ReplaceStore.save(prefs, all)
                     if (novel.isNotEmpty()) {
@@ -2115,13 +2150,18 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
         root.addView(headView)
         if (pairRules.isEmpty()) {
             val t = TextView(ctx)
-            t.text = "No pairs yet. Type Find / With and tap +Pair."
+            t.text = "No pairs yet.\nFind: the wrong forms, split by ;  (Lin Fen; Lin Fong; Lin Fan)\nWith: the right form (Lin Feng)\nThen tap +Pair."
             t.textSize = 13f
             t.setTextColor(dim())
             t.setPadding(dp(8), dp(8), dp(8), dp(8))
             root.addView(t)
             return root
         }
+        if (novelCur.isNotEmpty()) {   // v0.56.0 (NV2): ONE clear action: keep these pairs for the active novel
+            val sr = row()
+            sr.addView(btn("Save to " + novelCur, 1f, 40) { saveToNovel() })
+            root.addView(sr)
+        } else root.addView(UiKit.noteText(ctx, prefs, "To keep pairs for a novel: Sets > pick a novel, then come back here."))
         root.addView(UiKit.noteText(ctx, prefs, "Edit = change a pair in Find / With. \u2715 = remove it."))
         val sv = ScrollView(ctx)
         sv.layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(170))

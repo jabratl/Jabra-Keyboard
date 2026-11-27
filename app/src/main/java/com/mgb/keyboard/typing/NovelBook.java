@@ -19,6 +19,55 @@ public final class NovelBook {
     public static final int MAX_USER_SETS = 40;        // the user's own (non glossary) sets
     public static final int MAX_ALL_SETS = 400;        // hard cap of the stored map
     public static final String ALL = "All", MINE = "Mine", READY = "Ready-made";
+    public static final String MY_TOPIC = "My pairs";   // v0.56.0 (NV2): pairs the user saves for a novel; a new glossary paste never removes them
+    public static final int RULES_PER_SET = 50;
+
+    /** Name of the n-th (1 = first) "My pairs" set of a novel. */
+    public static String mySetName(String novel, int n) {
+        return "G " + novel.trim() + GlossaryImport.SEP + MY_TOPIC + GlossaryImport.SEP + "wrong" + (n > 1 ? " " + n : "");
+    }
+
+    public static boolean isMine(String setName) { return MY_TOPIC.equals(GlossaryImport.topicOf(setName)); }
+
+    /** Result of merge(): the new set text, how many rules are new / replaced, and the lines that did not fit under max rules. */
+    public static final class Merged {
+        public String text = "";
+        public int added = 0, updated = 0;
+        public final List<String> overflow = new ArrayList<String>();
+    }
+
+    private static String key(String rule) {
+        int k = rule.indexOf("=>");
+        return (k < 0 ? rule : rule.substring(0, k)).trim();
+    }
+
+    /** Puts rule lines into a set text. Same Find (left of =>) = replaced in place, new = appended; comment lines stay; more than max rules = the rest is returned in overflow. */
+    public static Merged merge(String existing, List<String> rules, int max) {
+        Merged m = new Merged();
+        try {
+            List<String> lines = new ArrayList<String>();
+            int count = 0;
+            if (existing != null) for (String l0 : existing.split("\n", -1)) {
+                String l = l0.replace("\r", "");
+                if (l.trim().isEmpty()) continue;
+                lines.add(l);
+                if (l.trim().charAt(0) != '#') count++;
+            }
+            if (rules != null) for (String r0 : rules) {
+                String r = r0 == null ? "" : r0.trim();
+                if (r.isEmpty() || r.indexOf("=>") <= 0) continue;
+                int at = -1;
+                for (int i = 0; i < lines.size(); i++) { String l = lines.get(i).trim(); if (l.charAt(0) != '#' && key(l).equals(key(r))) { at = i; break; } }
+                if (at >= 0) { lines.set(at, r); m.updated++; }
+                else if (count >= max) m.overflow.add(r);
+                else { lines.add(r); count++; m.added++; }
+            }
+            StringBuilder sb = new StringBuilder();
+            for (String l : lines) sb.append(l).append('\n');
+            m.text = sb.toString();
+        } catch (RuntimeException e) { /* what is done stays */ }
+        return m;
+    }
 
     /** Registry text -> clean list (trimmed, no empty lines, no repeats in any case, at most MAX_NOVELS). */
     public static List<String> parse(String text) {
@@ -121,6 +170,12 @@ public final class NovelBook {
     /** Plain words for a glossary set: "Fix wrong names", "Raw to English", with the part number when the topic has several ("#2") and the topic in front when withTopic. */
     public static String title(String setName, boolean withTopic) {
         if (!GlossaryImport.isGlossarySet(setName)) return setName == null ? "" : setName;
+        if (isMine(setName)) {
+            String l2 = setName.substring(setName.lastIndexOf(GlossaryImport.SEP) + GlossaryImport.SEP.length()).trim();
+            int j = l2.length();
+            while (j > 0 && Character.isDigit(l2.charAt(j - 1))) j--;
+            return "My pairs" + (j < l2.length() && j > 0 ? " #" + l2.substring(j) : "");
+        }
         String base = "raw".equals(GlossaryImport.kindOf(setName)) ? "Raw to English" : "Fix wrong names";
         String last = setName.substring(setName.lastIndexOf(GlossaryImport.SEP) + GlossaryImport.SEP.length()).trim();
         int i = last.length();

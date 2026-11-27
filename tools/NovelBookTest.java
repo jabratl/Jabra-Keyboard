@@ -98,6 +98,31 @@ public class NovelBookTest {
         eq("row sub", NovelBook.rowSub(6, 12), "6 sets \u00B7 12 never change");
         eq("row sub 1", NovelBook.rowSub(1, 0), "1 set \u00B7 0 never change");
 
+        // v0.56.0: ";" = wrong forms, My pairs
+        com.mgb.keyboard.typing.ReplacePairList.Made a1 = com.mgb.keyboard.typing.ReplacePairList.make("Lin Fen; Lin Fong ;Lin Fan;", "Lin Feng", 0, false, false);
+        eq("semi ok", a1.error, null);
+        eq("semi find", a1.rule.find, "Lin Fen | Lin Fong | Lin Fan");
+        eq("semi with", a1.rule.with, "Lin Feng");
+        eq("semi dup", com.mgb.keyboard.typing.ReplacePairList.make("A;a;A", "B", 0, false, false).rule.find, "A | a");
+        eq("one piece = text", com.mgb.keyboard.typing.ReplacePairList.make("&amp;", "&", 0, false, false).rule.find, "&amp;");
+        eq("lone semicolon", com.mgb.keyboard.typing.ReplacePairList.make(";", ",", 0, false, false).rule.find, ";");
+        eq("list switch + semi", com.mgb.keyboard.typing.ReplacePairList.make("a|b;c", "x", 0, false, true).rule.find, "a | b | c");
+        eq("regex untouched", com.mgb.keyboard.typing.ReplacePairList.make("a;b", "x", 2, false, false).rule.find, "a;b");
+        eq("my name", NovelBook.mySetName("Saga", 1), "G Saga" + S + "My pairs" + S + "wrong");
+        eq("my name 2", NovelBook.mySetName("Saga", 2), "G Saga" + S + "My pairs" + S + "wrong 2");
+        eq("my topic", GlossaryImport.topicOf(NovelBook.mySetName("Saga", 2)), "My pairs");
+        eq("my novel", GlossaryImport.novelOf(NovelBook.mySetName("Saga", 2)), "Saga");
+        eq("is mine", NovelBook.isMine(NovelBook.mySetName("Saga", 1)), true);
+        eq("not mine", NovelBook.isMine(saga), false);
+        eq("my title", NovelBook.title(NovelBook.mySetName("Saga", 1), true), "My pairs");
+        eq("my title 2", NovelBook.title(NovelBook.mySetName("Saga", 2), false), "My pairs #2");
+        NovelBook.Merged mg = NovelBook.merge("# head\nA | B => C\n", Arrays.asList("A | B => D", "X => Y", "bad line", "  "), 50);
+        eq("merge updated", mg.updated, 1); eq("merge added", mg.added, 1);
+        eq("merge text", mg.text, "# head\nA | B => D\nX => Y\n");
+        NovelBook.Merged ov = NovelBook.merge("a => b\nc => d\n", Arrays.asList("e => f", "g => h"), 3);
+        eq("overflow n", ov.overflow.size(), 1); eq("overflow line", ov.overflow.get(0), "g => h"); eq("overflow added", ov.added, 1);
+        eq("merge empty existing", NovelBook.merge(null, Arrays.asList("p => q"), 50).text, "p => q\n");
+
         System.out.println("NovelBookTest: " + ok + " ok, " + bad + " bad");
         if (bad > 0) System.exit(1);
     }

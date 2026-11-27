@@ -12,7 +12,7 @@ import java.util.regex.PatternSyntaxException;
  * "Save as Set" is the only way to keep the list: it is written as a normal Set (the user's own action).
  * make() turns the Find / With texts + the panel switches into ONE ReplaceRules.Rule that is guaranteed to survive serialize() > parse():
  *  - Find is trimmed, With loses trailing spaces (what parse() does anyway); no line breaks; Find has no "=>" and does not start with a keyword ("re:", "del:", "word:", "#" ...).
- *  - List switch ON (Find = a|b|c) becomes the variants form "a | b | c".
+ *  - List switch ON (Find = a|b|c) becomes the variants form "a | b | c". v0.56.0: two or more pieces split by ";" do the same without the switch (a single ";" piece stays text).
  *  - Word mode = "word:", Regex mode = "re:" (the pattern is tested here), Keep switch = "keep:".
  */
 public final class ReplacePairList {
@@ -49,13 +49,16 @@ public final class ReplacePairList {
                 try { Pattern.compile(find); } catch (PatternSyntaxException ex) { return err("Pattern error: " + (ex.getDescription() == null ? "?" : ex.getDescription())); }
                 return new Made(new ReplaceRules.Rule(ReplaceRules.K_REGEX, find, with, false, keep), null);
             }
-            if (list) {   // a|b|c  ->  a | b | c
+            boolean semi = !list && find.indexOf(';') >= 0;   // v0.56.0 (NV2): "Lin Fen; Lin Fong; Lin Fan" = three wrong forms of one name
+            if (list || semi) {   // a|b|c (List switch) or a;b;c  ->  a | b | c
                 List<String> parts = new ArrayList<String>();
-                for (String x : find.split("\\|", -1)) { String t = x.trim(); if (t.length() > 0 && !parts.contains(t)) parts.add(t); }
-                if (parts.isEmpty()) return err("Type what to find first");
-                StringBuilder sb = new StringBuilder();
-                for (String t : parts) { if (sb.length() > 0) sb.append(" | "); sb.append(t); }
-                find = sb.toString();
+                for (String x : find.split(list ? "[;|]" : ";", -1)) { String t = x.trim(); if (t.length() > 0 && !parts.contains(t)) parts.add(t); }
+                if (parts.isEmpty() && list) return err("Type what to find first");
+                if (list || parts.size() >= 2) {   // ONE piece with a ";" ("&amp;") stays plain text
+                    StringBuilder sb = new StringBuilder();
+                    for (String t : parts) { if (sb.length() > 0) sb.append(" | "); sb.append(t); }
+                    find = sb.toString();
+                }
             }
             String low = find.toLowerCase(java.util.Locale.ROOT);
             for (String k : RESERVED) if (low.startsWith(k)) return err("Find cannot start with \"" + k + "\"");
