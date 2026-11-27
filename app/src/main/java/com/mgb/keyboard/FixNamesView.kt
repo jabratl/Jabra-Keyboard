@@ -51,7 +51,7 @@ class FixNamesUi(private val ctx: Context, private val prefs: JabraPrefs, privat
         fun protect(): List<String>              // Never change list of the active novel
         fun setNames(): List<String>
         fun setTexts(): List<String>             // same order as setNames
-        fun type(which: Int)                     // 1 = wrong forms, 2 = right form, 12 = search
+        fun type(which: Int)                     // 1 = wrong forms, 2 = right form, 12 = search, 13 = name of a new novel (v0.58.7)
         fun addPair(forms: List<String>, to: String, topic: String): String
         fun fix(rules: List<com.mgb.keyboard.typing.ReplaceRules.Rule>): String
         fun undo()
@@ -467,21 +467,12 @@ class FixNamesUi(private val ctx: Context, private val prefs: JabraPrefs, privat
         return h
     }
 
+    /** v0.58.7: was an AlertDialog (cannot open from a keyboard: no window token). The name is typed with the panel's own small keys (typing 13); [Add novel] there adds it. */
     private fun showAddNovel() {
-        val input = EditText(ctx)
-        input.hint = "Novel name"
-        input.setSingleLine(true)
-        input.setPadding(dp(14), dp(10), dp(14), dp(10))
-        AlertDialog.Builder(ctx).setTitle("Add novel").setView(input)
-            .setNegativeButton("Cancel", null)
-            .setPositiveButton("Add") { _, _ ->
-                val result = try { api.addNovel(input.text?.toString() ?: "") } catch (_: Throwable) { "Could not add novel. Please try again." }
-                sheet = 3
-                // A UI refresh failure must not overwrite a successful storage result with
-                // a generic "Could not add novel" message.
-                try { api.refresh() } catch (_: Throwable) { }
-                try { android.widget.Toast.makeText(ctx, result, android.widget.Toast.LENGTH_SHORT).show() } catch (_: Throwable) { }
-            }.show()
+        sheet = 3
+        try { api.type(13) } catch (_: Throwable) {
+            try { android.widget.Toast.makeText(ctx, "Could not open the name box. Please try again.", android.widget.Toast.LENGTH_SHORT).show() } catch (_: Throwable) { }
+        }
     }
 
     private fun buildSheet(root: LinearLayout) {

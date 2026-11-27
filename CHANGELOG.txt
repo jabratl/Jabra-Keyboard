@@ -1,3 +1,14 @@
+v0.58.7 - FIX: "+ Add novel" now works (the name is typed with the keyboard's own small keys)
+- SEEN: in Replace > Fix names > Novels (and the old Novels list), "+ Add novel" did not create a new novel, so no new wrong -> right list could be started.
+- CAUSE: the name box was an AlertDialog opened with the keyboard's context. A keyboard has no window token, so Android refused to show it (BadTokenException). The old Novels list caught that and said "Could not add novel"; the Fix names screen did not catch it.
+- WHAT: the name is now typed in the panel itself, with the same small keys as Find / With (new typing mode 13). Top line shows "Novel: <name>", buttons: Clear, [Add novel], Paste (also the Recent / Pinned list), caret keys, Done. [Add novel] uses the SAME tested code as before (fnAddNovel: NovelBook.add + verified save + select the new novel), then goes back to the Novels list / Fix names with the message "Added <name>." A name that is refused (empty, limit reached) keeps the box open and shows a toast, so the typing is not lost. Done = cancel, back to the list.
+- NOT changed: NovelBook / FixNames logic, saved novels and pairs, Never change lists, Find / With typing, search box typing, every other screen.
+- FALLBACK: if the typing box cannot open, a toast says so (no crash). Revert = put back the 2 old dialog functions (showNovelNameDialog in ReplacePanel.kt, showAddNovel in FixNamesView.kt).
+- WHAT BROKE: nothing known. Visible change: Add novel opens the small keyboard instead of a pop-up.
+- TESTED here: NEW tools/NovelNameTypingTest (16 checks, reads the real Kotlin files) green; NovelBookTest, FixNamesTest, NovelManualPairsTest, GlossaryImportTest green. Kotlin NOT compiled (no kotlinc here); bracket balance of both Kotlin files unchanged; phone NOT tested.
+- If the Kotlin build is red, the new places are ReplacePanel.kt (search "v0.58.7": novelNameBuf, cur / setCur / showValue, typeView Add novel button, Done, commitNovelName) and FixNamesView.kt (showAddNovel; the imports AlertDialog / EditText are now unused = only a warning).
+- Code: PATCH ReplacePanel.kt, FixNamesView.kt, app/build.gradle.kts (0.58.7), CHANGELOG.txt, CHECKLIST.txt. NEW tools/NovelNameTypingTest.java.
+
 v0.58.6 — Sets cleanup compile fix
 - Removed stale direct GlossaryImport reference from the Sets screen filter.
 - Filters Novel-owned and My pairs sets using the existing NovelBook API.

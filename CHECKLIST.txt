@@ -1463,3 +1463,13 @@ ZM. CLIPBOARD MOCK LOOK (v0.50.0) - test ZL first
  [ ] Copied pictures: small thumbnails on one thin line; tap = paste, hold = delete.
  [ ] Settings > Clipboard & tools > "Clipboard mock look" OFF: exactly the old v0.49.0 look (pills, headers, cards). ON again: the new look.
  [ ] Dark and light theme both readable (tab text, strip chips, row text, bars).
+
+ZN. ADD NOVEL (v0.58.7) - test the Replace screens first
+ [ ] Replace > Fix names > Novels > "+ Add novel": the small keyboard opens with "Novel: " on top.
+ [ ] Type a name (letters, numbers, Bangla page if you have it), tap [Add novel]: you are back on the Novels list, the new novel is there and active, message "Added <name>.".
+ [ ] Add a second novel: both are listed, the new one is active. Add the same name again: "Novel already exists - selected it.".
+ [ ] Tap [Add novel] with an empty name: toast "Enter a novel name.", the box stays open.
+ [ ] Tap Done in the name box: back to the list, no novel is added.
+ [ ] Paste in the name box (Paste / the arrow) puts the text at the cursor.
+ [ ] The old Novels list (if you still reach it) opens the same name box and comes back to its own list.
+ [ ] Add a wrong -> right pair with the new novel active, close and reopen the keyboard: novel and pair are still there.
