@@ -1,6 +1,8 @@
 package com.mgb.keyboard
 
 import android.content.Context
+import android.app.AlertDialog
+import android.widget.EditText
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
@@ -32,7 +34,7 @@ import com.mgb.keyboard.typing.NovelBook
  *  Fix = Wrong term, arrow, Correct term, ONE big button ("Fix 3" / "Fix all . 4"), "or", [Use <novel> list . N fixes] and [Save to list].
  *  Terms = the novel's terms grouped by the correct term ("Lin Feng <- Lin Fen, Lin Fong"), search, + Add, tap a term = load it into Fix.
  *  Keep as is = the names Replace never touches (= Never change), tap a name to remove it, + Add opens the Never change screen.
- *  More = Import from plugin (preview + Import), Show raw names (switch), How it works.   Novel button = the novels list.
+ *  More = How it works. Novel button = create/select/manage independent novel lists.
  * Wrong / Correct / search boxes open the usual mini keyboard of Replace (api.type), Done brings you back here.
  * Everything is built in try / catch by the caller; any error = the panel falls back to the old Sets screen.
  */
@@ -58,7 +60,7 @@ class FixNamesUi(private val ctx: Context, private val prefs: JabraPrefs, privat
         fun back()
         fun novels(): List<NovelRow>
         fun pickNovel(name: String)
-        fun pasteGlossary()
+        fun addNovel(name: String): String
         fun deleteAsk(): Boolean
         fun deleteNovel()
         fun removeLock(term: String)
@@ -66,14 +68,12 @@ class FixNamesUi(private val ctx: Context, private val prefs: JabraPrefs, privat
         fun clearFields()                        // v0.58.0: empty Wrong + Correct (after a fix)
         fun loadPair(forms: String, to: String)  // v0.58.0: put a term into Wrong + Correct
         fun openKeep()                           // v0.58.0: the Never change screen (add names), Done / back returns here
-        fun clipInfo(): String                   // v0.58.0: "Novel A . 5 terms . 2 kept" when the clipboard holds a glossary, else ""
     }
 
     // state that lives as long as the panel (memory only, like the mock)
     var tab = 1                                   // 1 = Fix, 2 = Terms, 3 = Keep as is
-    private var sheet = 0                         // 0 none, 1 More, 2 Import, 3 Novels, 4 How it works
+    private var sheet = 0                         // 0 none, 1 More, 3 Novels, 4 How it works
     private var listMode = false                  // Fix tab: true = "Use list" (every term of the novel)
-    private var showRaw = false
 
     /** Called when the screen is opened from the Replace panel. */
     fun open() { tab = 1; sheet = 0; listMode = false }
@@ -120,7 +120,7 @@ class FixNamesUi(private val ctx: Context, private val prefs: JabraPrefs, privat
 
     private fun strokeInk(): Int = if (dark()) 0xFF2B3A62.toInt() else 0xFFC4CBD9.toInt()
 
-    /** Filled accent button (Fix N, Import, Paste glossary). */
+    /** Filled accent button (Fix N, Add novel). */
     private fun fill(b: Button, enabled: Boolean = true) {
         try {
             val r = dp(JabraTokens.R_SM).toFloat()
@@ -142,19 +142,6 @@ class FixNamesUi(private val ctx: Context, private val prefs: JabraPrefs, privat
         try { c.background = UiKit.cardBackground(ctx, prefs, false, false) } catch (_: Throwable) { }
         c.setPadding(dp(10), dp(8), dp(10), dp(8))
         return c
-    }
-
-    /** The on / off switch of "Show raw names". */
-    private inner class Switch(val on: Boolean) : View(ctx) {
-        private val p = Paint(Paint.ANTI_ALIAS_FLAG)
-        override fun onDraw(c: Canvas) {
-            val w = width.toFloat(); val h = height.toFloat()
-            p.color = if (on) acc else strokeInk()
-            c.drawRoundRect(0f, 0f, w, h, h / 2, h / 2, p)
-            p.color = Color.WHITE
-            val r = h / 2 - dp(3)
-            c.drawCircle(if (on) w - h / 2 else h / 2, h / 2, r, p)
-        }
     }
 
     private fun fieldBox(hint: String, value: String, which: Int): TextView {
@@ -373,7 +360,7 @@ class FixNamesUi(private val ctx: Context, private val prefs: JabraPrefs, privat
             }
             col.addView(r2)
         } else {
-            col.addView(hint("No novel yet. Tap the novel button above, then Import from plugin (...)."))
+            col.addView(hint("No novel yet. Add a novel from the novel list, then enter wrong and correct forms."))
         }
         if (api.toast().isNotEmpty()) col.addView(hint(api.toast()))
         return col
@@ -392,14 +379,13 @@ class FixNamesUi(private val ctx: Context, private val prefs: JabraPrefs, privat
     }
 
     // ---------------------------------------------------------------- tab 2: Terms
-    private class Term(val to: String, val forms: ArrayList<String>, val raw: String)
+    private class Term(val to: String, val forms: ArrayList<String>)
 
     private fun groups(st: St): List<Term> {
-        val raw = try { FixNames.rawOf(st.novel, api.setNames(), api.setTexts()) } catch (_: Throwable) { HashMap<String, String>() }
         val m = LinkedHashMap<String, Term>()
         for (r in st.rows) {
             val k = r.to.lowercase()
-            val t = m.getOrPut(k) { Term(r.to, ArrayList<String>(), raw[k] ?: "") }
+            val t = m.getOrPut(k) { Term(r.to, ArrayList<String>()) }
             for (f in r.forms) if (t.forms.none { it.equals(f, true) }) t.forms.add(f)
         }
         return ArrayList(m.values)
@@ -425,7 +411,7 @@ class FixNamesUi(private val ctx: Context, private val prefs: JabraPrefs, privat
         val q = api.query().trim().lowercase()
         var shown = 0
         for (t in groups(st)) {
-            if (q.isNotEmpty() && (t.to + " " + t.forms.joinToString(" ") + " " + t.raw).lowercase().indexOf(q) < 0) continue
+            if (q.isNotEmpty() && (t.to + " " + t.forms.joinToString(" ")).lowercase().indexOf(q) < 0) continue
             shown++
             val row = LinearLayout(ctx)
             row.orientation = LinearLayout.VERTICAL
@@ -434,7 +420,6 @@ class FixNamesUi(private val ctx: Context, private val prefs: JabraPrefs, privat
             row.layoutParams = lp(MATCH, WRAP, 0f, 0, 0, 0, 5)
             row.addView(label(t.to, 15f, ink(), true))
             row.addView(label("← " + t.forms.joinToString(", "), 13f, dim()))
-            if (showRaw && t.raw.isNotEmpty()) row.addView(label(t.raw, 12f, acc))
             row.isClickable = true
             row.setOnClickListener { v -> fb(v); listMode = false; tab = 1; api.loadPair(t.forms.joinToString("; "), t.to) }
             list.addView(row)
@@ -472,7 +457,7 @@ class FixNamesUi(private val ctx: Context, private val prefs: JabraPrefs, privat
         return col
     }
 
-    // ---------------------------------------------------------------- sheets: More / Import / Novels / How it works
+    // ---------------------------------------------------------------- sheets: More / Novels / How it works
     private fun sheetHeader(title: String, backTo: Int): View {
         val h = UiKit.row(ctx)
         h.gravity = Gravity.CENTER_VERTICAL
@@ -482,48 +467,36 @@ class FixNamesUi(private val ctx: Context, private val prefs: JabraPrefs, privat
         return h
     }
 
+    private fun showAddNovel() {
+        val input = EditText(ctx)
+        input.hint = "Novel name"
+        input.setSingleLine(true)
+        input.setPadding(dp(14), dp(10), dp(14), dp(10))
+        AlertDialog.Builder(ctx).setTitle("Add novel").setView(input)
+            .setNegativeButton("Cancel", null)
+            .setPositiveButton("Add") { _, _ ->
+                api.addNovel(input.text?.toString() ?: "")
+                sheet = 3
+                api.refresh()
+            }.show()
+    }
+
     private fun buildSheet(root: LinearLayout) {
         when (sheet) {
             1 -> {
                 root.addView(sheetHeader("More", 0))
-                val imp = rowBox()
-                imp.addView(twoLines("Import from plugin", "Plugin > Glossary > Copy for keyboard", true))
-                imp.isClickable = true
-                imp.setOnClickListener { v -> fb(v); sheet = 2; api.refresh() }
-                root.addView(imp)
-                val raw = rowBox()
-                raw.addView(twoLines("Show raw names", "Japanese / Korean / Chinese originals under each term", true))
-                val sw = Switch(showRaw)
-                sw.layoutParams = lp(dp(40), dp(24))
-                raw.addView(sw)
-                raw.isClickable = true
-                raw.setOnClickListener { v -> fb(v); showRaw = !showRaw; api.refresh() }
-                root.addView(raw)
                 val help = rowBox()
                 help.addView(twoLines("How it works", "One short page", true))
                 help.isClickable = true
                 help.setOnClickListener { v -> fb(v); sheet = 4; api.refresh() }
                 root.addView(help)
             }
-            2 -> {
-                root.addView(sheetHeader("Import from plugin", 1))
-                val info = try { api.clipInfo() } catch (_: Throwable) { "" }
-                val c = card()
-                c.addView(label(if (info.isNotEmpty()) "Found on clipboard:\n" + info else "Nothing to import yet.\nIn the plugin: Glossary > Copy for keyboard, then come back here.", 13f, if (info.isNotEmpty()) ink() else dim()))
-                c.layoutParams = lp(MATCH, WRAP, 0f, 0, 0, 0, 4)
-                root.addView(c)
-                root.addView(hint("Importing again updates this novel's list. Terms you added yourself stay."))
-                val b = UiKit.btn(ctx, prefs, "Import", 0f, 46, JabraTokens.T_BODY, { v -> fb(v) }) { sheet = 0; tab = 1; api.pasteGlossary() }
-                fill(b, info.isNotEmpty())
-                b.layoutParams = lp(MATCH, dp(46))
-                root.addView(b)
-            }
             3 -> {
                 root.addView(sheetHeader("Novels", 0))
-                val paste = UiKit.btn(ctx, prefs, "Import from plugin", 0f, 40, JabraTokens.T_BTN, { v -> fb(v) }) { sheet = 2; api.refresh() }
-                fill(paste)
-                paste.layoutParams = lp(MATCH, dp(40), 0f, 0, 0, 0, 6)
-                root.addView(paste)
+                val add = UiKit.btn(ctx, prefs, "+ Add novel", 0f, 40, JabraTokens.T_BTN, { v -> fb(v) }) { showAddNovel() }
+                fill(add)
+                add.layoutParams = lp(MATCH, dp(40), 0f, 0, 0, 0, 6)
+                root.addView(add)
                 val list = api.novels()
                 val sv = ScrollView(ctx)
                 sv.layoutParams = lp(MATCH, dp(150))
@@ -540,7 +513,7 @@ class FixNamesUi(private val ctx: Context, private val prefs: JabraPrefs, privat
                     row.setOnClickListener { v -> fb(v); sheet = 0; tab = 1; listMode = false; api.pickNovel(n.name) }
                     box.addView(row)
                 }
-                if (list.isEmpty()) box.addView(hint("No novel yet. In the plugin tap Glossary > Copy for keyboard, then Import here."))
+                if (list.isEmpty()) box.addView(hint("No novels yet. Add a novel, then save its wrong → right pairs."))
                 sv.addView(box)
                 root.addView(sv)
                 val cur = api.novel()

@@ -17,7 +17,6 @@ import android.widget.ScrollView
 import android.widget.TextView
 import com.mgb.keyboard.clip.ClipList   // v0.38.0 (P1)
 import com.mgb.keyboard.typing.FixNames   // v0.57.0 (FX1)
-import com.mgb.keyboard.typing.GlossaryImport   // v0.54.0 (GL1)
 import com.mgb.keyboard.typing.LookColors
 import com.mgb.keyboard.typing.NovelBook   // v0.55.0 (NV1)
 import com.mgb.keyboard.typing.PanelLayout
@@ -540,7 +539,7 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
         val head = row()
         head.addView(btn("\u2190 Back", 1f, 34) { typing = 0; refresh() })
         head.addView(btn((if (setPreviewOn) "\u2713 " else "") + "Preview", 1.2f, 34) { setPreviewOn = !setPreviewOn; setPrev = null; refresh() })   // v0.31.0
-        head.addView(btn("Novels", 1.2f, 34) { openNovels() })   // v0.55.0 (NV1): was "Glossary" (Paste glossary lives in the Novels view now)
+        head.addView(btn("Novels", 1.2f, 34) { openNovels() })
         val hint = TextView(ctx)
         hint.text = if (setPreviewOn) "Tap a set to preview it" else "Pick a set. Edit: app > Tools & Panels"
         hint.textSize = 12f
@@ -1775,24 +1774,23 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
         val tiles = ArrayList<PanelKit.Tile>()
         val showTopic = topicChip == NovelBook.ALL
         try {
-            for ((n, d) in saved) if (NovelBook.visible(n, false, novelCur, topicChip)) {
-                val g = GlossaryImport.isGlossarySet(n) && novelCur.isNotEmpty()
+            for ((n, d) in saved) if (NovelBook.isMine(n) && NovelBook.visible(n, false, novelCur, topicChip)) {
                 val rules = try { ReplaceRules.parse(d.rules).active() } catch (_: Throwable) { 0 }
-                tiles.add(PanelKit.Tile(if (g) NovelBook.title(n, showTopic) else n, rules.toString() + (if (rules == 1) " rule" else " rules"), n == setName) { tapSet(n, d) }.also { t -> t.onLong = { a -> peekSetAt(a, n, d) } })
+                tiles.add(PanelKit.Tile(n, rules.toString() + (if (rules == 1) " rule" else " rules"), n == setName) { tapSet(n, d) }.also { t -> t.onLong = { a -> peekSetAt(a, n, d) } })
             }
         } catch (_: Throwable) { }
         try {
             for ((n, d) in ready) if (NovelBook.visible(n, true, novelCur, topicChip)) tiles.add(PanelKit.Tile(n, "ready-made", n == setName) { tapSet(n, d) }.also { t -> t.onLong = { a -> peekSetAt(a, n, d) } })
         } catch (_: Throwable) { }
         if (novelCur.isNotEmpty() && topicChip == NovelBook.ALL) tiles.add(PanelKit.Tile("Never change", protectList.size.toString() + (if (protectList.size == 1) " name" else " names") + " \u00B7 not replaced") { openProtect() })
-        if (tiles.isEmpty()) root.addView(UiKit.noteText(ctx, prefs, if (novelCur.isEmpty()) "No sets yet." else "Nothing here. Tap the novel name above to paste a glossary."))
+        if (tiles.isEmpty()) root.addView(UiKit.noteText(ctx, prefs, if (novelCur.isEmpty()) "No saved pairs yet." else "No saved pairs for this novel yet."))
         sv.addView(PanelKit.tileGrid(ctx, prefs, host, 1, tiles))   // ONE column: the full name is readable
         root.addView(sv)
         return root
     }
 
-    // ------------------------------------------------------------------ v0.55.0 (NV1): NOVELS (one glossary per novel)
-    private fun novelNames(): List<String> = try { NovelBook.all(NovelBook.parse(prefs.str("rp_novels", "")), ReplaceStore.load(prefs).keys) } catch (_: Throwable) { emptyList() }
+    // ------------------------------------------------------------------ NOVELS (independent saved wrong -> right lists)
+    private fun novelNames(): List<String> = try { NovelBook.parse(prefs.str("rp_novels", "")) } catch (_: Throwable) { emptyList() }
 
     private fun openNovels() { typing = 9; novelDelAsk = false; novelNote = ""; confirmAll = false; setPrev = null; refresh() }
 
@@ -1801,8 +1799,6 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
         try {
             novelCur = name; topicChip = NovelBook.ALL; novelDelAsk = false
             prefs.setStr("rp_novel_cur", name)
-            val sn = setName
-            if (sn != null && GlossaryImport.isGlossarySet(sn) && !NovelBook.belongs(sn, name)) dropSet()
             loadProtect()
             setRun = null; confirmAll = false; checkAck = false; checkWarn = null; step = 0; setPrev = null
             novelNote = ""
@@ -1810,7 +1806,19 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
         refresh()
     }
 
-    /** Deletes the active novel with its glossary sets and its Never change list (two taps). Your own sets and other novels are not touched. */
+    /** v0.58.1: manually create an independent novel pair list. */
+    private fun fnAddNovel(name: String): String {
+        val clean = name.trim()
+        if (clean.isEmpty()) return "Enter a novel name."
+        val reg = NovelBook.parse(prefs.str("rp_novels", ""))
+        if (NovelBook.has(reg, clean)) { pickNovel(reg.first { it.equals(clean, true) }); return "Novel already exists." }
+        if (!NovelBook.add(reg, clean)) return "Novel limit reached (${NovelBook.MAX_NOVELS})."
+        prefs.setStr("rp_novels", NovelBook.text(reg))
+        pickNovel(clean)
+        return "Added " + clean + "."
+    }
+
+    /** Deletes the active novel with its saved pairs and Never change list (two taps). Other novels are not touched. */
     private fun deleteNovel() {
         val gone = novelCur
         if (gone.isEmpty()) return
@@ -1825,7 +1833,7 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
             prefs.setStr(NovelBook.neverKey(gone), "")
             val sn = setName
             if (sn != null && NovelBook.belongs(sn, gone)) dropSet()
-            val next = NovelBook.all(reg, all.keys).firstOrNull() ?: ""
+            val next = reg.firstOrNull() ?: ""
             novelDelAsk = false
             pickNovel(next)
             novelNote = "Deleted " + gone + " with its sets and Never change list."
@@ -1833,7 +1841,20 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
         refresh()
     }
 
-    /** typing == 9: the Novels list. Tap a novel = active. Paste glossary creates or updates the novel named in the copied text. */
+    /** typing == 9: the Novels list. Tap a novel = active; add manually. */
+    private fun showNovelNameDialog() {
+        try {
+            val input = android.widget.EditText(ctx)
+            input.hint = "Novel name"
+            input.setSingleLine(true)
+            android.app.AlertDialog.Builder(ctx).setTitle("Add novel").setView(input)
+                .setNegativeButton("Cancel", null).setPositiveButton("Add") { _, _ ->
+                    novelNote = fnAddNovel(input.text?.toString() ?: "")
+                    refresh()
+                }.show()
+        } catch (_: Throwable) { novelNote = "Could not add novel"; refresh() }
+    }
+
     private fun novelsView(): View {
         val root = LinearLayout(ctx)
         root.orientation = LinearLayout.VERTICAL
@@ -1841,28 +1862,29 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
         root.setPadding(dp(2), dp(4), dp(2), dp(4))
         root.addView(PanelKit.header(ctx, prefs, host, "Novels", "<", emptyList()) { typing = 3; novelDelAsk = false; refresh() })
         val names = novelNames()
-        // v0.55.1: ONE clear main action on top, then the list. Messages only appear when there is something to say.
+        // v0.58.1: manual novel creation; no glossary import.
         val top = row()
-        top.addView(btn("+ Paste glossary", 1f, 40) { glossaryImport(9) })
+        top.addView(btn("+ Add novel", 1f, 40) { showNovelNameDialog() })
         root.addView(top)
         if (names.isEmpty()) {
-            root.addView(UiKit.noteText(ctx, prefs, "No novel yet. In the plugin tap Glossary > Copy for keyboard, then tap Paste glossary here."))
+            root.addView(UiKit.noteText(ctx, prefs, "No novel yet. Add a novel to create its own saved wrong → right pairs."))
         } else {
             val sv = ScrollView(ctx)
             sv.layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(130))
             val tiles = ArrayList<PanelKit.Tile>()
-            val keys = try { ReplaceStore.load(prefs).keys.toList() } catch (_: Throwable) { emptyList<String>() }
+            val saved = try { ReplaceStore.load(prefs) } catch (_: Throwable) { LinkedHashMap<String, ReplaceStore.Def>() }
             for (n in names) {
                 val on = n.equals(novelCur, true)
-                val sets = NovelBook.setsOf(keys, n).size
+                val mine = saved.filterKeys { NovelBook.isMine(it) && NovelBook.belongs(it, n) }
+                val pairCount = FixNames.rows(n, ArrayList(mine.keys), mine.values.map { it.rules }).size
                 val never = try { ReplaceProtect.parse(prefs.str(NovelBook.neverKey(n), "")).size } catch (_: Throwable) { 0 }
-                tiles.add(PanelKit.Tile((if (on) "\u2713 " else "") + n, NovelBook.rowSub(sets, never), on) { pickNovel(n) })
+                tiles.add(PanelKit.Tile((if (on) "\u2713 " else "") + n, "${pairCount}${if (pairCount == 1) " pair" else " pairs"} · ${never} kept", on, { pickNovel(n) }))
             }
             sv.addView(PanelKit.tileGrid(ctx, prefs, host, 1, tiles))
             root.addView(sv)
             val r = row()
             if (novelCur.isNotEmpty()) r.addView(btn(if (novelDelAsk) "Sure? Delete " + novelCur else "Delete " + novelCur, 1.4f, 34) { deleteNovel() })
-            else r.addView(UiKit.noteText(ctx, prefs, "No novel active: all sets show."))
+            else r.addView(UiKit.noteText(ctx, prefs, "No novel active: all novels’ pairs show."))
             if (novelCur.isNotEmpty()) r.addView(btn("No novel", 0.8f, 34) { pickNovel("") })
             root.addView(r)
         }
@@ -1887,8 +1909,8 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
         override fun repl(): String = repl
         override fun query(): String = fnQuery
         override fun protect(): List<String> = ArrayList(protectList)
-        override fun setNames(): List<String> = try { ArrayList(ReplaceStore.load(prefs).keys) } catch (_: Throwable) { ArrayList<String>() }
-        override fun setTexts(): List<String> = try { ReplaceStore.load(prefs).values.map { it.rules } } catch (_: Throwable) { ArrayList<String>() }
+        override fun setNames(): List<String> = try { ReplaceStore.load(prefs).keys.filter { NovelBook.isMine(it) } } catch (_: Throwable) { ArrayList<String>() }
+        override fun setTexts(): List<String> = try { ReplaceStore.load(prefs).filterKeys { NovelBook.isMine(it) }.values.map { it.rules } } catch (_: Throwable) { ArrayList<String>() }
         override fun type(which: Int) { fnBack = true; startTyping(which) }
         override fun addPair(forms: List<String>, to: String, topic: String): String { fnToast = fnAddPair(forms, to, topic); fnRefresh(); return fnToast }
         override fun fix(rules: List<ReplaceRules.Rule>): String { fnToast = fnFix(rules); fnRefresh(); return fnToast }
@@ -1898,7 +1920,7 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
         override fun back() { typing = 0; fnToast = ""; fnRefresh() }
         override fun novels(): List<FixNamesUi.NovelRow> = fnNovelRows()
         override fun pickNovel(name: String) { fnToast = name + " is active."; fnPick(name) }
-        override fun pasteGlossary() { fnToast = ""; glossaryImport(10) }
+        override fun addNovel(name: String): String { fnToast = fnAddNovel(name); fnRefresh(); return fnToast }
         override fun deleteAsk(): Boolean = novelDelAsk
         override fun deleteNovel() { fnToast = ""; fnDelete() }
         override fun removeLock(term: String) { fnRemoveLock(term) }
@@ -1907,15 +1929,7 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
         override fun clearFields() { find = ""; repl = ""; caretPos = 0; fnRefresh() }
         override fun loadPair(forms: String, to: String) { find = forms; repl = to; caretPos = 0; fnToast = ""; fnRefresh() }
         override fun openKeep() { fnKeepBack = true; fnUi.tab = 3; openProtect() }
-        override fun clipInfo(): String = try {
-            if (io.blocked()) "" else {
-                val t = io.clipText() ?: ""
-                if (!GlossaryImport.looksLike(t)) "" else {
-                    val g = GlossaryImport.parse(t, 0)
-                    (if (g.novel.isNotEmpty()) g.novel else "Glossary") + " \u00B7 " + g.wrong + " terms to fix \u00B7 " + g.never.size + " to keep as is"
-                }
-            }
-        } catch (_: Throwable) { "" }
+
     }
 
     private fun fnRefresh() { refresh() }
@@ -1941,8 +1955,9 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
 
     private fun fnNovelRows(): List<FixNamesUi.NovelRow> = try {
         val sets = ReplaceStore.load(prefs)
-        val names = ArrayList<String>(sets.keys)
-        val texts = sets.values.map { it.rules }
+        val mine = sets.filterKeys { NovelBook.isMine(it) }
+        val names = ArrayList<String>(mine.keys)
+        val texts = mine.values.map { it.rules }
         novelNames().map { n ->
             val never = try { ReplaceProtect.parse(prefs.str(NovelBook.neverKey(n), "")).size } catch (_: Throwable) { 0 }
             FixNamesUi.NovelRow(n, FixNames.rows(n, names, texts).size, never, n.equals(novelCur, true))
@@ -2151,58 +2166,6 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
             ReplaceStore.save(prefs, all)
             msg = "Saved as set \"" + name + "\" (Sets > \u2605). Rename it in app > Tools & Panels" + (if (setOpt.escapes) "  \u00B7  the \\n switch is not kept in sets" else "")
         } catch (_: Throwable) { msg = "Could not save the set" }
-        refresh()
-    }
-
-    /**
-     * v0.54.0 (GL1): "Paste glossary". The clipboard holds the text of the plugin's "Copy for keyboard". The wrong-forms and raw-term rules become saved sets
-     * (names "G Novel A · wrong", "G Novel A · raw 1" ...; 50 rules per set), the "never change" terms are added to the Never change list.
-     * Pasting again REPLACES the sets of the same glossary (same names), so an updated glossary never piles up. Logic = typing/GlossaryImport.java (tested).
-     */
-    private fun glossaryImport(back: Int = 3) {
-        var note = ""
-        var shortNote = ""   // v0.55.1: one short line for the Novels view (the toast keeps the full summary)
-        try {
-            confirmAll = false
-            if (io.blocked()) { note = "Not available in password fields." }
-            else {
-                val text = io.clipText() ?: ""
-                if (!GlossaryImport.looksLike(text)) note = "Nothing to paste. In the plugin: Glossary tab > Copy for keyboard, then come back here"
-                else {
-                    val all = ReplaceStore.load(prefs)
-                    val head = GlossaryImport.parse(text, 0)
-                    val prefix = head.prefix + GlossaryImport.SEP
-                    val novel = head.novel
-                    val known = NovelBook.has(novelNames(), novel)   // v0.55.0 (NV1): a novel seen before (registry or old glossary sets)
-                    all.keys.removeAll { it.startsWith(prefix) && !NovelBook.isMine(it) }   // the old copy of this glossary (v0.56.0: the pairs you saved stay)
-                    val plan = GlossaryImport.parse(text, minOf(NovelBook.MAX_SETS_PER_NOVEL - NovelBook.setsOf(all.keys, novel).size, ReplaceStore.MAX_ALL - all.size))   // sets are counted per novel
-                    for (i in plan.setNames.indices) all[plan.setNames[i]] = ReplaceStore.Def(plan.setTexts[i], plan.setCase[i], false)
-                    ReplaceStore.save(prefs, all)
-                    if (novel.isNotEmpty()) {
-                        val reg = NovelBook.parse(prefs.str("rp_novels", ""))
-                        if (NovelBook.add(reg, novel)) prefs.setStr("rp_novels", NovelBook.text(reg))
-                        val key = NovelBook.neverKey(novel)
-                        if (!known && prefs.str(key, "").isEmpty()) prefs.setStr(key, prefs.str("rp_protect", ""))   // a new novel starts with a copy of your general Never change list
-                        novelCur = novel; topicChip = NovelBook.ALL; prefs.setStr("rp_novel_cur", novel)
-                        loadProtect()   // the Never change list of THIS novel
-                        setRun = null; checkAck = false; checkWarn = null; step = 0
-                        val sn = setName
-                        if (sn != null && GlossaryImport.isGlossarySet(sn) && !NovelBook.belongs(sn, novel)) dropSet()
-                    }
-                    var added = 0; var dup = 0; var full = 0
-                    if (plan.never.isNotEmpty()) {
-                        val n = ReplaceProtect.addAll(protectList, plan.never.joinToString("\n"))
-                        added = n[0]; dup = n[1]; full = n[2]
-                        if (added > 0) protectChanged()
-                    }
-                    note = GlossaryImport.summary(plan, added, dup, full) + (if (novel.isNotEmpty()) ". " + novel + " is active" else "")
-                    shortNote = (if (novel.isNotEmpty()) novel else "Glossary") + " updated \u00B7 " + plan.setNames.size + (if (plan.setNames.size == 1) " set" else " sets") + (if (added > 0) " \u00B7 +" + added + " never change" else "") + (if (plan.droppedSets > 0) " \u00B7 " + plan.droppedSets + " did not fit" else "")
-                }
-            }
-        } catch (_: Throwable) { note = "Could not read the glossary" }
-        try { android.widget.Toast.makeText(ctx, note, android.widget.Toast.LENGTH_LONG).show() } catch (_: Throwable) { }
-        novelNote = if (shortNote.isNotEmpty()) shortNote else note
-        typing = back
         refresh()
     }
 
