@@ -1,3 +1,19 @@
+v0.58.0 - NEW (FX2): "Fix terms" screen, rebuilt exactly like docs/Fix_terms_mock.html (calmer, wrong -> correct first)
+- WHY: owner said the glossary / Replace screens were hard to understand and cluttered. Users mainly want to turn a WRONG term into the RIGHT term; raw names matter less. Inspiration: the bulk-replace web app (Wrong -> Correct, live diff, one big button, advanced tools hidden).
+- WHAT: Replace > Sets > "Fix names" (or the Options menu entry) now opens "Fix terms". Header = back, title, novel button (opens the novels list), "..." (More). The text box shows the change live (wrong struck through in red, correct in green, kept names in gold with a lock) with Undo inside it.
+  Tabs: [Fix] [Terms n] [Keep as is n].
+  FIX: Wrong term, arrow, Correct term, ONE big button ("Fix 3"; "Not found in text" / "Type the correct term" when it cannot run), "or", [Use <novel> list . N fixes] (previews and fixes every term of the novel: button becomes "Fix all . N", fields dim, "Back to one term") and [Save to list] (only when the pair is new). After a fix the two fields are emptied.
+  TERMS: the novel's terms grouped by the CORRECT term ("Lin Feng <- Lin Fen, Lin Fong, Linfeng"), search, "+ Add" (goes to Fix), tap a term = loads it into Fix. No set names are shown any more.
+  KEEP AS IS (= Never change, same list): chips, tap a name to remove it, "+ Add" opens the Never change screen and its back returns here.
+  MORE: Import from plugin (shows what is on the clipboard, Import button = old Paste glossary), Show raw names (switch: the JP / KR / CN original under each term, hidden by default), How it works (short help).
+- RENAMED (screen text only): wrong forms -> Fix, raw to English -> raw names (hidden), never change -> Keep as is, Sets / Novels / Paste glossary -> Terms + Import from plugin.
+- REMOVED from this screen: the topic chips (Characters / Places / Skills), the per-row on/off switch and the Novels tab (the novel button opens the list). New pairs are saved without a topic tag (My pairs). Old screens (Sets, Pairs, Never change, Novels) are unchanged.
+- STORAGE / ENGINE: nothing new. Fix uses the same code as before (FixNames.scan preview, fnFix, Undo stack, Never change list). Typing in the boxes uses the usual Replace mini keyboard (typing 1 / 2 / 12).
+- FILES: FixNamesView.kt (rewritten, same class FixNamesUi, Api got 4 small methods: clearFields, loadPair, openKeep, clipInfo), typing/FixNames.java (+ rawOf), ReplacePanel.kt (4 small hooks marked v0.58.0 (FX2): fnApi methods, fnKeepBack flag, openFixNames calls fnUi.open(), Never change back), tools/FixNamesTest.java (+4 checks), docs/Fix_terms_mock.html (NEW), app/build.gradle.kts (0.58.0), CHANGELOG.txt.
+- TESTED here: FixNamesTest 50 / 50 (javac of its sources OK), curly brackets of FixNamesView.kt and ReplacePanel.kt balanced. Kotlin NOT compiled (no kotlinc here), NOT phone-tested: build in GitHub Actions and check the "v0.58.0" lines if red.
+- Phone check first: open Fix names > Fix: tap Wrong, type Lin Fan; Lin Fen, Correct Lin Feng, Done, see the preview, Fix, Undo; Use list; Save to list; Terms (tap one); Keep as is (+ Add and back); ... > Import from plugin / Show raw names.
+- Rollback: restore FixNamesView.kt, FixNames.java, ReplacePanel.kt, FixNamesTest.java from v0.57.0, version 0.57.0, delete docs/Fix_terms_mock.html.
+
 v0.57.0 - NEW (FX1): ONE SCREEN "Fix names, per novel" (design = docs/Fix_names_per_novel_mock.html, built exactly like the mock)
 - WHY: owner got a design mock (from another chat) that puts everything of the active novel on ONE screen instead of Pairs / Sets / Never change / Novels screens.
 - WHAT: Replace > Sets > chip "Fix names" (or the Options menu of the Diff look > "Fix names") opens the new screen. Tabs: [Fix names] [Novels].

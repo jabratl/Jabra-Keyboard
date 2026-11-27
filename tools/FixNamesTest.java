@@ -23,6 +23,12 @@ public class FixNamesTest {
         List<String> texts = new ArrayList<String>(Arrays.asList(
             "# c\nLin Fen | Lin Fong => Lin Feng\n", "Blue Peek => Blue Peak\nSword Chi => Sword Qi\n", "\u5251 => Sword\n", "Wu => Other\n"));
         List<FixNames.Row> rows = FixNames.rows("Saga", names, texts);
+        // v0.58.0 (FX2): raw names for "Show raw names" (raw sets of THIS novel only, key = right form in lower case)
+        java.util.Map<String, String> rawMap = FixNames.rawOf("Saga", names, texts);
+        eq("raw of Sword", rawMap.get("sword"), "\u5251");
+        eq("raw: wrong sets give none", rawMap.get("lin feng"), "null");
+        eq("raw: other novel skipped", rawMap.get("other"), "null");
+        eq("raw: bad input", FixNames.rawOf(null, null, null).size(), 0);
         eq("3 rows (raw + other novel skipped)", rows.size(), 3);
         eq("forms", rows.get(0).formsText(), "Lin Fen; Lin Fong");
         eq("topic", rows.get(1).topic, "Places");

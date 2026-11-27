@@ -18,7 +18,7 @@ import android.text.style.UnderlineSpan
 import android.view.Gravity
 import android.view.View
 import android.widget.Button
-import android.widget.HorizontalScrollView
+import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
@@ -26,12 +26,15 @@ import com.mgb.keyboard.typing.FixNames
 import com.mgb.keyboard.typing.NovelBook
 
 /**
- * v0.57.0 (FX1): ONE SCREEN "Fix names, per novel" (design = Fix_names_per_novel_mock.html).
- * Tabs: Fix names | Novels. Fix names = novel bar + Undo, live preview (struck wrong form + green right form, dashed = the pair you are typing, gold + lock = never change),
- * "new pair" box (wrong forms split by ;, right form, topic chips, Add pair = already saved to the novel), search, filter chips, one list (pairs with hit count + on/off switch, locked names),
- * one big "Fix N in text" button. Novels = one row per novel (dot = active), Paste glossary, Delete.
- * Logic = typing/FixNames.java (tested). All actions go through [Api] (implemented by ReplacePanel with its old, tested code: undo, never-change list, glossary paste, delete).
- * Everything is built in try / catch by the caller; any error = the panel falls back to the old Pairs / Sets screens.
+ * v0.58.0 (FX2): the "Fix terms" screen, rebuilt exactly like docs/Fix_terms_mock.html (replaces the v0.57.0 "Fix names" layout; same Api, same tested logic in typing/FixNames.java).
+ * Header: back, "Fix terms", Undo (inside the text box), novel button, "..." (More). Live text box: wrong term struck through in red, correct term in green, kept names in gold with a lock.
+ * Tabs: [Fix] [Terms n] [Keep as is n].
+ *  Fix = Wrong term, arrow, Correct term, ONE big button ("Fix 3" / "Fix all . 4"), "or", [Use <novel> list . N fixes] and [Save to list].
+ *  Terms = the novel's terms grouped by the correct term ("Lin Feng <- Lin Fen, Lin Fong"), search, + Add, tap a term = load it into Fix.
+ *  Keep as is = the names Replace never touches (= Never change), tap a name to remove it, + Add opens the Never change screen.
+ *  More = Import from plugin (preview + Import), Show raw names (switch), How it works.   Novel button = the novels list.
+ * Wrong / Correct / search boxes open the usual mini keyboard of Replace (api.type), Done brings you back here.
+ * Everything is built in try / catch by the caller; any error = the panel falls back to the old Sets screen.
  */
 class FixNamesUi(private val ctx: Context, private val prefs: JabraPrefs, private val host: JabraHost, private val api: Api) {
 
@@ -60,13 +63,22 @@ class FixNamesUi(private val ctx: Context, private val prefs: JabraPrefs, privat
         fun deleteNovel()
         fun removeLock(term: String)
         fun refresh()
+        fun clearFields()                        // v0.58.0: empty Wrong + Correct (after a fix)
+        fun loadPair(forms: String, to: String)  // v0.58.0: put a term into Wrong + Correct
+        fun openKeep()                           // v0.58.0: the Never change screen (add names), Done / back returns here
+        fun clipInfo(): String                   // v0.58.0: "Novel A . 5 terms . 2 kept" when the clipboard holds a glossary, else ""
     }
 
-    // state that lives as long as the panel (the mock keeps the same in memory)
-    var tab = 1                                   // 1 = Fix names, 2 = Novels
-    private var chip = NovelBook.ALL
-    private var topic = ""
-    private val off = HashSet<String>()           // switched-off rows (memory only, like the mock)
+    // state that lives as long as the panel (memory only, like the mock)
+    var tab = 1                                   // 1 = Fix, 2 = Terms, 3 = Keep as is
+    private var sheet = 0                         // 0 none, 1 More, 2 Import, 3 Novels, 4 How it works
+    private var listMode = false                  // Fix tab: true = "Use list" (every term of the novel)
+    private var showRaw = false
+
+    /** Called when the screen is opened from the Replace panel. */
+    fun open() { tab = 1; sheet = 0; listMode = false }
+
+    private val none = HashSet<String>()
 
     private fun dp(v: Int): Int = JabraTokens.dp(ctx, v)
     private fun ink(): Int = try { JabraTokens.panelText(prefs) } catch (_: Throwable) { Color.BLACK }
@@ -83,19 +95,14 @@ class FixNamesUi(private val ctx: Context, private val prefs: JabraPrefs, privat
     private fun redInk() = if (dark()) 0xFFEF7A74.toInt() else 0xFFB3261E.toInt()
     private val acc: Int get() = JabraTokens.ACCENT
 
+    private val MATCH = LinearLayout.LayoutParams.MATCH_PARENT
+    private val WRAP = LinearLayout.LayoutParams.WRAP_CONTENT
+
     // ---------------------------------------------------------------- small widgets
     private fun lp(w: Int, h: Int, weight: Float = 0f, l: Int = 0, t: Int = 0, r: Int = 0, b: Int = 0): LinearLayout.LayoutParams {
         val p = if (weight > 0f) LinearLayout.LayoutParams(w, h, weight) else LinearLayout.LayoutParams(w, h)
         p.setMargins(dp(l), dp(t), dp(r), dp(b))
         return p
-    }
-
-    private fun card(): LinearLayout {
-        val c = LinearLayout(ctx)
-        c.orientation = LinearLayout.VERTICAL
-        try { c.background = UiKit.cardBackground(ctx, prefs, false, false) } catch (_: Throwable) { }
-        c.setPadding(dp(8), dp(8), dp(8), dp(8))
-        return c
     }
 
     private fun label(text: String, size: Float, color: Int, bold: Boolean = false): TextView {
@@ -107,11 +114,13 @@ class FixNamesUi(private val ctx: Context, private val prefs: JabraPrefs, privat
 
     private fun pill(color: Int, radiusDp: Int = 10): GradientDrawable { val g = GradientDrawable(); g.setColor(color); g.cornerRadius = dp(radiusDp).toFloat(); return g }
 
-    private fun outline(fill: Int, stroke: Int, radiusDp: Int = 8): GradientDrawable {
+    private fun outline(fill: Int, stroke: Int, radiusDp: Int = 10): GradientDrawable {
         val g = GradientDrawable(); g.setColor(fill); g.cornerRadius = dp(radiusDp).toFloat(); g.setStroke(dp(1), stroke); return g
     }
 
-    /** Filled accent button (Add pair, Fix N in text, Paste glossary): same idea as the old accentButton. */
+    private fun strokeInk(): Int = if (dark()) 0xFF2B3A62.toInt() else 0xFFC4CBD9.toInt()
+
+    /** Filled accent button (Fix N, Import, Paste glossary). */
     private fun fill(b: Button, enabled: Boolean = true) {
         try {
             val r = dp(JabraTokens.R_SM).toFloat()
@@ -127,74 +136,78 @@ class FixNamesUi(private val ctx: Context, private val prefs: JabraPrefs, privat
         b.alpha = if (enabled) 1f else 0.45f
     }
 
-    /** The on / off switch of a row (34 x 20 dp pill with a knob, like .sw in the mock). */
+    private fun card(): LinearLayout {
+        val c = LinearLayout(ctx)
+        c.orientation = LinearLayout.VERTICAL
+        try { c.background = UiKit.cardBackground(ctx, prefs, false, false) } catch (_: Throwable) { }
+        c.setPadding(dp(10), dp(8), dp(10), dp(8))
+        return c
+    }
+
+    /** The on / off switch of "Show raw names". */
     private inner class Switch(val on: Boolean) : View(ctx) {
         private val p = Paint(Paint.ANTI_ALIAS_FLAG)
         override fun onDraw(c: Canvas) {
             val w = width.toFloat(); val h = height.toFloat()
-            p.color = if (on) acc else (if (dark()) 0xFF2B3A62.toInt() else 0xFFC4CBD9.toInt())
+            p.color = if (on) acc else strokeInk()
             c.drawRoundRect(0f, 0f, w, h, h / 2, h / 2, p)
-            p.color = if (on) Color.WHITE else (if (dark()) 0xFFE8EDF8.toInt() else Color.WHITE)
+            p.color = Color.WHITE
             val r = h / 2 - dp(3)
             c.drawCircle(if (on) w - h / 2 else h / 2, h / 2, r, p)
         }
     }
 
-    private fun hscroll(row: LinearLayout): HorizontalScrollView {
-        val hs = HorizontalScrollView(ctx)
-        hs.isHorizontalScrollBarEnabled = false
-        hs.addView(row)
-        return hs
-    }
-
     private fun fieldBox(hint: String, value: String, which: Int): TextView {
         val t = TextView(ctx)
         t.text = if (value.isEmpty()) hint else value
-        t.textSize = 14f
+        t.textSize = 15f
         t.setTextColor(if (value.isEmpty()) dim() else ink())
         t.maxLines = 1
         t.ellipsize = TextUtils.TruncateAt.END
         t.gravity = Gravity.CENTER_VERTICAL
-        t.setPadding(dp(10), 0, dp(10), 0)
-        t.background = outline(Color.TRANSPARENT, if (dark()) 0xFF2B3A62.toInt() else 0xFFC4CBD9.toInt())
+        t.setPadding(dp(12), 0, dp(12), 0)
+        t.background = outline(Color.TRANSPARENT, strokeInk(), 10)
         t.isClickable = true
-        t.setOnClickListener { v -> fb(v); api.type(which) }
+        t.setOnClickListener { v -> fb(v); listMode = false; api.type(which) }
         return t
     }
 
     private fun spacer(): View { val v = View(ctx); v.layoutParams = LinearLayout.LayoutParams(0, 1, 1f); return v }
 
-    // ---------------------------------------------------------------- the screen
-    fun build(): View {
-        val root = LinearLayout(ctx)
-        root.orientation = LinearLayout.VERTICAL
-        try { JabraThemes.paint(prefs, root) } catch (_: Throwable) { root.setBackgroundColor(Color.parseColor("#DDDDDD")) }
-        root.setPadding(dp(4), dp(4), dp(4), dp(4))
-        root.addView(tabs())
-        root.addView(if (tab == 2) novelsTab() else fixTab())
-        return root
+    private fun twoLines(top: String, sub: String, topBold: Boolean = false): LinearLayout {
+        val g = LinearLayout(ctx)
+        g.orientation = LinearLayout.VERTICAL
+        val a = label(top, 15f, ink(), topBold)
+        a.maxLines = 1; a.ellipsize = TextUtils.TruncateAt.END
+        g.addView(a)
+        if (sub.isNotEmpty()) g.addView(label(sub, 12f, dim()))
+        g.layoutParams = lp(0, WRAP, 1f)
+        return g
     }
 
-    private fun tabs(): View {
-        val r = UiKit.row(ctx)
-        val names = listOf("Fix names", "Novels")
-        for (i in 0..1) {
-            val b = UiKit.chip(ctx, prefs, names[i], tab == i + 1, 34, { v -> fb(v) }) { tab = i + 1; api.refresh() }
-            b.layoutParams = lp(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f, 2, 2, 2, 2)
-            r.addView(b)
-        }
-        // header: back to the Replace screen
-        val h = UiKit.row(ctx)
-        val back = UiKit.btn(ctx, prefs, "<", 0f, 34, JabraTokens.T_BTN, { v -> fb(v) }) { api.back() }
-        h.addView(back)
-        r.layoutParams = lp(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
-        h.addView(r)
-        return h
+    private fun rowBox(): LinearLayout {
+        val r = LinearLayout(ctx)
+        r.orientation = LinearLayout.HORIZONTAL
+        r.gravity = Gravity.CENTER_VERTICAL
+        try { r.background = UiKit.cardBackground(ctx, prefs, false, false) } catch (_: Throwable) { }
+        r.setPadding(dp(12), dp(8), dp(12), dp(8))
+        r.layoutParams = lp(MATCH, WRAP, 0f, 0, 0, 0, 5)
+        return r
     }
 
-    private fun fixTab(): View {
-        val col = LinearLayout(ctx)
-        col.orientation = LinearLayout.VERTICAL
+    private fun hint(text: String): TextView {
+        val t = label(text, 12f, dim())
+        t.layoutParams = lp(MATCH, WRAP, 0f, 2, 4, 2, 6)
+        return t
+    }
+
+    // ---------------------------------------------------------------- state of one build
+    private class St(
+        val novel: String, val rows: List<FixNames.Row>, val protect: List<String>, val forms: List<String>, val to: String,
+        val text: String, val shown: String, val listSc: FixNames.Scan?, val fieldSc: FixNames.Scan
+    )
+
+    private fun state(): St {
         val novel = api.novel()
         val rows = if (novel.isEmpty()) emptyList<FixNames.Row>() else FixNames.rows(novel, api.setNames(), api.setTexts())
         val protect = api.protect()
@@ -202,109 +215,70 @@ class FixNamesUi(private val ctx: Context, private val prefs: JabraPrefs, privat
         val to = api.repl().trim()
         val text = api.text()
         val shown = if (text.length > 3000) text.substring(0, 3000) else text
-        val sc = FixNames.scan(shown, rows, off, protect, forms, to)
+        val listSc = if (rows.isEmpty()) null else FixNames.scan(shown, rows, none, protect, ArrayList<String>(), "")
+        val fieldSc = FixNames.scan(shown, ArrayList<FixNames.Row>(), none, protect, forms, to)
+        if (listSc == null) listMode = false
+        return St(novel, rows, protect, forms, to, text, shown, listSc, fieldSc)
+    }
 
-        // bar: novel button + spacer + Undo
-        val bar = UiKit.row(ctx)
-        bar.gravity = Gravity.CENTER_VERTICAL
-        bar.addView(UiKit.chip(ctx, prefs, (if (novel.isEmpty()) "Pick a novel" else novel) + "  \u25BE", novel.isNotEmpty(), 36, { v -> fb(v) }) { tab = 2; api.refresh() })
-        bar.addView(spacer())
-        val undo = UiKit.btn(ctx, prefs, "Undo", 0f, 36, JabraTokens.T_BTN, { v -> fb(v) }) { api.undo() }
-        undo.isEnabled = api.canUndo(); undo.alpha = if (api.canUndo()) 1f else 0.45f
-        bar.addView(undo)
-        col.addView(bar)
+    // ---------------------------------------------------------------- the screen
+    fun build(): View {
+        val root = LinearLayout(ctx)
+        root.orientation = LinearLayout.VERTICAL
+        try { JabraThemes.paint(prefs, root) } catch (_: Throwable) { root.setBackgroundColor(Color.parseColor("#DDDDDD")) }
+        root.setPadding(dp(4), dp(4), dp(4), dp(4))
+        if (sheet != 0) { buildSheet(root); return root }
+        val st = state()
+        root.addView(header(st))
+        root.addView(docBox(st))
+        root.addView(tabs(st))
+        root.addView(when (tab) { 2 -> termsTab(st); 3 -> keepTab(st); else -> fixTab(st) })
+        return root
+    }
 
-        // preview
-        col.addView(preview(shown, sc, text.isEmpty()))
+    private fun header(st: St): View {
+        val h = UiKit.row(ctx)
+        h.gravity = Gravity.CENTER_VERTICAL
+        h.addView(UiKit.btn(ctx, prefs, "<", 0f, 36, JabraTokens.T_BTN, { v -> fb(v) }) { api.back() })
+        h.addView(label("Fix terms", 15f, ink(), true), lp(WRAP, WRAP, 0f, 6, 0, 0, 0))
+        h.addView(spacer())
+        h.addView(UiKit.chip(ctx, prefs, (if (st.novel.isEmpty()) "Pick a novel" else st.novel) + "  ▾", true, 34, { v -> fb(v) }) { sheet = 3; api.refresh() })
+        h.addView(UiKit.btn(ctx, prefs, "⋯", 0f, 36, JabraTokens.T_BTN, { v -> fb(v) }) { sheet = 1; api.refresh() })
+        return h
+    }
 
-        if (novel.isEmpty()) {
-            col.addView(UiKit.noteText(ctx, prefs, "No novel yet. Tap Pick a novel above, then Paste glossary."))
-            return col
+    private fun tabs(st: St): View {
+        val r = UiKit.row(ctx)
+        val names = listOf("Fix", "Terms " + groups(st).size, "Keep as is " + st.protect.size)
+        for (i in 0..2) {
+            val b = UiKit.chip(ctx, prefs, names[i], tab == i + 1, 34, { v -> fb(v) }) { tab = i + 1; api.refresh() }
+            b.layoutParams = lp(0, WRAP, 1f, 2, 4, 2, 4)
+            r.addView(b)
         }
+        return r
+    }
 
-        // add box
-        val add = card()
-        add.layoutParams = lp(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT, 0f, 0, 6, 0, 6)
-        add.addView(fieldBox("Wrong forms, split by ;", api.find(), 1), lp(LinearLayout.LayoutParams.MATCH_PARENT, dp(38)))
-        if (forms.isNotEmpty()) {
-            val vr = UiKit.row(ctx)
-            for (f in forms) {
-                val t = label(f, 12f, delInk())
-                t.background = pill(delBg(), 6)
-                t.setPadding(dp(7), dp(1), dp(7), dp(1))
-                vr.addView(t, lp(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT, 0f, 0, 0, 4, 0))
-            }
-            val hs = hscroll(vr)
-            hs.layoutParams = lp(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT, 0f, 0, 6, 0, 0)
-            add.addView(hs)
+    // ---------------------------------------------------------------- live text box
+    private fun docBox(st: St): View {
+        val fl = FrameLayout(ctx)
+        fl.layoutParams = lp(MATCH, dp(96), 0f, 0, 4, 0, 2)
+        val sc = if (listMode && st.listSc != null) st.listSc else st.fieldSc
+        fl.addView(preview(st.shown, sc, st.text.isEmpty()), FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT))
+        if (api.canUndo()) {
+            val u = UiKit.chip(ctx, prefs, "Undo", false, 28, { v -> fb(v) }) { api.undo() }
+            fl.addView(u, FrameLayout.LayoutParams(FrameLayout.LayoutParams.WRAP_CONTENT, FrameLayout.LayoutParams.WRAP_CONTENT, Gravity.TOP or Gravity.END))
         }
-        add.addView(fieldBox("Right form", api.repl(), 2), lp(LinearLayout.LayoutParams.MATCH_PARENT, dp(38), 0f, 0, 6, 0, 0))
-        val choices = FixNames.topicChoices(rows)
-        if (topic.isEmpty() || !choices.any { it.equals(topic, true) }) topic = choices[0]
-        val ar = UiKit.row(ctx)
-        ar.gravity = Gravity.CENTER_VERTICAL
-        val tr = UiKit.row(ctx)
-        for (t in choices) tr.addView(UiKit.chip(ctx, prefs, t, t.equals(topic, true), 32, { v -> fb(v) }) { topic = t; api.refresh() })
-        val ths = hscroll(tr)
-        ths.layoutParams = lp(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
-        ar.addView(ths)
-        val addB = UiKit.btn(ctx, prefs, "Add pair", 0f, 38, JabraTokens.T_BTN, { v -> fb(v) }) { api.addPair(forms, to, topic) }
-        fill(addB)
-        ar.addView(addB)
-        ar.layoutParams = lp(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT, 0f, 0, 6, 0, 0)
-        add.addView(ar)
-        col.addView(add)
-
-        // search + filter chips
-        col.addView(fieldBox("Search this novel", api.query(), 12), lp(LinearLayout.LayoutParams.MATCH_PARENT, dp(38)))
-        val chips = ArrayList<String>()
-        chips.add(NovelBook.ALL)
-        for (t in FixNames.topicsOf(rows)) chips.add(t)
-        if (protect.isNotEmpty()) chips.add("Locked")
-        if (chips.none { it.equals(chip, true) }) chip = NovelBook.ALL
-        val cr = UiKit.row(ctx)
-        for (t in chips) {
-            val n = if (t == "Locked") protect.size else FixNames.countFor(rows, t)
-            cr.addView(UiKit.chip(ctx, prefs, t + " " + n, t.equals(chip, true), 32, { v -> fb(v) }) { chip = t; api.refresh() })
-        }
-        val chs = hscroll(cr)
-        chs.layoutParams = lp(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT, 0f, 0, 6, 0, 0)
-        col.addView(chs)
-
-        // the one list
-        val sv = ScrollView(ctx)
-        sv.layoutParams = lp(LinearLayout.LayoutParams.MATCH_PARENT, dp(130), 0f, 0, 4, 0, 0)
-        val list = LinearLayout(ctx)
-        list.orientation = LinearLayout.VERTICAL
-        val q = api.query().trim().lowercase()
-        if (chip == "Locked") {
-            for (l in protect) if (q.isEmpty() || l.lowercase().contains(q)) list.addView(lockRow(l))
-        } else {
-            val vis = FixNames.visible(rows, sc.counts, chip, q)
-            for (i in vis) list.addView(pairRow(rows[i], if (i < sc.counts.size) sc.counts[i] else 0, chip == NovelBook.ALL))
-            if (vis.isEmpty()) list.addView(UiKit.noteText(ctx, prefs, "Nothing here yet. Type wrong forms above, then tap Add pair."))
-        }
-        sv.addView(list)
-        col.addView(sv)
-
-        // the one big button
-        val fixB = UiKit.btn(ctx, prefs, FixNames.fixLabel(sc.hits), 0f, 44, JabraTokens.T_BODY, { v -> fb(v) }) { api.fix(FixNames.activeRules(rows, off)) }
-        fill(fixB, sc.hits > 0)
-        fixB.layoutParams = lp(LinearLayout.LayoutParams.MATCH_PARENT, dp(44), 0f, 0, 6, 0, 0)
-        col.addView(fixB)
-        if (api.toast().isNotEmpty()) col.addView(UiKit.noteText(ctx, prefs, api.toast()))
-        return col
+        return fl
     }
 
     private fun preview(shown: String, sc: FixNames.Scan, empty: Boolean): View {
         val sv = ScrollView(ctx)
-        sv.layoutParams = lp(LinearLayout.LayoutParams.MATCH_PARENT, dp(96), 0f, 0, 0, 0, 6)
         val t = TextView(ctx)
-        t.textSize = 14f
-        t.setLineSpacing(0f, 1.35f)
+        t.textSize = 15f
+        t.setLineSpacing(0f, 1.3f)
         t.setTextColor(ink())
         try { t.background = UiKit.cardBackground(ctx, prefs, false, false) } catch (_: Throwable) { }
-        t.setPadding(dp(10), dp(8), dp(10), dp(8))
+        t.setPadding(dp(12), dp(8), dp(12), dp(8))
         if (empty) {
             t.text = "Type or select text in the field. The fixes show here before you tap."
             t.setTextColor(dim())
@@ -317,7 +291,7 @@ class FixNamesUi(private val ctx: Context, private val prefs: JabraPrefs, privat
             sb.append(shown.substring(pos, s.start))
             if (s.lock) {
                 val a = sb.length
-                sb.append(shown.substring(s.start, s.end)).append(" \uD83D\uDD12")
+                sb.append(shown.substring(s.start, s.end)).append(" 🔒")
                 sb.setSpan(ForegroundColorSpan(lockInk()), a, sb.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
                 sb.setSpan(UnderlineSpan(), a, sb.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
             } else {
@@ -333,10 +307,7 @@ class FixNamesUi(private val ctx: Context, private val prefs: JabraPrefs, privat
                 val d = sb.length
                 sb.setSpan(BackgroundColorSpan(insBg()), c, d, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
                 sb.setSpan(ForegroundColorSpan(insInk()), c, d, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
-                if (s.draft) {   // the pair you are typing: underlined + bold (the mock draws a dashed outline)
-                    sb.setSpan(UnderlineSpan(), a, b, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
-                    sb.setSpan(StyleSpan(Typeface.BOLD), c, d, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
-                }
+                sb.setSpan(StyleSpan(Typeface.BOLD), c, d, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
             }
             pos = s.end
         }
@@ -346,94 +317,251 @@ class FixNamesUi(private val ctx: Context, private val prefs: JabraPrefs, privat
         return sv
     }
 
-    private fun rowBox(): LinearLayout {
+    // ---------------------------------------------------------------- tab 1: Fix
+    private fun fixTab(st: St): View {
+        val col = LinearLayout(ctx)
+        col.orientation = LinearLayout.VERTICAL
+        val lm = listMode && st.listSc != null
+        val listHits = st.listSc?.hits ?: 0
+        val n = if (lm) listHits else st.fieldSc.draftHits
+
+        val fields = LinearLayout(ctx)
+        fields.orientation = LinearLayout.VERTICAL
+        fields.addView(fieldBox("Wrong term", api.find(), 1), lp(MATCH, dp(42)))
+        val arrow = label("↓", 13f, dim())
+        arrow.gravity = Gravity.CENTER
+        fields.addView(arrow, lp(MATCH, WRAP))
+        fields.addView(fieldBox("Correct term", api.repl(), 2), lp(MATCH, dp(42)))
+        if (lm) fields.alpha = 0.45f
+        col.addView(fields)
+
+        col.addView(hint(if (lm) "Showing every fix from the " + st.novel + " list." else "Tap a field to type. Several wrong spellings? Separate with ;"))
+
+        val btnText = when {
+            lm -> if (n > 0) "Fix all · $n" else "Nothing to fix"
+            n > 0 -> "Fix $n"
+            st.forms.isNotEmpty() && st.to.isEmpty() -> "Type the correct term"
+            st.forms.isNotEmpty() -> "Not found in text"
+            else -> "Fix"
+        }
+        val go = UiKit.btn(ctx, prefs, btnText, 0f, 46, JabraTokens.T_BODY, { v -> fb(v) }) {
+            if (lm) { api.fix(FixNames.activeRules(st.rows, none)); listMode = false }
+            else {
+                val r = FixNames.draftRule(st.forms, st.to)
+                if (r != null) { val msg = api.fix(listOf(r)); if (msg.startsWith("Fixed")) api.clearFields() }
+            }
+        }
+        fill(go, n > 0)
+        go.layoutParams = lp(MATCH, dp(46))
+        col.addView(go)
+
+        if (st.rows.isNotEmpty() || st.novel.isNotEmpty()) {
+            col.addView(orLine())
+            val r2 = UiKit.row(ctx)
+            if (st.rows.isNotEmpty()) {
+                val lb = if (lm) "Back to one term" else "Use " + st.novel + " list · " + listHits + " fixes"
+                val b = UiKit.btn(ctx, prefs, lb, 0f, 40, JabraTokens.T_BTN, { v -> fb(v) }) { listMode = !lm; api.refresh() }
+                b.layoutParams = lp(0, dp(40), 1f, 2, 0, 2, 0)
+                r2.addView(b)
+            }
+            val canSave = !lm && st.novel.isNotEmpty() && st.forms.isNotEmpty() && st.to.isNotEmpty() &&
+                st.rows.none { r -> r.to.equals(st.to, true) && st.forms.all { f -> r.forms.any { it.equals(f, true) } } }
+            if (canSave) {
+                val b = UiKit.btn(ctx, prefs, "Save to list", 0f, 40, JabraTokens.T_BTN, { v -> fb(v) }) { api.addPair(st.forms, st.to, NovelBook.MY_TOPIC) }
+                b.layoutParams = lp(0, dp(40), 1f, 2, 0, 2, 0)
+                r2.addView(b)
+            }
+            col.addView(r2)
+        } else {
+            col.addView(hint("No novel yet. Tap the novel button above, then Import from plugin (...)."))
+        }
+        if (api.toast().isNotEmpty()) col.addView(hint(api.toast()))
+        return col
+    }
+
+    private fun orLine(): View {
         val r = LinearLayout(ctx)
         r.orientation = LinearLayout.HORIZONTAL
         r.gravity = Gravity.CENTER_VERTICAL
-        try { r.background = UiKit.cardBackground(ctx, prefs, false, false) } catch (_: Throwable) { }
-        r.setPadding(dp(10), dp(6), dp(10), dp(6))
-        r.layoutParams = lp(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT, 0f, 0, 0, 0, 4)
+        fun line(): View { val v = View(ctx); v.setBackgroundColor(JabraTokens.withAlpha(dim(), 0x55)); v.layoutParams = lp(0, dp(1), 1f); return v }
+        r.addView(line())
+        r.addView(label("or", 11f, dim()), lp(WRAP, WRAP, 0f, 8, 0, 8, 0))
+        r.addView(line())
+        r.layoutParams = lp(MATCH, WRAP, 0f, 0, 6, 0, 6)
         return r
     }
 
-    private fun twoLines(top: String, sub: String): LinearLayout {
-        val g = LinearLayout(ctx)
-        g.orientation = LinearLayout.VERTICAL
-        val a = label(top, 14f, ink())
-        a.maxLines = 1; a.ellipsize = TextUtils.TruncateAt.END
-        g.addView(a)
-        if (sub.isNotEmpty()) g.addView(label(sub, 12f, dim()))
-        g.layoutParams = lp(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
-        return g
+    // ---------------------------------------------------------------- tab 2: Terms
+    private class Term(val to: String, val forms: ArrayList<String>, val raw: String)
+
+    private fun groups(st: St): List<Term> {
+        val raw = try { FixNames.rawOf(st.novel, api.setNames(), api.setTexts()) } catch (_: Throwable) { HashMap<String, String>() }
+        val m = LinkedHashMap<String, Term>()
+        for (r in st.rows) {
+            val k = r.to.lowercase()
+            val t = m.getOrPut(k) { Term(r.to, ArrayList<String>(), raw[k] ?: "") }
+            for (f in r.forms) if (t.forms.none { it.equals(f, true) }) t.forms.add(f)
+        }
+        return ArrayList(m.values)
     }
 
-    private fun pairRow(r: FixNames.Row, count: Int, withTopic: Boolean): View {
-        val row = rowBox()
-        val isOff = off.contains(r.key())
-        if (isOff || count == 0) row.alpha = 0.5f
-        row.addView(twoLines(r.formsText(), "to " + r.to + (if (withTopic) " \u00B7 " + r.topic else "")))
-        val cnt = label(count.toString(), 12f, if (count == 0) dim() else Color.WHITE, true)
-        cnt.gravity = Gravity.CENTER
-        cnt.minWidth = dp(24)
-        cnt.setPadding(dp(8), 0, dp(8), 0)
-        if (count > 0) cnt.background = pill(acc, 10)
-        row.addView(cnt, lp(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT, 0f, 8, 0, 8, 0))
-        val sw = Switch(!isOff)
-        sw.layoutParams = lp(dp(34), dp(20))
-        sw.minimumHeight = dp(44)
-        sw.isClickable = true
-        sw.setOnClickListener { v -> fb(v); if (!off.remove(r.key())) off.add(r.key()); api.refresh() }
-        row.addView(sw)
-        return row
-    }
-
-    private fun lockRow(term: String): View {
-        val row = rowBox()
-        row.addView(twoLines(term, "never changed"))
-        val x = UiKit.btn(ctx, prefs, "Remove", 0f, 32, JabraTokens.T_BTN, { v -> fb(v) }) { api.removeLock(term) }
-        row.addView(x)
-        return row
-    }
-
-    // ---------------------------------------------------------------- Novels tab
-    private fun novelsTab(): View {
+    private fun termsTab(st: St): View {
         val col = LinearLayout(ctx)
         col.orientation = LinearLayout.VERTICAL
         val bar = UiKit.row(ctx)
         bar.gravity = Gravity.CENTER_VERTICAL
-        bar.addView(label("Novels", 14f, ink(), true), lp(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT, 0f, 6, 0, 0, 0))
-        bar.addView(spacer())
-        val paste = UiKit.btn(ctx, prefs, "Paste glossary", 0f, 38, JabraTokens.T_BTN, { v -> fb(v) }) { api.pasteGlossary() }
-        fill(paste)
-        bar.addView(paste)
-        bar.layoutParams = lp(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT, 0f, 0, 6, 0, 6)
+        val sb = fieldBox("Search terms", api.query(), 12)
+        sb.layoutParams = lp(0, dp(42), 1f, 2, 0, 4, 0)
+        sb.setOnClickListener { v -> fb(v); api.type(12) }
+        bar.addView(sb)
+        bar.addView(UiKit.btn(ctx, prefs, "+ Add", 0f, 42, JabraTokens.T_BTN, { v -> fb(v) }) { tab = 1; listMode = false; api.refresh() })
+        bar.layoutParams = lp(MATCH, WRAP, 0f, 0, 0, 0, 6)
         col.addView(bar)
-        val list = api.novels()
+
         val sv = ScrollView(ctx)
-        sv.layoutParams = lp(LinearLayout.LayoutParams.MATCH_PARENT, dp(170))
+        sv.layoutParams = lp(MATCH, dp(150))
+        val list = LinearLayout(ctx)
+        list.orientation = LinearLayout.VERTICAL
+        val q = api.query().trim().lowercase()
+        var shown = 0
+        for (t in groups(st)) {
+            if (q.isNotEmpty() && (t.to + " " + t.forms.joinToString(" ") + " " + t.raw).lowercase().indexOf(q) < 0) continue
+            shown++
+            val row = LinearLayout(ctx)
+            row.orientation = LinearLayout.VERTICAL
+            try { row.background = UiKit.cardBackground(ctx, prefs, false, false) } catch (_: Throwable) { }
+            row.setPadding(dp(12), dp(8), dp(12), dp(8))
+            row.layoutParams = lp(MATCH, WRAP, 0f, 0, 0, 0, 5)
+            row.addView(label(t.to, 15f, ink(), true))
+            row.addView(label("← " + t.forms.joinToString(", "), 13f, dim()))
+            if (showRaw && t.raw.isNotEmpty()) row.addView(label(t.raw, 12f, acc))
+            row.isClickable = true
+            row.setOnClickListener { v -> fb(v); listMode = false; tab = 1; api.loadPair(t.forms.joinToString("; "), t.to) }
+            list.addView(row)
+        }
+        if (shown == 0) list.addView(hint(if (st.novel.isEmpty()) "No novel yet. Tap the novel button above." else "No terms yet. Add one in Fix, then Save to list."))
+        sv.addView(list)
+        col.addView(sv)
+        return col
+    }
+
+    // ---------------------------------------------------------------- tab 3: Keep as is
+    private fun keepTab(st: St): View {
+        val col = LinearLayout(ctx)
+        col.orientation = LinearLayout.VERTICAL
+        col.addView(hint("Names and words Replace never touches, even when a rule matches part of them. Tap a name to remove it."))
+        val sv = ScrollView(ctx)
+        sv.layoutParams = lp(MATCH, dp(150))
         val box = LinearLayout(ctx)
         box.orientation = LinearLayout.VERTICAL
-        for (n in list) {
-            val row = rowBox()
-            if (n.active) { try { row.background = outline(if (dark()) 0xFF1B2745.toInt() else 0xFFEAF1FB.toInt(), acc, 10) } catch (_: Throwable) { } }
-            val dot = View(ctx)
-            dot.background = if (n.active) pill(acc, 6) else outline(Color.TRANSPARENT, dim(), 6)
-            row.addView(dot, lp(dp(12), dp(12), 0f, 0, 0, 8, 0))
-            row.addView(twoLines(n.name, n.pairs.toString() + (if (n.pairs == 1) " pair" else " pairs") + " \u00B7 " + n.locked + " locked"))
-            row.isClickable = true
-            row.setOnClickListener { v -> fb(v); api.pickNovel(n.name) }
-            box.addView(row)
+        var cur = UiKit.row(ctx)
+        var used = 0
+        fun put(b: View, len: Int) {
+            if (used > 0 && used + len > 30) { box.addView(cur); cur = UiKit.row(ctx); used = 0 }
+            cur.addView(b); used += len
         }
-        if (list.isEmpty()) box.addView(UiKit.noteText(ctx, prefs, "No novel yet. In the plugin tap Glossary > Copy for keyboard, then tap Paste glossary here."))
+        for (k in st.protect) {
+            val b = UiKit.chip(ctx, prefs, k + "  ✕", false, 34, { v -> fb(v) }) { api.removeLock(k) }
+            put(b, k.length + 5)
+        }
+        put(UiKit.chip(ctx, prefs, "+ Add", true, 34, { v -> fb(v) }) { api.openKeep() }, 7)
+        box.addView(cur)
         sv.addView(box)
         col.addView(sv)
-        val cur = api.novel()
-        if (cur.isNotEmpty()) {
-            val del = UiKit.btn(ctx, prefs, if (api.deleteAsk()) "Sure? Delete " + cur else "Delete " + cur, 0f, 36, JabraTokens.T_BTN, { v -> fb(v) }) { api.deleteNovel() }
-            del.setTextColor(redInk())
-            col.addView(del, lp(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT, 0f, 0, 4, 0, 0))
-        }
-        if (api.toast().isNotEmpty()) col.addView(UiKit.noteText(ctx, prefs, api.toast()))
+        if (api.toast().isNotEmpty()) col.addView(hint(api.toast()))
         return col
+    }
+
+    // ---------------------------------------------------------------- sheets: More / Import / Novels / How it works
+    private fun sheetHeader(title: String, backTo: Int): View {
+        val h = UiKit.row(ctx)
+        h.gravity = Gravity.CENTER_VERTICAL
+        h.addView(UiKit.btn(ctx, prefs, "<", 0f, 36, JabraTokens.T_BTN, { v -> fb(v) }) { sheet = backTo; api.refresh() })
+        h.addView(label(title, 15f, ink(), true), lp(WRAP, WRAP, 0f, 6, 0, 0, 0))
+        h.layoutParams = lp(MATCH, WRAP, 0f, 0, 0, 0, 8)
+        return h
+    }
+
+    private fun buildSheet(root: LinearLayout) {
+        when (sheet) {
+            1 -> {
+                root.addView(sheetHeader("More", 0))
+                val imp = rowBox()
+                imp.addView(twoLines("Import from plugin", "Plugin > Glossary > Copy for keyboard", true))
+                imp.isClickable = true
+                imp.setOnClickListener { v -> fb(v); sheet = 2; api.refresh() }
+                root.addView(imp)
+                val raw = rowBox()
+                raw.addView(twoLines("Show raw names", "Japanese / Korean / Chinese originals under each term", true))
+                val sw = Switch(showRaw)
+                sw.layoutParams = lp(dp(40), dp(24))
+                raw.addView(sw)
+                raw.isClickable = true
+                raw.setOnClickListener { v -> fb(v); showRaw = !showRaw; api.refresh() }
+                root.addView(raw)
+                val help = rowBox()
+                help.addView(twoLines("How it works", "One short page", true))
+                help.isClickable = true
+                help.setOnClickListener { v -> fb(v); sheet = 4; api.refresh() }
+                root.addView(help)
+            }
+            2 -> {
+                root.addView(sheetHeader("Import from plugin", 1))
+                val info = try { api.clipInfo() } catch (_: Throwable) { "" }
+                val c = card()
+                c.addView(label(if (info.isNotEmpty()) "Found on clipboard:\n" + info else "Nothing to import yet.\nIn the plugin: Glossary > Copy for keyboard, then come back here.", 13f, if (info.isNotEmpty()) ink() else dim()))
+                c.layoutParams = lp(MATCH, WRAP, 0f, 0, 0, 0, 4)
+                root.addView(c)
+                root.addView(hint("Importing again updates this novel's list. Terms you added yourself stay."))
+                val b = UiKit.btn(ctx, prefs, "Import", 0f, 46, JabraTokens.T_BODY, { v -> fb(v) }) { sheet = 0; tab = 1; api.pasteGlossary() }
+                fill(b, info.isNotEmpty())
+                b.layoutParams = lp(MATCH, dp(46))
+                root.addView(b)
+            }
+            3 -> {
+                root.addView(sheetHeader("Novels", 0))
+                val paste = UiKit.btn(ctx, prefs, "Import from plugin", 0f, 40, JabraTokens.T_BTN, { v -> fb(v) }) { sheet = 2; api.refresh() }
+                fill(paste)
+                paste.layoutParams = lp(MATCH, dp(40), 0f, 0, 0, 0, 6)
+                root.addView(paste)
+                val list = api.novels()
+                val sv = ScrollView(ctx)
+                sv.layoutParams = lp(MATCH, dp(150))
+                val box = LinearLayout(ctx)
+                box.orientation = LinearLayout.VERTICAL
+                for (n in list) {
+                    val row = rowBox()
+                    if (n.active) { try { row.background = outline(if (dark()) 0xFF1B2745.toInt() else 0xFFEAF1FB.toInt(), acc, 10) } catch (_: Throwable) { } }
+                    val dot = View(ctx)
+                    dot.background = if (n.active) pill(acc, 6) else outline(Color.TRANSPARENT, dim(), 6)
+                    row.addView(dot, lp(dp(12), dp(12), 0f, 0, 0, 8, 0))
+                    row.addView(twoLines(n.name, n.pairs.toString() + (if (n.pairs == 1) " term" else " terms") + " · " + n.locked + " kept"))
+                    row.isClickable = true
+                    row.setOnClickListener { v -> fb(v); sheet = 0; tab = 1; listMode = false; api.pickNovel(n.name) }
+                    box.addView(row)
+                }
+                if (list.isEmpty()) box.addView(hint("No novel yet. In the plugin tap Glossary > Copy for keyboard, then Import here."))
+                sv.addView(box)
+                root.addView(sv)
+                val cur = api.novel()
+                if (cur.isNotEmpty()) {
+                    val del = UiKit.btn(ctx, prefs, if (api.deleteAsk()) "Sure? Delete " + cur else "Delete " + cur, 0f, 36, JabraTokens.T_BTN, { v -> fb(v) }) { api.deleteNovel() }
+                    del.setTextColor(redInk())
+                    root.addView(del, lp(WRAP, WRAP, 0f, 0, 4, 0, 0))
+                }
+                if (api.toast().isNotEmpty()) root.addView(hint(api.toast()))
+            }
+            else -> {
+                root.addView(sheetHeader("How it works", 1))
+                val c = card()
+                c.addView(label(
+                    "Fix: type the wrong term and the correct term. The text above shows the change before you tap.\n\n" +
+                    "Several wrong spellings of one term: separate them with ;\n\n" +
+                    "Use list: fixes every term of the novel in one tap.\n\n" +
+                    "Save to list: keeps the pair for the next chapters. Terms shows them under the correct term.\n\n" +
+                    "Keep as is: names that are never changed.", 13f, ink()))
+                root.addView(c)
+            }
+        }
     }
 }

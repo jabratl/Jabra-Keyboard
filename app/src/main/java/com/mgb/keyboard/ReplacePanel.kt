@@ -1874,6 +1874,7 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
     // UI = FixNamesView.kt (class FixNamesUi), logic = typing/FixNames.java (tested). typing == 10 = the screen (tabs Fix names | Novels), typing == 12 = typing in its search box.
     // Everything below uses the OLD code (undo stack, never-change list, glossary paste, delete novel, doReplace). If the screen cannot be built, fnView() falls back to the old Sets screen.
     private var fnToast = ""
+    private var fnKeepBack = false                        // v0.58.0 (FX2): the Never change screen was opened from Fix terms (Keep as is > + Add): back returns there
     private var fnBack = false                                // true while Find / With / search is typed from this screen: Done returns here
     private var fnQuery = ""                                  // search box of this screen (memory only)
 
@@ -1902,12 +1903,25 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
         override fun deleteNovel() { fnToast = ""; fnDelete() }
         override fun removeLock(term: String) { fnRemoveLock(term) }
         override fun refresh() { fnRefresh() }
+        // v0.58.0 (FX2): Fix terms screen
+        override fun clearFields() { find = ""; repl = ""; caretPos = 0; fnRefresh() }
+        override fun loadPair(forms: String, to: String) { find = forms; repl = to; caretPos = 0; fnToast = ""; fnRefresh() }
+        override fun openKeep() { fnKeepBack = true; fnUi.tab = 3; openProtect() }
+        override fun clipInfo(): String = try {
+            if (io.blocked()) "" else {
+                val t = io.clipText() ?: ""
+                if (!GlossaryImport.looksLike(t)) "" else {
+                    val g = GlossaryImport.parse(t, 0)
+                    (if (g.novel.isNotEmpty()) g.novel else "Glossary") + " \u00B7 " + g.wrong + " terms to fix \u00B7 " + g.never.size + " to keep as is"
+                }
+            }
+        } catch (_: Throwable) { "" }
     }
 
     private fun fnRefresh() { refresh() }
 
     private fun openFixNames() {
-        try { fnToast = ""; fnUi.tab = 1; typing = 10; confirmAll = false; setPrev = null; novelNote = ""; readSource(false) } catch (_: Throwable) { typing = 0 }
+        try { fnToast = ""; fnUi.open(); typing = 10; confirmAll = false; setPrev = null; novelNote = ""; readSource(false) } catch (_: Throwable) { typing = 0 }
         refresh()
     }
 
@@ -2416,7 +2430,7 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
         root.setPadding(dp(2), dp(4), dp(2), dp(4))
         val shown = msg
         msg = ""
-        val back: () -> Unit = { typing = 0; protectAsk = false; refresh() }
+        val back: () -> Unit = { typing = if (fnKeepBack) 10 else 0; fnKeepBack = false; protectAsk = false; refresh() }   // v0.58.0 (FX2): back to Fix terms when opened from there
         val title = ReplaceProtect.label(protectList.size) + (if (novelCur.isEmpty()) "" else " \u00B7 " + novelCur)   // v0.55.0 (NV1): the list belongs to the active novel
         val clearLabel = if (protectAsk) "Sure? Clear" else "Clear"
         val acts: List<Pair<String, () -> Unit>> = if (protectList.isEmpty()) emptyList() else listOf(Pair(clearLabel) { protectClear() })

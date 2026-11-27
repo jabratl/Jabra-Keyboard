@@ -3,6 +3,8 @@ package com.mgb.keyboard.typing;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
@@ -211,6 +213,31 @@ public final class FixNames {
             }
         } catch (RuntimeException e) { /* a partial preview is fine */ }
         return sc;
+    }
+
+    /**
+     * v0.58.0 (FX2): the raw names of a novel for the "Show raw names" switch: key = right form in lower case, value = the raw terms of the plugin's "raw to English" sets
+     * ("林风" for "Lin Feng", several raw terms joined by ", "). Plain-text rules only. Never throws.
+     */
+    public static Map<String, String> rawOf(String novel, List<String> names, List<String> texts) {
+        Map<String, String> out = new LinkedHashMap<String, String>();
+        try {
+            if (novel == null || names == null || texts == null) return out;
+            for (int s = 0; s < names.size() && s < texts.size(); s++) {
+                String n = names.get(s);
+                if (!NovelBook.belongs(n, novel) || NovelBook.isMine(n) || !"raw".equals(GlossaryImport.kindOf(n))) continue;
+                ReplaceRules.Parsed p = ReplaceRules.parse(texts.get(s));
+                for (ReplaceRules.Rule r : p.rules) {
+                    if (r.kind != ReplaceRules.K_TEXT || r.with == null || r.find == null) continue;
+                    String k = r.with.trim().toLowerCase(Locale.ROOT);
+                    if (k.isEmpty()) continue;
+                    String cur = out.get(k);
+                    if (cur == null) out.put(k, r.find.trim());
+                    else if (!(", " + cur + ", ").contains(", " + r.find.trim() + ", ")) out.put(k, cur + ", " + r.find.trim());
+                }
+            }
+        } catch (RuntimeException e) { /* what was read stays */ }
+        return out;
     }
 
     /** "Fix 3 in text" / "Nothing to fix". */
