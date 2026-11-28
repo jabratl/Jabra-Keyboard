@@ -1,3 +1,18 @@
+v0.65.0 - CLEAN 2: the Replace screen is drawn exactly like docs/replace-tool-mock-v3.html
+- WHY: the owner chose the v3 mock (simple, arranged, compact) as THE look of Replace.
+- WHAT (all in the Clean look, new file ReplaceClean.kt = view builders, ReplacePanel.mainViewClean uses them):
+  1) Line 1: [ABC] [Project: A v] [Fix N] [...]. Fix shows how many places the active project would fix in the field text (FixNames.scan), plain "Fix" when 0. Rounded 12 dp buttons, accent button for Fix.
+  2) ONE rounded card (14 dp): FIND (value, Sel, options pill) and WITH (value, Clip, swap). Small upper-case labels, 16 sp values. The pill shows the mode and the options ("Word . Aa v"), with a small accent dot while any option is not the default.
+  3) The pill opens / closes ONE inline line: [Text | Word | Regex] [Aa] [Smart] (Smart is dimmed in Regex). Closed by default. List and \n stay in the ... line.
+  4) A line of Recent pair chips (only while "Recent pairs" is ON and the list is not empty). Tap = Find and With are filled (usePair).
+  5) Action line: [< k/N >] [This] [Rest] [Replace all (N)] - the count is a round badge INSIDE the Replace all button, buttons shrink instead of overflowing. The confirm tap shows "Sure? Replace all" (no badge, warn colour). Long press = peek, as before.
+  6) One meta line: status (message, or "N matches"), scope chip (Field / Selection / From cursor / To cursor, tap = change), Undo / Paste back / Copy.
+- NOT in the keyboard (mock only): the document preview with before -> after, tap a change to skip it, Redo (the app has Undo only), and the inline keyboard. They need engine / host work and are separate steps.
+- Falls back to the older looks as before (a loaded set, a pair list, any exception: the note line says "Clean look error: ...").
+- NOT tested: Kotlin NOT compiled, phone NOT tested. If the Kotlin build is red, the new places are ReplaceClean.kt (whole file) and ReplacePanel.kt (search "v0.65.0": mainViewClean, projectFixCount, cleanOpts).
+- Code: NEW ReplaceClean.kt; PATCH ReplacePanel.kt, app/build.gradle.kts (0.65.0), CHANGELOG.txt.
+- Rollback: restore ReplacePanel.kt and app/build.gradle.kts from v0.64.1, delete ReplaceClean.kt.
+
 v0.64.1 - CLEAN FIX: the Clean look now also works when Float is ON (it used to fall back to the old Slim look)
 - WHY: the owner saw no change. The panel had the Float switch ON (rp_float), and v0.64.0 handed that case to the older look without a word.
 - WHAT: Clean look now supports Float: the Float toggle moved into the ... line (next to Recent / Never / List / \n / Help), the floating window feed and the inline float test card are the same as in the Slim look. Only a loaded set or a pair list still use the older looks. If the Clean look fails for any other reason, the note line now says "Clean look error: ..." instead of silently showing the old look.
