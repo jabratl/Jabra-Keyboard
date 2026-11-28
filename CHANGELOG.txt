@@ -1,3 +1,11 @@
+v0.66.1 - FIX: the term list of the Project screen could not be scrolled
+- WHY (seen in the owner's screen recording): the Project screen is a little taller than the keyboard area, so the Replace panel around it scrolls. That outer scroll took every drag, the list never moved.
+- WHAT: the Terms and Keep as is lists (and the project list) now keep the drag for themselves when they have more to show (NestedScroll in ProjectView.kt; it asks the parent not to intercept). The lists are also 16 dp shorter at the default key height (ProjectPlan.listHeightDp = 6 key rows minus 232 dp, min 56 dp) so the Fix button is inside the keyboard area.
+- NOT tested: Kotlin NOT compiled, phone NOT tested. If the list still does not scroll, tell me: next step is to hide the Field text card.
+- Also: tools/FixTermsMergeTest.java had 3 checks that looked for the old fieldBox(...) text of v0.65.1 (red since v0.66.0); they now look for the new inputBox(...) calls. Java suite: 187/189 green, the 2 reds are the old SectionPlanTest / SettingsHelpTest.
+- Code: PATCH ProjectView.kt, typing/ProjectPlan.java, tools/ProjectPlanTest.java, tools/FixTermsMergeTest.java, app/build.gradle.kts (0.66.1), CHANGELOG.txt.
+- Rollback: restore the four files from v0.66.0.
+
 v0.66.0 - PROJECT 3: the Project screen is drawn exactly like docs/project-screen-mock.html (and it can now fix the text itself)
 - WHY: the owner chose project-screen-mock.html as THE look of the Project screen (the screen that Replace > Project opens). The old screen had no view of the text, no counts and no Fix button.
 - WHAT (ProjectView.kt, class ProjectUi; the Api stays the same, two members with default bodies were added):

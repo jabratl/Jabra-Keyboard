@@ -100,10 +100,10 @@ public class ProjectPlanTest {
         eq("chip null", ProjectPlan.chipName(null), "");
 
         // list height
-        eq("list default keys (48)", ProjectPlan.listHeightDp(48), 72);
-        eq("list tall keys (64)", ProjectPlan.listHeightDp(64), 164);
+        eq("list default keys (48)", ProjectPlan.listHeightDp(48), 56);
+        eq("list tall keys (64)", ProjectPlan.listHeightDp(64), 152);
         eq("list huge keys", ProjectPlan.listHeightDp(200), 236);
-        eq("list zero keys", ProjectPlan.listHeightDp(0), 72);
+        eq("list zero keys", ProjectPlan.listHeightDp(0), 56);
 
         // messages
         eq("problem: type", ProjectPlan.isProblem("Type the wrong forms first."), true);

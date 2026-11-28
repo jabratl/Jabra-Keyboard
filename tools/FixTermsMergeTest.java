@@ -62,8 +62,8 @@ public class FixTermsMergeTest {
         ok(!has(rp, "fnKeepBack") && !has(rp, "openKeep"), "the old 'open Never change from Fix terms' hop is gone");
 
         // ---- typing codes
-        ok(has(fv, "fieldBox(\"New project name\", api.newNovelInput(), 13)") && has(fv, "api.type(13)"), "view: new novel name = typing 13");
-        ok(has(fv, "fieldBox(\"Name to keep as is\", api.keepInput(), 14)") && has(fv, "api.type(14)"), "view: name to keep = typing 14");
+        ok(has(fv, "api.newNovelInput()") && has(fv, "api.type(13)"), "view: new novel name = typing 13");
+        ok(has(fv, "inputBox(\"Name to keep as is\", api.keepInput(), 44, 15f, 14)") && has(fv, "api.type(14)"), "view: name to keep = typing 14");
         ok(has(rp, "if (typing == 14) head.addView(btn(\"Add\", 1.4f, 34) { commitKeepName() })"), "typeView: Add button for the Keep box");
         ok(has(rp, "else if (typing == 14) fnKeepIn = v else if (typing == 15) fnPairIn = v else if (typing == 13) novelNameBuf = v else repl = v"), "setCur knows typing 14");
         ok(has(rp, "else if (typing == 14) 14 else if (typing == 15) 15 else if (typing == 13) 13 else 1;"), "paste picker returns to the Keep box");
@@ -78,7 +78,7 @@ public class FixTermsMergeTest {
         ok(has(rp, "ll.addView(projectBar(), 0)"), "every Replace look gets the Project row");
         ok(has(rp, "private fun runProject()") && has(rp, "fnFix(FixNames.activeRules(rows, null), true)"), "Fix with project runs all terms smartly");
         ok(has(rp, "else if (typing == 15) head.addView(btn(") && has(rp, "private fun commitPairLine()") && has(rp, "private fun fnDeleteTerm("), "pair line (typing 15), edit and delete exist");
-        ok(has(fv, "fieldBox(\"wrong; wrong => right\", api.pairInput(), 15)") && has(fv, "api.deleteTerm(") && has(fv, "api.editTerm("), "view: add box, edit and delete");
+        ok(has(fv, "inputBox(\"wrong; wrong => right\", api.pairInput(), 44, 15f, 15, editing)") && has(fv, "api.deleteTerm(") && has(fv, "api.editTerm("), "view: add box, edit and delete");
         ok(!has(rp, "FixNamesUi") && !has(rp, "ReplaceModeBar"), "the old Fix terms screen and the mode bar are not used any more");
 
         // ---- syntax guard (no Kotlin compiler in the test box)

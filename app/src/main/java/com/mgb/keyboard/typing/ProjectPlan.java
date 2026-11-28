@@ -11,7 +11,7 @@ public final class ProjectPlan {
     private ProjectPlan() { }
 
     public static final int PREVIEW_MAX = 100;      // characters shown in the preview (2 lines)
-    public static final int LIST_MIN_DP = 72, LIST_MAX_DP = 236;
+    public static final int LIST_MIN_DP = 56, LIST_MAX_DP = 236;
     public static final int CHIP_MAX = 18;          // characters of the project name on the chip
 
     /** The preview text and the highlight spans inside it (starts[i] .. ends[i], end exclusive). */
@@ -119,10 +119,10 @@ public final class ProjectPlan {
         return n.substring(0, cut) + "\u2026";
     }
 
-    /** Height of the term list in dp. About six key rows in all, minus what the other lines use; kept between LIST_MIN_DP and LIST_MAX_DP. */
+    /** Height of the term list in dp. About six key rows in all, minus what the other lines use (the screen must not be taller than the keyboard area); kept between LIST_MIN_DP and LIST_MAX_DP. */
     public static int listHeightDp(int keyHeightDp) {
         int k = keyHeightDp <= 0 ? 48 : keyHeightDp;
-        int h = k * 6 - 220;
+        int h = k * 6 - 232;
         return h < LIST_MIN_DP ? LIST_MIN_DP : (h > LIST_MAX_DP ? LIST_MAX_DP : h);
     }
 

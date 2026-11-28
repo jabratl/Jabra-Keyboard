@@ -14,6 +14,7 @@ import android.text.style.ForegroundColorSpan
 import android.text.style.RelativeSizeSpan
 import android.text.style.StyleSpan
 import android.view.Gravity
+import android.view.MotionEvent
 import android.view.View
 import android.widget.LinearLayout
 import android.widget.ScrollView
@@ -93,6 +94,14 @@ class ProjectUi(private val ctx: Context, private val prefs: JabraPrefs, private
 
     fun open() { tab = 1; popOpen = false; delAsk = ""; pendingFrom = null }
     fun showNovels() { popOpen = true }
+
+    /** A ScrollView that keeps the drag for itself (the Replace panel around it may scroll too; without this the list could not be scrolled). */
+    private inner class NestedScroll(c: Context) : ScrollView(c) {
+        override fun onInterceptTouchEvent(ev: MotionEvent): Boolean {
+            if (ev.actionMasked == MotionEvent.ACTION_DOWN && (canScrollVertically(1) || canScrollVertically(-1))) parent?.requestDisallowInterceptTouchEvent(true)
+            return super.onInterceptTouchEvent(ev)
+        }
+    }
 
     // ---------------------------------------------------------------- small helpers
     private fun dp(v: Int): Int = JabraTokens.dp(ctx, v)
@@ -180,7 +189,7 @@ class ProjectUi(private val ctx: Context, private val prefs: JabraPrefs, private
     }
 
     private fun listArea(): ScrollView {
-        val sv = ScrollView(ctx)
+        val sv = NestedScroll(ctx)
         sv.isVerticalScrollBarEnabled = false
         val h = ProjectPlan.listHeightDp(try { host.keyHeightDp() } catch (_: Throwable) { 48 }) - (if (landscape()) 20 else 0)
         sv.layoutParams = lp(MATCH, dp(if (h < 56) 56 else h), 0f, 0, 4, 0, 3)
@@ -580,7 +589,7 @@ class ProjectUi(private val ctx: Context, private val prefs: JabraPrefs, private
         val t = ProjectPlan.toastText(api.toast())
         if (t.isNotEmpty() && !ProjectPlan.isFixed(api.toast())) { box.addView(hintLine(t, ProjectPlan.isProblem(t))); count++ }
 
-        val sv = ScrollView(ctx)
+        val sv = NestedScroll(ctx)
         sv.isVerticalScrollBarEnabled = false
         val want = count * 44 + 12
         val cap = ProjectPlan.listHeightDp(try { host.keyHeightDp() } catch (_: Throwable) { 48 }) + 110
