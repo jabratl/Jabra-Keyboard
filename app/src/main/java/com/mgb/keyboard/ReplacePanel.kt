@@ -1752,17 +1752,6 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
     private var cleanBuilt = false
     private fun cleanOn(): Boolean = try { prefs.bool("rp_clean", true) } catch (_: Throwable) { true }
 
-    private var cleanOpts = false   // v0.65.0: the collapsible [Text | Word | Regex] [Aa] [Smart] line under the Find card (closed by default)
-
-    /** v0.65.0: how many places the active project would fix in the field text (the number on the Fix button). 0 = none / no project / any problem. */
-    private fun projectFixCount(): Int = try {
-        if (novelCur.isEmpty() || src.isEmpty() || src.length > 30000) 0 else {
-            val sets = ReplaceStore.load(prefs).filterKeys { NovelBook.isMine(it) }
-            val rows = FixNames.rows(novelCur, ArrayList(sets.keys), sets.values.map { it.rules })
-            if (rows.isEmpty()) 0 else FixNames.scan(src, rows, null, protectList, null, null).hits
-        }
-    } catch (_: Throwable) { 0 }
-
     private fun mainViewClean(): View {
         if (setRules != null || pairMode) throw IllegalStateException("clean look: a set or a pair list uses the older looks")
         val root = LinearLayout(ctx)
@@ -1778,9 +1767,21 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
         msg = ""
         val fcard: View? = if (floatOn() && !floatSwitch()) (try { floatCard(res, shown) } catch (_: Throwable) { null }) else null   // same float test card as the Slim look
 
-        // 1) [ABC] [Project: A v] [Fix N] [...]   (v0.65.0: drawn by ReplaceClean, design = docs/replace-tool-mock-v3.html)
-        root.addView(ReplaceClean.topRow(ctx, prefs, host, novelCur, projectFixCount(), cleanMenu,
-            { host.showLetters() }, { openFixNames() }, { runProject() }, { cleanMenu = !cleanMenu; refresh() }))
+        // 1) one top line
+        val top = row()
+        top.gravity = Gravity.CENTER_VERTICAL
+        top.addView(small("ABC", 38) { host.showLetters() })
+        val nm = if (novelCur.length > 14) novelCur.substring(0, 13) + "\u2026" else novelCur
+        val pc = UiKit.chip(ctx, prefs, if (novelCur.isEmpty()) "Project  \u25BE" else "Project: " + nm + "  \u25BE", novelCur.isNotEmpty(), 38, { v -> host.feedback(v) }) { openFixNames() }
+        pc.layoutParams = LinearLayout.LayoutParams(0, dp(38), 1f).also { it.setMargins(dp(2), dp(2), dp(2), dp(2)) }
+        top.addView(pc)
+        if (novelCur.isNotEmpty()) {
+            val fb = small("Fix", 38) { runProject() }
+            try { accentButton(fb, JabraTokens.ACCENT) } catch (_: Throwable) { }
+            top.addView(fb)
+        }
+        top.addView(small(if (cleanMenu) "\u2715" else "\u22EF", 38) { cleanMenu = !cleanMenu; refresh() })
+        root.addView(top)
 
         // 1b) the "..." line (closed by default)
         if (cleanMenu) {
@@ -1791,63 +1792,51 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
             mr.addView(btn((if (opt.list) "\u2713 " else "") + "List", 0.9f, 34) { opt.list = !opt.list; optChanged() })
             mr.addView(btn((if (opt.escapes) "\u2713 " else "") + "\\n", 0.8f, 34) { opt.escapes = !opt.escapes; optChanged() })
             mr.addView(btn("Help", 0.9f, 34) { cleanMenu = false; typing = 5; helpPage = 0; confirmAll = false; refresh() })
-            if (floatSwitch()) mr.addView(btn(if (winShows()) "\u2713 Float" else "Float", 1f, 34) { cleanMenu = false; toggleFloat() })   // the Float button lives in the ... line
+            if (floatSwitch()) mr.addView(btn(if (winShows()) "\u2713 Float" else "Float", 1f, 34) { cleanMenu = false; toggleFloat() })   // the Float button now lives in the ... line
             root.addView(mr)
         }
 
-        // 2) ONE rounded card: FIND (+ the options pill) / WITH (Sel, swap)
-        val card = ReplaceClean.card(ctx, prefs)
-        val pill = ReplaceClean.pill(ctx, prefs, host, opt.mode, opt.matchCase, opt.smart, cleanOpts) { cleanOpts = !cleanOpts; refresh() }
-        val noteInk = JabraTokens.cardNote(prefs)
-        card.addView(ReplaceClean.field(ctx, prefs, host, "Find", find, "Type the word to find", shortVal(find), { startTyping(1) },
-            listOf(ReplaceSlim.textButton(ctx, host, "Sel", 30, noteInk) { take(true, io.selected(), "Nothing is selected") }, pill)))
-        card.addView(ReplaceClean.divider(ctx, prefs))
-        card.addView(ReplaceClean.field(ctx, prefs, host, "With", repl, "Replace with", shortVal(repl), { startTyping(2) },
-            listOf(ReplaceSlim.textButton(ctx, host, "Clip", 30, noteInk) { take(false, io.clipText(), "Clipboard is empty") }, ReplaceSlim.textButton(ctx, host, "\u21C4", 30, noteInk) { swap() })))
+        // 2) Find / With in ONE card
+        val card = ReplaceSlim.slimCard(ctx, prefs)
+        card.addView(ReplaceSlim.slimLine(ctx, prefs, host, "Find", find, "Type the word to find", shortVal(find), { startTyping(1) },
+            listOf(Pair("Sel") { take(true, io.selected(), "Nothing is selected") }, Pair("Clip") { take(true, io.clipText(), "Clipboard is empty") })))
+        card.addView(ReplaceSlim.slimDivider(ctx, prefs))
+        card.addView(ReplaceSlim.slimLine(ctx, prefs, host, "With", repl, "Replace with", shortVal(repl), { startTyping(2) },
+            listOf(Pair("\u21C4") { swap() })))
         root.addView(card)
 
-        // 3) the collapsible options line
-        if (cleanOpts) root.addView(ReplaceClean.options(ctx, prefs, host, opt.mode, opt.matchCase, opt.smart,
-            { i -> opt.mode = i; optChanged() }, { opt.matchCase = !opt.matchCase; optChanged() }, { opt.smart = !opt.smart; optChanged() }))
+        // 3) mode + the two options that matter
+        val mode = row()
+        mode.gravity = Gravity.CENTER_VERTICAL
+        val seg = ReplaceSlim.segmented(ctx, prefs, host, opt.mode) { i -> opt.mode = i; optChanged() }
+        seg.layoutParams = LinearLayout.LayoutParams(0, dp(34), 1f).also { it.setMargins(dp(2), dp(2), dp(2), dp(2)) }
+        mode.addView(seg)
+        mode.addView(UiKit.chip(ctx, prefs, "Aa", opt.matchCase, 34, { v -> host.feedback(v) }) { opt.matchCase = !opt.matchCase; optChanged() })
+        mode.addView(UiKit.chip(ctx, prefs, "Smart", opt.smart, 34, { v -> host.feedback(v) }) { opt.smart = !opt.smart; optChanged() })
+        root.addView(mode)
 
-        // 3b) recent pairs as one line of chips (only while Recent pairs is ON and there are some)
-        try {
-            if (prefs.bool(RecentPairs.PREF_ON, false)) {
-                val rl = RecentPairs.parse(prefs.str(RecentPairs.PREF_LIST, ""))
-                if (rl.isNotEmpty()) root.addView(ReplaceClean.recent(ctx, prefs, host, rl.take(6).map { RecentPairs.label(it, 14) }) { i -> usePair(rl[i]) })
-            }
-        } catch (_: Throwable) { }
-
-        // 4) [< k/N >] [This] [Rest] [Replace all (N)]
+        // 4) step + actions
         val ask = confirmAll && !usedSel
         val nHits = res.hits.size
         val plan = ReplaceSlimPlan.step(nHits, res.count, step, res.err != null, res.blank, false, false, find.isEmpty(), pairRules.size, ask)
         if (nHits > 0) step = step.coerceIn(0, nHits - 1)
-        if (fcard != null) root.addView(fcard) else root.addView(ReplaceClean.actions(ctx, prefs, host, plan, Math.max(res.count, nHits), ask, if (ask) JabraTokens.WARN else JabraTokens.ACCENT,
+        if (fcard != null) root.addView(fcard) else root.addView(ReplaceSlim.stepRow(ctx, prefs, host, plan,
             { if (nHits > 0) { step = if (step <= 0) nHits - 1 else step - 1; showStep(res) } },
             { if (nHits > 0) { step = if (step >= nHits - 1) 0 else step + 1; showStep(res) } },
             { showStep(res) },
             { onReplace(ReplaceEngine.run(src, find, repl, opt, step + 1, Int.MAX_VALUE), true) },
             { onReplace(ReplaceEngine.replaceNth(src, find, repl, opt, step + 1), true) },
             { onReplace(res, false) },
-            { b -> peekOn(b) { peekResult(res) } }))
+            { b -> accentButton(b, if (ask) JabraTokens.WARN else JabraTokens.ACCENT); peekOn(b) { peekResult(res) } }))
 
-        // 5) one meta line: status (message, or the match count), scope chip, Undo / Paste back / Copy
+        // 5) one note line: message or scope (tap = scope), link on the right: Undo / Paste back / Copy
         val canPasteBack = copiedOut != null && copiedOut == res.out
         val note = ReplaceSlimPlan.note(shown, scopeWord(), src.length, undoStack.canUndo(), ReplaceExtras.undoLabel(undoStack.size()), canPasteBack)
-        val total = Math.max(res.count, nHits)
-        val status = if (shown.isNotEmpty()) shown
-            else if (find.isEmpty()) "Type a word to find"
-            else if (res.err != null) "That pattern is not valid"
-            else if (total == 0) "No match"
-            else total.toString() + (if (total == 1) " match" else " matches") + (if (opt.keepCase) "  \u00B7  keeps case" else "")
-        val scopeShort = if (usedSel) "Selection" else if (part == 1) "From cursor" else if (part == 2) "To cursor" else "Field"
-        val rightText = if (note.rightKind == ReplaceSlimPlan.R_UNDO) "\u21B6 " + note.rightLabel else note.rightLabel
-        root.addView(ReplaceClean.meta(ctx, prefs, host, status, scopeShort, { toggleScope() }, rightText) {
+        root.addView(ReplaceSlim.noteLine(ctx, prefs, host, note, { toggleScope() }, {
             if (note.rightKind == ReplaceSlimPlan.R_UNDO) undo()
             else if (note.rightKind == ReplaceSlimPlan.R_PASTE_BACK) pasteCopied()
             else copyResult(res)
-        })
+        }))
         if (floatSwitch() && fcard == null) {   // floating window feed (same as the Slim look)
             val fSnap = ReplaceFloat.snap(src, res, step, false, floatLines(res), ReplaceFloat.WIN_MAX_ROWS, null)
             val fTab = ReplaceFloat.sanitizeTab(prefs.int("rp_float_tab", 0))
