@@ -2145,6 +2145,16 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
         override fun deleteTerm(find: String) { fnToast = fnDeleteTerm(find); fnRefresh() }
         override fun wholeWord(): Boolean = prefs.bool("rp_proj_word", true)
         override fun setWholeWord(on: Boolean) { prefs.setBool("rp_proj_word", on); fnRefresh() }
+        // v0.66.0 (PROJECT 3): the Fix button of the Project screen (the same smart fix as Replace > Fix) and the term that is being edited (accent border)
+        override fun fixProject() {
+            try {
+                val sets = ReplaceStore.load(prefs).filterKeys { NovelBook.isMine(it) }
+                val rows = FixNames.rows(novelCur, ArrayList(sets.keys), sets.values.map { it.rules })
+                fnToast = if (novelCur.isEmpty()) "Pick a project first" else if (rows.isEmpty()) "Nothing to fix: no terms in " + novelCur + " yet" else fnFix(FixNames.activeRules(rows, null), true)
+            } catch (_: Throwable) { fnToast = "Could not fix" }
+            fnRefresh()
+        }
+        override fun editKey(): String = fnEditKey
         override fun keepInput(): String = fnKeepIn
         override fun newNovelInput(): String = novelNameBuf
         override fun clearToast() { fnToast = ""; novelNote = ""; protectAsk = false }

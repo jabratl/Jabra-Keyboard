@@ -1,0 +1,23 @@
+JABRA KEYBOARD - HANDOFF v0.66.0 (PROJECT 3: Project screen = docs/project-screen-mock.html)
+=======================================================================================
+Read with HANDOFF.txt (rules in section 0: reply in Banglish, patch do not rewrite, zip with only changed files, say NOT tested for what was not run).
+
+STATE
+  - Project screen (Replace > Project) = ProjectView.kt (class ProjectUi). Pure rules = typing/ProjectPlan.java (tested). Data / fix logic = typing/FixNames.java + ReplacePanel.kt (fnApi, fnFix, commitPairLine, fnDeleteTerm).
+  - fnApi got two members in v0.66.0: fixProject() (smart fix of the field with the active project) and editKey() (Rule.find of the term being edited).
+  - Typing codes of the mini keyboard: 12 search, 13 new project name, 14 name to keep, 15 the pair line. Done returns to the project screen (typing 10).
+  - The project list is a card IN PLACE of the lower part (not an overlay).
+
+OPEN / NEXT (only if the owner asks)
+  1) The INLINE keyboard of the mock (keyboard under the Fix button, no screen switch). Needs ReplacePanel.typeView / fillKeys to be reusable as a view that can sit under ProjectUi. Plan: build the keys box once, add it to the bottom of ProjectUi when fnBack is true and typing in 12..15, keep typeView for all other cases.
+  2) Auto-clear of the hint message after ~2.6 s (the mock does it; the keyboard clears it on the next tap).
+  3) Phone check of height: the screen is taller than the Clean Replace screen (Field text card + list). Landscape hides the card.
+
+NOT TESTED: Kotlin was not compiled and the phone was not used for v0.66.0. First thing next chat: if GitHub Actions is red, open the red lines of the Kotlin step and fix ProjectView.kt.
+
+PHONE CHECK (Banglish)
+  1) Replace > Project: upore "Field text" card, niche [<] [Project Name v], Terms / Keep as is, Add box, Fix button dekhbe.
+  2) Text-e kono term thakle oi shobdo holud rong-e highlight, card-er daane "N to fix", term-er pashe "N in text".
+  3) Fix tap: text bodlabe, button-er jaygay "Fixed N in the text  Undo"; Undo tap = ager text.
+  4) Term tap = edit (border accent, button Save). X tap = "Delete?", abar tap = delete.
+  5) Project v tap = list; + New project = nam type kore Add project; No project; Delete (2 tap).

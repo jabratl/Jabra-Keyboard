@@ -1,3 +1,24 @@
+v0.66.0 - PROJECT 3: the Project screen is drawn exactly like docs/project-screen-mock.html (and it can now fix the text itself)
+- WHY: the owner chose project-screen-mock.html as THE look of the Project screen (the screen that Replace > Project opens). The old screen had no view of the text, no counts and no Fix button.
+- WHAT (ProjectView.kt, class ProjectUi; the Api stays the same, two members with default bodies were added):
+  1) "Field text" card on top: the start of the field / selection text (2 lines, cut with ...), every place the project would fix is highlighted, "N to fix" / "nothing to fix" on the right. Names in Keep as is are never highlighted.
+  2) Line [<] [Project  Name v]. < = back to Replace. The Project button opens the project list (see 7).
+  3) Segmented [Terms N | Keep as is N] (accent pill on the active one).
+  4) Terms: Add box + [+ Add] (becomes [Save] while a term is edited, plus a [x] to clear the box), ONE hint line (default rule, "Editing a term...", or the message of the last action; problems in red), chips [Whole words] [Paste list] and the Search box, then the term cards: right form (bold), yellow badge "N in text", wrong forms as chips, X (first tap = "Delete?" in red, second tap deletes). The term being edited has an accent border.
+  5) Keep as is: Add box + [+ Add], hint, chips [+ Clipboard] [+ Selection] [Clear] (Clear asks "Sure? Clear all", dimmed when the list is empty), cards with X.
+  6) Big [Fix N in text] button (dimmed "Nothing to fix" when 0). After a fix it is replaced by a bar "Fixed N in the text  Undo" (Undo = the normal Replace undo). Fix = the SAME smart fix as Replace > Fix (whole words switch, keep-case, Keep as is names untouched).
+  7) Project list = ONE card in place of the lower part (not an overlay, so the panel height stays the same): projects (dot = active, "N terms . M kept"), + New project (type the name with the mini keyboard; a typed name shows as + Create "name"), No project, Delete <name> (second tap confirms).
+- The numbers come from ONE FixNames.scan per draw (limit 30000 characters, as before): highlights, the badge on every term and the number on the Fix button always agree with the Replace screen. Longer text: no highlights / badges, the Fix button says "Fix with project".
+- Height: the term list is taller with a bigger keyboard (typing/ProjectPlan.listHeightDp = 6 key rows minus 220 dp, 72..236 dp). In landscape the Field text card is hidden to save room.
+- NEW typing/ProjectPlan.java (pure Java, tested by tools/ProjectPlanTest.java, 60 checks): preview window (word-aware cut, surrogate-safe, highlight spans clipped), labels, hint, chip name, list height, message helpers.
+- PATCH ReplacePanel.kt: two small overrides in fnApi (fixProject, editKey). Nothing else in the engine, the stores or the prefs changed; no storage key changed (rp_novels, rp_novel_cur, rp_sets, never key, rp_proj_word are as before).
+- NEW docs/project-screen-mock.html (the design).
+- CHANGED on purpose: (a) the old list screen with the name box + [+ Create] is now the project list card (7); (b) the old line "Tap a term to edit it. X deletes (tap twice)." is gone (the mock has no such line; the hint line explains editing); (c) the old list screen's Delete / No project buttons moved into the project list card.
+- NOT built (needs host work, separate step): the INLINE keyboard of the mock. Typing still opens the Replace mini keyboard screen (typing codes 12 / 13 / 14 / 15) and Done comes back here, as before.
+- NOT tested: Kotlin NOT compiled (no kotlinc / no network in this chat), phone NOT tested. Java: ProjectPlanTest 60 ok. Whole tools/run_tests.sh = 187/189 green; the 2 reds (SectionPlanTest, SettingsHelpTest: keys auto_pad_select / pad_speed / pad_delay) are the SAME in the untouched v0.65.1 (186/188 there), they are not from this change. If the Kotlin build is red, the new places are ProjectView.kt (whole file) and ReplacePanel.kt (search "v0.66.0").
+- Code: NEW typing/ProjectPlan.java, tools/ProjectPlanTest.java, docs/project-screen-mock.html, HANDOFF_Project_v0.66.0.txt; PATCH ProjectView.kt, ReplacePanel.kt, app/build.gradle.kts (0.66.0), CHANGELOG.txt.
+- Rollback: restore ProjectView.kt, ReplacePanel.kt and app/build.gradle.kts from v0.65.1, delete ProjectPlan.java and ProjectPlanTest.java (or GitHub > Actions > Build APK > revert_to = previous).
+
 v0.65.1 - build fix: ReplaceClean.kt was missing the import of com.mgb.keyboard.typing.LookColors ("Unresolved reference: LookColors", line 52). Nothing else changed.
 - Code: PATCH ReplaceClean.kt, app/build.gradle.kts (0.65.1), CHANGELOG.txt.
 

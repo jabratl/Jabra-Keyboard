@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Project screen: mock</title>
+<style>
+:root{
+  --page:#dfe6f3; --page2:#eef2fa; --panel:#f5f7fc; --card:#fff; --sub:#edf1fa; --line:#dbe2f0; --ink:#121a33; --dim:#6a7694;
+  --acc:#3459e6; --acc2:#5b7cff; --accInk:#fff; --soft:#e3eafd; --bad:#c0392b; --hit:#ffe08a;
+  --key:#fff; --keyHi:#e6ebf7; --sh:0 12px 32px rgba(30,45,90,.16),0 2px 6px rgba(30,45,90,.08); --r:14px;
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --page:#060a14; --page2:#0b1224; --panel:#0e1629; --card:#16203a; --sub:#101a31; --line:#25335a; --ink:#e9eefc; --dim:#8c9ac3;
+    --acc:#9db9ff; --acc2:#c0d3ff; --accInk:#0a1738; --soft:#22335f; --bad:#ff8f87; --hit:#5a4a14;
+    --key:#1a2646; --keyHi:#2a3a68; --sh:0 12px 32px rgba(0,0,0,.5),0 2px 6px rgba(0,0,0,.35);
+  }
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0}
+body{background:linear-gradient(var(--page2),var(--page));color:var(--ink);font:15px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;min-height:100vh;display:flex;justify-content:center;align-items:flex-end;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
+.phone{width:100%;max-width:412px;display:flex;flex-direction:column;gap:12px;padding:12px}
+button{font:inherit;color:inherit;border:0;background:none;cursor:pointer;touch-action:manipulation;user-select:none}
+:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+
+.doc{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:10px 14px 12px;font-size:15px;line-height:1.7}
+.dh{display:flex;justify-content:space-between;font-size:12px;color:var(--dim);line-height:1.3;margin-bottom:2px}
+.doc mark{background:var(--hit);color:inherit;border-radius:5px;padding:0 2px}
+
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:24px;padding:10px;display:flex;flex-direction:column;gap:9px;position:relative;box-shadow:var(--sh)}
+.row{display:flex;align-items:center;gap:7px}
+.btn{height:40px;padding:0 13px;border-radius:12px;background:var(--card);border:1px solid var(--line);white-space:nowrap;transition:transform .09s,background .14s}
+.btn:active{transform:scale(.95);background:var(--soft)}
+.btn.pri{background:linear-gradient(180deg,var(--acc2),var(--acc));color:var(--accInk);border-color:transparent;font-weight:600;box-shadow:0 3px 10px color-mix(in srgb,var(--acc) 35%,transparent)}
+.btn[disabled]{opacity:.4;pointer-events:none;box-shadow:none}
+.grow{flex:1;min-width:0}
+.ico{width:40px;padding:0;font-size:20px}
+.proj{display:flex;gap:6px;align-items:center;overflow:hidden;text-align:left}
+.proj b{overflow:hidden;text-overflow:ellipsis;font-weight:600}
+.proj .d{color:var(--dim)}
+
+.seg{display:flex;background:var(--sub);border:1px solid var(--line);border-radius:14px;padding:3px}
+.seg button{flex:1;height:36px;border-radius:11px;color:var(--dim);transition:background .16s,color .16s}
+.seg button.on{background:var(--acc);color:var(--accInk);font-weight:600}
+.seg i{font-style:normal;margin-left:6px;font-size:12px;opacity:.85;background:color-mix(in srgb,currentColor 18%,transparent);border-radius:9px;padding:1px 7px}
+
+.add{display:flex;gap:7px}
+.inp{flex:1;min-width:0;height:46px;border-radius:var(--r);background:var(--card);border:1px solid var(--line);padding:0 14px;display:flex;align-items:center;overflow:hidden;white-space:nowrap;cursor:text;font-size:16px;transition:border-color .15s,box-shadow .15s}
+.inp.foc{border-color:var(--acc);box-shadow:0 0 0 3px color-mix(in srgb,var(--acc) 22%,transparent)}
+.inp.foc .v::after{content:"";display:inline-block;width:2px;height:19px;background:var(--acc);vertical-align:-4px;margin-left:1px;animation:blink 1s steps(1) infinite}
+@keyframes blink{50%{opacity:0}}
+.ph{color:var(--dim)}
+.inp .v{overflow:hidden}
+.hint{font-size:12.5px;color:var(--dim);padding:0 4px;min-height:17px}
+.hint.bad{color:var(--bad)}
+
+.tools{display:flex;gap:7px;align-items:center}
+.chip{height:38px;padding:0 12px;border-radius:12px;background:var(--card);border:1px solid var(--line);color:var(--dim);font-size:14px;white-space:nowrap;transition:transform .08s,background .14s}
+.chip:active{transform:scale(.95)}
+.chip.on{background:var(--soft);border-color:var(--acc);color:var(--ink);font-weight:600}
+.srch{flex:1;min-width:0;height:38px}
+.srch.inp{font-size:14px;padding:0 12px}
+
+.list{display:flex;flex-direction:column;gap:7px;max-height:236px;overflow:auto;padding:1px;scrollbar-width:none}
+.list::-webkit-scrollbar{display:none}
+.term{display:flex;align-items:center;gap:6px;background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:9px 6px 9px 14px;transition:border-color .15s,background .15s}
+.term.edit{border-color:var(--acc);background:color-mix(in srgb,var(--soft) 55%,var(--card))}
+.term .t{flex:1;min-width:0;cursor:pointer}
+.to{font-weight:600;font-size:15.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:flex;gap:8px;align-items:center}
+.n{font-size:11px;font-weight:600;background:var(--hit);color:var(--ink);border-radius:9px;padding:1px 7px;white-space:nowrap}
+.from{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
+.from span{font-size:12.5px;color:var(--dim);background:var(--sub);border:1px solid var(--line);border-radius:9px;padding:1px 8px}
+.x{width:40px;height:40px;border-radius:11px;color:var(--dim);font-size:16px;flex:none;transition:background .12s,transform .08s}
+.x:active{transform:scale(.92);background:var(--soft)}
+.x.ask{width:auto;padding:0 10px;font-size:13px;background:var(--bad);color:#fff;font-weight:600}
+.empty{padding:18px 8px;text-align:center;color:var(--dim);font-size:14px}
+
+.fix{height:44px;font-size:15px}
+.kbw{display:grid;grid-template-rows:0fr;transition:grid-template-rows .24s ease}
+.kbw.open{grid-template-rows:1fr}.kbw>div{overflow:hidden}
+.kb{display:flex;flex-direction:column;gap:6px;padding-top:2px}
+.kr{display:flex;justify-content:center;gap:5px}
+.k{flex:1;max-width:38px;height:42px;border-radius:10px;background:var(--key);border:1px solid var(--line);font-size:17px;box-shadow:0 1px 0 var(--line);transition:background .06s,transform .06s}
+.k:active{background:var(--keyHi);transform:scale(.93)}
+.k.w{max-width:58px;flex:1.5}.k.sp{max-width:none;flex:3}
+.k.go{background:var(--acc);color:var(--accInk);font-size:14px;font-weight:600;border-color:transparent}
+.toast{position:absolute;left:12px;right:12px;bottom:12px;background:var(--ink);color:var(--page2);border-radius:12px;padding:10px 14px;display:none;align-items:center;justify-content:space-between;gap:10px;font-size:14px;z-index:6}
+.toast.show{display:flex;animation:pin .16s ease-out}
+.toast button{color:var(--acc2);font-weight:600;padding:2px 6px}
+@keyframes pin{from{opacity:0;transform:translateY(8px)}}
+.pop{position:absolute;z-index:5;left:10px;right:10px;top:58px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:6px;box-shadow:var(--sh);display:none}
+.pop.show{display:block;animation:pin .14s ease-out}
+.pop button{display:flex;justify-content:space-between;width:100%;height:44px;align-items:center;padding:0 12px;border-radius:10px;text-align:left}
+.pop button:active{background:var(--soft)}
+.pop i{font-style:normal;color:var(--dim);font-size:13px}
+.pop hr{border:0;border-top:1px solid var(--line);margin:4px 6px}
+@media (max-width:420px){.chip{padding:0 10px;font-size:13px}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="phone">
+  <div class="doc"><div class="dh"><span>Field text</span><span id="dcount"></span></div><div id="doc"></div></div>
+
+  <div class="panel" id="panel">
+    <div class="row">
+      <button class="btn ico" id="back" aria-label="Back to Replace">‹</button>
+      <button class="btn grow proj" id="projBtn"><span class="d">Project</span><b id="pname"></b><span class="d">▾</span></button>
+    </div>
+
+    <div class="seg" id="seg"><button data-t="terms">Terms<i id="cT"></i></button><button data-t="keep">Keep as is<i id="cK"></i></button></div>
+
+    <div id="vTerms">
+      <div class="add"><div class="inp" id="iLine"><div class="v" id="vLine"></div></div><button class="btn pri" id="addBtn">+ Add</button></div>
+      <div class="hint" id="hint"></div>
+      <div class="tools" style="margin-top:2px">
+        <button class="chip" id="wholeBtn">Whole words</button>
+        <button class="chip" id="pasteBtn">Paste list</button>
+        <div class="inp srch" id="iSrch"><div class="v" id="vSrch"></div></div>
+      </div>
+      <div class="list" id="list" style="margin-top:9px"></div>
+    </div>
+
+    <div id="vKeep" hidden>
+      <div class="add"><div class="inp" id="iKeep"><div class="v" id="vKeepV"></div></div><button class="btn pri" id="keepAdd">+ Add</button></div>
+      <div class="hint">Names Replace never changes, even inside a longer match.</div>
+      <div class="tools"><button class="chip" id="keepClip">+ Clipboard</button><button class="chip" id="keepClr">Clear</button></div>
+      <div class="list" id="keepList" style="margin-top:9px"></div>
+    </div>
+
+    <button class="btn pri fix" id="fix"></button>
+
+    <div class="kbw" id="kbw"><div><div class="kb" id="kb"></div></div></div>
+    <div class="pop" id="pop"></div>
+    <div class="toast" id="toast"><span id="toastT"></span><button id="toastU">Undo</button></div>
+  </div>
+</div>
+
+<script>
+const $=s=>document.querySelector(s);
+const TEXT0="The Anomaly appeared. A Practitioner took the Body-Fortifying Pill near the Mana crystal while the Clan watched.";
+const S={text:TEXT0,prev:null,tab:"terms",whole:true,line:"",srch:"",keepIn:"",foc:"",edit:-1,delAsk:null,clrAsk:false,hint:"",bad:false,
+  proj:"Grandpa dimensions",
+  projects:{"Grandpa dimensions":{terms:[
+    {to:"Supernatural beings",from:["Anomaly"]},{to:"Vitality-Consolidating Pill",from:["Body-Fortifying Pill"]},
+    {to:"Cultivator",from:["Practitioner","Martial artist"]},{to:"Spirit stone",from:["Mana crystal"]},
+    {to:"Sect",from:["Clan"]},{to:"Qi",from:["Chi","Vital energy"]}],keep:[]},
+   "Night market":{terms:[{to:"lantern",from:["lamp"]}],keep:["Aunt Lee"]}}};
+const P=()=>S.projects[S.proj]||{terms:[],keep:[]};
+const esc=s=>s.replace(/[.*+?^${}()|[\]\\]/g,"\\$&");
+const html=s=>s.replace(/&/g,"&amp;").replace(/</g,"&lt;");
+const caseLike=(f,t)=>f.length>1&&f===f.toUpperCase()?t.toUpperCase():(f[0]!==f[0].toLowerCase()?t[0].toUpperCase()+t.slice(1):t);
+const re=w=>new RegExp((S.whole?"\\b":"")+esc(w)+(S.whole?"\\b":""),"gi");
+const countOf=t=>t.from.reduce((n,w)=>n+(S.text.match(re(w))||[]).length,0);
+
+function parse(line){
+  const i=line.indexOf("=>");if(i<0)return{err:"Use:  wrong; wrong => right"};
+  const to=line.slice(i+2).trim(),from=line.slice(0,i).split(/[;|]/).map(x=>x.trim()).filter(Boolean);
+  if(!from.length)return{err:"Type at least one wrong form"};if(!to)return{err:"Type the right form after =>"};
+  return{to,from};
+}
+function say(t,bad){S.hint=t;S.bad=!!bad;clearTimeout(say.t);say.t=setTimeout(()=>{S.hint="";render()},2600);render()}
+function toast(t,undo){$("#toastT").textContent=t;$("#toastU").style.display=undo?"":"none";$("#toast").classList.add("show");clearTimeout(toast.t);toast.t=setTimeout(()=>$("#toast").classList.remove("show"),3200)}
+
+function render(){
+  const p=P(),total=p.terms.reduce((n,t)=>n+countOf(t),0);
+  // field text with highlights
+  const all=[];p.terms.forEach(t=>t.from.forEach(w=>{let m,r=re(w);while((m=r.exec(S.text)))all.push([m.index,m[0].length])}));
+  all.sort((a,b)=>a[0]-b[0]);let out="",q=0;all.forEach(([i,l])=>{if(i<q)return;out+=html(S.text.slice(q,i))+"<mark>"+html(S.text.slice(i,i+l))+"</mark>";q=i+l});
+  $("#doc").innerHTML=out+html(S.text.slice(q));$("#dcount").textContent=total?total+" to fix":"nothing to fix";
+  $("#pname").textContent=S.proj||"none";
+  $("#cT").textContent=p.terms.length;$("#cK").textContent=p.keep.length;
+  document.querySelectorAll("#seg button").forEach(b=>b.classList.toggle("on",b.dataset.t===S.tab));
+  $("#vTerms").hidden=S.tab!=="terms";$("#vKeep").hidden=S.tab!=="keep";
+  // add box
+  $("#vLine").innerHTML=S.line?html(S.line):'<span class="ph">wrong; wrong => right</span>';
+  $("#iLine").classList.toggle("foc",S.foc==="line");$("#addBtn").textContent=S.edit>=0?"Save":"+ Add";
+  const h=$("#hint");h.textContent=S.hint||(S.edit>=0?"Editing a term. Tap Save, or clear the box to cancel.":"One line per term. Separate wrong forms with ;");h.className="hint"+(S.bad?" bad":"");
+  $("#wholeBtn").classList.toggle("on",S.whole);$("#wholeBtn").textContent=(S.whole?"✓ ":"")+"Whole words";
+  $("#vSrch").innerHTML=S.srch?html(S.srch):'<span class="ph">Search</span>';$("#iSrch").classList.toggle("foc",S.foc==="srch");
+  // terms
+  const q2=S.srch.trim().toLowerCase(),L=$("#list");L.innerHTML="";let shown=0;
+  p.terms.forEach((t,i)=>{
+    if(q2&&!(t.to+" "+t.from.join(" ")).toLowerCase().includes(q2))return;shown++;
+    const n=countOf(t),d=document.createElement("div");d.className="term"+(S.edit===i?" edit":"");
+    d.innerHTML='<div class="t" data-e="'+i+'"><div class="to"><span>'+html(t.to)+"</span>"+(n?'<span class="n">'+n+" in text</span>":"")+'</div><div class="from">'+t.from.map(w=>"<span>"+html(w)+"</span>").join("")+'</div></div><button class="x'+(S.delAsk===i?" ask":"")+'" data-d="'+i+'" aria-label="Delete">'+(S.delAsk===i?"Delete?":"✕")+"</button>";
+    L.appendChild(d);
+  });
+  if(!shown)L.innerHTML='<div class="empty">'+(q2?"No term matches “"+html(S.srch)+"”.":"No terms yet. Type one above and tap + Add.")+"</div>";
+  // keep as is
+  $("#vKeepV").innerHTML=S.keepIn?html(S.keepIn):'<span class="ph">Name to keep as is</span>';$("#iKeep").classList.toggle("foc",S.foc==="keep");
+  const K=$("#keepList");K.innerHTML="";
+  p.keep.forEach((k,i)=>{const d=document.createElement("div");d.className="term";d.innerHTML='<div class="t"><div class="to"><span>'+html(k)+'</span></div></div><button class="x" data-k="'+i+'" aria-label="Remove">✕</button>';K.appendChild(d)});
+  if(!p.keep.length)K.innerHTML='<div class="empty">Nothing kept yet.</div>';
+  $("#keepClr").textContent=S.clrAsk?"Sure? Clear all":"Clear";$("#keepClr").disabled=!p.keep.length;
+  // fix bar
+  $("#fix").textContent=total?"Fix "+total+" in text":"Nothing to fix";$("#fix").disabled=!total||!S.proj;
+  $("#kbw").classList.toggle("open",!!S.foc);
+}
+
+/* typing */
+const kb=$("#kb");
+function krow(keys){const d=document.createElement("div");d.className="kr";keys.forEach(([c,cl,v])=>{const b=document.createElement("button");b.className="k"+(cl?" "+cl:"");b.textContent=c;b.dataset.k=v??c;d.appendChild(b)});kb.appendChild(d)}
+krow("qwertyuiop".split("").map(c=>[c]));krow("asdfghjkl".split("").map(c=>[c]));
+krow("zxcvbnm".split("").map(c=>[c]).concat([["⌫","w"]]));
+krow([[";"],["=>","w"],["space","sp"," "],["-"],["Done","w go"]]);
+kb.addEventListener("pointerdown",e=>{
+  const b=e.target.closest(".k");if(!b)return;e.preventDefault();
+  const k=b.dataset.k,f=S.foc==="line"?"line":S.foc==="srch"?"srch":"keepIn";
+  if(k==="Done"){S.foc="";render();return}
+  S[f]=k==="⌫"?S[f].slice(0,-1):S[f]+k;S.hint="";render();
+});
+const focus=f=>{S.foc=f;render()};
+$("#iLine").onclick=()=>focus("line");$("#iSrch").onclick=()=>focus("srch");$("#iKeep").onclick=()=>focus("keep");
+
+/* terms */
+function addTerm(){
+  if(!S.line.trim()){if(S.edit>=0){S.edit=-1;render()}return}
+  const r=parse(S.line);if(r.err){say(r.err,true);return}
+  const t=P().terms,key=r.from.map(x=>x.toLowerCase()).sort().join("|");
+  if(S.edit>=0){t[S.edit]={to:r.to,from:r.from};S.edit=-1;say("Term saved")}
+  else{const j=t.findIndex(x=>x.from.map(y=>y.toLowerCase()).sort().join("|")===key);
+    if(j>=0){t[j]={to:r.to,from:r.from};say("Updated the existing term")}else{t.unshift({to:r.to,from:r.from});say("Term added")}}
+  S.line="";S.foc="";render();
+}
+$("#addBtn").onclick=addTerm;
+$("#list").onclick=e=>{
+  const ed=e.target.closest("[data-e]"),dl=e.target.closest("[data-d]");
+  if(ed){const i=+ed.dataset.e,t=P().terms[i];S.edit=i;S.line=t.from.join("; ")+" => "+t.to;S.foc="line";S.delAsk=null;render()}
+  else if(dl){const i=+dl.dataset.d;if(S.delAsk===i){P().terms.splice(i,1);S.delAsk=null;if(S.edit===i)S.edit=-1;say("Term deleted")}else{S.delAsk=i;render()}}
+};
+$("#wholeBtn").onclick=()=>{S.whole=!S.whole;render()};
+$("#pasteBtn").onclick=()=>{const add=[{to:"Realm",from:["Level","Stage"]},{to:"Elder",from:["Old man"]}];add.forEach(a=>P().terms.push(a));say("Added "+add.length+" terms from the clipboard")};
+
+/* keep as is */
+$("#keepAdd").onclick=()=>{const n=S.keepIn.trim();if(!n){say("Type the name first",true);return}if(!P().keep.includes(n))P().keep.push(n);S.keepIn="";S.foc="";say("Kept as is")};
+$("#keepClip").onclick=()=>{P().keep.push("Han Li");say("Added from the clipboard")};
+$("#keepClr").onclick=()=>{if(!S.clrAsk){S.clrAsk=true;render();return}P().keep=[];S.clrAsk=false;say("Cleared")};
+$("#keepList").onclick=e=>{const b=e.target.closest("[data-k]");if(b){P().keep.splice(+b.dataset.k,1);render()}};
+
+/* tabs, fix */
+document.querySelectorAll("#seg button").forEach(b=>b.onclick=()=>{S.tab=b.dataset.t;S.foc="";S.delAsk=null;S.clrAsk=false;render()});
+$("#fix").onclick=()=>{
+  let c=0,t=S.text;P().terms.forEach(x=>x.from.forEach(w=>{t=t.replace(re(w),m=>{c++;return caseLike(m,x.to)})}));
+  S.prev=S.text;S.text=t;render();toast("Fixed "+c+" in the text",true);
+};
+$("#toastU").onclick=()=>{if(S.prev!==null){S.text=S.prev;S.prev=null;render();$("#toast").classList.remove("show")}};
+$("#back").onclick=()=>toast("Back to Replace",false);
+
+/* project switcher */
+const pop=$("#pop");
+$("#projBtn").onclick=e=>{e.stopPropagation();
+  pop.innerHTML="";
+  Object.keys(S.projects).forEach(n=>{const b=document.createElement("button");b.innerHTML="<span>"+(n===S.proj?"● ":"○ ")+html(n)+"</span><i>"+S.projects[n].terms.length+" terms</i>";b.onclick=()=>{S.proj=n;S.edit=-1;S.line="";pop.classList.remove("show");render()};pop.appendChild(b)});
+  pop.appendChild(document.createElement("hr"));
+  const nb=document.createElement("button");nb.innerHTML="<span>+ New project</span><i></i>";nb.onclick=()=>{const n="Project "+(Object.keys(S.projects).length+1);S.projects[n]={terms:[],keep:[]};S.proj=n;pop.classList.remove("show");render();toast("Created "+n,false)};pop.appendChild(nb);
+  pop.classList.add("show");
+};
+document.addEventListener("click",e=>{if(!e.target.closest("#pop"))pop.classList.remove("show")});
+render();
+</script>
+</body>
+</html>
