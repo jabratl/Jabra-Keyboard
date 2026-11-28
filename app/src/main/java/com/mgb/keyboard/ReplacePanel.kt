@@ -2080,6 +2080,38 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
         } catch (_: Throwable) { note("Could not add novel") }
     }
 
+    /** v0.67.0 (RENAME): [Rename] in the typing view (code 16). A problem keeps the typing view open and shows the text. */
+    private fun commitRename() {
+        try {
+            val old = projRenOld
+            val r = ProjectStore.rename(prefs, old, projRenBuf)
+            if (r.startsWith("Renamed")) {
+                if (old.equals(novelCur, true)) loadProtect()   // the active project: take the new name + its Keep as is list
+                projRenOld = ""; projRenBuf = ""
+                fnToast = r; novelNote = r
+                typing = 10; fnBack = false; valueTv = null; keysBox = null
+                refresh()
+            } else note(r)
+        } catch (_: Throwable) { note("Could not rename") }
+    }
+
+    /** v0.67.0 (RENAME): deletes ANY project of the list (the list already asked twice) with its terms and Keep as is names. Deleting the active project makes the first one left active (as the old Delete does). */
+    private fun fnDeleteNamed(name: String): String {
+        return try {
+            if (name.isEmpty()) return "Nothing to delete."
+            val wasActive = name.equals(novelCur, true)
+            val r = ProjectStore.delete(prefs, name)
+            if (!r.startsWith("Deleted")) return r
+            if (wasActive) {
+                val sn = setName
+                if (sn != null && NovelBook.belongs(sn, name)) dropSet()
+                novelDelAsk = false
+                pickNovel(prefs.str("rp_novel_cur", ""))
+            }
+            r
+        } catch (_: Throwable) { "Could not delete" }
+    }
+
     // ------------------------------------------------------------------ v0.57.0 (FX1): ONE SCREEN "Fix names, per novel" (design = Fix_names_per_novel_mock.html)
     // UI = ProjectView.kt (class ProjectUi, v0.62.0), logic = typing/FixNames.java (tested). typing == 10 = the screen (tabs Fix names | Novels), typing == 12 = typing in its search box.
     // Everything below uses the OLD code (undo stack, never-change list, glossary paste, delete novel, doReplace). If the screen cannot be built, fnView() falls back to the old Sets screen.
@@ -2090,6 +2122,8 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
     private var fnEditKey = ""                                // v0.62.0: Rule.find of the term being edited ("" = a new term)
     private var fnKeepIn = ""                                 // v0.60.0 (FT1): typing == 14 = the name typed in the Keep as is box of Fix terms
     private var novelNameBuf = ""                             // v0.58.7: typing == 13 = the name of a NEW novel, typed with the small keys (an AlertDialog cannot open from a keyboard)
+    private var projRenOld = ""                               // v0.67.0 (RENAME): typing == 16 = the new name of this project (held in the project list > Rename)
+    private var projRenBuf = ""
 
     private val fnUi: ProjectUi by lazy { ProjectUi(ctx, prefs, host, fnApi) }
 
@@ -2117,6 +2151,9 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
             fnToast = r; fnRefresh(); return r
         }
         override fun deleteAsk(): Boolean = novelDelAsk
+        // v0.67.0 (RENAME): hold a project in the list > Rename / Delete
+        override fun deleteProject(name: String): String { val r = fnDeleteNamed(name); fnToast = r; fnRefresh(); return r }
+        override fun startRename(name: String) { projRenOld = name; projRenBuf = name; fnToast = ""; fnBack = true; startTyping(16) }
         override fun deleteNovel() { fnToast = ""; fnDelete() }
         override fun removeLock(term: String) { fnRemoveLock(term) }
         override fun refresh() { fnRefresh() }
@@ -2832,12 +2869,12 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
 
     // ------------------------------------------------------------------ typing view (small keyboard)
 
-    private fun cur(): String = if (typing == 1) find else if (typing == 12) fnQuery else if (typing == 14) fnKeepIn else if (typing == 15) fnPairIn else if (typing == 13) novelNameBuf else repl   // v0.57.0 (FX1): 12 = the search box of Fix names
-    private fun setCur(v: String) { if (typing == 1) find = v else if (typing == 12) fnQuery = v else if (typing == 14) fnKeepIn = v else if (typing == 15) fnPairIn = v else if (typing == 13) novelNameBuf = v else repl = v; confirmAll = false }
+    private fun cur(): String = if (typing == 16) projRenBuf else if (typing == 1) find else if (typing == 12) fnQuery else if (typing == 14) fnKeepIn else if (typing == 15) fnPairIn else if (typing == 13) novelNameBuf else repl   // v0.57.0 (FX1): 12 = the search box of Fix names
+    private fun setCur(v: String) { if (typing == 16) projRenBuf = v else if (typing == 1) find = v else if (typing == 12) fnQuery = v else if (typing == 14) fnKeepIn = v else if (typing == 15) fnPairIn = v else if (typing == 13) novelNameBuf = v else repl = v; confirmAll = false }
 
     private fun showValue() {
         val v = cur()
-        valueTv?.text = (if (typing == 1) "Find: " else if (typing == 13) "Project: " else if (typing == 14) "Keep: " else if (typing == 15) "Pair: " else if (typing == 12) "Search: " else "With: ") + ReplacePads.view(v, caretPos, 60)   // v0.29.0: caret can move (surrogate-safe window)
+        valueTv?.text = (if (typing == 1) "Find: " else if (typing == 13) "Project: " else if (typing == 16) "Rename: " else if (typing == 14) "Keep: " else if (typing == 15) "Pair: " else if (typing == 12) "Search: " else "With: ") + ReplacePads.view(v, caretPos, 60)   // v0.29.0: caret can move (surrogate-safe window)
     }
 
     private fun typeText(s: String) {
@@ -2884,6 +2921,7 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
         if (typing == 14) head.addView(btn("Add", 1.4f, 34) { commitKeepName() })   // v0.60.0: Keep as is box
         else if (typing == 15) head.addView(btn(if (fnEditKey.isEmpty()) "Add" else "Save", 1.4f, 34) { commitPairLine() })   // v0.62.0
         else if (typing == 13) head.addView(btn("Add project", 1.4f, 34) { commitNovelName() })   // v0.58.7
+        else if (typing == 16) head.addView(btn("Rename", 1.4f, 34) { commitRename() })   // v0.67.0
         else head.addView(btn(if (typing == 1) "Next: With" else "Next: Find", 1.4f, 34) { typing = if (typing == 1) 2 else 1; padPage = 0; shift = false; caretPos = cur().length; refresh() })
         root.addView(head)
         showValue()
@@ -2930,7 +2968,7 @@ class ReplacePanel(private val ctx: Context, private val host: JabraHost, privat
         pasteCur(s)
     }
 
-    private fun openPicker() { pasteBack = if (typing == 2) 2 else if (typing == 12) 12 else if (typing == 14) 14 else if (typing == 15) 15 else if (typing == 13) 13 else 1; pasteTab = 0; typing = 6; refresh() }
+    private fun openPicker() { pasteBack = if (typing == 16) 16 else if (typing == 2) 2 else if (typing == 12) 12 else if (typing == 14) 14 else if (typing == 15) 15 else if (typing == 13) 13 else 1; pasteTab = 0; typing = 6; refresh() }
 
     /** The paste list (typing == 6): Recent (latest copy first) / Pinned. A tap puts the text at the cursor and goes back to the typing view. */
     private fun replacePicker(): View {

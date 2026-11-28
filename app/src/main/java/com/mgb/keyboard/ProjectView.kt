@@ -84,6 +84,9 @@ class ProjectUi(private val ctx: Context, private val prefs: JabraPrefs, private
         // v0.66.0 (PROJECT 3): the Fix button of the Project screen + the term that is being edited (for the accent border)
         fun fixProject() { }                     // fix the field text with ALL terms of the active project (smart fix), one toast, Undo works
         fun editKey(): String = ""               // Rule.find of the term being edited ("" = a new term)
+        // v0.67.0 (RENAME): hold a project in the list = Rename / Delete (also for a project that is not active)
+        fun deleteProject(name: String): String = ""   // delete this project with its terms and Keep as is names (the list asks twice)
+        fun startRename(name: String) { }              // open the mini keyboard (typing code 16) with this name; Rename saves it
     }
 
 
@@ -91,8 +94,10 @@ class ProjectUi(private val ctx: Context, private val prefs: JabraPrefs, private
     private var popOpen = false                   // true = the project list is shown in place of the lower part
     private var delAsk = ""                       // key of the term whose X was tapped once
     private var pendingFrom: String? = null       // set while a NEW project name is being typed: when the active project changes, open it
+    private var menuFor = ""                      // v0.67.0: the project that was held in the list (its row shows Rename / Delete)
+    private var delProj = ""                      // v0.67.0: the project whose Delete was tapped once
 
-    fun open() { tab = 1; popOpen = false; delAsk = ""; pendingFrom = null }
+    fun open() { tab = 1; popOpen = false; delAsk = ""; pendingFrom = null; menuFor = ""; delProj = "" }
     fun showNovels() { popOpen = true }
 
     /** A ScrollView that keeps the drag for itself (the Replace panel around it may scroll too; without this the list could not be scrolled). */
@@ -537,7 +542,7 @@ class ProjectUi(private val ctx: Context, private val prefs: JabraPrefs, private
     }
 
     // ---------------------------------------------------------------- the project list (opens in place of the lower part)
-    private fun menuRow(left: CharSequence, right: String, bold: Boolean, color: Int, click: () -> Unit): View {
+    private fun menuRow(left: CharSequence, right: String, bold: Boolean, color: Int, hold: (() -> Unit)? = null, click: () -> Unit): View {
         val r = LinearLayout(ctx)
         r.orientation = LinearLayout.HORIZONTAL
         r.gravity = Gravity.CENTER_VERTICAL
@@ -553,6 +558,48 @@ class ProjectUi(private val ctx: Context, private val prefs: JabraPrefs, private
         r.addView(l)
         if (right.isNotEmpty()) { val x = label(right, 13f, cNote()); x.maxLines = 1; r.addView(x) }
         r.setOnClickListener { v -> fb(v); click() }
+        if (hold != null) r.setOnLongClickListener { v -> fb(v); hold(); true }   // v0.67.0
+        return r
+    }
+
+    /** v0.67.0: the row of a HELD project: [name] [Rename] [Delete]. Tap the name = close. Delete asks once more ("Sure?"). */
+    private fun holdRow(name: String): View {
+        val r = LinearLayout(ctx)
+        r.orientation = LinearLayout.HORIZONTAL
+        r.gravity = Gravity.CENTER_VERTICAL
+        r.setPadding(dp(12), 0, dp(4), 0)
+        r.background = shape(JabraTokens.withAlpha(acc, 0x22), Color.TRANSPARENT, 10)
+        r.layoutParams = lp(MATCH, dp(44))
+        val l = label(name, 15f, cText(), true)
+        l.maxLines = 1
+        l.ellipsize = TextUtils.TruncateAt.END
+        l.layoutParams = lp(0, WRAP, 1f)
+        l.isClickable = true
+        l.contentDescription = "Close the menu of " + name
+        l.setOnClickListener { v -> fb(v); menuFor = ""; delProj = ""; api.refresh() }
+        r.addView(l)
+        val ren = label("Rename", 13.5f, cText(), true)
+        ren.gravity = Gravity.CENTER
+        ren.setPadding(dp(12), 0, dp(12), 0)
+        ren.background = shape(cFill(), cLine(), 11, 1)
+        ren.isClickable = true
+        ren.contentDescription = "Rename " + name
+        ren.layoutParams = lp(WRAP, dp(36), 0f, 4, 0, 4, 0)
+        ren.setOnClickListener { v -> fb(v); menuFor = ""; delProj = ""; pendingFrom = null; api.clearToast(); api.startRename(name) }
+        r.addView(ren)
+        val armed = delProj == name
+        val del = label(if (armed) "Sure? Delete" else "Delete", 13.5f, if (armed) Color.WHITE else redInk(), true)
+        del.gravity = Gravity.CENTER
+        del.setPadding(dp(12), 0, dp(12), 0)
+        del.background = if (armed) shape(if (dark()) 0xFFB3261E.toInt() else 0xFFC0392B.toInt(), Color.TRANSPARENT, 11) else shape(cFill(), redInk(), 11, 1)
+        del.isClickable = true
+        del.contentDescription = "Delete " + name
+        del.layoutParams = lp(WRAP, dp(36), 0f, 0, 0, 4, 0)
+        del.setOnClickListener { v ->
+            fb(v)
+            if (armed) { menuFor = ""; delProj = ""; api.clearToast(); api.deleteProject(name) } else { delProj = name; api.refresh() }
+        }
+        r.addView(del)
         return r
     }
 
@@ -566,7 +613,8 @@ class ProjectUi(private val ctx: Context, private val prefs: JabraPrefs, private
         for (n in list) {
             val mark = (if (n.active) "\u25CF  " else "\u25CB  ") + n.name
             val right = ProjectPlan.termsLabel(n.pairs) + (if (n.locked > 0) " \u00B7 " + n.locked + " kept" else "")
-            box.addView(menuRow(mark, right, n.active, cText()) { popOpen = false; tab = 1; delAsk = ""; pendingFrom = null; api.clearToast(); api.pickNovel(n.name) })
+            if (menuFor.equals(n.name, true)) box.addView(holdRow(n.name))   // v0.67.0: hold = Rename / Delete
+            else box.addView(menuRow(mark, right, n.active, cText(), { menuFor = n.name; delProj = ""; api.clearToast(); api.refresh() }) { popOpen = false; tab = 1; delAsk = ""; pendingFrom = null; menuFor = ""; delProj = ""; api.clearToast(); api.pickNovel(n.name) })
             count++
         }
         if (list.isEmpty()) { box.addView(emptyNote("No project yet. Tap + New project.")); count += 1 }
@@ -588,6 +636,7 @@ class ProjectUi(private val ctx: Context, private val prefs: JabraPrefs, private
         }
         val t = ProjectPlan.toastText(api.toast())
         if (t.isNotEmpty() && !ProjectPlan.isFixed(api.toast())) { box.addView(hintLine(t, ProjectPlan.isProblem(t))); count++ }
+        else if (list.isNotEmpty() && menuFor.isEmpty()) { box.addView(hintLine("Hold a project to rename or delete it.", false)); count++ }   // v0.67.0
 
         val sv = NestedScroll(ctx)
         sv.isVerticalScrollBarEnabled = false

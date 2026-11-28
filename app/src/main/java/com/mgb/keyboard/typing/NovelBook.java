@@ -117,6 +117,26 @@ public final class NovelBook {
         return true;
     }
 
+    public static final int MAX_NAME = 36;   // v0.67.0: longest project name from Rename (a saved set name is cut at 64 characters: "G " + name + 3 parts)
+
+    /** v0.67.0 (RENAME): a typed project name made safe: no line breaks (the registry is one name per line), the dot sign of set names becomes "-", spaces squeezed, at most MAX_NAME characters. Never throws. */
+    public static String cleanName(String s) {
+        try {
+            if (s == null) return "";
+            String t = s.replaceAll("[\\r\\n]", " ").replace(GlossaryImport.SEP.trim(), "-").replaceAll("\\s+", " ").trim();
+            if (t.length() > MAX_NAME) t = t.substring(0, MAX_NAME).trim();
+            return t;
+        } catch (RuntimeException e) { return ""; }
+    }
+
+    /** v0.67.0 (RENAME): the name of a saved set after its project got a new name ("G Old \u00B7 My pairs \u00B7 wrong" gives "G New \u00B7 My pairs \u00B7 wrong"). A set that is not a glossary set stays as it is. */
+    public static String renamedSet(String setName, String newNovel) {
+        try {
+            if (!GlossaryImport.isGlossarySet(setName) || newNovel == null || newNovel.trim().isEmpty()) return setName;
+            return "G " + newNovel.trim() + setName.substring(setName.indexOf(GlossaryImport.SEP));
+        } catch (RuntimeException e) { return setName; }
+    }
+
     /** Pref key of the Never change list of one novel. */
     public static String neverKey(String novel) {
         String n = novel == null ? "" : novel.trim().toLowerCase();

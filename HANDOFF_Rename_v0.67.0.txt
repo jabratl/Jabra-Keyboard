@@ -1,0 +1,12 @@
+JABRA KEYBOARD - HANDOFF v0.67.0 (Project list: hold a project = Rename / Delete)
+Read with HANDOFF.txt (section 0 rules) and HANDOFF_Project_v0.66.0.txt.
+STATE
+  - ProjectUi (ProjectView.kt): the project list card. Tap = select. HOLD = holdRow ([name] [Rename] [Delete]); state menuFor / delProj. Api got 2 members with default bodies: deleteProject(name), startRename(name).
+  - ReplacePanel.kt: typing code 16 = new name (projRenOld / projRenBuf), commitRename() -> ProjectStore.rename(); fnDeleteNamed(name) -> ProjectStore.delete() (then pickNovel when the active one went).
+  - ProjectStore.rename: renames the saved sets (same order), moves the Keep as is pref (NovelBook.neverKey), registry entry in place, rp_novel_cur. Pure helpers: NovelBook.cleanName / renamedSet / MAX_NAME (tools/NovelRenameTest.java).
+  - The tests NovelNameTypingTest / FixTermsMergeTest grep ReplacePanel.kt text: the new typing == 16 branches are put FIRST in cur / setCur / openPicker on purpose so their text checks stay green.
+OPEN: ProjectPage.kt (the app screen) has Delete but no Rename yet (not asked). Kotlin NOT compiled, phone NOT tested.
+PHONE CHECK (Banglish)
+  1) Replace > Project > upore Project name tap = list. Kono project-er upor HOLD koro: [Rename] [Delete] ashbe.
+  2) Delete tap = "Sure? Delete", abar tap = delete (active na hoyeo kaj kore). Nam-e tap = menu bondho.
+  3) Rename tap = chhoto keyboard, purono nam bosano; bodlao, [Rename] tap = list-e notun nam; terms / Keep as is thake.

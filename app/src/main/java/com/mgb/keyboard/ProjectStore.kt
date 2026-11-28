@@ -94,6 +94,45 @@ object ProjectStore {
         } catch (_: Throwable) { "Could not delete." }
     }
 
+    /**
+     * v0.67.0 (RENAME): gives a project a new name. Its terms (the saved sets are renamed, same order), its Keep as is names, the registry entry
+     * (same place in the list) and the active-project pref follow. Case-only changes are allowed. Returns "Renamed to ..." or a problem text; nothing is changed on a problem.
+     */
+    fun rename(p: JabraPrefs, old: String, to: String): String {
+        return try {
+            val clean = NovelBook.cleanName(to)
+            if (old.isEmpty()) return "Nothing to rename."
+            if (clean.isEmpty()) return "Type a project name."
+            val reg = NovelBook.parse(p.str(K_REG, ""))
+            val at = reg.indexOfFirst { it.equals(old, true) }
+            if (at < 0) return "Project not found."
+            val oldName = reg[at]
+            if (oldName == clean) return "Name not changed."
+            if (reg.any { !it.equals(oldName, true) && it.equals(clean, true) }) return "A project named " + clean + " already exists."
+            val all = ReplaceStore.load(p)
+            val moved = LinkedHashMap<String, ReplaceStore.Def>()
+            for ((k, v) in all) {
+                val nk = if (NovelBook.belongs(k, oldName)) NovelBook.renamedSet(k, clean) else k
+                if (nk.length > 64 || moved.containsKey(nk)) return "Name too long or clashes with a saved set. Use a shorter name."
+                moved[nk] = v
+            }
+            val never = p.str(NovelBook.neverKey(oldName), "")
+            ReplaceStore.save(p, moved)
+            reg[at] = clean
+            p.setStr(K_REG, NovelBook.text(reg))
+            if (!NovelBook.has(NovelBook.parse(p.str(K_REG, "")), clean)) {
+                ReplaceStore.save(p, all)   // put the sets back: nothing was renamed
+                return "Could not rename. Storage write failed."
+            }
+            if (NovelBook.neverKey(oldName) != NovelBook.neverKey(clean)) {
+                p.setStr(NovelBook.neverKey(clean), never)
+                p.setStr(NovelBook.neverKey(oldName), "")
+            }
+            if (p.str(K_CUR, "").equals(oldName, true)) setCurrent(p, clean)
+            "Renamed to " + clean + "."
+        } catch (_: Throwable) { "Could not rename." }
+    }
+
     /** Saves ONE term to the project (its My pairs set). Same wrong forms = updated in place. Returns "Saved..." / "Updated..." or a problem text. */
     private fun addPair(p: JabraPrefs, project: String, forms: List<String>, to: String): String {
         try {

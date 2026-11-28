@@ -1,3 +1,15 @@
+v0.67.0 - NEW: hold a project in the Replace > Project list = Rename / Delete
+- WHY: the owner wanted to delete a project from the list (not only the active one) and to rename a project.
+- WHAT (Replace > Project > tap the project name to open the list):
+  1) HOLD a project row: the row shows [Rename] [Delete]. Tap the name = close. Delete asks once more ("Sure? Delete"). Works for ANY project, not only the active one. Deleting the active project makes the first one left active (same as the old Delete).
+  2) Rename opens the mini keyboard (typing code 16) with the old name filled in; [Rename] saves, Done = cancel. The terms (saved sets, same order), the Keep as is names, the place in the list and the active-project pref follow the new name. A name that already exists (any case) is refused; only upper / lower case changes are allowed. Max 36 characters (saved set names are cut at 64).
+  3) A small hint under the list: "Hold a project to rename or delete it."
+- Old things NOT changed: tap = select, + New project, No project and the red Delete <name> row at the bottom still work as before. No storage key changed.
+- Code: PATCH ProjectView.kt (holdRow, menuRow hold, Api default members deleteProject / startRename), ReplacePanel.kt (typing 16, commitRename, fnDeleteNamed), ProjectStore.kt (rename), typing/NovelBook.java (cleanName, renamedSet, MAX_NAME), app/build.gradle.kts (0.67.0), CHANGELOG.txt. NEW tools/NovelRenameTest.java, HANDOFF_Rename_v0.67.0.txt.
+- Tests: Java suite 188/190 green (NovelRenameTest new, all ok). The 2 reds (SectionPlanTest, SettingsHelpTest) are the same as before this version.
+- NOT tested: Kotlin NOT compiled (no kotlinc / Android SDK here), phone NOT tested. If GitHub Actions is red, open the red lines of the Kotlin step: the new places are ProjectView.kt (holdRow, projectMenu) and ReplacePanel.kt (search "v0.67.0").
+- Rollback: restore the 5 patched files from v0.66.1 and delete NovelRenameTest.java.
+
 v0.66.1 - FIX: the term list of the Project screen could not be scrolled
 - WHY (seen in the owner's screen recording): the Project screen is a little taller than the keyboard area, so the Replace panel around it scrolls. That outer scroll took every drag, the list never moved.
 - WHAT: the Terms and Keep as is lists (and the project list) now keep the drag for themselves when they have more to show (NestedScroll in ProjectView.kt; it asks the parent not to intercept). The lists are also 16 dp shorter at the default key height (ProjectPlan.listHeightDp = 6 key rows minus 232 dp, min 56 dp) so the Fix button is inside the keyboard area.
